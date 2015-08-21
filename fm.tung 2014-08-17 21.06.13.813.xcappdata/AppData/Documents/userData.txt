@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>bio</key>
+	<string>Making apps, searching for excellent music and drinking craft beer along the way.</string>
+	<key>facebook_id</key>
+	<integer>0</integer>
+	<key>large_av_url</key>
+	<string>http://30448f8636bc7c4ab9f9-b1d6c1c715c23df791aa22763aa76f96.r34.cf1.rackcdn.com/large/53c5f24ca7ba5b88707b23c6.jpg</string>
+	<key>location</key>
+	<string>out West</string>
+	<key>name</key>
+	<string>Jamie Perkins</string>
+	<key>small_av_url</key>
+	<string>http://30448f8636bc7c4ab9f9-b1d6c1c715c23df791aa22763aa76f96.r34.cf1.rackcdn.com/small/53c5f24ca7ba5b88707b23c6.jpg</string>
+	<key>tung_id</key>
+	<string>53c5f24ca7ba5b88707b23c6</string>
+	<key>twitter_id</key>
+	<string>33935410</string>
+	<key>url</key>
+	<string>http://inorganik.github.io/</string>
+	<key>username</key>
+	<string>inorganik</string>
+</dict>
+</plist>

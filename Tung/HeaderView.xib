@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="7706" systemVersion="14E46" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
+    <dependencies>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="7703"/>
+    </dependencies>
+    <objects>
+        <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="HeaderView">
+            <connections>
+                <outlet property="albumArt" destination="fLF-cu-77A" id="fpk-AL-TeK"/>
+                <outlet property="descriptionLabel" destination="sm5-bR-URW" id="RSn-xU-wnV"/>
+                <outlet property="subTitleLabel" destination="2Jl-63-wuU" id="iQ0-en-JxP"/>
+                <outlet property="subscribeButton" destination="wCz-uz-qIK" id="3E8-l4-cZ1"/>
+                <outlet property="titleLabel" destination="ect-QW-a9O" id="3Bi-6q-yMW"/>
+                <outlet property="view" destination="iN0-l3-epB" id="M3f-rn-0SG"/>
+            </connections>
+        </placeholder>
+        <placeholder placeholderIdentifier="IBFirstResponder" id="-2" customClass="UIResponder"/>
+        <view clipsSubviews="YES" contentMode="scaleAspectFit" id="iN0-l3-epB">
+            <rect key="frame" x="0.0" y="0.0" width="375" height="164"/>
+            <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+            <subviews>
+                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" image="albumShawdow.png" translatesAutoresizingMaskIntoConstraints="NO" id="P4H-HX-XM9">
+                    <rect key="frame" x="263" y="12" width="112" height="213"/>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="112" id="MWm-68-pzq"/>
+                        <constraint firstAttribute="height" constant="213" id="SJk-CV-69I"/>
+                    </constraints>
+                </imageView>
+                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="fLF-cu-77A">
+                    <rect key="frame" x="263" y="12" width="100" height="100"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="100" id="FDu-CY-ehj"/>
+                        <constraint firstAttribute="width" constant="100" id="wwe-kn-8cK"/>
+                    </constraints>
+                </imageView>
+                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="wCz-uz-qIK" customClass="CircleButton">
+                    <rect key="frame" x="12" y="70" width="69" height="62"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="62" id="FOm-WG-43l"/>
+                        <constraint firstAttribute="width" constant="69" id="mAo-te-dT3"/>
+                    </constraints>
+                    <state key="normal">
+                        <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                    </state>
+                </button>
+                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" lineBreakMode="tailTruncation" numberOfLines="3" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="sm5-bR-URW">
+                    <rect key="frame" x="12" y="139" width="351" height="15"/>
+                    <fontDescription key="fontDescription" type="system" pointSize="12"/>
+                    <color key="textColor" red="1" green="1" blue="1" alpha="0.80000000000000004" colorSpace="custom" customColorSpace="sRGB"/>
+                    <nil key="highlightedColor"/>
+                </label>
+                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" minimumFontSize="12" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ect-QW-a9O">
+                    <rect key="frame" x="12" y="12" width="239" height="26"/>
+                    <fontDescription key="fontDescription" type="system" weight="light" pointSize="21"/>
+                    <color key="textColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                    <nil key="highlightedColor"/>
+                </label>
+                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" lineBreakMode="tailTruncation" numberOfLines="4" baselineAdjustment="alignBaselines" minimumFontSize="9" adjustsLetterSpacingToFitWidth="YES" translatesAutoresizingMaskIntoConstraints="NO" id="2Jl-63-wuU">
+                    <rect key="frame" x="12" y="40" width="239" height="14"/>
+                    <constraints>
+                        <constraint firstAttribute="width" constant="171" id="PG2-lI-8ES"/>
+                    </constraints>
+                    <fontDescription key="fontDescription" type="system" pointSize="11"/>
+                    <color key="textColor" red="0.01176470588" green="0.0" blue="0.0" alpha="0.40000000000000002" colorSpace="custom" customColorSpace="sRGB"/>
+                    <nil key="highlightedColor"/>
+                    <variation key="default">
+                        <mask key="constraints">
+                            <exclude reference="PG2-lI-8ES"/>
+                        </mask>
+                    </variation>
+                </label>
+            </subviews>
+            <color key="backgroundColor" red="0.56082421540000005" green="0.63564246889999998" blue="0.96741372349999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+            <constraints>
+                <constraint firstAttribute="trailing" secondItem="P4H-HX-XM9" secondAttribute="trailing" id="25o-Ws-Fhe"/>
+                <constraint firstItem="sm5-bR-URW" firstAttribute="top" secondItem="wCz-uz-qIK" secondAttribute="bottom" constant="7" id="6V1-xa-snu"/>
+                <constraint firstItem="sm5-bR-URW" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="12" id="6h7-FS-8eI"/>
+                <constraint firstItem="fLF-cu-77A" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" constant="12" id="LDo-89-IUa"/>
+                <constraint firstItem="wCz-uz-qIK" firstAttribute="top" secondItem="2Jl-63-wuU" secondAttribute="bottom" constant="16" id="WdF-iG-1TU"/>
+                <constraint firstAttribute="trailing" secondItem="fLF-cu-77A" secondAttribute="trailing" constant="12" id="ZxX-Ey-bGM"/>
+                <constraint firstItem="2Jl-63-wuU" firstAttribute="top" secondItem="ect-QW-a9O" secondAttribute="bottom" constant="2" id="aer-km-FmU"/>
+                <constraint firstItem="wCz-uz-qIK" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="12" id="bLV-6G-uCe"/>
+                <constraint firstItem="ect-QW-a9O" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="12" id="eMD-lI-NnS"/>
+                <constraint firstItem="ect-QW-a9O" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" constant="12" id="mgc-Zo-cJI"/>
+                <constraint firstItem="P4H-HX-XM9" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" constant="12" id="mtU-vR-QJt"/>
+                <constraint firstAttribute="trailing" secondItem="sm5-bR-URW" secondAttribute="trailing" constant="12" id="pkP-2u-uNB"/>
+                <constraint firstItem="2Jl-63-wuU" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="12" id="qYr-Fd-TrT"/>
+                <constraint firstItem="fLF-cu-77A" firstAttribute="leading" secondItem="2Jl-63-wuU" secondAttribute="trailing" constant="12" id="s2B-KR-TwK"/>
+                <constraint firstItem="fLF-cu-77A" firstAttribute="leading" secondItem="ect-QW-a9O" secondAttribute="trailing" constant="12" id="s4c-fy-VAS"/>
+            </constraints>
+            <nil key="simulatedStatusBarMetrics"/>
+            <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
+            <point key="canvasLocation" x="513.5" y="447"/>
+        </view>
+    </objects>
+    <resources>
+        <image name="albumShawdow.png" width="112" height="213"/>
+    </resources>
+</document>

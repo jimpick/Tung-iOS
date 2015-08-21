@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="7701" systemVersion="14E46" minimumToolsVersion="Xcode 4.3" macOSVersion="Automatic" iOSVersion="Automatic">
+    <entity name="EpisodeEntity" representedClassName="EpisodeEntity" syncable="YES">
+        <attribute name="collectionId" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="dataLength" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="desc" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="duration" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="endByteOffset" optional="YES" attributeType="Integer 64" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="episodeImageUrl" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="guid" attributeType="String" syncable="YES"/>
+        <attribute name="isRecommended" attributeType="Boolean" syncable="YES"/>
+        <attribute name="pubDate" attributeType="Date" syncable="YES"/>
+        <attribute name="shortlink" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="startByteOffset" optional="YES" attributeType="Integer 64" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="title" attributeType="String" syncable="YES"/>
+        <attribute name="trackPosition" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="url" attributeType="String" syncable="YES"/>
+        <relationship name="podcast" maxCount="1" deletionRule="Nullify" destinationEntity="PodcastEntity" inverseName="episodes" inverseEntity="PodcastEntity" syncable="YES"/>
+    </entity>
+    <entity name="PodcastEntity" representedClassName="PodcastEntity" syncable="YES">
+        <attribute name="artistName" attributeType="String" syncable="YES"/>
+        <attribute name="artworkUrl600" attributeType="String" syncable="YES"/>
+        <attribute name="collectionId" attributeType="Double" defaultValueString="0.0" indexed="YES" syncable="YES"/>
+        <attribute name="collectionName" attributeType="String" syncable="YES"/>
+        <attribute name="dateSubscribed" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="desc" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="email" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="feedLastCached" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="feedUrl" attributeType="String" syncable="YES"/>
+        <attribute name="isSubscribed" attributeType="Boolean" syncable="YES"/>
+        <attribute name="keyColor1" optional="YES" attributeType="Transformable" syncable="YES"/>
+        <attribute name="keyColor1Hex" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="keyColor2" optional="YES" attributeType="Transformable" syncable="YES"/>
+        <attribute name="keyColor2Hex" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="website" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="episodes" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="EpisodeEntity" inverseName="podcast" inverseEntity="EpisodeEntity" syncable="YES"/>
+    </entity>
+    <entity name="UserEntity" representedClassName="UserEntity" syncable="YES">
+        <attribute name="bio" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="email" attributeType="String" syncable="YES"/>
+        <attribute name="facebook_id" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="large_av_url" attributeType="String" syncable="YES"/>
+        <attribute name="location" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="name" attributeType="String" syncable="YES"/>
+        <attribute name="small_av_url" attributeType="String" syncable="YES"/>
+        <attribute name="tung_id" attributeType="String" indexed="YES" syncable="YES"/>
+        <attribute name="twitter_id" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="twitter_username" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="url" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="username" attributeType="String" syncable="YES"/>
+    </entity>
+    <elements>
+        <element name="EpisodeEntity" positionX="-18" positionY="27" width="128" height="270"/>
+        <element name="PodcastEntity" positionX="-45" positionY="0" width="128" height="285"/>
+        <element name="UserEntity" positionX="-27" positionY="126" width="128" height="225"/>
+    </elements>
+</model>

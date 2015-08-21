@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="7549" systemVersion="14D136" minimumToolsVersion="Automatic" macOSVersion="Automatic" iOSVersion="Automatic">
+    <entity name="EpisodeEntity" syncable="YES">
+        <attribute name="collectionId" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="desc" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="duration" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="guid" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="isNowPlaying" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="isRecommended" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="pubDate" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="title" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="trackProgress" optional="YES" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="url" optional="YES" attributeType="String" syncable="YES"/>
+    </entity>
+    <entity name="PodcastEntity" representedClassName="Subscribed" syncable="YES">
+        <attribute name="artistName" attributeType="String" syncable="YES"/>
+        <attribute name="artworkUrl600" attributeType="String" syncable="YES"/>
+        <attribute name="collectionId" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="collectionName" attributeType="String" syncable="YES"/>
+        <attribute name="dateSubscribed" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="email" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="feedUrl" attributeType="String" syncable="YES"/>
+        <attribute name="isSubscribed" attributeType="Boolean" syncable="YES"/>
+        <attribute name="website" optional="YES" attributeType="String" syncable="YES"/>
+    </entity>
+    <elements>
+        <element name="PodcastEntity" positionX="-63" positionY="-18" width="128" height="180"/>
+        <element name="EpisodeEntity" positionX="-54" positionY="36" width="128" height="195"/>
+    </elements>
+</model>

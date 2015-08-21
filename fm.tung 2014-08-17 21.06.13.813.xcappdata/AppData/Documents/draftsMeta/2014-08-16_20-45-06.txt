@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>captionText</key>
+	<string></string>
+	<key>convertedFile</key>
+	<string>/var/mobile/Applications/1A444A31-C29D-4B0F-8B47-A5B57D7F3281/Documents/drafts/2014-08-16_20-45-06.m4a</string>
+	<key>selectedCategory</key>
+	<integer>0</integer>
+</dict>
+</plist>
