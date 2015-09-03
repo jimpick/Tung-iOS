@@ -500,7 +500,9 @@ static NSString *podcastArtDirName = @"podcastArt";
             [preloadQueue addOperationWithBlock:^{
                 
                 NSString *artURLString = [[podcastArrayCopy objectAtIndex:i] objectForKey:@"artworkUrl600"];
-                NSString *artFilename = [artURLString lastPathComponent];
+                
+                NSArray *components = [artURLString pathComponents];
+                NSString *artFilename = [NSString stringWithFormat:@"%@%@", components[components.count-2], components[components.count-1]];
                 NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
                 if (![[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
                     NSData *artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:artURLString]];
@@ -517,7 +519,8 @@ static NSString *podcastArtDirName = @"podcastArt";
     NSError *error;
     if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
         
-        NSString *artFilename = [urlString lastPathComponent];
+        NSArray *components = [urlString pathComponents];
+        NSString *artFilename = [NSString stringWithFormat:@"%@%@", components[components.count-2], components[components.count-1]];
         NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
         NSData *artImageData;
         // make sure it is cached, even though we preloaded it

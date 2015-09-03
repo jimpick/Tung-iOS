@@ -56,7 +56,7 @@
     self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
     
-    //[tungCommonObjects clearTempDirectory]; // DEV only
+    //[TungCommonObjects clearTempDirectory]; // DEV only
     
     // Show user entities
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];

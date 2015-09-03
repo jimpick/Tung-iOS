@@ -9,13 +9,13 @@
             shouldBeEnabled = "Yes"
             ignoreCount = "0"
             continueAfterRunningActions = "No"
-            filePath = "Tung/FinishSignUpController.m"
-            timestampString = "460056434.271289"
+            filePath = "Tung/NowPlayingViewController.m"
+            timestampString = "462924456.395543"
             startingColumnNumber = "9223372036854775807"
             endingColumnNumber = "9223372036854775807"
-            startingLineNumber = "185"
-            endingLineNumber = "185"
-            landmarkName = "-prepareForSegue:sender:"
+            startingLineNumber = "1020"
+            endingLineNumber = "1020"
+            landmarkName = "-toggleNewComment"
             landmarkType = "5">
          </BreakpointContent>
       </BreakpointProxy>
