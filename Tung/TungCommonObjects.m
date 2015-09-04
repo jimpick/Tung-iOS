@@ -1394,9 +1394,33 @@ static NSArray *colors;
                              @"website": website,
                              @"desc": desc
                              };
-    //NSLog(@"params: %@", params);
-    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
-    [addPodcastRequest setHTTPBody:serializedParams];
+    
+    // add content type
+    NSString *boundary = [TungCommonObjects generateHash];
+    NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
+    [addPodcastRequest addValue:contentType forHTTPHeaderField:@"Content-Type"];
+    // add post body
+    NSMutableData *body = [NSMutableData data];
+    [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    // key value pairs
+    [body appendData:[TungCommonObjects generateBodyFromDictionary:params withBoundary:boundary]];
+    
+    // podcast art
+    [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"podcastArt\"; filename=\"%@\"\r\n", @"art.jpg"] dataUsingEncoding:NSUTF8StringEncoding]];
+    [body appendData:[@"Content-Type: image/jpeg\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+    NSData *podcastArtData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600];
+    [body appendData:podcastArtData];
+    [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    
+    // end of body
+    [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    
+    [addPodcastRequest setHTTPBody:body];
+    // set the content-length
+    NSString *postLength = [NSString stringWithFormat:@"%lu", (unsigned long)[body length]];
+    [addPodcastRequest setValue:postLength forHTTPHeaderField:@"Content-Length"];
+    
+    
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:addPodcastRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
         error = nil;
@@ -1458,9 +1482,32 @@ static NSArray *colors;
                              @"episodeDuration": episodeEntity.duration,
                              @"episodeTitle": episodeEntity.title,
                             };
-    //NSLog(@"params: %@", params);
-    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
-    [addEpisodeRequest setHTTPBody:serializedParams];
+    
+    // add content type
+    NSString *boundary = [TungCommonObjects generateHash];
+    NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
+    [addEpisodeRequest addValue:contentType forHTTPHeaderField:@"Content-Type"];
+    // add post body
+    NSMutableData *body = [NSMutableData data];
+    [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    // key value pairs
+    [body appendData:[TungCommonObjects generateBodyFromDictionary:params withBoundary:boundary]];
+    
+    // podcast art
+    [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"podcastArt\"; filename=\"%@\"\r\n", @"art.jpg"] dataUsingEncoding:NSUTF8StringEncoding]];
+    [body appendData:[@"Content-Type: image/jpeg\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+    NSData *podcastArtData = [TungCommonObjects retrievePodcastArtDataWithUrlString:episodeEntity.podcast.artworkUrl600];
+    [body appendData:podcastArtData];
+    [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    
+    // end of body
+    [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    
+    [addEpisodeRequest setHTTPBody:body];
+    // set the content-length
+    NSString *postLength = [NSString stringWithFormat:@"%lu", (unsigned long)[body length]];
+    [addEpisodeRequest setValue:postLength forHTTPHeaderField:@"Content-Length"];
+    
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:addEpisodeRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
         error = nil;
@@ -2566,6 +2613,28 @@ static NSNumberFormatter *countFormatter = nil;
     [UIView animateWithDuration:0.2 animations:^{
         view.alpha = 0;
     }];
+}
+
++ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString {
+    
+    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
+    NSError *error;
+    if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+        
+        NSArray *components = [urlString pathComponents];
+        NSString *artFilename = [NSString stringWithFormat:@"%@%@", components[components.count-2], components[components.count-1]];
+        NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
+        NSData *artImageData;
+        // make sure it is cached, even though we preloaded it
+        if ([[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
+            artImageData = [NSData dataWithContentsOfFile:artFilepath];
+        } else {
+            artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
+            [artImageData writeToFile:artFilepath atomically:YES];
+        }
+        return artImageData;
+    }
+    return nil;
 }
 
 @end

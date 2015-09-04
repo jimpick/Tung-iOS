@@ -149,5 +149,6 @@
 + (NSString *) OSStatusToStr:(OSStatus)status;
 + (void)fadeInView:(UIView *)view;
 + (void)fadeOutView:(UIView *)view;
++ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString;
 
 @end

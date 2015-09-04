@@ -59,7 +59,6 @@
 
 // instance methods
 - (NSDictionary *) getFeedWithDict:(NSDictionary *)podcastDict forceNewest:(BOOL)forceNewest;
-- (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString;
 - (NSDictionary *) retrieveAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict;
 - (NSDictionary *) requestAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict;
 - (void) preloadFeedsWithLimit:(NSUInteger)limit;

@@ -291,7 +291,7 @@ static NSDateFormatter *releaseDateFormatter = nil;
     
     // art
     NSString *artUrlString = [podcastDict objectForKey:@"artworkUrl600"];
-    NSData *artImageData = [self retrievePodcastArtDataWithUrlString:artUrlString];
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     podcastCell.podcastArtImageView.image = artImage;
     
@@ -481,11 +481,9 @@ static NSDateFormatter *airDateFormatter = nil;
 
 #pragma mark - Preloading
 
-static NSString *podcastArtDirName = @"podcastArt";
-
 -(void) preloadPodcastArt {
     
-    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:podcastArtDirName];
+    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
     NSError *error;
     if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
         
@@ -511,28 +509,6 @@ static NSString *podcastArtDirName = @"podcastArt";
             }];
         }
     }
-}
-
-- (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString {
-    
-    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:podcastArtDirName];
-    NSError *error;
-    if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
-        
-        NSArray *components = [urlString pathComponents];
-        NSString *artFilename = [NSString stringWithFormat:@"%@%@", components[components.count-2], components[components.count-1]];
-        NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
-        NSData *artImageData;
-        // make sure it is cached, even though we preloaded it
-        if ([[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
-            artImageData = [NSData dataWithContentsOfFile:artFilepath];
-        } else {
-            artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
-            [artImageData writeToFile:artFilepath atomically:YES];
-        }
-        return artImageData;
-    }
-    return nil;
 }
 
 static NSString *rawFeedsDirName = @"rawFeeds";
@@ -744,7 +720,7 @@ static NSString *rawFeedsDirName = @"rawFeeds";
     headerView.descriptionLabel.text = desc;
     
     // art image
-    NSData *artImageData = [self retrievePodcastArtDataWithUrlString:artUrlString];
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     headerView.albumArt.image = artImage;
     
