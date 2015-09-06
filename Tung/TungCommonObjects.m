@@ -1582,6 +1582,7 @@ static NSArray *colors;
                 else if ([responseDict objectForKey:@"success"]) {
                     [button setEnabled:YES];
                     NSLog(@"successfully subscribed to podcast");
+                    // important: do not assign shortlink from subscribe story to episode entity
                 }
             }
             else {

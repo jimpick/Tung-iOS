@@ -1480,7 +1480,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         
         [_commentAndPostView.postButton setEnabled:NO];
         [_commentAndPostView.postActivityIndicator startAnimating];
-        [_tung postClipWithComment:_commentAndPostView.commentTextView.text atTime:_shareTimestamp withDuration:_recordingDurationLabel.text onEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
+        [_tung postClipWithComment:_commentAndPostView.commentTextView.text atTime:_shareTimestamp withDuration:[_recordingDurationLabel.text substringFromIndex:1] onEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
             [_commentAndPostView.postActivityIndicator stopAnimating];
             [_commentAndPostView.postButton setEnabled:YES];
             if (success) {
