@@ -26,6 +26,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import "ALDisk.h"
 #import "CCColorCube.h"
+#import <Social/Social.h>
 
 @interface TungCommonObjects()
 
@@ -2265,6 +2266,132 @@ static NSArray *colors;
             [TungCommonObjects saveUserWithDict:userData];
         }
     }
+}
+
+// post tweet
+- (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url {
+    
+    NSString *tweet = [NSString stringWithFormat:@"%@ %@", text, url];
+    
+    NSLog(@"Attempting to post tweet: %@", tweet);
+    NSDictionary *tweetParams = @{@"status": tweet};
+    NSURL *requestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@statuses/update.json", _twitterApiRootUrl]];
+    SLRequest *postTweetRequest = [SLRequest requestForServiceType:SLServiceTypeTwitter requestMethod:SLRequestMethodPOST URL:requestURL parameters:tweetParams];
+    postTweetRequest.account = _twitterAccountToUse;
+    NSLog(@"posting tweet with account: %@", _twitterAccountToUse.username);
+    [postTweetRequest performRequestWithHandler:^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
+        long responseCode =  (long)[urlResponse statusCode];
+        if (responseCode == 200) NSLog(@"tweet posted");
+        
+        //NSLog(@"Twitter HTTP response: %li", responseCode);
+        if (error != nil) {
+            //NSLog(@"Error: %@", error);
+            NSString *html = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
+            NSLog(@"HTML: %@", html);
+        }
+    }];
+}
+
+#pragma mark - Facebook
+
+- (void) postToFacebookWithText:(NSString *)text andShortLink:(NSString *)shortlink tag:(BOOL)tag {
+    
+    NSDictionary *userData = [self getLoggedInUserData];
+    NSArray *firstAndLastName = [[userData objectForKey:@"name"] componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
+    
+    NSString *description = @"Tung.fm - a social podcast player";
+    NSString *image = _npEpisodeEntity.podcast.artworkUrl600;
+    
+    // dialog params
+    NSMutableDictionary *linkParams = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+                                       [firstAndLastName objectAtIndex:0], @"name",
+                                       text, @"caption",
+                                       description, @"description",
+                                       shortlink, @"link",
+                                       image, @"picture",
+                                       nil];
+    // link params
+    FBLinkShareParams *dialogParams = [[FBLinkShareParams alloc] init];
+    dialogParams.link = [NSURL URLWithString:shortlink];
+    dialogParams.name = [firstAndLastName objectAtIndex:0];
+    dialogParams.caption = text;
+    dialogParams.linkDescription = description;
+    dialogParams.picture = [NSURL URLWithString:image];
+    
+    // tagging not currently used.
+    if (tag) {
+        // post and tag friends
+        if ([FBDialogs canPresentShareDialogWithParams:dialogParams]) {
+            // Present the share dialog via native FB app
+            
+            NSLog(@"post to facebook and tag friends with params: %@", dialogParams);
+            [FBDialogs presentShareDialogWithLink:dialogParams.link
+                                          handler:^(FBAppCall *call, NSDictionary *results, NSError *error) {
+                                              
+                                              if (error) {
+                                                  NSLog(@"Error publishing story: %@", error.description);
+                                              } else {
+                                                  // Success
+                                                  NSLog(@"Success: %@", results);
+                                              }
+                                          }];
+        } else {
+            // Present the web feed dialog
+            [FBWebDialogs presentFeedDialogModallyWithSession:nil
+                                                   parameters:linkParams
+                                                      handler:^(FBWebDialogResult result, NSURL *resultURL, NSError *error) {
+                                                        
+                                                          if (error) {
+                                                              NSLog(@"Error publishing story: %@", error.description);
+                                                          } else {
+                                                              if (result == FBWebDialogResultDialogNotCompleted) {
+                                                                  // User cancelled.
+                                                                  NSLog(@"User cancelled.");
+                                                              } else {
+                                                                  // Handle the publish feed callback
+                                                                  NSDictionary *urlParams = [self parseURLParams:[resultURL query]];
+                                                                  if (![urlParams valueForKey:@"post_id"]) {
+                                                                      // User cancelled.
+                                                                      NSLog(@"User cancelled.");
+                                                                      
+                                                                  } else {
+                                                                      // User clicked the Share button
+                                                                      NSString *result = [NSString stringWithFormat: @"Posted story, id: %@", [urlParams valueForKey:@"post_id"]];
+                                                                      NSLog(@"result %@", result);
+                                                                  }
+                                                              }
+                                                          }
+                                                      }];
+        }
+    }
+    else {
+        // just post
+        NSLog(@"post to facebook with params: %@", linkParams);
+        [FBRequestConnection startWithGraphPath:@"/me/feed"
+                                     parameters:linkParams
+                                     HTTPMethod:@"POST"
+                              completionHandler:^(FBRequestConnection *connection, id result, NSError *error) {
+                                  if (!error) {
+                                      // Link posted successfully to Facebook
+                                      NSLog(@"Posted to facebook successfully: %@", result);
+                                  } else {
+                                      // error
+                                      NSLog(@"Error posting to fb: %@", error.description);
+                                  }
+                              }];
+    }
+}
+// A function for parsing URL parameters returned by the FB Feed Dialog.
+- (NSDictionary*) parseURLParams:(NSString *)query {
+    NSArray *pairs = [query componentsSeparatedByString:@"&"];
+    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
+    for (NSString *pair in pairs) {
+        NSArray *kv = [pair componentsSeparatedByString:@"="];
+        NSString *val =
+        [kv[1] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+        params[kv[0]] = val;
+    }
+    return params;
 }
 
 #pragma mark - handle alerts

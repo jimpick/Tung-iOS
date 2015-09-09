@@ -89,6 +89,7 @@
     NSMutableData *body = [NSMutableData data];
     [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
     // key value pairs
+    [self.profileData setObject:@"iOS" forKey:@"source"];
     [body appendData:[TungCommonObjects generateBodyFromDictionary:self.profileData withBoundary:boundary]];
     
     // large avatar

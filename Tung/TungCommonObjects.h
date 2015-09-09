@@ -131,8 +131,12 @@
 - (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback;
 - (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback;
 - (void) signOut;
+// twittter
 - (void) establishTwitterAccount;
-
+- (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url;
+// facebook
+- (void) postToFacebookWithText:(NSString *)text andShortLink:(NSString *)shortLink tag:(BOOL)tag;
+// class methods
 + (id) establishTungObjects;
 + (void) clearTempDirectory;
 + (void) checkReachabilityWithCallback:(void (^)(BOOL reachable))callback;
