@@ -93,8 +93,8 @@
 
 // core data
 + (BOOL) saveContext;
-+ (PodcastEntity *) savePodcast:(NSDictionary *)podcastDict;
-+ (EpisodeEntity *) savePodcast:(NSDictionary *)podcastDict andEpisode:(NSDictionary *)episodeDict;
++ (PodcastEntity *) getEntityForPodcast:(NSDictionary *)podcastDict save:(BOOL)save;
++ (EpisodeEntity *) getEntityForPodcast:(NSDictionary *)podcastDict andEpisode:(NSDictionary *)episodeDict save:(BOOL)save;
 + (NSString *) findEpisodeDescriptionWithDict:(NSDictionary *)episodeDict;
 + (NSString *) findPodcastDescriptionWithDict:(NSDictionary *)dict;
 + (NSDictionary *) podcastEntityToDict:(PodcastEntity *)podcastEntity;
@@ -103,11 +103,14 @@
 + (NSDictionary *) userEntityToDict:(UserEntity *)userEntity;
 - (NSDictionary *) getLoggedInUserData;
 - (void) deleteLoggedInUserData;
++ (BOOL) checkForPodcastData;
 
-// color cube
+// key colors
 - (NSArray *) determineKeyColorsFromImage:(UIImage *)image;
 - (UIColor *) lightenKeyColor:(UIColor *)keyColor;
 - (UIColor *) darkenKeyColor:(UIColor *)keyColor;
++ (NSString *) UIColorToHexString:(UIColor *)color;
++ (UIColor *) colorFromHexString:(NSString *)hexString;
 
 // requests
 - (void) establishCred;
@@ -116,6 +119,7 @@
 // stories requests
 - (void) addPodcast:(PodcastEntity *)podcastEntity withCallback:(void (^)(void))callback;
 - (void) addEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
+- (void) restorePodcastDataWithCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) subscribeToPodcast:(PodcastEntity *)podcastEntity andButton:(CircleButton *)button;
 - (void) unsubscribeFromPodcast:(PodcastEntity *)podcastEntity andButton:(CircleButton *)button;
 - (void) recommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
@@ -149,7 +153,7 @@
 + (void) deleteCredentials;
 + (NSString *) cleanURLStringFromString:(NSString*)string;
 + (NSString *) formatNumberForCount:(NSNumber*)count;
-+ (NSString *) UIColorToHexString:(UIColor *)color;
++ (NSNumber *) stringToNumber:(NSString *)string;
 + (NSString *) OSStatusToStr:(OSStatus)status;
 + (void)fadeInView:(UIView *)view;
 + (void)fadeOutView:(UIView *)view;

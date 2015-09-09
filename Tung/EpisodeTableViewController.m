@@ -101,7 +101,7 @@ static NSString *cellIdentifier = @"EpisodeCell";
     NSDictionary *episodeDict = [_episodeArray objectAtIndex:indexPath.row];
     NSString *urlString = [[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
     if (urlString) {
-        [TungCommonObjects savePodcast:_podcastDict andEpisode:episodeDict];
+        [TungCommonObjects getEntityForPodcast:_podcastDict andEpisode:episodeDict save:YES];
         
         // set now playing feed and podcast dict
         [_tung assignCurrentFeed:_episodeArray];

@@ -1606,17 +1606,23 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
             if (success) {
                 _commentAndPostView.commentTextView.text = @"";
                 [self toggleNewComment];
-                // save shortlink
-                NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
-                _tung.npEpisodeEntity.shortlink = shortlink;
+                // save episode id, shortlink and story shortlink
+                NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
+                _tung.npEpisodeEntity.id = episodeId;
+                NSString *episodeShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"episodeShortlink"];
+                _tung.npEpisodeEntity.shortlink = episodeShortlink;
+                NSString *storyShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"storyShortlink"];
+                _tung.npEpisodeEntity.storyShortlink = storyShortlink;
                 [TungCommonObjects saveContext];
+                NSString *eventShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"eventShortlink"];
+                NSString *link = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, eventShortlink];
                 // tweet?
                 if (_commentAndPostView.twitterButton.on) {
-                    [_tung postTweetWithText:text andUrl:shortlink];
+                    [_tung postTweetWithText:text andUrl:link];
                 }
                 // fb share?
                 if (_commentAndPostView.facebookButton.on) {
-                    [_tung postToFacebookWithText:text andShortLink:shortlink tag:NO];
+                    [_tung postToFacebookWithText:text andShortLink:link tag:NO];
                 }
             }
             else {
@@ -1643,12 +1649,16 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                 [self resetRecording];
                 [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(toggleNewClipView) userInfo:nil repeats:NO];
                 
-                // save shortlink
-                NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
-                _tung.npEpisodeEntity.shortlink = shortlink;
+                // save episode id, shortlink and story shortlink
+                NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
+                _tung.npEpisodeEntity.id = episodeId;
+                NSString *episodeShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"episodeShortlink"];
+                _tung.npEpisodeEntity.shortlink = episodeShortlink;
+                NSString *storyShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"storyShortlink"];
+                _tung.npEpisodeEntity.storyShortlink = storyShortlink;
                 [TungCommonObjects saveContext];
                 NSString *eventShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"eventShortlink"];
-                NSString *clipShortlink = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, eventShortlink];
+                NSString *link = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, eventShortlink];
                 // caption
                 NSString *caption;
                 if (text && text.length > 0) {
@@ -1659,11 +1669,11 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                 
                 // tweet?
                 if (_commentAndPostView.twitterButton.on) {
-                    [_tung postTweetWithText:caption andUrl:clipShortlink];
+                    [_tung postTweetWithText:caption andUrl:link];
                 }
                 // fb share?
                 if (_commentAndPostView.facebookButton.on) {
-                    [_tung postToFacebookWithText:caption andShortLink:clipShortlink tag:NO];
+                    [_tung postToFacebookWithText:caption andShortLink:link tag:NO];
                 }
             }
             else {
@@ -1685,7 +1695,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         } else {
             NSLog(@"post to twitter/facebook");
             
-            NSString *shortlink = [NSString stringWithFormat:@"%@s/%@", _tung.tungSiteRootUrl, _episodeEntity.shortlink];
+            NSString *link = [NSString stringWithFormat:@"%@s/%@", _tung.tungSiteRootUrl, _episodeEntity.storyShortlink];
             NSString *text = _commentAndPostView.commentTextView.text;
             // caption
             NSString *caption;
@@ -1696,11 +1706,11 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
             }
             // tweet?
             if (_commentAndPostView.twitterButton.on) {
-                [_tung postTweetWithText:text andUrl:shortlink];
+                [_tung postTweetWithText:text andUrl:link];
             }
             // fb share?
             if (_commentAndPostView.facebookButton.on) {
-                [_tung postToFacebookWithText:caption andShortLink:shortlink tag:NO];
+                [_tung postToFacebookWithText:caption andShortLink:link tag:NO];
             }
         }
     }
@@ -1715,9 +1725,13 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         if (_recommendButton.recommended) {
             [_tung recommendEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
                 if (success) {
-                    NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
-                    _tung.npEpisodeEntity.shortlink = shortlink;
-                    [TungCommonObjects saveContext];
+                    // save episode id, shortlink and story shortlink
+                    NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
+                    _tung.npEpisodeEntity.id = episodeId;
+                    NSString *episodeShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"episodeShortlink"];
+                    _tung.npEpisodeEntity.shortlink = episodeShortlink;
+                    NSString *storyShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"storyShortlink"];
+                    _tung.npEpisodeEntity.storyShortlink = storyShortlink;
                 }
                 else {
                     // failed to recommend

@@ -40,7 +40,7 @@
     //NSLog(@"podcast dict: %@", _podcastDict);
     
     // get podcast entity
-    _podcast.podcastEntity = [TungCommonObjects savePodcast:_podcastDict];
+    _podcast.podcastEntity = [TungCommonObjects getEntityForPodcast:_podcastDict save:NO];
     
     // header view
     _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 160)];

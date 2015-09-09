@@ -2,7 +2,7 @@
 //  PodcastEntity.m
 //  Tung
 //
-//  Created by Jamie Perkins on 7/29/15.
+//  Created by Jamie Perkins on 9/9/15.
 //  Copyright (c) 2015 Jamie Perkins. All rights reserved.
 //
 
@@ -24,9 +24,10 @@
 @dynamic isSubscribed;
 @dynamic keyColor1;
 @dynamic keyColor1Hex;
-@dynamic website;
 @dynamic keyColor2;
 @dynamic keyColor2Hex;
+@dynamic website;
+@dynamic artworkUrlSSL;
 @dynamic episodes;
 
 @end

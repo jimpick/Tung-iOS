@@ -89,7 +89,6 @@
 		7D768CA0192EB20B000C8E3E /* TungCommonObjects.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D768C9F192EB20B000C8E3E /* TungCommonObjects.m */; };
 		7D76CADA1B6FE4550059279E /* description.js in Resources */ = {isa = PBXBuildFile; fileRef = 7D76CAD91B6FE4550059279E /* description.js */; };
 		7D76CADE1B700C8C0059279E /* tung-end-of-file.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D76CADD1B700C8C0059279E /* tung-end-of-file.png */; };
-		7D77D9861B755D130043A019 /* EpisodeEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D77D9851B755D130043A019 /* EpisodeEntity.m */; };
 		7D8228C81AFBE271004EB4B2 /* CircleButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D8228C71AFBE271004EB4B2 /* CircleButton.m */; };
 		7D87187718FE3141001E954A /* icon-facebook-off@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D87187318FE3141001E954A /* icon-facebook-off@2x.png */; };
 		7D87187818FE3141001E954A /* icon-facebook-on@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D87187418FE3141001E954A /* icon-facebook-on@2x.png */; };
@@ -99,8 +98,9 @@
 		7D8F02C11B619AA300A30492 /* ALDisk.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F02C01B619AA300A30492 /* ALDisk.m */; };
 		7D9551A31B69395F004B56A6 /* find-podcasts-here@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D9551A11B69395F004B56A6 /* find-podcasts-here@2x.png */; };
 		7D9551A41B69395F004B56A6 /* find-podcasts-here@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D9551A21B69395F004B56A6 /* find-podcasts-here@3x.png */; };
-		7D9551A71B6949C6004B56A6 /* PodcastEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D9551A61B6949C6004B56A6 /* PodcastEntity.m */; };
 		7DA2124C1AFA8A7F00C619F9 /* NowPlayingViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2124B1AFA8A7F00C619F9 /* NowPlayingViewController.m */; };
+		7DA237C51BA08D7C00A9466B /* PodcastEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA237C41BA08D7C00A9466B /* PodcastEntity.m */; };
+		7DA237CE1BA09E9000A9466B /* EpisodeEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA237CD1BA09E9000A9466B /* EpisodeEntity.m */; };
 		7DA336B819D0DF8B009CA162 /* PlayIndicatorView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA336B719D0DF8B009CA162 /* PlayIndicatorView.m */; };
 		7DA465E119AE2F2C00DA3EE7 /* HorizontalLine.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA465E019AE2F2C00DA3EE7 /* HorizontalLine.m */; };
 		7DA465E419AE312300DA3EE7 /* AvatarWithLineIntersect.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA465E319AE312300DA3EE7 /* AvatarWithLineIntersect.m */; };
@@ -310,8 +310,6 @@
 		7D768C9F192EB20B000C8E3E /* TungCommonObjects.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TungCommonObjects.m; sourceTree = "<group>"; };
 		7D76CAD91B6FE4550059279E /* description.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; name = description.js; path = images/description.js; sourceTree = "<group>"; };
 		7D76CADD1B700C8C0059279E /* tung-end-of-file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tung-end-of-file.png"; sourceTree = "<group>"; };
-		7D77D9841B755D130043A019 /* EpisodeEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodeEntity.h; sourceTree = "<group>"; };
-		7D77D9851B755D130043A019 /* EpisodeEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodeEntity.m; sourceTree = "<group>"; };
 		7D80C77218E7727E00D1BB63 /* tung.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = tung.entitlements; sourceTree = "<group>"; };
 		7D8228C61AFBE271004EB4B2 /* CircleButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CircleButton.h; sourceTree = "<group>"; };
 		7D8228C71AFBE271004EB4B2 /* CircleButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CircleButton.m; sourceTree = "<group>"; };
@@ -324,10 +322,12 @@
 		7D8F02C01B619AA300A30492 /* ALDisk.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ALDisk.m; sourceTree = "<group>"; };
 		7D9551A11B69395F004B56A6 /* find-podcasts-here@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "find-podcasts-here@2x.png"; sourceTree = "<group>"; };
 		7D9551A21B69395F004B56A6 /* find-podcasts-here@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "find-podcasts-here@3x.png"; sourceTree = "<group>"; };
-		7D9551A51B6949C6004B56A6 /* PodcastEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PodcastEntity.h; sourceTree = "<group>"; };
-		7D9551A61B6949C6004B56A6 /* PodcastEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PodcastEntity.m; sourceTree = "<group>"; };
 		7DA2124A1AFA8A7F00C619F9 /* NowPlayingViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NowPlayingViewController.h; sourceTree = "<group>"; };
 		7DA2124B1AFA8A7F00C619F9 /* NowPlayingViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NowPlayingViewController.m; sourceTree = "<group>"; };
+		7DA237C31BA08D7C00A9466B /* PodcastEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PodcastEntity.h; sourceTree = "<group>"; };
+		7DA237C41BA08D7C00A9466B /* PodcastEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PodcastEntity.m; sourceTree = "<group>"; };
+		7DA237CC1BA09E9000A9466B /* EpisodeEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodeEntity.h; sourceTree = "<group>"; };
+		7DA237CD1BA09E9000A9466B /* EpisodeEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodeEntity.m; sourceTree = "<group>"; };
 		7DA336B619D0DF8B009CA162 /* PlayIndicatorView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PlayIndicatorView.h; sourceTree = "<group>"; };
 		7DA336B719D0DF8B009CA162 /* PlayIndicatorView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PlayIndicatorView.m; sourceTree = "<group>"; };
 		7DA465DF19AE2F2C00DA3EE7 /* HorizontalLine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HorizontalLine.h; sourceTree = "<group>"; };
@@ -555,10 +555,10 @@
 				7DF5664F199D4B56003176C1 /* BrowserViewController.m */,
 				7D61F93218A1EB2F00710CA7 /* Images.xcassets */,
 				7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */,
-				7D9551A51B6949C6004B56A6 /* PodcastEntity.h */,
-				7D9551A61B6949C6004B56A6 /* PodcastEntity.m */,
-				7D77D9841B755D130043A019 /* EpisodeEntity.h */,
-				7D77D9851B755D130043A019 /* EpisodeEntity.m */,
+				7DA237CC1BA09E9000A9466B /* EpisodeEntity.h */,
+				7DA237CD1BA09E9000A9466B /* EpisodeEntity.m */,
+				7DA237C31BA08D7C00A9466B /* PodcastEntity.h */,
+				7DA237C41BA08D7C00A9466B /* PodcastEntity.m */,
 				7D59CCDB1B6A7BFD0055D300 /* UserEntity.h */,
 				7D59CCDC1B6A7BFD0055D300 /* UserEntity.m */,
 				7D5BC1A51A546A61008C008D /* MainTabBarController.h */,
@@ -1041,7 +1041,7 @@
 				7DF2FAD11AF3BE3F004C66E6 /* SubscriptionViewCell.m in Sources */,
 				7D12D5C61B17429E00532FC0 /* NowPlayingControlView.m in Sources */,
 				7DA2124C1AFA8A7F00C619F9 /* NowPlayingViewController.m in Sources */,
-				7D9551A71B6949C6004B56A6 /* PodcastEntity.m in Sources */,
+				7DA237C51BA08D7C00A9466B /* PodcastEntity.m in Sources */,
 				7DA465ED19AF9A9A00DA3EE7 /* tungButtonOnWhite.m in Sources */,
 				7D61F92E18A1EB2F00710CA7 /* AppDelegate.m in Sources */,
 				7D46A8931999CCE700F83C23 /* ProfileTableViewController.m in Sources */,
@@ -1077,7 +1077,7 @@
 				7DE780C11AEAF1ED0081E28E /* audio_queue.cpp in Sources */,
 				7D8F02C11B619AA300A30492 /* ALDisk.m in Sources */,
 				7D61889619F18FC600F414C2 /* EditProfileTableViewController.m in Sources */,
-				7D77D9861B755D130043A019 /* EpisodeEntity.m in Sources */,
+				7DA237CE1BA09E9000A9466B /* EpisodeEntity.m in Sources */,
 				7D282C7C1AF29D3400495E74 /* TungPodcastStyleKit.m in Sources */,
 				7DA76A531B4F401500F1A9F4 /* TungNavController.m in Sources */,
 				7D4F35391AB89DDE0090EE81 /* CCLocalMaximum.m in Sources */,

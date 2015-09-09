@@ -473,7 +473,7 @@ static NSString *outputFileName = @"output";
             // look up podcast entity
             NSLog(@"creating new entity for now playing entity");
             NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex.intValue];
-            _npEpisodeEntity = [TungCommonObjects savePodcast:_npPodcastDict andEpisode:episodeDict];
+            _npEpisodeEntity = [TungCommonObjects getEntityForPodcast:_npPodcastDict andEpisode:episodeDict save:YES];
         }
         
         // set max prebuffered byte count to data length of file about to be played
@@ -919,7 +919,7 @@ static NSString *feedDictsDirName = @"feedDicts";
  Will not overwrite existing entities or create dupes.
  */
 
-+ (PodcastEntity *) savePodcast:(NSDictionary *)podcastDict {
++ (PodcastEntity *) getEntityForPodcast:(NSDictionary *)podcastDict save:(BOOL)save {
     PodcastEntity *podcastEntity;
     
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
@@ -929,11 +929,17 @@ static NSString *feedDictsDirName = @"feedDicts";
     [request setPredicate:predicate];
     NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
     if (result.count > 0) {
-        NSLog(@"found and assigned now playing entity");
         podcastEntity = [result lastObject];
     } else {
         podcastEntity = [NSEntityDescription insertNewObjectForEntityForName:@"PodcastEntity" inManagedObjectContext:appDelegate.managedObjectContext];
-        podcastEntity.collectionId = [podcastDict objectForKey:@"collectionId"];
+        id collectionIdId = [podcastDict objectForKey:@"collectionId"];
+        NSNumber *collectionId;
+        if ([collectionIdId isKindOfClass:[NSString class]]) {
+            collectionId = [TungCommonObjects stringToNumber:collectionIdId];
+        } else {
+            collectionId = (NSNumber *)collectionIdId;
+        }
+        podcastEntity.collectionId = collectionId;
         podcastEntity.collectionName = [podcastDict objectForKey:@"collectionName"];
         podcastEntity.artworkUrl600 = [podcastDict objectForKey:@"artworkUrl600"];
         podcastEntity.artistName = [podcastDict objectForKey:@"artistName"];
@@ -943,20 +949,22 @@ static NSString *feedDictsDirName = @"feedDicts";
         podcastEntity.keyColor1Hex = [TungCommonObjects UIColorToHexString:[podcastDict objectForKey:@"keyColor1"]];
         podcastEntity.keyColor2 = [podcastDict objectForKey:@"keyColor2"];
         podcastEntity.keyColor2Hex = [TungCommonObjects UIColorToHexString:[podcastDict objectForKey:@"keyColor2"]];
+        if ([podcastDict objectForKey:@"artworkUrlSSL"]) podcastEntity.artworkUrlSSL = [podcastDict objectForKey:@"artworkUrlSSL"];
         if ([podcastDict objectForKey:@"website"]) podcastEntity.website = [podcastDict objectForKey:@"website"];
         if ([podcastDict objectForKey:@"email"]) podcastEntity.email = [podcastDict objectForKey:@"email"];
         if ([podcastDict objectForKey:@"desc"]) podcastEntity.desc = [podcastDict objectForKey:@"desc"];
+        
+        if (save) [TungCommonObjects saveContext];
     }
-    [TungCommonObjects saveContext];
     
     return podcastEntity;
 }
 
-+ (EpisodeEntity *) savePodcast:(NSDictionary *)podcastDict andEpisode:(NSDictionary *)episodeDict {
++ (EpisodeEntity *) getEntityForPodcast:(NSDictionary *)podcastDict andEpisode:(NSDictionary *)episodeDict save:(BOOL)save {
     
     NSLog(@"save podcast and episode entity");
     
-    PodcastEntity *podcastEntity = [TungCommonObjects savePodcast:podcastDict];
+    PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
     
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
 
@@ -971,7 +979,15 @@ static NSString *feedDictsDirName = @"feedDicts";
     
     if (episodeResult.count == 0) {
         episodeEntity = [NSEntityDescription insertNewObjectForEntityForName:@"EpisodeEntity" inManagedObjectContext:appDelegate.managedObjectContext];
-        episodeEntity.collectionId = [podcastDict objectForKey:@"collectionId"];
+        
+        id collectionIdId = [episodeDict objectForKey:@"collectionId"];
+        NSNumber *collectionId;
+        if ([collectionIdId isKindOfClass:[NSString class]]) {
+            collectionId = [TungCommonObjects stringToNumber:collectionIdId];
+        } else {
+            collectionId = (NSNumber *)collectionIdId;
+        }
+        episodeEntity.collectionId = collectionId;
         if ([episodeDict objectForKey:@"itunes:image"])
             episodeEntity.episodeImageUrl = [[[episodeDict objectForKey:@"itunes:image"] objectForKey:@"el:attributes"] objectForKey:@"href"];
         episodeEntity.guid = [episodeDict objectForKey:@"guid"];
@@ -979,20 +995,35 @@ static NSString *feedDictsDirName = @"feedDicts";
         episodeEntity.pubDate = [episodeDict objectForKey:@"pubDate"];
         episodeEntity.trackPosition = [NSNumber numberWithFloat:0];
         episodeEntity.podcast = podcastEntity; // move out of if/else? podcast entity seems static
-        if ([episodeDict objectForKey:@"itunes:duration"])
+        if ([episodeDict objectForKey:@"itunes:duration"]) {
             episodeEntity.duration = [episodeDict objectForKey:@"itunes:duration"];
-        episodeEntity.dataLength = [NSNumber numberWithDouble:[[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"length"] doubleValue]];
+        }
+        else if ([episodeDict objectForKey:@"duration"]) {
+            episodeEntity.duration = [episodeDict objectForKey:@"duration"];
+        }
+        if ([episodeDict objectForKey:@"enclosure"]) {
+        	episodeEntity.dataLength = [NSNumber numberWithDouble:[[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"length"] doubleValue]];
+        }
+        if ([episodeDict objectForKey:@"id"]) episodeEntity.id = [episodeDict objectForKey:@"id"];
+        if ([episodeDict objectForKey:@"shortlink"]) episodeEntity.shortlink = [episodeDict objectForKey:@"shortlink"];
+        if ([episodeDict objectForKey:@"storyShortlink"]) episodeEntity.shortlink = [episodeDict objectForKey:@"shortlink"];
     }
     else {
         episodeEntity = [episodeResult lastObject];
     }
     // update things that publisher may have changed
-    episodeEntity.url = [[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
+    NSString *url;
+    if ([episodeDict objectForKey:@"enclosure"]) {
+    	url = [[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
+    } else if ([episodeDict objectForKey:@"url"]) {
+        url = [episodeDict objectForKey:@"url"];
+    }
+    episodeEntity.url = url;
     episodeEntity.title = [episodeDict objectForKey:@"title"];
     episodeEntity.desc = [TungCommonObjects findEpisodeDescriptionWithDict:episodeDict];
 
+    if (save) [TungCommonObjects saveContext];
     
-    [TungCommonObjects saveContext];
     return episodeEntity;
 }
 
@@ -1119,6 +1150,28 @@ static NSString *feedDictsDirName = @"feedDicts";
         AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
         [appDelegate.managedObjectContext deleteObject:userEntity];
         [TungCommonObjects saveContext];
+    }
+}
+
++ (BOOL) checkForPodcastData {
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
+    NSError *error;
+    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
+    if (result.count > 0) {
+        /*
+        for (int i = 0; i < result.count; i++) {
+            PodcastEntity *podcastEntity = [result objectAtIndex:i];
+            NSLog(@"podcast at index: %d", i);
+            // entity -> dict
+            NSArray *keys = [[[podcastEntity entity] attributesByName] allKeys];
+            NSDictionary *podcastDict = [podcastEntity dictionaryWithValuesForKeys:keys];
+            NSLog(@"%@", podcastDict);
+        }
+         */
+        return YES;
+    } else {
+        return NO;
     }
 }
 
@@ -1265,6 +1318,37 @@ static NSArray *colors;
     return [UIColor colorWithRed:red green:green blue:blue alpha:1];
 }
 
++ (NSString *) UIColorToHexString:(UIColor *)color {
+    CGFloat red, green, blue, alpha;
+    [color getRed:&red green:&green blue:&blue alpha:&alpha];
+    NSString *hexString = [NSString stringWithFormat:@"#%02x%02x%02x", (int)(red * 255),(int)(green * 255),(int)(blue * 255)];
+    //NSLog(@"UIColor (red: %f, green: %f, blue: %f) to hex string: %@", red, green, blue, hexString);
+    return hexString;
+}
+
++ (UIColor *) colorFromHexString:(NSString *)hexString {
+    NSString *cleanString = [hexString stringByReplacingOccurrencesOfString:@"#" withString:@""];
+    if([cleanString length] == 3) {
+        cleanString = [NSString stringWithFormat:@"%@%@%@%@%@%@",
+                       [cleanString substringWithRange:NSMakeRange(0, 1)],[cleanString substringWithRange:NSMakeRange(0, 1)],
+                       [cleanString substringWithRange:NSMakeRange(1, 1)],[cleanString substringWithRange:NSMakeRange(1, 1)],
+                       [cleanString substringWithRange:NSMakeRange(2, 1)],[cleanString substringWithRange:NSMakeRange(2, 1)]];
+    }
+    if([cleanString length] == 6) {
+        cleanString = [cleanString stringByAppendingString:@"ff"];
+    }
+    
+    unsigned int baseValue;
+    [[NSScanner scannerWithString:cleanString] scanHexInt:&baseValue];
+    
+    float red = ((baseValue >> 24) & 0xFF)/255.0f;
+    float green = ((baseValue >> 16) & 0xFF)/255.0f;
+    float blue = ((baseValue >> 8) & 0xFF)/255.0f;
+    float alpha = ((baseValue >> 0) & 0xFF)/255.0f;
+    
+    return [UIColor colorWithRed:red green:green blue:blue alpha:alpha];
+}
+
 #pragma mark - Session instance methods
 
 - (void) establishCred {
@@ -1389,8 +1473,8 @@ static NSArray *colors;
                              @"artistName": podcastEntity.artistName,
                              @"artworkUrl600": podcastEntity.artworkUrl600,
                              @"feedUrl": podcastEntity.feedUrl,
-                             @"keyColor1": podcastEntity.keyColor1Hex,
-                             @"keyColor2": podcastEntity.keyColor2Hex,
+                             @"keyColor1Hex": podcastEntity.keyColor1Hex,
+                             @"keyColor2Hex": podcastEntity.keyColor2Hex,
                              @"email": email,
                              @"website": website,
                              @"desc": desc
@@ -1472,12 +1556,12 @@ static NSArray *colors;
                              @"artistName": episodeEntity.podcast.artistName,
                              @"artworkUrl600": episodeEntity.podcast.artworkUrl600,
                              @"feedUrl": episodeEntity.podcast.feedUrl,
-                             @"keyColor1": episodeEntity.podcast.keyColor1Hex,
-                             @"keyColor2": episodeEntity.podcast.keyColor2Hex,
+                             @"keyColor1Hex": episodeEntity.podcast.keyColor1Hex,
+                             @"keyColor2Hex": episodeEntity.podcast.keyColor2Hex,
                              @"email": email,
                              @"website": website,
                              @"desc": desc,
-                             @"GUID": episodeEntity.guid,
+                             @"guid": episodeEntity.guid,
                              @"episodeUrl": episodeEntity.url,
                              @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
                              @"episodeDuration": episodeEntity.duration,
@@ -1531,6 +1615,50 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     callback();
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                NSLog(@"Error. HTML: %@", html);
+            }
+        });
+    }];
+}
+
+// if a user deletes the app, they lose all their subscribe/recommend data. This call restores it.
+- (void) restorePodcastDataWithCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+    NSLog(@"restore podcast data");
+    NSURL *restoreRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/restore-podcast-data.php", _apiRootUrl]];
+    NSMutableURLRequest *restoreRequest = [NSMutableURLRequest requestWithURL:restoreRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [restoreRequest setHTTPMethod:@"POST"];
+    NSDictionary *params = @{@"sessionId":_sessionId};
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [restoreRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:restoreRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                //NSLog(@"%@", responseDict);
+                if ([responseDict objectForKey:@"error"]) {
+                    // session expired
+                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                        // get new session and re-request
+                        NSLog(@"SESSION EXPIRED");
+                        [self getSessionWithCallback:^{
+                            [self restorePodcastDataWithCallback:callback];
+                        }];
+                    }
+                    else {
+                        NSLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        callback(NO, responseDict);
+                    }
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    callback(YES, responseDict);
+                    
                 }
             }
             else {
@@ -2665,12 +2793,12 @@ static NSNumberFormatter *countFormatter = nil;
 
 }
 
-+ (NSString *) UIColorToHexString:(UIColor *)color {
-    CGFloat red, green, blue, alpha;
-    [color getRed:&red green:&green blue:&blue alpha:&alpha];
-    NSString *hexString = [NSString stringWithFormat:@"#%02x%02x%02x", (int)(red * 255),(int)(green * 255),(int)(blue * 255)];
-    //NSLog(@"UIColor (red: %f, green: %f, blue: %f) to hex string: %@", red, green, blue, hexString);
-    return hexString;
+static NSNumberFormatter *stringToNum = nil;
+
++ (NSNumber *) stringToNumber:(NSString *)string {
+    if (!stringToNum) stringToNum = [[NSNumberFormatter alloc] init];
+    stringToNum.numberStyle = NSNumberFormatterNoStyle;
+    return [stringToNum numberFromString:string];
 }
 
 + (NSString *)OSStatusToStr:(OSStatus)status {
