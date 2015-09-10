@@ -172,7 +172,7 @@
                         [_tung restorePodcastDataWithCallback:^(BOOL success, NSDictionary *response) {
                             if (success && [response objectForKey:@"results"]) {
                                 NSArray *data = [response objectForKey:@"results"];
-                                NSLog(@"restoring podcast data from dict: %@", data);
+                                //NSLog(@"restoring podcast data from dict: %@", data);
                                 
                                 for (NSDictionary *story in data) {
                                     NSMutableDictionary *podcastDict, *episodeDict;
