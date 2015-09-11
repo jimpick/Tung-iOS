@@ -927,10 +927,13 @@ static CGRect buttonsScrollViewHomeRect;
 - (void)updateView {
     
     if (!_tung.lockPosbar) {
-    	_posbar.value = _tung.streamer.currentTimePlayed.position;
+        
+        float currentTimeSecs = CMTimeGetSeconds(_tung.player.currentTime);
+        float val = currentTimeSecs / _totalSeconds;
+    	_posbar.value = val;
     
-        // time elapsed & total time
-        _timeElapsedLabel.text = [TungCommonObjects convertSecondsToTimeString:_tung.streamer.currentTimePlayed.playbackTimeInSeconds];
+        // time elapsed
+        _timeElapsedLabel.text = [TungCommonObjects convertSecondsToTimeString:currentTimeSecs];
     }
     
     if (_isRecording) {
@@ -955,10 +958,15 @@ static CGRect buttonsScrollViewHomeRect;
     }
     
     // prebuffered amount for progress bar
+    /*
     float buffered = _tung.streamer.prebufferedByteCount + _tung.streamer.currentSeekByteOffset.start;
     float progress = buffered / _tung.streamer.configuration.maxPrebufferedByteCount;
     _progressBar.progress = progress;
+    */
     
+    float buffered = _tung.trackData.length;
+    float progress = buffered / _tung.npEpisodeEntity.dataLength.floatValue;
+    _progressBar.progress = progress;
     
     //NSLog(@"buffered: %f, maxPrebufferedByteCount: %d, content length: %llu", buffered, _tung.streamer.configuration.maxPrebufferedByteCount, _tung.streamer.contentLength);
     //NSLog(@"content seek byte offset - start: %llu, end: %llu, position: %f", _tung.streamer.currentSeekByteOffset.start, _tung.streamer.currentSeekByteOffset.end, _tung.streamer.currentSeekByteOffset.position);
@@ -1069,22 +1077,35 @@ static CGRect buttonsScrollViewHomeRect;
     _timeElapsedLabel.text = [TungCommonObjects convertSecondsToTimeString:secondsAtPosition];
     
     // limit to preloaded amount
+    // temporarily disable until caching is done
+    /*
     if (slider.value > _progressBar.progress) {
         slider.value = _progressBar.progress - 0.001;
     }
-    
-    
+     */
 }
 - (void) posbarTouched:(UISlider *)slider {
     _tung.lockPosbar = YES;
 }
+
 - (void) posbarReleased:(UISlider *)slider {
     
-    NSLog(@"seek to position: %f", slider.value);
-    FSStreamPosition pos = {0};
-    pos.position = slider.value;
-    if (_tung.streamerState == kFsAudioStreamPaused) [_tung.streamer pause];
-    [_tung.streamer seekToPosition:pos];
+    _tung.lockPosbar = NO;
+    
+    int secs = floor(slider.value * _totalSeconds);
+    NSLog(@"seek to position %f - %d seconds", slider.value, secs);
+    
+    CMTime time = CMTimeMake((secs * 100), 100);
+    
+    NSLog(@"playback buffer empty: %@", (_tung.player.currentItem.playbackBufferEmpty) ? @"Yes" : @"No");
+    NSLog(@"playback buffer full: %@", (_tung.player.currentItem.playbackBufferFull) ? @"Yes" : @"No");
+    NSLog(@"playback likely to keep up: %@", (_tung.player.currentItem.playbackLikelyToKeepUp) ? @"Yes" : @"No");
+
+    [_tung.player seekToTime:time];
+    
+    if (![_tung isPlaying]) [_tung playerPlay];
+    
+
 }
 
 #pragma mark Showing/Hiding controls
@@ -1613,7 +1634,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                 _tung.npEpisodeEntity.shortlink = episodeShortlink;
                 NSString *storyShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"storyShortlink"];
                 _tung.npEpisodeEntity.storyShortlink = storyShortlink;
-                [TungCommonObjects saveContext];
+                [TungCommonObjects saveContextWithReason:@"got episode shortlinks from new comment"];
                 NSString *eventShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"eventShortlink"];
                 NSString *link = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, eventShortlink];
                 // tweet?
@@ -1656,7 +1677,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                 _tung.npEpisodeEntity.shortlink = episodeShortlink;
                 NSString *storyShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"storyShortlink"];
                 _tung.npEpisodeEntity.storyShortlink = storyShortlink;
-                [TungCommonObjects saveContext];
+                [TungCommonObjects saveContextWithReason:@"got episode shortlinks from new clip"];
                 NSString *eventShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"eventShortlink"];
                 NSString *link = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, eventShortlink];
                 // caption
@@ -1748,7 +1769,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         }
         
         _episodeEntity.isRecommended = [NSNumber numberWithBool:_recommendButton.recommended];
-        [TungCommonObjects saveContext];
+        [TungCommonObjects saveContextWithReason:@"(un)recommended episode"];
     }
     else {
         [_podcast showNoConnectionAlert];

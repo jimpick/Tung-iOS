@@ -156,7 +156,7 @@
     }
     // description: prefer encoded content, fallback to description
     if (_podcast.podcastEntity) _podcast.podcastEntity.desc = descText;
-    [TungCommonObjects saveContext];
+    [TungCommonObjects saveContextWithReason:@"got podcast description"];
     
     _episodeView.podcastDict = _podcastDict;
     

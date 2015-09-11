@@ -100,7 +100,7 @@
 		7D9551A41B69395F004B56A6 /* find-podcasts-here@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D9551A21B69395F004B56A6 /* find-podcasts-here@3x.png */; };
 		7DA2124C1AFA8A7F00C619F9 /* NowPlayingViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2124B1AFA8A7F00C619F9 /* NowPlayingViewController.m */; };
 		7DA237C51BA08D7C00A9466B /* PodcastEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA237C41BA08D7C00A9466B /* PodcastEntity.m */; };
-		7DA237CE1BA09E9000A9466B /* EpisodeEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA237CD1BA09E9000A9466B /* EpisodeEntity.m */; };
+		7DA237D11BA1F79600A9466B /* EpisodeEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA237D01BA1F79600A9466B /* EpisodeEntity.m */; };
 		7DA336B819D0DF8B009CA162 /* PlayIndicatorView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA336B719D0DF8B009CA162 /* PlayIndicatorView.m */; };
 		7DA465E119AE2F2C00DA3EE7 /* HorizontalLine.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA465E019AE2F2C00DA3EE7 /* HorizontalLine.m */; };
 		7DA465E419AE312300DA3EE7 /* AvatarWithLineIntersect.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA465E319AE312300DA3EE7 /* AvatarWithLineIntersect.m */; };
@@ -326,8 +326,8 @@
 		7DA2124B1AFA8A7F00C619F9 /* NowPlayingViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NowPlayingViewController.m; sourceTree = "<group>"; };
 		7DA237C31BA08D7C00A9466B /* PodcastEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PodcastEntity.h; sourceTree = "<group>"; };
 		7DA237C41BA08D7C00A9466B /* PodcastEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PodcastEntity.m; sourceTree = "<group>"; };
-		7DA237CC1BA09E9000A9466B /* EpisodeEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodeEntity.h; sourceTree = "<group>"; };
-		7DA237CD1BA09E9000A9466B /* EpisodeEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodeEntity.m; sourceTree = "<group>"; };
+		7DA237CF1BA1F79600A9466B /* EpisodeEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodeEntity.h; sourceTree = "<group>"; };
+		7DA237D01BA1F79600A9466B /* EpisodeEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodeEntity.m; sourceTree = "<group>"; };
 		7DA336B619D0DF8B009CA162 /* PlayIndicatorView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PlayIndicatorView.h; sourceTree = "<group>"; };
 		7DA336B719D0DF8B009CA162 /* PlayIndicatorView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PlayIndicatorView.m; sourceTree = "<group>"; };
 		7DA465DF19AE2F2C00DA3EE7 /* HorizontalLine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HorizontalLine.h; sourceTree = "<group>"; };
@@ -555,8 +555,8 @@
 				7DF5664F199D4B56003176C1 /* BrowserViewController.m */,
 				7D61F93218A1EB2F00710CA7 /* Images.xcassets */,
 				7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */,
-				7DA237CC1BA09E9000A9466B /* EpisodeEntity.h */,
-				7DA237CD1BA09E9000A9466B /* EpisodeEntity.m */,
+				7DA237CF1BA1F79600A9466B /* EpisodeEntity.h */,
+				7DA237D01BA1F79600A9466B /* EpisodeEntity.m */,
 				7DA237C31BA08D7C00A9466B /* PodcastEntity.h */,
 				7DA237C41BA08D7C00A9466B /* PodcastEntity.m */,
 				7D59CCDB1B6A7BFD0055D300 /* UserEntity.h */,
@@ -1077,7 +1077,7 @@
 				7DE780C11AEAF1ED0081E28E /* audio_queue.cpp in Sources */,
 				7D8F02C11B619AA300A30492 /* ALDisk.m in Sources */,
 				7D61889619F18FC600F414C2 /* EditProfileTableViewController.m in Sources */,
-				7DA237CE1BA09E9000A9466B /* EpisodeEntity.m in Sources */,
+				7DA237D11BA1F79600A9466B /* EpisodeEntity.m in Sources */,
 				7D282C7C1AF29D3400495E74 /* TungPodcastStyleKit.m in Sources */,
 				7DA76A531B4F401500F1A9F4 /* TungNavController.m in Sources */,
 				7D4F35391AB89DDE0090EE81 /* CCLocalMaximum.m in Sources */,

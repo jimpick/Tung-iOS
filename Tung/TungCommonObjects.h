@@ -16,13 +16,24 @@
  */
 
 #import <Foundation/Foundation.h>
-#import <FacebookSDK/FacebookSDK.h>
 #import <Security/Security.h>
 #import "Reachability.h"
-#import "FSAudioStream.h"
-#import <AudioToolbox/AudioToolbox.h>
+#import <FacebookSDK/FacebookSDK.h>
+#import <Social/Social.h>
+
+#import "FSAudioStream.h" // to be removed
+
+#import <AVFoundation/AVFoundation.h>
+#import <AudioToolbox/AudioToolbox.h> // do I need this?
+
 #import "CircleButton.h"
 #import "AppDelegate.h"
+
+typedef enum : NSUInteger {
+    kPlayerStateInactive,
+    kPlayerStatePlaying,
+    kPlayerStatePaused
+} PlayerState;
 
 @protocol ControlButtonDelegate <NSObject>
 
@@ -37,7 +48,7 @@
 
 @end
 
-@interface TungCommonObjects : NSObject <UIAlertViewDelegate, UIActionSheetDelegate, FSPCMAudioStreamDelegate>
+@interface TungCommonObjects : NSObject <UIAlertViewDelegate, UIActionSheetDelegate, NSURLConnectionDataDelegate, AVAssetResourceLoaderDelegate, FSPCMAudioStreamDelegate>
 
 @property (nonatomic, assign) id <ControlButtonDelegate> ctrlBtnDelegate;
 // for presenting views, etc.
@@ -63,8 +74,17 @@
 @property NSMutableDictionary *npPodcastDict;
 @property (strong, nonatomic) UIButton *btn_player;
 @property (nonatomic, retain) NSNumberFormatter *clipDurationFormatter;
+@property NSNumber *totalSeconds;
+
+// TODO: remove
 @property (nonatomic, readonly) FSAudioStream *streamer;
 @property (nonatomic) FSAudioStreamState streamerState;
+
+// new
+@property (nonatomic, strong) AVPlayer *player;
+@property (nonatomic, assign) PlayerState playerState;
+@property (nonatomic, strong) NSMutableData *trackData; // data being downloaded
+
 @property (strong, nonatomic) NSMutableArray *playQueue;
 @property (strong, nonatomic) UIActivityIndicatorView *btnActivityIndicator;
 @property BOOL lockPosbar;
@@ -86,13 +106,16 @@
 - (NSDictionary*) retrieveCachedFeedForEntity:(PodcastEntity *)entity;
 - (void) assignCurrentFeed:(NSArray *)currentFeed;
 - (void) savePositionForNowPlaying;
+- (BOOL) isPlaying;
+- (void) playerPlay;
+- (void) playerPause;
 
 + (NSString*) convertSecondsToTimeString:(CGFloat)totalSeconds;
 + (double) convertDurationStringToSeconds:(NSString *)duration;
 + (NSURL *) getClipFileURL;
 
 // core data
-+ (BOOL) saveContext;
++ (BOOL) saveContextWithReason:(NSString*)reason;
 + (PodcastEntity *) getEntityForPodcast:(NSDictionary *)podcastDict save:(BOOL)save;
 + (EpisodeEntity *) getEntityForPodcast:(NSDictionary *)podcastDict andEpisode:(NSDictionary *)episodeDict save:(BOOL)save;
 + (NSString *) findEpisodeDescriptionWithDict:(NSDictionary *)episodeDict;
@@ -158,5 +181,6 @@
 + (void)fadeInView:(UIView *)view;
 + (void)fadeOutView:(UIView *)view;
 + (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString;
++ (NSString *)timeElapsed: (NSString *)secondsString;
 
 @end

@@ -774,7 +774,7 @@ static NSString *rawFeedsDirName = @"rawFeeds";
             
             [_tung unsubscribeFromPodcast:_podcastEntity andButton:subscribeButton];
         }
-        [TungCommonObjects saveContext];
+        [TungCommonObjects saveContextWithReason:@"(un)subscribed to podcast"];
     }
     else {
         [self showNoConnectionAlert];

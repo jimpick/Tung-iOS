@@ -89,31 +89,15 @@ static NSString * const reuseIdentifier = @"artCell";
     if (result.count > 0) {
         for (int i = 0; i < result.count; i++) {
             PodcastEntity *podcastEntity = [result objectAtIndex:i];
-            NSLog(@"podcast at index: %d", i);
+            //NSLog(@"podcast at index: %d", i);
             // entity -> dict
             NSArray *keys = [[[podcastEntity entity] attributesByName] allKeys];
             NSDictionary *podcastDict = [podcastEntity dictionaryWithValuesForKeys:keys];
-            NSLog(@"%@", podcastDict);
+            //NSLog(@"%@", podcastDict);
             [_podcast.podcastArray insertObject:podcastDict atIndex:i];
         }
         [_podcast preloadFeedsWithLimit:0];
     }
-    
-    // show episode entity data
-    NSLog(@"-");
-    NSFetchRequest *eRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
-    error = nil;
-    NSArray *eresult = [appDelegate.managedObjectContext executeFetchRequest:eRequest error:&error];
-    if (eresult.count > 0) {
-        for (int i = 0; i < eresult.count; i++) {
-            EpisodeEntity *episodeEntity = [eresult objectAtIndex:i];
-            NSLog(@"episode at index: %d", i);
-            // entity -> dict
-            NSArray *ekeys = [[[episodeEntity entity] attributesByName] allKeys];
-            NSDictionary *eDict = [episodeEntity dictionaryWithValuesForKeys:ekeys];
-            NSLog(@"%@", eDict);
-        }
-    } 
     
 }
 #pragma mark - tungObjects/tungPodcasts delegate methods
@@ -262,7 +246,7 @@ static NSString * const reuseIdentifier = @"artCell";
 }
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-    NSLog(@"collection view number of items in section");
+    //NSLog(@"collection view number of items in section");
 
     id <NSFetchedResultsSectionInfo> sectionInfo = _resultsController.sections[section];
     if (sectionInfo.numberOfObjects == 0) {
@@ -285,7 +269,7 @@ static NSString * const reuseIdentifier = @"artCell";
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
-    NSLog(@"collection view cell for item at index path");
+    //NSLog(@"collection view cell for item at index path");
     
     //NSLog(@"cell for row at index: %ld", (long)indexPath.row);
     SubscriptionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:reuseIdentifier forIndexPath:indexPath];

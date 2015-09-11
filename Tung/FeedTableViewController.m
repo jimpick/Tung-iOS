@@ -166,6 +166,7 @@
                 [_tung getSessionWithCallback:^{
                     // since this is the first call the app makes and we now have session
                     // check to see if user has no podcast data so it can be restored
+                    // does not sync track progress
                     BOOL hasPodcastData = [TungCommonObjects checkForPodcastData];
                     NSLog(@"has podcast data: %@", (hasPodcastData) ? @"Yes" : @"No");
                     if (!hasPodcastData) {
@@ -219,7 +220,7 @@
                                             }
                                         }
                                     }
-                                    [TungCommonObjects saveContext];
+                                    [TungCommonObjects saveContextWithReason:@"restoring podcast data"];
                                 }
                             }
                             // <INSERT FEED QUERY HERE>

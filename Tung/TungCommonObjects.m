@@ -23,10 +23,10 @@
  */
 
 #import "TungCommonObjects.h"
-#import <AVFoundation/AVFoundation.h>
 #import "ALDisk.h"
 #import "CCColorCube.h"
-#import <Social/Social.h>
+
+#import <MobileCoreServices/MobileCoreServices.h>
 
 @interface TungCommonObjects()
 
@@ -34,7 +34,6 @@
 
 @property NSArray *currentFeed;
 @property NSNumber *currentFeedIndex;
-@property NSString *nowPlayingFileType;
 
 - (void) playQueuedPodcast;
 
@@ -45,12 +44,15 @@
 - (void) savePlayQueue;
 - (void) readPlayQueueFromDisk;
 - (NSURL *) getEpisodeUrl:(NSURL *)url;
-- (void) saveNowPlayingEpisodeInTempDirectory;
 
 - (void) setControlButtonStateToPlay;
 - (void) setControlButtonStateToPause;
 - (void) setControlButtonStateToAdd;
 - (void) setControlButtonStateToBuffering;
+
+@property (nonatomic, strong) NSURLConnection *connection;
+@property (nonatomic, strong) NSHTTPURLResponse *response;
+@property (nonatomic, strong) NSMutableArray *pendingRequests;
 
 @end
 
@@ -89,8 +91,6 @@
         [_clipDurationFormatter setMinimumIntegerDigits:2];
         [_clipDurationFormatter setMinimumFractionDigits:0];
         
-        [self initStreamer];
-        
         [self readPlayQueueFromDisk];
         NSLog(@"play queue read from disk: %@", _playQueue);
         if (_playQueue.count > 0) {
@@ -98,6 +98,11 @@
         }
         
         _connectionAvailable = [NSNumber numberWithInt:-1];
+        
+        // observe player state to update control button
+        [self addObserver:self forKeyPath:@"playerState" options:0 context:0];
+        
+        self.playerState = kPlayerStateInactive;
 
         
         // show what's in documents dir
@@ -129,30 +134,236 @@
     return self;
 }
 
+#pragma mark - NSURLConnection delegate
+
+static NSString *episodeDirName = @"episodes";
+static NSString *outputFileName = @"output";
+
+- (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
+{
+    //NSLog(@"[NSURLConnectionDataDelegate] connection did receive response");
+    _trackData = [NSMutableData data];
+    _response = (NSHTTPURLResponse *)response;
+    
+    [self processPendingRequests];
+}
+
+- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
+{
+    //NSLog(@"[NSURLConnectionDataDelegate] connection did receive data");
+    [_trackData appendData:data];
+    
+    [self processPendingRequests];
+}
+
+- (void)connectionDidFinishLoading:(NSURLConnection *)connection
+{
+    //NSLog(@"[NSURLConnectionDataDelegate] connection did finish loading");
+    [self processPendingRequests];
+    
+    
+    NSFileManager *fileManager = [[NSFileManager alloc] init];
+    NSString *episodeDir = [NSTemporaryDirectory() stringByAppendingPathComponent:episodeDirName];
+    NSError *error;
+    [fileManager createDirectoryAtPath:episodeDir withIntermediateDirectories:YES attributes:nil error:&error];
+    
+    NSString *episodeFilename = [[_playQueue objectAtIndex:0] lastPathComponent];
+    NSString *episodeFilepath = [episodeDir stringByAppendingPathComponent:episodeFilename];
+    
+    [_trackData writeToFile:episodeFilepath atomically:YES];
+    NSLog(@"-- saved podcast track in temp episode dir: %@", episodeFilepath);
+}
+
+#pragma mark - AVURLAsset resource loading
+
+- (void)processPendingRequests
+{
+    //NSLog(@"[AVAssetResourceLoaderDelegate] process pending requests");
+    NSMutableArray *requestsCompleted = [NSMutableArray array];
+    
+    for (AVAssetResourceLoadingRequest *loadingRequest in self.pendingRequests)
+    {
+        [self fillInContentInformation:loadingRequest.contentInformationRequest];
+        
+        BOOL didRespondCompletely = [self respondWithDataForRequest:loadingRequest.dataRequest];
+        
+        if (didRespondCompletely)
+        {
+            [requestsCompleted addObject:loadingRequest];
+            
+            [loadingRequest finishLoading];
+        }
+    }
+    
+    [self.pendingRequests removeObjectsInArray:requestsCompleted];
+}
+
+- (void)fillInContentInformation:(AVAssetResourceLoadingContentInformationRequest *)contentInformationRequest
+{
+    if (contentInformationRequest == nil || self.response == nil)
+    {
+        return;
+    }
+    //NSLog(@"[AVAssetResourceLoaderDelegate] fill in content information");
+    NSString *mimeType = [self.response MIMEType];
+    CFStringRef contentType = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (__bridge CFStringRef)(mimeType), NULL);
+    
+    contentInformationRequest.byteRangeAccessSupported = YES;
+    contentInformationRequest.contentType = CFBridgingRelease(contentType);
+    contentInformationRequest.contentLength = [self.response expectedContentLength];
+}
+
+- (BOOL)respondWithDataForRequest:(AVAssetResourceLoadingDataRequest *)dataRequest
+{
+    //NSLog(@"[AVAssetResourceLoaderDelegate] respond with data for request");
+    long long startOffset = dataRequest.requestedOffset;
+    if (dataRequest.currentOffset != 0)
+    {
+        startOffset = dataRequest.currentOffset;
+    }
+    
+    // Don't have any data at all for this request
+    if (_trackData.length < startOffset)
+    {
+        return NO;
+    }
+    
+    // This is the total data we have from startOffset to whatever has been downloaded so far
+    NSUInteger unreadBytes = _trackData.length - (NSUInteger)startOffset;
+    
+    // Respond with whatever is available if we can't satisfy the request fully yet
+    NSUInteger numberOfBytesToRespondWith = MIN((NSUInteger)dataRequest.requestedLength, unreadBytes);
+    
+    [dataRequest respondWithData:[_trackData subdataWithRange:NSMakeRange((NSUInteger)startOffset, numberOfBytesToRespondWith)]];
+    
+    long long endOffset = startOffset + dataRequest.requestedLength;
+    BOOL didRespondFully = _trackData.length >= endOffset;
+    
+    return didRespondFully;
+}
+
+
+- (BOOL)resourceLoader:(AVAssetResourceLoader *)resourceLoader shouldWaitForLoadingOfRequestedResource:(AVAssetResourceLoadingRequest *)loadingRequest
+{
+    if (self.connection == nil)
+    {
+        //NSLog(@"[AVAssetResourceLoaderDelegate] should wait for loading of requested resource");
+        NSURL *interceptedURL = [loadingRequest.request URL];
+        NSURLComponents *actualURLComponents = [[NSURLComponents alloc] initWithURL:interceptedURL resolvingAgainstBaseURL:NO];
+        // TODO: scheme may be https...
+        actualURLComponents.scheme = @"http";
+        
+        NSURLRequest *request = [NSURLRequest requestWithURL:[actualURLComponents URL]];
+        self.connection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
+        [self.connection setDelegateQueue:[NSOperationQueue mainQueue]];
+        
+        [self.connection start];
+    }
+    
+    [self.pendingRequests addObject:loadingRequest];
+    
+    return YES;
+}
+
+- (void)resourceLoader:(AVAssetResourceLoader *)resourceLoader didCancelLoadingRequest:(AVAssetResourceLoadingRequest *)loadingRequest
+{
+    NSLog(@"[AVAssetResourceLoaderDelegate] did cancel loading request");
+    [self.pendingRequests removeObject:loadingRequest];
+}
+
 #pragma mark - Player instance methods
 
-- (void) initStreamer {
+- (BOOL) isPlaying {
+    return _player.rate > 0.0f;
+}
+- (void) playerPlay {
+    [_player play];
+    self.playerState = kPlayerStatePlaying;
+}
+- (void) playerPause {
+    [_player pause];
+    self.playerState = kPlayerStatePaused;
+}
+
+- (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
     
-    // set audio session
-    [[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayback error: nil];
-    [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
+    NSLog(@"observe value for key path: %@", keyPath);
+    if (object == _player && [keyPath isEqualToString:@"status"]) {
+        
+        
+        switch (_player.status) {
+            case AVPlayerStatusFailed:
+                NSLog(@"-- AVPlayer status: Failed");
+                break;
+            case AVPlayerStatusReadyToPlay:
+                NSLog(@"-- AVPlayer status: ready to play");
+                [self playerPlay];
+                break;
+            case AVPlayerItemStatusUnknown:
+                NSLog(@"-- AVPlayer status: Unknown");
+                break;
+            default:
+                break;
+        }
+    }
+    /*
+    if (object == _player && [keyPath isEqualToString:@"currentItem.loadedTimeRanges"]) {
+        NSArray *timeRanges = (NSArray *)[change objectForKey:NSKeyValueChangeNewKey];
+        if (timeRanges && [timeRanges count]) {
+            CMTimeRange timerange = [[timeRanges objectAtIndex:0] CMTimeRangeValue];
+            NSLog(@" . . . %.5f -> %.5f", CMTimeGetSeconds(timerange.start), CMTimeGetSeconds(CMTimeAdd(timerange.start, timerange.duration)));
+        }
+    }
+     */
+    if (object == _player && [keyPath isEqualToString:@"currentItem.playbackBufferEmpty"]) {
+        
+        if (_player.currentItem.playbackBufferEmpty) {
+            NSLog(@"-- playback buffer empty");
+            [self setControlButtonStateToBuffering];
+        }
+    }
+    if (object == _player && [keyPath isEqualToString:@"currentItem.playbackLikelyToKeepUp"]) {
+        
+        if (_player.currentItem.playbackLikelyToKeepUp) {
+            NSLog(@"-- player likely to keep up");
+            if ([self isPlaying]) [self setControlButtonStateToPause];
+        } else {
+            NSLog(@"-- player NOT likely to keep up");
+            [self setControlButtonStateToBuffering];
+        }
+    }
+    if ([keyPath isEqualToString:@"playerState"]) {
+        
+        switch (self.playerState) {
+            case kPlayerStateInactive:
+                [self setControlButtonStateToAdd];
+                break;
+            case kPlayerStatePlaying:
+                [self setControlButtonStateToPause];
+                break;
+            case kPlayerStatePaused:
+                [self setControlButtonStateToPlay];
+                break;
+            default:
+                [self setControlButtonStateToAdd];
+                break;
+        }
+    }
+}
+
+- (void) controlButtonTapped {
     
-    // setup with config...
+    if (_playQueue.count > 0) {
+        if ([self isPlaying]) {
+            [self playerPause];
+        } else {
+            [self playerPlay]; // players gonna play
+        }
+    }
+    else {
+        [_ctrlBtnDelegate initiateSearch];
+    }
     
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(audioStreamStateDidChange:)
-                                                 name:FSAudioStreamStateChangeNotification
-                                               object:nil];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(audioStreamErrorOccurred:)
-                                                 name:FSAudioStreamErrorNotification
-                                               object:nil];
-    
-    [[NSNotificationCenter defaultCenter] addObserver:self
-                                             selector:@selector(audioStreamMetaDataAvailable:)
-                                                 name:FSAudioStreamMetaDataNotification
-                                               object:nil];
 }
 
 - (void) setupStreamerWithPrebufferSize:(CGFloat)bytes {
@@ -188,151 +399,7 @@
     _streamer.delegate = self;
 }
 
-- (void)audioStreamStateDidChange:(NSNotification *)notification {
-    
-    if (!(notification.object == _streamer)) {
-        return;
-    }
-    
-    NSDictionary *dict = [notification userInfo];
-    int state = [[dict valueForKey:FSAudioStreamNotificationKey_State] intValue];
 
-    // react to state changes
-    __unsafe_unretained typeof(self) weakSelf = self;
-    //NSLog(@"streamer state did change: %u", state);
-    
-    /*
-     kFsAudioStreamRetrievingURL, 0
-     kFsAudioStreamStopped, 1
-     kFsAudioStreamBuffering, 2
-     kFsAudioStreamPlaying, 3
-     kFsAudioStreamPaused, 4
-     kFsAudioStreamSeeking, 5
-     kFSAudioStreamEndOfFile, 6
-     kFsAudioStreamFailed, 7
-     kFsAudioStreamRetryingStarted, 8
-     kFsAudioStreamRetryingSucceeded, 9
-     kFsAudioStreamRetryingFailed, 10
-     kFsAudioStreamPlaybackCompleted, 11
-     kFsAudioStreamUnknownState 12
-     */
-    
-    _streamerState = state;
-    
-    switch (state) {
-        case kFsAudioStreamRetrievingURL:
-        case kFsAudioStreamBuffering:
-        case kFsAudioStreamSeeking:
-            //NSLog(@"streamer state - retrieving URL, buffering, or seeking");
-            [weakSelf setControlButtonStateToBuffering];
-            _lockPosbar = YES;
-            break;
-            
-        case kFsAudioStreamPlaying:
-            //NSLog(@"streamer state - playing");
-            [weakSelf setControlButtonStateToPause];
-            _lockPosbar = NO;
-            break;
-            
-        case kFsAudioStreamPaused:
-            //NSLog(@"streamer state - paused");
-            [weakSelf setControlButtonStateToPlay];
-            [weakSelf savePositionForNowPlaying];
-            break;
-            
-        case kFSAudioStreamEndOfFile:
-            NSLog(@"streamer state - end of file");
-            [self saveNowPlayingEpisodeInTempDirectory];
-            break;
-            
-        case kFsAudioStreamPlaybackCompleted: {
-            NSLog(@"streamer state - playback completed");
-            [weakSelf completedPlayback];
-            [weakSelf ejectCurrentEpisode];
-            [weakSelf playNextPodcast];
-            break;
-        }
-        case kFsAudioStreamStopped:
-            //NSLog(@"streamer state - stopped");
-            break;
-            
-        case kFsAudioStreamFailed:
-            NSLog(@"streamer state - failed");
-            break;
-        case kFsAudioStreamRetryingStarted:
-            NSLog(@"streamer state - retrying started");
-            break;
-        case kFsAudioStreamRetryingFailed: {
-            NSLog(@"streamer state - retrying failed");
-            dispatch_async(dispatch_get_main_queue(), ^{
-                UIAlertView *failedAlert = [[UIAlertView alloc] initWithTitle:@"Unable to stream" message:@"Would you like to download this podcast to play it?" delegate:weakSelf cancelButtonTitle:@"Cancel" otherButtonTitles:@"OK", nil];
-                failedAlert.tag = 89;
-                [failedAlert show];
-            });
-            [weakSelf setControlButtonStateToAdd];
-            break;
-        }
-            
-        default:
-            NSLog(@"streamer state - default: %u", state);
-            break;
-    }
-
-};
-
-- (void)audioStreamErrorOccurred:(NSNotification *)notification
-{
-    if (!(notification.object == _streamer)) {
-        return;
-    }
-    
-    NSDictionary *dict = [notification userInfo];
-    int errorCode = [[dict valueForKey:FSAudioStreamNotificationKey_Error] intValue];
-    
-    switch (errorCode) {
-        case kFsAudioStreamErrorOpen:
-            NSLog(@"Error: Cannot open the audio stream");
-            break;
-        case kFsAudioStreamErrorStreamParse:
-            NSLog(@"Error: Cannot read the audio stream");
-            break;
-        case kFsAudioStreamErrorNetwork:
-            NSLog(@"Error: Network failed: cannot play the audio stream");
-            break;
-        case kFsAudioStreamErrorUnsupportedFormat:
-            NSLog(@"Error: Unsupported format");
-            break;
-        case kFsAudioStreamErrorStreamBouncing:
-            NSLog(@"Error: Network failed: cannot get enough data to play");
-            break;
-        default:
-            NSLog(@"Error: Unknown error occurred");
-            break;
-    }
-}
-
-- (void)audioStreamMetaDataAvailable:(NSNotification *)notification
-{
-    if (!(notification.object == _streamer)) {
-        return;
-    }
-    
-    NSDictionary *dict = [notification userInfo];
-    NSDictionary *metaData = [dict valueForKey:FSAudioStreamNotificationKey_MetaData];
-    
-    NSMutableString *streamInfo = [[NSMutableString alloc] init];
-    
-    if (metaData[@"MPMediaItemPropertyArtist"] &&
-        metaData[@"MPMediaItemPropertyTitle"]) {
-        [streamInfo appendString:metaData[@"MPMediaItemPropertyArtist"]];
-        [streamInfo appendString:@" - "];
-        [streamInfo appendString:metaData[@"MPMediaItemPropertyTitle"]];
-    } else if (metaData[@"StreamTitle"]) {
-        [streamInfo appendString:metaData[@"StreamTitle"]];
-    }
-    
-    NSLog(@"%@", streamInfo);
-}
 
 // IN PROGRESS
 - (void) remoteControlReceivedWithEvent:(UIEvent *)receivedEvent {
@@ -368,28 +435,7 @@
     }
 }
 
-- (void) controlButtonTapped {
-    
-    switch (_streamerState) {
-            
-        case kFsAudioStreamPlaying:
-        case kFsAudioStreamPaused:
-            //NSLog(@"ctrl button: play/pause");
-            [_streamer pause];
-            break;
-            
-        default:
-            if (_playQueue.count > 0) {
-                //NSLog(@"ctrl button: play queued url");
-                [self playQueuedPodcast];
-            }
-            else {
-                //NSLog(@"ctrl button: initiate search");
-                [_ctrlBtnDelegate initiateSearch];
-            }
-            break;
-    }
-}
+
 
 // for dismissing search from main tab bar by tapping icon
 - (void) dismissSearch {
@@ -402,7 +448,7 @@
     NSURL *url = [NSURL URLWithString:urlString];
     NSString *fileName = [url lastPathComponent];
     NSString *fileType = [fileName pathExtension];
-    NSLog(@"play file of type: %@", fileType);
+    //NSLog(@"play file of type: %@", fileType);
     // avoid videos
     if ([fileType isEqualToString:@"mp4"] || [fileType isEqualToString:@"m4v"]) {
         UIAlertView *videoAlert = [[UIAlertView alloc] initWithTitle:@"Video Podcast" message:@"Tung does not currently support video podcasts." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
@@ -433,9 +479,13 @@
     }
 }
 
-
-static NSString *episodeDirName = @"episodes";
-static NSString *outputFileName = @"output";
+- (NSURL *) trackURLWithCustomScheme:(NSURL *)url {
+    
+    NSURLComponents *components = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
+    components.scheme = @"tungstream";
+    
+    return [components URL];
+}
 
 - (void) playQueuedPodcast {
     
@@ -475,22 +525,45 @@ static NSString *outputFileName = @"output";
             NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex.intValue];
             _npEpisodeEntity = [TungCommonObjects getEntityForPodcast:_npPodcastDict andEpisode:episodeDict save:YES];
         }
-        
-        // set max prebuffered byte count to data length of file about to be played
-        // allows streamer to download the episode and play it at the same time; allows recording
-        [self setupStreamerWithPrebufferSize:_npEpisodeEntity.dataLength.doubleValue];
-        
-        // set output file for recording (match extension)
-        NSString *fileName = [[_playQueue objectAtIndex:0] lastPathComponent];
-        _nowPlayingFileType = [fileName pathExtension];
-        NSString *outputName = [NSString stringWithFormat:@"%@.%@", outputFileName, _nowPlayingFileType];
-        NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:outputName];
-        _streamer.outputFile = [NSURL fileURLWithPath:outputFilePath];
-        //NSLog(@"- set streamer output file: %@", _streamer.outputFile);
+         
+        // check if there's enough disk space to record
+        float bytes = _npEpisodeEntity.dataLength.doubleValue;
+        float availableBytes = [ALDisk freeDiskSpaceInBytes];
+        if (bytes > availableBytes) {
+            _canRecord = NO;
+            NSLog(@"WARNING: cannot record, not enough disk space to download podcast");
+        } else {
+            _canRecord = YES;
+        }
         
         NSURL *urlToPlay = [self getEpisodeUrl:[_playQueue objectAtIndex:0]];
         
+        if (_player) {
+            [_player removeObserver:self forKeyPath:@"status"];
+            [_player removeObserver:self forKeyPath:@"currentItem.playbackBufferEmpty"];
+            [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
+        }
+        
+        // simple way
+        //_player = [[AVPlayer alloc] initWithURL:urlToPlay];
+        
+        // avurlasset method
+        AVURLAsset *asset = [AVURLAsset URLAssetWithURL:[self trackURLWithCustomScheme:urlToPlay] options:nil];
+        [asset.resourceLoader setDelegate:self queue:dispatch_get_main_queue()];
+        
+        self.pendingRequests = [NSMutableArray array];
+        
+        AVPlayerItem *playerItem = [AVPlayerItem playerItemWithAsset:asset];
+        _player = [[AVPlayer alloc] initWithPlayerItem:playerItem];
+        //[playerItem addObserver:self forKeyPath:@"status" options:NSKeyValueObservingOptionNew context:NULL];
+        
+        [self setControlButtonStateToBuffering];
+        [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
+        [_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
+        [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
+        
         // check for track progress, play
+        /*
         if (_npEpisodeEntity.trackPosition > 0) {
             if (_npEpisodeEntity.trackPosition.floatValue == 1) {
                 NSLog(@"-- track progress was 1 (entire episode played)");
@@ -522,6 +595,7 @@ static NSString *outputFileName = @"output";
             NSLog(@"-- no track progress, play from beginning");
             [_streamer playFromURL:urlToPlay];
         }
+         */
         // now playing did change
         if ([_ctrlBtnDelegate respondsToSelector:@selector(nowPlayingDidChange)])
         	[_ctrlBtnDelegate nowPlayingDidChange];
@@ -529,6 +603,52 @@ static NSString *outputFileName = @"output";
     //NSLog(@"play queue: %@", _playQueue);
 }
 
+- (void) savePositionForNowPlaying {
+    
+    float secs = CMTimeGetSeconds(_player.currentTime);
+    float totalSecs = CMTimeGetSeconds(_player.currentItem.asset.duration);
+    float pos = secs/totalSecs;
+    
+    _npEpisodeEntity.trackPosition = [NSNumber numberWithFloat:pos];
+    [TungCommonObjects saveContextWithReason:@"saving track position"];
+}
+
+- (void) completedPlayback {
+    NSNumber *progress = [NSNumber numberWithInt:1];
+    _npEpisodeEntity.trackPosition = progress;
+    [TungCommonObjects saveContextWithReason:@"save track position - playback completed"];
+    // increment play count request
+    [self incrementListenCount:_npEpisodeEntity];
+}
+- (void) ejectCurrentEpisode {
+    if (_playQueue.count > 0) {
+        [self savePositionForNowPlaying];
+        [_streamer stop];
+        NSLog(@"ejected current episode");
+        [_playQueue removeObjectAtIndex:0];
+    }
+}
+
+
+- (void) playNextPodcast {
+    if (_playQueue.count > 0) {
+        //AudioServicesPlaySystemSound(1103); // play beep
+        [self playQueuedPodcast];
+    }
+    else {
+        // play the next podcast in the feed if there is one
+        if ([_currentFeed objectAtIndex:_currentFeedIndex.intValue + 1]) {
+            NSLog(@"play next podcast in feed");
+            NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex.intValue + 1];
+            NSURL *url = [NSURL URLWithString:[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"]];
+            [_playQueue insertObject:url atIndex:0];
+            [self savePlayQueue];
+            [self playQueuedPodcast];
+        } else {
+            [self setControlButtonStateToAdd];
+        }
+    }
+}
 
 // looks for local file, else returns url
 - (NSURL *) getEpisodeUrl:(NSURL *)url {
@@ -549,6 +669,9 @@ static NSString *outputFileName = @"output";
     }
 }
 
+// not currently used, since switch to AVPlayer means NSURLConnectionDataDelegate does it for us.
+// may repurpose this later to save in documents directory
+/*
 - (void) saveNowPlayingEpisodeInTempDirectory {
     NSFileManager *fileManager = [[NSFileManager alloc] init];
     NSString *episodeDir = [NSTemporaryDirectory() stringByAppendingPathComponent:episodeDirName];
@@ -579,7 +702,7 @@ static NSString *outputFileName = @"output";
     }
     
     // show what's in temp episode dir
-    /*
+ 
      NSError *ftError = nil;
      NSArray *episodeFolderContents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:episodeDir error:&ftError];
      NSLog(@"episode folder contents ---------------");
@@ -588,66 +711,9 @@ static NSString *outputFileName = @"output";
          	NSLog(@"- %@", item);
          }
      }
-    */
+ 
 }
-
-
-- (void) seekToPosition:(NSTimer *)position {
-    FSStreamPosition pos = {0};
-    NSNumber *num = position.userInfo;
-    pos.position = num.floatValue;
-    NSLog(@"seek to position: %f", pos.position);
-    [_streamer seekToPosition:pos];
-}
-
-- (void) savePositionForNowPlaying {
-    FSSeekByteOffset offset = _streamer.currentSeekByteOffset;
-    NSLog(@"-- save track offset");
-    NSLog(@"offset with start: %llu", offset.start);
-    NSLog(@"offset with end: %llu", offset.end);
-    NSLog(@"offset with position: %f", offset.position);
-    _npEpisodeEntity.startByteOffset = [NSNumber numberWithUnsignedLongLong:offset.start];
-    _npEpisodeEntity.endByteOffset = [NSNumber numberWithUnsignedLongLong:offset.end];
-    _npEpisodeEntity.trackPosition = [NSNumber numberWithFloat:offset.position];
-    [TungCommonObjects saveContext];
-}
-
-- (void) completedPlayback {
-    NSNumber *progress = [NSNumber numberWithInt:1];
-    _npEpisodeEntity.trackPosition = progress;
-    [TungCommonObjects saveContext];
-    // increment play count request
-    [self incrementListenCount:_npEpisodeEntity];
-}
-- (void) ejectCurrentEpisode {
-    if (_playQueue.count > 0) {
-        [self savePositionForNowPlaying];
-        [_streamer stop];
-        NSLog(@"ejected current episode");
-        [_playQueue removeObjectAtIndex:0];
-    }
-}
-
-
-- (void) playNextPodcast {
-    if (_playQueue.count > 0) {
-        //AudioServicesPlaySystemSound(1103); // play beep
-        [self playQueuedPodcast];
-    }
-    else {
-        // play the next podcast in the feed if there is one
-        if ([_currentFeed objectAtIndex:_currentFeedIndex.intValue + 1]) {
-            NSLog(@"play next podcast in feed");
-            NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex.intValue + 1];
-            NSURL *url = [NSURL URLWithString:[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"]];
-            [_playQueue insertObject:url atIndex:0];
-            [self savePlayQueue];
-            [self playQueuedPodcast];
-        } else {
-        	[self setControlButtonStateToAdd];
-        }
-    }
-}
+*/
 
 /*
  Current feed is saved on disk in app directory to ensure it's always available
@@ -703,7 +769,7 @@ static NSString *outputFileName = @"output";
     }
     //[fileURL setResourceValue:[NSNumber numberWithBool:YES] forKey:NSURLIsExcludedFromBackupKey error:&error];
     [_playQueue writeToFile:playQueuePath atomically:YES];
-    NSLog(@"saved play queue %@ to path: %@", _playQueue, playQueuePath);
+    //NSLog(@"saved play queue %@ to path: %@", _playQueue, playQueuePath);
 }
 
 - (void) readPlayQueueFromDisk {
@@ -728,7 +794,6 @@ static NSString *outputFileName = @"output";
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
 }
 - (void) setControlButtonStateToPause {
-    NSLog(@"set control button state to pause");
     [_btnActivityIndicator stopAnimating];
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause.png"] forState:UIControlStateNormal];
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause-down.png"] forState:UIControlStateHighlighted];
@@ -769,7 +834,7 @@ static NSString *feedDictsDirName = @"feedDicts";
         
             entity.feedLastCached = [NSDate date];
             
-            [TungCommonObjects saveContext];
+            [TungCommonObjects saveContextWithReason:@"update feedLastCached"];
         }
     }
     
@@ -904,13 +969,22 @@ static NSString *feedDictsDirName = @"feedDicts";
 
 #pragma mark - core data related
 
-+ (BOOL) saveContext {
++ (BOOL) saveContextWithReason:(NSString*)reason {
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     // save
-    NSError *savingError;
-    BOOL saved = [appDelegate.managedObjectContext save:&savingError];
-    if (!saved) NSLog(@"ERROR failed to save: %@", savingError);
-    NSLog(@"* saved context *");
+    
+    BOOL saved = NO;
+    if ([appDelegate.managedObjectContext  hasChanges]) {
+        NSError *savingError;
+    	saved = [appDelegate.managedObjectContext save:&savingError];
+        if (saved) {
+            NSLog(@"** save context with reason: %@ :: ERROR: %@", reason, savingError);
+        } else {
+    		NSLog(@"** save context with reason: %@ :: Successfully saved", reason);
+        }
+    } else {
+        NSLog(@"** save context with reason: %@ :: Did not save, no changes", reason);
+    }
     return saved;
 }
 
@@ -954,7 +1028,7 @@ static NSString *feedDictsDirName = @"feedDicts";
         if ([podcastDict objectForKey:@"email"]) podcastEntity.email = [podcastDict objectForKey:@"email"];
         if ([podcastDict objectForKey:@"desc"]) podcastEntity.desc = [podcastDict objectForKey:@"desc"];
         
-        if (save) [TungCommonObjects saveContext];
+        if (save) [TungCommonObjects saveContextWithReason:@"save new podcast entity"];
     }
     
     return podcastEntity;
@@ -1022,7 +1096,7 @@ static NSString *feedDictsDirName = @"feedDicts";
     episodeEntity.title = [episodeDict objectForKey:@"title"];
     episodeEntity.desc = [TungCommonObjects findEpisodeDescriptionWithDict:episodeDict];
 
-    if (save) [TungCommonObjects saveContext];
+    if (save) [TungCommonObjects saveContextWithReason:@"save new podcast and/or episode entity"];
     
     return episodeEntity;
 }
@@ -1031,17 +1105,17 @@ static NSString *feedDictsDirName = @"feedDicts";
 + (NSString *) findEpisodeDescriptionWithDict:(NSDictionary *)episodeDict {
     id desc = [episodeDict objectForKey:@"itunes:summary"];
     if ([desc isKindOfClass:[NSString class]]) {
-        NSLog(@"- summary description");
+        //NSLog(@"- summary description");
         return (NSString *)desc;
     }
     else {
         id descr = [episodeDict objectForKey:@"description"];
         if ([descr isKindOfClass:[NSString class]]) {
-            NSLog(@"- regular description");
+            //NSLog(@"- regular description");
             return (NSString *)descr;
         }
         else {
-            NSLog(@"- no desc");
+            //NSLog(@"- no desc");
             return @"This episode has no description.";
         }
     }
@@ -1103,7 +1177,7 @@ static NSString *feedDictsDirName = @"feedDicts";
         userEntity.facebook_id = facebook_id;
     }
 
-    [TungCommonObjects saveContext];
+    [TungCommonObjects saveContextWithReason:@"save new user entity"];
     
     return userEntity;
 }
@@ -1149,12 +1223,31 @@ static NSString *feedDictsDirName = @"feedDicts";
     if (userEntity) {
         AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
         [appDelegate.managedObjectContext deleteObject:userEntity];
-        [TungCommonObjects saveContext];
+        [TungCommonObjects saveContextWithReason:@"delete logged in user entity"];
     }
 }
 
 + (BOOL) checkForPodcastData {
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    
+    // show episode entity data
+    /*
+     NSLog(@"episode entity data");
+     NSFetchRequest *eRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
+     error = nil;
+     NSArray *eresult = [appDelegate.managedObjectContext executeFetchRequest:eRequest error:&error];
+     if (eresult.count > 0) {
+         for (int i = 0; i < eresult.count; i++) {
+             EpisodeEntity *episodeEntity = [eresult objectAtIndex:i];
+             NSLog(@"episode at index: %d", i);
+             // entity -> dict
+             NSArray *ekeys = [[[episodeEntity entity] attributesByName] allKeys];
+             NSDictionary *eDict = [episodeEntity dictionaryWithValuesForKeys:ekeys];
+             NSLog(@"%@", eDict);
+         }
+     }
+     */
+    
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
     NSError *error;
     NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
@@ -2891,6 +2984,49 @@ static NSNumberFormatter *stringToNum = nil;
         return artImageData;
     }
     return nil;
+}
+
+static NSDateFormatter *shortFormatDateFormatter = nil;
+static NSDateFormatter *dayDateFormatter = nil;
+
++ (NSString *)timeElapsed: (NSString *)secondsString {
+    
+    double secs = [secondsString doubleValue];
+    NSDate *activityDate = [NSDate dateWithTimeIntervalSince1970:secs];
+    
+    NSString *resultString;
+    double ti = [activityDate timeIntervalSinceDate:[NSDate date]];
+    ti = ti * -1;
+    if (ti < 60) { // less than a minute
+        resultString = @"Just now";
+    } else if (ti < 3600) { // less than an hour ("32m")
+        int diff = round(ti / 60);
+        resultString =  [NSString stringWithFormat:@"%dm ago", diff];
+    } else if (ti < 86400) { // less than a day ("4h")
+        int diff = round(ti / 60 / 60);
+        resultString = [NSString stringWithFormat:@"%dh ago", diff];
+    } else if (ti < 86400) { // yesterday
+        resultString = @"Yesterday";
+    } else if (ti < 86400 * 7) { // less than a week ("Fri")
+        if (dayDateFormatter == nil) {
+            dayDateFormatter = [[NSDateFormatter alloc] init];
+            [dayDateFormatter setDateFormat:@"EEE"];
+        }
+        resultString = [dayDateFormatter stringFromDate:activityDate];
+    } else { // further back ("Jul 31")
+        if (shortFormatDateFormatter == nil) {
+            shortFormatDateFormatter = [[NSDateFormatter alloc] init];
+            [shortFormatDateFormatter setDateFormat:@"MMM d"];
+        }
+        resultString = [shortFormatDateFormatter stringFromDate:activityDate];
+    }
+    return resultString;
+}
+
+- (CGFloat) secondsToPosition {
+    float currentTimeSecs = CMTimeGetSeconds(_player.currentTime);
+    float val = currentTimeSecs / _totalSeconds.floatValue;
+    return val;
 }
 
 @end
