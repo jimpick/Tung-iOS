@@ -280,7 +280,7 @@ static NSString * const reuseIdentifier = @"artCell";
     
     NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
-    
+
     cell.artImageView.image = artImage;
     cell.contentView.backgroundColor = [UIColor whiteColor];
     

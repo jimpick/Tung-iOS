@@ -55,7 +55,6 @@
 @property (strong, nonatomic) NSFetchedResultsController *resultsController;
 @property NSOperationQueue *feedPreloadQueue;
 @property PodcastEntity *podcastEntity;
-@property EpisodeEntity *episodeEntity;
 
 // instance methods
 - (NSDictionary *) getFeedWithDict:(NSDictionary *)podcastDict forceNewest:(BOOL)forceNewest;

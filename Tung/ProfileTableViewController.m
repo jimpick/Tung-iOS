@@ -605,9 +605,9 @@ static UIColor *keyColor2;
 - (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
 {
     // stop playing clip that is scrolled out of view
-    
-    CGRect cellRect = [self.tableView rectForRowAtIndexPath:indexPath];
     /*
+    CGRect cellRect = [self.tableView rectForRowAtIndexPath:indexPath];
+    
     if ([_tungStereo.player isPlaying] && indexPath.row == _tungStereo.activeClipIndex) {
         if (cellRect.origin.y < self.tableView.contentOffset.y || cellRect.origin.y > self.tableView.contentOffset.y + self.tableView.frame.size.height) {
             NSLog(@"stop because scrolled out of view");

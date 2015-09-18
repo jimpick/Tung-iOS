@@ -25,7 +25,6 @@
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (strong, nonatomic) TungPodcast *podcast;
 @property HeaderView *headerView;
-@property EpisodeEntity *episodeEntity;
 @property CADisplayLink *onEnterFrame;
 @property BOOL npControlsViewIsSetup;
 @property BOOL npControlsViewIsVisible;
@@ -81,7 +80,6 @@ static NSString *kShareStoryIntention = @"Share your interactions";
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    NSLog(@"now playing did load");
     
     self.navigationItem.title = @"Now Playing";
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
@@ -238,6 +236,15 @@ static NSString *kShareStoryIntention = @"Share your interactions";
     // Dispose of any resources that can be recreated.
 }
 
+// ControlButtonDelegate optional method
+-(void) nowPlayingDidChange {
+    NSLog(@"now playing did change");
+    [self setUpViewForWhateversPlaying];
+    [self resetRecording];
+    [self setPlaybackRateToOne];
+    
+}
+
 - (void) switchViews:(id)sender {
     UISegmentedControl *switcher = (UISegmentedControl *)sender;
     
@@ -331,26 +338,6 @@ static NSString *kShareStoryIntention = @"Share your interactions";
     [self.navigationItem setRightBarButtonItem:searchBtn animated:YES];
     
 }
-// ControlButtonDelegate optional method
--(void) nowPlayingDidChange {
-    
-    NSLog(@"reset view");
-    [self setUpViewForWhateversPlaying];
-    [self resetRecording];
-    [self setPlaybackRateToOne];
-    
-    // think this was bc setUpViewForWhateversPlaying trying to get total secs before asset was ready..
-    
-    // seems to freeze if this happens instantly when streaming a podcast, so we delay
-    //[NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(resetView) userInfo:nil repeats:NO];
-}
-
--(void) resetView {
-    NSLog(@"reset view");
-    [self setUpViewForWhateversPlaying];
-    [self resetRecording];
-    [self setPlaybackRateToOne];
-}
 
 #pragma mark - Set up view
 
@@ -376,97 +363,80 @@ static NSString *kShareStoryIntention = @"Share your interactions";
 
     _tung.npViewSetupForCurrentEpisode = YES;
     [_posbar setEnabled:NO];
+    _posbar.value = 0;
+    _progressBar.progress = 0;
     _totalTimeSet = NO;
-    
-    if (_tung.playQueue.count > 0) {
-        NSURL *url = [_tung.playQueue objectAtIndex:0];
-        NSString *urlString = url.absoluteString;
         
-        AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
-        NSError *error = nil;
-        NSFetchRequest *findNowPlaying = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
-        NSPredicate *npPredicate = [NSPredicate predicateWithFormat: @"url == %@", urlString];
-        [findNowPlaying setPredicate:npPredicate];
-        NSArray *npResult = [appDelegate.managedObjectContext executeFetchRequest:findNowPlaying error:&error];
+    if (_tung.npEpisodeEntity) {
         
-        if (npResult.count > 0) {
-            
-            // initialize views
-            NSLog(@"setup view for now playing");
-            _npControlsView.hidden = NO;
-            _nothingPlayingLabel.hidden = YES;
-            
-            // assign entities
-            _episodeEntity = [npResult lastObject];
-            //NSLog(@"episode entity: %@", _episodeEntity);
-            _podcast.podcastEntity = _episodeEntity.podcast;
-            _podcast.episodeEntity = _episodeEntity;
-            
-            // set up header view, as byproduct assign _podcasts.keyColor
-            [_podcast setUpHeaderView:_headerView forEpisode:_episodeEntity orPodcast:NO];
-            [_podcast sizeAndConstrainHeaderView:_headerView inViewController:self];
-            
-            // switcher
-            _switcherBar.hidden = NO;
-            if (_descriptionView.view.hidden && _episodeView.view.hidden) {
-                [_switcher setSelectedSegmentIndex:0];
-            }
-            else if (_descriptionView.view.hidden) {
-                [_switcher setSelectedSegmentIndex:1];
-            }
-            else {
-                [_switcher setSelectedSegmentIndex:0];
-            }
-            [self switchViews:_switcher];
-            _switcher.tintColor = _episodeEntity.podcast.keyColor2;
-            
-            // description
-            // description style
-            NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:_podcast.podcastEntity.keyColor1];
-            NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:4px 13px; color:#666; font: .9em/1.4em 'San Francisco', Helvetica; } a { color:%@; } img { max-width:100%%; height:auto; } .endOfFile { margin:40px auto 20px; clear:both; width:60px; height:auto; display:block }</style>\n", keyColor1HexString];
-            // description script:
-            NSString *scriptPath = [[NSBundle mainBundle] pathForResource:@"description" ofType:@"js"];
-            NSURL *scriptUrl = [NSURL fileURLWithPath:scriptPath];
-            NSString *script = [NSString stringWithFormat:@"<script type=\"text/javascript\" src=\"%@\"></script>\n", scriptUrl.path];
-            // end-of-file indicator image
-            NSString *tungEndOfFileLogoPath = [[NSBundle mainBundle] pathForResource:@"tung-end-of-file" ofType:@"png"];
-            NSURL *tungEndOfFileLogoUrl = [NSURL fileURLWithPath:tungEndOfFileLogoPath];
-            NSString *tungEndOfFileImg = [NSString stringWithFormat:@"<img class=\"endOfFile\" src=\"%@\">", tungEndOfFileLogoUrl];
-            // description
-            NSString *webViewString = [NSString stringWithFormat:@"%@%@%@%@", style, script, _episodeEntity.desc, tungEndOfFileImg];
-            [_descriptionView.webView loadHTMLString:webViewString baseURL:[NSURL URLWithString:@"desc"]];
-            
-            // episodes
-            _episodeView.podcastDict = [[TungCommonObjects podcastEntityToDict:_episodeEntity.podcast] mutableCopy];
-            NSDictionary *cachedDict = [_tung retrieveCachedFeedForEntity:_episodeEntity.podcast];
-            if (cachedDict) {
-                [self setUpEpisodeViewForDict:cachedDict cached:YES];
-            }
-            else {
-                [self getFeed:NO];
-            }
-            
-            // time elapsed
-            _timeElapsedLabel.hidden = NO;
-            _timeElapsedLabel.text = @"00:00:00";
-            _totalTimeLabel.text = @"--:--:--";
-            
-            // recommended status
-            _recommendButton.recommended = _episodeEntity.isRecommended.boolValue;
-            [_recommendButton setNeedsDisplay];
-            _recommendLabel.text = (_episodeEntity.isRecommended.boolValue) ? @"Recommended" : @"Recommend";
-            
-            // scroll to main buttons
-            [_buttonsScrollView scrollRectToVisible:buttonsScrollViewHomeRect animated:YES];
-            
-            // progress
-            if (_tung.fileIsLocal) _progressBar.progress = 1;
-            
+        // initialize views
+        NSLog(@"setup view for now playing");
+        _npControlsView.hidden = NO;
+        _nothingPlayingLabel.hidden = YES;
+        
+        //NSLog(@"now playing entity: %@", _tung.npEpisodeEntity);
+        _podcast.podcastEntity = _tung.npEpisodeEntity.podcast;
+        
+        // set up header view, as byproduct assign _podcasts.keyColor
+        [_podcast setUpHeaderView:_headerView forEpisode:_tung.npEpisodeEntity orPodcast:NO];
+        [_podcast sizeAndConstrainHeaderView:_headerView inViewController:self];
+        
+        // switcher
+        _switcherBar.hidden = NO;
+        if (_descriptionView.view.hidden && _episodeView.view.hidden) {
+            [_switcher setSelectedSegmentIndex:0];
+        }
+        else if (_descriptionView.view.hidden) {
+            [_switcher setSelectedSegmentIndex:1];
         }
         else {
-            // nothing playing
-            [self setUpViewForNothingPlaying];
+            [_switcher setSelectedSegmentIndex:0];
         }
+        [self switchViews:_switcher];
+        _switcher.tintColor = _tung.npEpisodeEntity.podcast.keyColor2;
+        
+        // description
+        // description style
+        NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:_podcast.podcastEntity.keyColor1];
+        NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:4px 13px; color:#666; font: .9em/1.4em -apple-system; } a { color:%@; } img { max-width:100%%; height:auto; } .endOfFile { margin:40px auto 20px; clear:both; width:60px; height:auto; display:block }</style>\n", keyColor1HexString];
+        // description script:
+        NSString *scriptPath = [[NSBundle mainBundle] pathForResource:@"description" ofType:@"js"];
+        NSURL *scriptUrl = [NSURL fileURLWithPath:scriptPath];
+        NSString *script = [NSString stringWithFormat:@"<script type=\"text/javascript\" src=\"%@\"></script>\n", scriptUrl.path];
+        // end-of-file indicator image
+        NSString *tungEndOfFileLogoPath = [[NSBundle mainBundle] pathForResource:@"tung-end-of-file" ofType:@"png"];
+        NSURL *tungEndOfFileLogoUrl = [NSURL fileURLWithPath:tungEndOfFileLogoPath];
+        NSString *tungEndOfFileImg = [NSString stringWithFormat:@"<img class=\"endOfFile\" src=\"%@\">", tungEndOfFileLogoUrl];
+        // description
+        NSString *webViewString = [NSString stringWithFormat:@"%@%@%@%@", style, script, _tung.npEpisodeEntity.desc, tungEndOfFileImg];
+        [_descriptionView.webView loadHTMLString:webViewString baseURL:[NSURL URLWithString:@"desc"]];
+        
+        // episodes
+        _episodeView.podcastDict = [[TungCommonObjects podcastEntityToDict:_tung.npEpisodeEntity.podcast] mutableCopy];
+        NSDictionary *cachedDict = [_tung retrieveCachedFeedForEntity:_tung.npEpisodeEntity.podcast];
+        if (cachedDict) {
+            [self setUpEpisodeViewForDict:cachedDict cached:YES];
+        }
+        else {
+            [self getFeed:NO];
+        }
+        
+        // time elapsed
+        _timeElapsedLabel.hidden = NO;
+        _timeElapsedLabel.text = @"00:00:00";
+        _totalTimeLabel.text = @"--:--:--";
+        
+        // recommended status
+        _recommendButton.recommended = _tung.npEpisodeEntity.isRecommended.boolValue;
+        [_recommendButton setNeedsDisplay];
+        _recommendLabel.text = (_tung.npEpisodeEntity.isRecommended.boolValue) ? @"Recommended" : @"Recommend";
+        
+        // scroll to main buttons
+        [_buttonsScrollView scrollRectToVisible:buttonsScrollViewHomeRect animated:YES];
+        
+        // progress
+        if (_tung.fileIsLocal) _progressBar.progress = 1;
+        
     }
     else {
         // nothing playing
@@ -1738,7 +1708,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         } else {
             NSLog(@"post to twitter/facebook");
             
-            NSString *link = [NSString stringWithFormat:@"%@s/%@", _tung.tungSiteRootUrl, _episodeEntity.storyShortlink];
+            NSString *link = [NSString stringWithFormat:@"%@s/%@", _tung.tungSiteRootUrl, _tung.npEpisodeEntity.storyShortlink];
             NSString *text = _commentAndPostView.commentTextView.text;
             // caption
             NSString *caption;
@@ -1790,7 +1760,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
             [_tung unRecommendEpisode:_tung.npEpisodeEntity];
         }
         
-        _episodeEntity.isRecommended = [NSNumber numberWithBool:_recommendButton.recommended];
+        _tung.npEpisodeEntity.isRecommended = [NSNumber numberWithBool:_recommendButton.recommended];
         [TungCommonObjects saveContextWithReason:@"(un)recommended episode"];
     }
     else {

@@ -29,7 +29,6 @@
 		7D292A1E19DCF16600EC3472 /* STTweetLabel.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D292A1B19DCF16600EC3472 /* STTweetLabel.m */; };
 		7D292A1F19DCF16600EC3472 /* STTweetTextStorage.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D292A1D19DCF16600EC3472 /* STTweetTextStorage.m */; };
 		7D3B735A19227F92005413F1 /* WelcomeViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D3B735919227F92005413F1 /* WelcomeViewController.m */; };
-		7D3F30E11B59C3640022DBD5 /* TPAACAudioConverter.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D3F30E01B59C3640022DBD5 /* TPAACAudioConverter.m */; };
 		7D4336871926C65600CBC02E /* UINavigationBarNextIndicatorDefault@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4336861926C65600CBC02E /* UINavigationBarNextIndicatorDefault@2x.png */; };
 		7D43368A1926C6AF00CBC02E /* UINavigationBarBackIndicatorDefault@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4336891926C6AF00CBC02E /* UINavigationBarBackIndicatorDefault@2x.png */; };
 		7D46A8931999CCE700F83C23 /* ProfileTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D46A8921999CCE700F83C23 /* ProfileTableViewController.m */; };
@@ -214,8 +213,6 @@
 		7D292A1D19DCF16600EC3472 /* STTweetTextStorage.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = STTweetTextStorage.m; sourceTree = "<group>"; };
 		7D3B735819227F92005413F1 /* WelcomeViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WelcomeViewController.h; sourceTree = "<group>"; };
 		7D3B735919227F92005413F1 /* WelcomeViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WelcomeViewController.m; sourceTree = "<group>"; };
-		7D3F30DF1B59C3640022DBD5 /* TPAACAudioConverter.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TPAACAudioConverter.h; sourceTree = "<group>"; };
-		7D3F30E01B59C3640022DBD5 /* TPAACAudioConverter.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TPAACAudioConverter.m; sourceTree = "<group>"; };
 		7D4336861926C65600CBC02E /* UINavigationBarNextIndicatorDefault@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "UINavigationBarNextIndicatorDefault@2x.png"; sourceTree = "<group>"; };
 		7D4336891926C6AF00CBC02E /* UINavigationBarBackIndicatorDefault@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "UINavigationBarBackIndicatorDefault@2x.png"; sourceTree = "<group>"; };
 		7D46A8911999CCE700F83C23 /* ProfileTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProfileTableViewController.h; sourceTree = "<group>"; };
@@ -616,8 +613,6 @@
 				7D4F35381AB89DDE0090EE81 /* CCLocalMaximum.m */,
 				7DA465DF19AE2F2C00DA3EE7 /* HorizontalLine.h */,
 				7DA465E019AE2F2C00DA3EE7 /* HorizontalLine.m */,
-				7D3F30DF1B59C3640022DBD5 /* TPAACAudioConverter.h */,
-				7D3F30E01B59C3640022DBD5 /* TPAACAudioConverter.m */,
 				7DA465E219AE312300DA3EE7 /* AvatarWithLineIntersect.h */,
 				7DA465E319AE312300DA3EE7 /* AvatarWithLineIntersect.m */,
 				7DDF1B9D1987F87A008CB927 /* AvatarContainerView.h */,
@@ -790,7 +785,7 @@
 		7D61F91018A1EB2F00710CA7 /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastUpgradeCheck = 0510;
+				LastUpgradeCheck = 0700;
 				ORGANIZATIONNAME = "Jamie Perkins";
 				TargetAttributes = {
 					7D61F91718A1EB2F00710CA7 = {
@@ -997,7 +992,6 @@
 				7D292A1F19DCF16600EC3472 /* STTweetTextStorage.m in Sources */,
 				7DFE859E199A7B56000379B6 /* ProfileCell.m in Sources */,
 				7DCAC60219FEF81A004B6182 /* FollowersCell.m in Sources */,
-				7D3F30E11B59C3640022DBD5 /* TPAACAudioConverter.m in Sources */,
 				7D1341E9192530AC00B95C66 /* FinishSignUpController.m in Sources */,
 				7DCAC60519FFDF71004B6182 /* followButton.m in Sources */,
 				7D670F301934EE7600239673 /* Reachability.m in Sources */,
@@ -1066,6 +1060,7 @@
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				COPY_PHASE_STRIP = NO;
+				ENABLE_TESTABILITY = YES;
 				GCC_C_LANGUAGE_STANDARD = gnu99;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -1135,6 +1130,7 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = "fm.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "tung beta";
 				PROVISIONING_PROFILE = "04524607-c905-4658-8548-8cdaa890c2c9";
 				WRAPPER_EXTENSION = app;
@@ -1157,6 +1153,7 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
+				PRODUCT_BUNDLE_IDENTIFIER = "fm.$(PRODUCT_NAME:rfc1034identifier)";
 				PRODUCT_NAME = "tung beta";
 				PROVISIONING_PROFILE = "04524607-c905-4658-8548-8cdaa890c2c9";
 				WRAPPER_EXTENSION = app;
@@ -1179,6 +1176,7 @@
 					"$(inherited)",
 				);
 				INFOPLIST_FILE = "TungTests/TungTests-Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "inorganik.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;
@@ -1197,6 +1195,7 @@
 				GCC_PRECOMPILE_PREFIX_HEADER = YES;
 				GCC_PREFIX_HEADER = "Tung/Tung-Prefix.pch";
 				INFOPLIST_FILE = "TungTests/TungTests-Info.plist";
+				PRODUCT_BUNDLE_IDENTIFIER = "inorganik.${PRODUCT_NAME:rfc1034identifier}";
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				TEST_HOST = "$(BUNDLE_LOADER)";
 				WRAPPER_EXTENSION = xctest;

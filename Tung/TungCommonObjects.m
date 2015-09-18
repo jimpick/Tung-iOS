@@ -47,6 +47,7 @@
 @property (nonatomic, strong) NSURLConnection *connection;
 @property (nonatomic, strong) NSHTTPURLResponse *response;
 @property (nonatomic, strong) NSMutableArray *pendingRequests;
+@property (nonatomic, strong) NSTimer *getTotalSecondsTimer;
 
 @end
 
@@ -125,7 +126,7 @@
 #pragma mark - Player instance methods
 
 - (BOOL) isPlaying {
-    return _player.rate > 0.0f;
+    return (_player && _player.rate > 0.0f);
 }
 - (void) playerPlay {
     [_player play];
@@ -148,9 +149,11 @@
 }
 
 - (void) determineTotalSeconds {
-    
-    _totalSeconds = CMTimeGetSeconds(_player.currentItem.asset.duration);
-    NSLog(@"set total seconds: %f", _totalSeconds);
+    // need to wait until player is playing to get duration or app freezes
+    if ([self isPlaying]) {
+        [_getTotalSecondsTimer invalidate];
+        _totalSeconds = CMTimeGetSeconds(_player.currentItem.asset.duration);
+    }
 }
 
 - (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
@@ -167,8 +170,6 @@
                 break;
             case AVPlayerStatusReadyToPlay:
                 NSLog(@"-- AVPlayer status: ready to play");
-                // set total seconds
-                [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:NO];
                 // check for track progress
                 float secs = 0;
                 CMTime time;
@@ -177,15 +178,18 @@
                     NSLog(@"found track progress, seeking to time: %f", secs);
                     time = CMTimeMake((secs * 100), 100);
                 }
+                
                 if (secs > 0) {
                     [_player seekToTime:time completionHandler:^(BOOL finished) {
                         [self playerPlay];
+                        _getTotalSecondsTimer = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:YES];
                     }];
                 } else {
                     [_player prerollAtRate:1.0 completionHandler:^(BOOL finished) {
                         dispatch_async(dispatch_get_main_queue(), ^{
                             NSLog(@"finished preroll: %d", finished);
                             [self playerPlay];
+                            _getTotalSecondsTimer = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:YES];
                         });
                     }];
                 }
@@ -314,6 +318,16 @@
         _shouldStayPaused = NO;
         _totalSeconds = 0;
         
+        // remove old player and observers
+        if (_player) {
+            [_player removeObserver:self forKeyPath:@"status"];
+            [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
+            [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:_player.currentItem];
+            [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemPlaybackStalledNotification object:_player.currentItem];
+            [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemFailedToPlayToEndTimeNotification object:_player.currentItem];
+            _player = nil;
+        }
+        
         NSString *urlString = [NSString stringWithFormat:@"%@", [_playQueue objectAtIndex:0]];
         
         // find index of episode in current feed
@@ -345,8 +359,10 @@
             NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex.intValue];
             _npEpisodeEntity = [TungCommonObjects getEntityForPodcast:_npPodcastDict andEpisode:episodeDict save:YES];
         }
+        NSLog(@"NP entity changed to: %@", _npEpisodeEntity.title);
+        NSLog(@"NP entity track progress: %f", _npEpisodeEntity.trackProgress.floatValue);
         
-        
+        // clear leftover connection data
         if (self.connection) {
             NSLog(@"clear connection data");
             [self.connection cancel];
@@ -356,35 +372,23 @@
         }
         self.pendingRequests = [NSMutableArray array];
         
-        if (_player) {
-            [self playerPause];
-            [_player removeObserver:self forKeyPath:@"status"];
-            [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
-            _player = nil;
-            
-        }
-        
+        // set up new player item and player, observers
         NSURL *urlToPlay = [self getEpisodeUrl:[_playQueue objectAtIndex:0]];
         AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
         [asset.resourceLoader setDelegate:self queue:dispatch_get_main_queue()];
         AVPlayerItem *playerItem = [AVPlayerItem playerItemWithAsset:asset];
         
-        if (!_player) {
-            _player = [[AVPlayer alloc] initWithPlayerItem:playerItem];
-            NSLog(@"INIT NEW PLAYER");
-            // add observers
-            [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
-            //[_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
-            [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
-            //[_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
-            // Subscribe to AVPlayerItem's notifications
-            [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(completedPlayback) name:AVPlayerItemDidPlayToEndTimeNotification object:playerItem];
-            [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemPlaybackStalledNotification object:playerItem];
-            [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemFailedToPlayToEndTimeNotification object:playerItem];
-        } else {
-            [_player replaceCurrentItemWithPlayerItem:playerItem];
-            NSLog(@"REPLACE PLAYER ITEM");
-        }
+        _player = [[AVPlayer alloc] initWithPlayerItem:playerItem];
+        NSLog(@"INIT NEW PLAYER");
+        // add observers
+        [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
+        //[_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
+        [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
+        //[_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
+        // Subscribe to AVPlayerItem's notifications
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(completedPlayback) name:AVPlayerItemDidPlayToEndTimeNotification object:playerItem];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemPlaybackStalledNotification object:playerItem];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemFailedToPlayToEndTimeNotification object:playerItem];
         
         [self setControlButtonStateToBuffering];
         
@@ -417,6 +421,7 @@
 }
 - (void) ejectCurrentEpisode {
     if (_playQueue.count > 0) {
+        if ([self isPlaying]) [_player pause];
         [self savePositionForNowPlaying];
         NSLog(@"ejected current episode");
         [_playQueue removeObjectAtIndex:0];
@@ -2966,7 +2971,7 @@ static NSNumberFormatter *stringToNum = nil;
 }
 
 + (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString {
-    NSLog(@"%@", urlString);
+    
     NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
     NSError *error;
     if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
@@ -2977,10 +2982,8 @@ static NSNumberFormatter *stringToNum = nil;
         NSData *artImageData;
         // make sure it is cached, even though we preloaded it
         if ([[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
-            NSLog(@"art data from file");
             artImageData = [NSData dataWithContentsOfFile:artFilepath];
         } else {
-            NSLog(@"art data downloaded");
             artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
             [artImageData writeToFile:artFilepath atomically:YES];
         }
