@@ -423,7 +423,7 @@ static NSString *kShareStoryIntention = @"Share your interactions";
             // description
             // description style
             NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:_podcast.podcastEntity.keyColor1];
-            NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:4px 13px; color:#666; font: .9em/1.4em Helvetica; } a { color:%@; } img { max-width:100%%; height:auto; } .endOfFile { margin:40px auto 20px; clear:both; width:60px; height:auto; display:block }</style>\n", keyColor1HexString];
+            NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:4px 13px; color:#666; font: .9em/1.4em 'San Francisco', Helvetica; } a { color:%@; } img { max-width:100%%; height:auto; } .endOfFile { margin:40px auto 20px; clear:both; width:60px; height:auto; display:block }</style>\n", keyColor1HexString];
             // description script:
             NSString *scriptPath = [[NSBundle mainBundle] pathForResource:@"description" ofType:@"js"];
             NSURL *scriptUrl = [NSURL fileURLWithPath:scriptPath];
@@ -870,11 +870,7 @@ static CGRect buttonsScrollViewHomeRect;
     _audioPlayer = nil;
     
     // can record
-    if (_tung.canRecord) {
-        [_recordButton setEnabled:YES];
-    } else {
-        [_recordButton setEnabled:NO];
-    }
+    [_recordButton setEnabled:YES];
     _recordingDurationLabel.text = @":00";
     [_playClipButton setEnabled:NO];
     _playClipButton.isPlaying = NO;
@@ -1002,13 +998,7 @@ static CGRect buttonsScrollViewHomeRect;
 }
 
 - (void) newClip {
-    if (_tung.canRecord) {
-        [self toggleNewClipView];
-    } else {
-        // cannot record alert
-        UIAlertView *cannotRecordAlert = [[UIAlertView alloc] initWithTitle:@"Unable to Record" message:@"Sorry, your phone doesn't have enough disk space to record a clip." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-        [cannotRecordAlert show];
-    }
+    [self toggleNewClipView];
 }
 
 - (void) cancelNewClip {

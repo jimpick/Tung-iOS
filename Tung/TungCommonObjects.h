@@ -73,7 +73,6 @@
 @property (strong, nonatomic) NSMutableArray *playQueue;
 @property (strong, nonatomic) UIActivityIndicatorView *btnActivityIndicator;
 @property BOOL npViewSetupForCurrentEpisode;
-@property BOOL canRecord;
 @property BOOL fileIsLocal;
 @property BOOL fileIsStreaming; // file can be local and streaming at the same time
 @property BOOL shouldStayPaused;

@@ -175,7 +175,6 @@
                                 NSArray *data = [response objectForKey:@"results"];
                                 NSLog(@"restoring podcast data...");
                                 for (NSDictionary *story in data) {
-                                    //NSLog(@"story dict: %@", story);
                                     NSMutableDictionary *podcastDict, *episodeDict;
                                     PodcastEntity *podcastEntity = nil;
                                     EpisodeEntity *episodeEntity = nil;
@@ -229,7 +228,8 @@
                                         }
                                     }
                                     
-                                    [TungCommonObjects saveContextWithReason:@"restoring podcast data"];
+                                    BOOL saved = [TungCommonObjects saveContextWithReason:@"restoring podcast data"];
+                                    if (!saved) NSLog(@"error on story: %@", story);
                                 }
                             }
                             // <INSERT FEED QUERY HERE>

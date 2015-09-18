@@ -129,6 +129,7 @@
 }
 - (void) playerPlay {
     [_player play];
+    _shouldStayPaused = NO;
     [self setControlButtonStateToPause];
 }
 - (void) playerPause {
@@ -346,9 +347,6 @@
         }
         
         
-        if (_player) {
-            [self playerPause];
-        }
         if (self.connection) {
             NSLog(@"clear connection data");
             [self.connection cancel];
@@ -356,7 +354,15 @@
             _trackData = nil;
             self.response = nil;
         }
-		self.pendingRequests = [NSMutableArray array];
+        self.pendingRequests = [NSMutableArray array];
+        
+        if (_player) {
+            [self playerPause];
+            [_player removeObserver:self forKeyPath:@"status"];
+            [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
+            _player = nil;
+            
+        }
         
         NSURL *urlToPlay = [self getEpisodeUrl:[_playQueue objectAtIndex:0]];
         AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
@@ -525,7 +531,6 @@
     if ([[NSFileManager defaultManager] fileExistsAtPath:episodeFilepath]) {
         NSLog(@"^^^ will use local file");
         _fileIsLocal = YES;
-        _canRecord = YES;
         _fileIsStreaming = NO;
         return [NSURL fileURLWithPath:episodeFilepath];
     } else {
@@ -2961,7 +2966,7 @@ static NSNumberFormatter *stringToNum = nil;
 }
 
 + (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString {
-    
+    NSLog(@"%@", urlString);
     NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
     NSError *error;
     if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
@@ -2972,8 +2977,10 @@ static NSNumberFormatter *stringToNum = nil;
         NSData *artImageData;
         // make sure it is cached, even though we preloaded it
         if ([[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
+            NSLog(@"art data from file");
             artImageData = [NSData dataWithContentsOfFile:artFilepath];
         } else {
+            NSLog(@"art data downloaded");
             artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
             [artImageData writeToFile:artFilepath atomically:YES];
         }

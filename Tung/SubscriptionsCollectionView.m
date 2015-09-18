@@ -14,7 +14,6 @@
 @interface SubscriptionsCollectionView () <NSFetchedResultsControllerDelegate>
 
 @property NSFetchedResultsController *resultsController;
-@property CGSize cellSize;
 @property TungPodcast *podcast;
 @property TungCommonObjects *tung;
 @property NSMutableArray *sectionChanges;
@@ -69,13 +68,13 @@ static NSString * const reuseIdentifier = @"artCell";
     CGFloat screenWidth = [[UIScreen mainScreen]bounds].size.width;
     
     CGFloat cellWidthAndHeight = (screenWidth - 2) / 3;
-    _cellSize = CGSizeMake(cellWidthAndHeight, cellWidthAndHeight);
+    CGSize cellSize = CGSizeMake(cellWidthAndHeight, cellWidthAndHeight);
     
     // set up collection view flow layout
     UICollectionViewFlowLayout *flowLayout = [[UICollectionViewFlowLayout alloc] init];
     flowLayout.minimumLineSpacing = 1.0f;
     flowLayout.minimumInteritemSpacing = 1.0f;
-    flowLayout.itemSize = _cellSize;
+    flowLayout.itemSize = cellSize;
     flowLayout.sectionInset = UIEdgeInsetsMake(0, 0, 0, 0);
     flowLayout.scrollDirection = UICollectionViewScrollDirectionVertical;
     
@@ -269,7 +268,7 @@ static NSString * const reuseIdentifier = @"artCell";
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
-    //NSLog(@"collection view cell for item at index path");
+    NSLog(@"collection view cell for item at index path %ld", (long)indexPath.row);
     
     //NSLog(@"cell for row at index: %ld", (long)indexPath.row);
     SubscriptionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:reuseIdentifier forIndexPath:indexPath];
