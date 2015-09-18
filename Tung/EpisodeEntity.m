@@ -2,7 +2,7 @@
 //  EpisodeEntity.m
 //  Tung
 //
-//  Created by Jamie Perkins on 9/10/15.
+//  Created by Jamie Perkins on 9/17/15.
 //  Copyright (c) 2015 Jamie Perkins. All rights reserved.
 //
 
@@ -18,14 +18,14 @@
 @dynamic duration;
 @dynamic episodeImageUrl;
 @dynamic guid;
+@dynamic id;
 @dynamic isRecommended;
 @dynamic pubDate;
+@dynamic shortlink;
 @dynamic storyShortlink;
 @dynamic title;
-@dynamic trackPosition;
+@dynamic trackProgress;
 @dynamic url;
-@dynamic id;
-@dynamic shortlink;
 @dynamic podcast;
 
 @end

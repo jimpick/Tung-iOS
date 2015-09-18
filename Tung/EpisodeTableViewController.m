@@ -63,13 +63,13 @@ static NSString *cellIdentifier = @"EpisodeCell";
 
 - (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    //NSLog(@"cell for row at index path, row: %ld", (long)indexPath.row);
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
     
     EpisodeCell *episodeCell = (EpisodeCell *)cell;
     
     // cell data
     NSDictionary *episodeDict = [NSDictionary dictionaryWithDictionary:[_episodeArray objectAtIndex:indexPath.row]];
+    //NSLog(@"cell for row at index path, row: %ld", (long)indexPath.row);
     
     // title
     episodeCell.episodeTitle.text = [episodeDict objectForKey:@"title"];
@@ -80,6 +80,23 @@ static NSString *cellIdentifier = @"EpisodeCell";
         [airDateFormatter setDateFormat:@"MMM d, yyyy"];
     }
     episodeCell.airDate.text = [airDateFormatter stringFromDate:[episodeDict objectForKey:@"pubDate"]];
+    
+    // now playing?
+    episodeCell.iconView.backgroundColor = [UIColor clearColor];
+    if (_tung.playQueue.count > 0) {
+        NSString *urlString = [[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
+        NSURL *playingUrl = [_tung.playQueue objectAtIndex:0];
+        
+        if ([urlString isEqualToString:playingUrl.absoluteString]) {
+            episodeCell.iconView.type = kIconTypeNowPlaying;
+            episodeCell.iconView.color = _tung.tungColor;
+            episodeCell.leadingTitleConstraint.constant = 36;
+        } else {
+            episodeCell.iconView.type = kIconTypeNone;
+            episodeCell.leadingTitleConstraint.constant = 12;
+        }
+        [episodeCell.iconView setNeedsDisplay];
+    }    
     
     // kill insets for iOS 8
     if ([[UIDevice currentDevice].systemVersion floatValue] >= 8) {
@@ -93,12 +110,13 @@ static NSString *cellIdentifier = @"EpisodeCell";
 #pragma mark - Table view delegate methods
 
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    
     //NSLog(@"%@", [_episodeArray objectAtIndex:indexPath.row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     // play episode selected
     NSDictionary *episodeDict = [_episodeArray objectAtIndex:indexPath.row];
+    //NSLog(@"selected episode: %@", episodeDict);
+    //NSLog(@"podcast dict: %@", _podcastDict);
     NSString *urlString = [[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
     if (urlString) {
         [TungCommonObjects getEntityForPodcast:_podcastDict andEpisode:episodeDict save:YES];

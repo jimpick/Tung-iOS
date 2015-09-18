@@ -1285,42 +1285,58 @@
                                             <color key="textColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
                                             <nil key="highlightedColor"/>
                                         </label>
+                                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="COO-L7-30h" customClass="IconView">
+                                            <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
+                                            <constraints>
+                                                <constraint firstAttribute="height" constant="20" id="6UQ-zZ-gpD"/>
+                                                <constraint firstAttribute="width" constant="20" id="Xme-F8-akC"/>
+                                            </constraints>
+                                            <variation key="default">
+                                                <mask key="constraints">
+                                                    <exclude reference="6UQ-zZ-gpD"/>
+                                                    <exclude reference="Xme-F8-akC"/>
+                                                </mask>
+                                            </variation>
+                                            <variation key="widthClass=compact">
+                                                <mask key="constraints">
+                                                    <include reference="6UQ-zZ-gpD"/>
+                                                    <include reference="Xme-F8-akC"/>
+                                                </mask>
+                                            </variation>
+                                        </view>
                                     </subviews>
                                     <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
                                     <constraints>
                                         <constraint firstAttribute="trailing" secondItem="rQ1-Tb-5vL" secondAttribute="trailing" constant="20" id="7Pf-gc-TgE">
                                             <variation key="widthClass=compact" constant="12"/>
                                         </constraint>
-                                        <constraint firstAttribute="trailing" secondItem="QHx-04-f3g" secondAttribute="trailing" constant="20" id="EUF-hx-6JZ"/>
-                                        <constraint firstItem="rQ1-Tb-5vL" firstAttribute="top" secondItem="QHx-04-f3g" secondAttribute="bottom" id="GkR-iW-KvJ"/>
-                                        <constraint firstItem="rQ1-Tb-5vL" firstAttribute="top" secondItem="QHx-04-f3g" secondAttribute="bottom" constant="3" id="JOy-QR-VMk"/>
                                         <constraint firstAttribute="trailing" secondItem="QHx-04-f3g" secondAttribute="trailing" constant="30" id="Mlp-NK-ZCS">
                                             <variation key="widthClass=compact" constant="20"/>
                                         </constraint>
                                         <constraint firstItem="QHx-04-f3g" firstAttribute="leading" secondItem="AcK-Vl-02w" secondAttribute="leading" constant="12" id="ZBU-gd-CUh"/>
                                         <constraint firstItem="QHx-04-f3g" firstAttribute="top" secondItem="AcK-Vl-02w" secondAttribute="top" constant="12" id="Zu9-eS-VUk"/>
+                                        <constraint firstItem="COO-L7-30h" firstAttribute="top" secondItem="AcK-Vl-02w" secondAttribute="top" constant="10" id="aVA-VE-tPC"/>
                                         <constraint firstAttribute="bottom" secondItem="rQ1-Tb-5vL" secondAttribute="bottom" constant="8" id="fqE-Xa-cjU">
                                             <variation key="widthClass=compact" constant="10"/>
                                         </constraint>
                                         <constraint firstItem="rQ1-Tb-5vL" firstAttribute="leading" secondItem="AcK-Vl-02w" secondAttribute="leading" constant="20" id="ibn-Xh-xSe">
                                             <variation key="widthClass=compact" constant="12"/>
                                         </constraint>
-                                        <constraint firstItem="QHx-04-f3g" firstAttribute="top" secondItem="AcK-Vl-02w" secondAttribute="top" constant="31" id="mET-qb-iZU"/>
+                                        <constraint firstItem="COO-L7-30h" firstAttribute="leading" secondItem="AcK-Vl-02w" secondAttribute="leading" constant="10" id="wKq-wY-gS6"/>
                                     </constraints>
                                     <variation key="default">
                                         <mask key="subviews">
                                             <exclude reference="QHx-04-f3g"/>
                                             <exclude reference="rQ1-Tb-5vL"/>
+                                            <exclude reference="COO-L7-30h"/>
                                         </mask>
                                         <mask key="constraints">
-                                            <exclude reference="EUF-hx-6JZ"/>
+                                            <exclude reference="aVA-VE-tPC"/>
+                                            <exclude reference="wKq-wY-gS6"/>
                                             <exclude reference="Mlp-NK-ZCS"/>
                                             <exclude reference="ZBU-gd-CUh"/>
                                             <exclude reference="Zu9-eS-VUk"/>
-                                            <exclude reference="mET-qb-iZU"/>
                                             <exclude reference="7Pf-gc-TgE"/>
-                                            <exclude reference="GkR-iW-KvJ"/>
-                                            <exclude reference="JOy-QR-VMk"/>
                                             <exclude reference="fqE-Xa-cjU"/>
                                             <exclude reference="ibn-Xh-xSe"/>
                                         </mask>
@@ -1329,16 +1345,15 @@
                                         <mask key="subviews">
                                             <include reference="QHx-04-f3g"/>
                                             <include reference="rQ1-Tb-5vL"/>
+                                            <include reference="COO-L7-30h"/>
                                         </mask>
                                         <mask key="constraints">
-                                            <exclude reference="EUF-hx-6JZ"/>
+                                            <include reference="aVA-VE-tPC"/>
+                                            <include reference="wKq-wY-gS6"/>
                                             <include reference="Mlp-NK-ZCS"/>
                                             <include reference="ZBU-gd-CUh"/>
                                             <include reference="Zu9-eS-VUk"/>
-                                            <exclude reference="mET-qb-iZU"/>
                                             <include reference="7Pf-gc-TgE"/>
-                                            <exclude reference="GkR-iW-KvJ"/>
-                                            <exclude reference="JOy-QR-VMk"/>
                                             <include reference="fqE-Xa-cjU"/>
                                             <include reference="ibn-Xh-xSe"/>
                                         </mask>
@@ -1348,6 +1363,8 @@
                                 <connections>
                                     <outlet property="airDate" destination="rQ1-Tb-5vL" id="sIk-Na-Zcb"/>
                                     <outlet property="episodeTitle" destination="QHx-04-f3g" id="Pti-DG-gWE"/>
+                                    <outlet property="iconView" destination="COO-L7-30h" id="kdH-3F-Ts5"/>
+                                    <outlet property="leadingTitleConstraint" destination="ZBU-gd-CUh" id="xxX-AM-EIi"/>
                                 </connections>
                             </tableViewCell>
                         </prototypes>

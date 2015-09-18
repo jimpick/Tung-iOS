@@ -72,7 +72,7 @@
             break;
             
         case kCircleTypeSave:
-            [TungPodcastStyleKit drawSaveButtonWithFrame:rect down:self.highlighted];
+            [TungPodcastStyleKit drawSaveButtonWithFrame:rect on:_on down:self.highlighted];
             break;
             
         default:

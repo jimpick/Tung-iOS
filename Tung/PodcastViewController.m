@@ -30,6 +30,7 @@
     [super viewDidLoad];
     
     _tung = [TungCommonObjects establishTungObjects];
+    _tung.ctrlBtnDelegate = self;
     
     if ([self respondsToSelector:@selector(edgesForExtendedLayout)]) self.edgesForExtendedLayout = UIRectEdgeBottom;
     
@@ -37,7 +38,7 @@
     self.navigationItem.rightBarButtonItem = nil;
     
     _podcast = [TungPodcast new];
-    //NSLog(@"podcast dict: %@", _podcastDict);
+    NSLog(@"podcast dict: %@", _podcastDict);
     
     // get podcast entity
     _podcast.podcastEntity = [TungCommonObjects getEntityForPodcast:_podcastDict save:NO];
@@ -91,6 +92,10 @@
 - (void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     self.navigationController.navigationBar.translucent = YES;
+}
+// ControlButtonDelegate optional method
+-(void) nowPlayingDidChange {
+    [_episodeView.tableView reloadData];
 }
 
 // for refreshControl

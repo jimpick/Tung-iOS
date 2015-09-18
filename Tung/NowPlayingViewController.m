@@ -27,7 +27,6 @@
 @property HeaderView *headerView;
 @property EpisodeEntity *episodeEntity;
 @property CADisplayLink *onEnterFrame;
-@property double totalSeconds;
 @property BOOL npControlsViewIsSetup;
 @property BOOL npControlsViewIsVisible;
 @property CircleButton *recommendButton;
@@ -53,6 +52,8 @@
 @property AVAudioPlayer *audioPlayer;
 @property UILabel *nothingPlayingLabel;
 @property NSURL *urlToPass;
+@property BOOL lockPosbar;
+@property BOOL posbarIsBeingDragged;
 
 @property BOOL isRecording;
 @property NSDate *recordStartTime;
@@ -61,6 +62,7 @@
 
 @property NSInteger playbackSpeedIndex;
 @property NSArray *playbackSpeeds;
+@property BOOL totalTimeSet;
 
 - (void) switchViews:(id)sender;
 
@@ -207,8 +209,7 @@ static NSString *kShareStoryIntention = @"Share your interactions";
 - (void) viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     
-    _posbar.value = _tung.streamer.currentTimePlayed.position;
-    _timeElapsedLabel.text = [TungCommonObjects convertSecondsToTimeString:_tung.streamer.currentTimePlayed.playbackTimeInSeconds];
+    [self updateTimeElapsedAndPosbar];
 }
 
 - (void) viewDidAppear:(BOOL)animated {
@@ -332,9 +333,23 @@ static NSString *kShareStoryIntention = @"Share your interactions";
 }
 // ControlButtonDelegate optional method
 -(void) nowPlayingDidChange {
-    NSLog(@"now playing did change");
+    
+    NSLog(@"reset view");
     [self setUpViewForWhateversPlaying];
     [self resetRecording];
+    [self setPlaybackRateToOne];
+    
+    // think this was bc setUpViewForWhateversPlaying trying to get total secs before asset was ready..
+    
+    // seems to freeze if this happens instantly when streaming a podcast, so we delay
+    //[NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(resetView) userInfo:nil repeats:NO];
+}
+
+-(void) resetView {
+    NSLog(@"reset view");
+    [self setUpViewForWhateversPlaying];
+    [self resetRecording];
+    [self setPlaybackRateToOne];
 }
 
 #pragma mark - Set up view
@@ -360,6 +375,8 @@ static NSString *kShareStoryIntention = @"Share your interactions";
 - (void) setUpViewForWhateversPlaying {
 
     _tung.npViewSetupForCurrentEpisode = YES;
+    [_posbar setEnabled:NO];
+    _totalTimeSet = NO;
     
     if (_tung.playQueue.count > 0) {
         NSURL *url = [_tung.playQueue objectAtIndex:0];
@@ -432,19 +449,7 @@ static NSString *kShareStoryIntention = @"Share your interactions";
             // time elapsed
             _timeElapsedLabel.hidden = NO;
             _timeElapsedLabel.text = @"00:00:00";
-            
-            // duration & total seconds
-            if (_episodeEntity.duration) {
-                // prefer given duration because it's probably more accurate
-                NSLog(@"duration - given");
-                _totalSeconds = [TungCommonObjects convertDurationStringToSeconds:_episodeEntity.duration];
-            }
-            else {
-                // fallback to duration calculated by data length
-                NSLog(@"duration calculated from data length");
-                _totalSeconds = _episodeEntity.dataLength.doubleValue / _tung.streamer.bitRate * 8;
-            }
-            _totalTimeLabel.text = [TungCommonObjects convertSecondsToTimeString:_totalSeconds];
+            _totalTimeLabel.text = @"--:--:--";
             
             // recommended status
             _recommendButton.recommended = _episodeEntity.isRecommended.boolValue;
@@ -453,6 +458,9 @@ static NSString *kShareStoryIntention = @"Share your interactions";
             
             // scroll to main buttons
             [_buttonsScrollView scrollRectToVisible:buttonsScrollViewHomeRect animated:YES];
+            
+            // progress
+            if (_tung.fileIsLocal) _progressBar.progress = 1;
             
         }
         else {
@@ -485,7 +493,7 @@ static CGRect buttonsScrollViewHomeRect;
     [_buttonsScrollView addSubview:recordSubView];
     // main buttons
     subViewRect.origin.x += scrollViewRect.size.width;
-    NSLog(@"set buttons scroll view home rect");
+    // set buttons scroll view home rect
     buttonsScrollViewHomeRect = subViewRect;
     UIView *buttonsSubView = [[UIView alloc] initWithFrame:subViewRect];
     [_buttonsScrollView addSubview:buttonsSubView];
@@ -547,7 +555,6 @@ static CGRect buttonsScrollViewHomeRect;
     websiteLabel.text = @"Website";
     [self setupButtonLabel:websiteLabel withButtonDimension:circleButtonDimension andSuperView:extraButtonsSubView];
     
-    /* speed control broken in freeStreamer code :(
     _speedButton = [CircleButton new];
     _speedButton.type = kCircleTypeSpeed;
     [self setupCircleButton:_speedButton withWidth:circleButtonDimension andHeight:circleButtonDimension andSuperView:extraButtonsSubView];
@@ -556,16 +563,14 @@ static CGRect buttonsScrollViewHomeRect;
     UILabel *speedLabel = [UILabel new];
     speedLabel.text = @"Speed";
     [self setupButtonLabel:speedLabel withButtonDimension:circleButtonDimension andSuperView:extraButtonsSubView];
-     */
+
     
     // button and label constraints: distribute X positions
     [extraButtonsSubView addConstraint:[NSLayoutConstraint constraintWithItem:websiteButton attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:extraButtonsSubView attribute:NSLayoutAttributeTrailing multiplier:.134 constant:1]];
     [extraButtonsSubView addConstraint:[NSLayoutConstraint constraintWithItem:websiteLabel attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:extraButtonsSubView attribute:NSLayoutAttributeTrailing multiplier:.134 constant:1]];
-    /*
-     [extraButtonsSubView addConstraint:[NSLayoutConstraint constraintWithItem:_speedButton attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:extraButtonsSubView attribute:NSLayoutAttributeTrailing multiplier:.381 constant:1]];
-     [extraButtonsSubView addConstraint:[NSLayoutConstraint constraintWithItem:speedLabel attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:extraButtonsSubView attribute:NSLayoutAttributeTrailing multiplier:.381 constant:1]];
-     */
-    
+
+    [extraButtonsSubView addConstraint:[NSLayoutConstraint constraintWithItem:_speedButton attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:extraButtonsSubView attribute:NSLayoutAttributeTrailing multiplier:.381 constant:1]];
+    [extraButtonsSubView addConstraint:[NSLayoutConstraint constraintWithItem:speedLabel attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:extraButtonsSubView attribute:NSLayoutAttributeTrailing multiplier:.381 constant:1]];
 
     
     // record subview
@@ -671,9 +676,7 @@ static CGRect buttonsScrollViewHomeRect;
     
 }
 
-/*
- doesn't work, broken in freeStreamer code :(
- */
+// in progress
 - (void) togglePlaybackSpeed {
     
     if (_playbackSpeedIndex < _playbackSpeeds.count - 1) {
@@ -688,27 +691,34 @@ static CGRect buttonsScrollViewHomeRect;
     switch (_playbackSpeedIndex) {
         case 0: {
             NSLog(@"set play rate to .75x");
-            [_tung.streamer setPlayRate:.75];
+            [_tung.player setRate:.75];
             break;
         }
         case 1: {
             NSLog(@"set play rate to 1x");
-            [_tung.streamer setPlayRate:1.0];
+            [_tung.player setRate:1.0];
             break;
         }
         case 2: {
             NSLog(@"set play rate to 1.5x");
-            [_tung.streamer setPlayRate:1.5];
+            [_tung.player setRate:1.5];
             break;
         }
         case 3: {
             NSLog(@"set play rate to 2x");
-            [_tung.streamer setPlayRate:2.0];
+            [_tung.player setRate:2.0];
             break;
         }
         default:
             break;
     }
+}
+
+- (void) setPlaybackRateToOne {
+    _playbackSpeedIndex = 1;
+    _speedButton.buttonText = [_playbackSpeeds objectAtIndex:_playbackSpeedIndex];
+    [_speedButton setNeedsDisplay];
+    [_tung.player setRate:1.0];
 }
 
 #pragma mark - UIWebView delegate methods
@@ -740,12 +750,14 @@ static CGRect buttonsScrollViewHomeRect;
 
     NSLog(@"//// trim audio from %f to %f", startMarker, endMarker);
     // input
-    NSString *audioFile = [NSString stringWithFormat:@"%@", _tung.streamer.outputFile];
-    //NSLog(@"//// audio file to trim: %@", audioFile);
-    NSURL *audioFileUrl = [NSURL URLWithString:audioFile];
+//    NSString *audioFile = [NSString stringWithFormat:@"%@", _tung.streamer.outputFile];
+//    //NSLog(@"//// audio file to trim: %@", audioFile);
+//    NSURL *audioFileUrl = [NSURL URLWithString:audioFile];
+    
+    NSURL *audioFileUrl = [_tung getEpisodeUrl:[_tung.playQueue objectAtIndex:0]];
     // test if input file has any bytes
-    //NSData *audioURLData = [NSData dataWithContentsOfURL:audioFileUrl];
-    //NSLog(@"//// audio file data length: %lu", (unsigned long)audioURLData.length);
+    NSData *audioURLData = [NSData dataWithContentsOfURL:audioFileUrl];
+    NSLog(@"//// audio file data length: %lu", (unsigned long)audioURLData.length);
     // output
     NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"recording.m4a"];
     NSURL *outputFileUrl = [TungCommonObjects getClipFileURL];
@@ -794,39 +806,45 @@ static CGRect buttonsScrollViewHomeRect;
 }
 
 - (void) toggleRecordState {
-    
-    // begin recording
-    if (!_isRecording) {
-        
-        // if paused, start playing
-        if (_tung.streamerState == kFsAudioStreamPaused) [_tung.streamer pause];
-        
-        NSLog(@"start recording *****");
-        _isRecording = YES;
-        
-        [_playClipButton setEnabled:NO];
-        _recordButton.isRecording = YES;
-        _recordStartTime = [NSDate date];
-        _recordStartMarker = _tung.streamer.currentTimePlayed.playbackTimeInSeconds;
-    }
-    // stop recording
-    else {
-        long recordTime = fabs([_recordStartTime timeIntervalSinceNow]);
-        if (recordTime >= MIN_RECORD_TIME) {
-            NSLog(@"STOP recording *****");
-            _recordEndMarker = _tung.streamer.currentTimePlayed.playbackTimeInSeconds;
-            _isRecording = NO;
-            _recordButton.isRecording = NO;
-            [_recordButton setEnabled:NO];
-            [_tung.streamer pause];
-            [self trimAudioFrom:_recordStartMarker to:_recordEndMarker];
-        } else {
-            // too short
-            UIAlertView *tooShortAlert = [[UIAlertView alloc] initWithTitle:@"Too short" message:[NSString stringWithFormat:@"Clips must be at least %d seconds long", MIN_RECORD_TIME] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-            [tooShortAlert show];
+    if (_tung.fileIsLocal) {
+        // begin recording
+        if (!_isRecording) {
+            
+            // if paused, start playing
+            if (![_tung isPlaying]) [_tung playerPlay];
+            // if rate not 1, set to 1
+            if (_tung.player.rate != 1) [self setPlaybackRateToOne];
+            
+            NSLog(@"start recording *****");
+            _isRecording = YES;
+            
+            [_playClipButton setEnabled:NO];
+            _recordButton.isRecording = YES;
+            _recordStartTime = [NSDate date];
+            _recordStartMarker = CMTimeGetSeconds(_tung.player.currentTime);
         }
+        // stop recording
+        else {
+            long recordTime = fabs([_recordStartTime timeIntervalSinceNow]);
+            if (recordTime >= MIN_RECORD_TIME) {
+                NSLog(@"STOP recording *****");
+                _recordEndMarker = CMTimeGetSeconds(_tung.player.currentTime);
+                _isRecording = NO;
+                _recordButton.isRecording = NO;
+                [_recordButton setEnabled:NO];
+                [_tung playerPause];
+                [self trimAudioFrom:_recordStartMarker to:_recordEndMarker];
+            } else {
+                // too short
+                UIAlertView *tooShortAlert = [[UIAlertView alloc] initWithTitle:@"Too short" message:[NSString stringWithFormat:@"Clips must be at least %d seconds long", MIN_RECORD_TIME] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+                [tooShortAlert show];
+            }
+        }
+        [_recordButton setNeedsDisplay];
+    } else {
+        UIAlertView *waitForDownloadAlert = [[UIAlertView alloc] initWithTitle:@"Hang on..." message:@"You can record as soon as this episode finishes downloading." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+        [waitForDownloadAlert show];
     }
-    [_recordButton setNeedsDisplay];
     
 }
 
@@ -867,7 +885,7 @@ static CGRect buttonsScrollViewHomeRect;
 - (void) playbackRecording {
 
     // if we're streaming, best stop it.
-    if (_tung.streamerState == kFsAudioStreamPlaying) [_tung controlButtonTapped];
+    if ([_tung isPlaying]) [_tung controlButtonTapped];
     
     // create audio player
     NSURL *clipFileUrl = [TungCommonObjects getClipFileURL];
@@ -924,18 +942,33 @@ static CGRect buttonsScrollViewHomeRect;
 
 #pragma mark - manipulating the view
 
-- (void)updateView {
-    
-    if (!_tung.lockPosbar) {
-        
+
+- (void) updateTimeElapsedAndPosbar {
+    if (_tung.totalSeconds > 0) {
         float currentTimeSecs = CMTimeGetSeconds(_tung.player.currentTime);
-        float val = currentTimeSecs / _totalSeconds;
-    	_posbar.value = val;
-    
+        float val = currentTimeSecs / _tung.totalSeconds;
+        _posbar.value = val;
         // time elapsed
         _timeElapsedLabel.text = [TungCommonObjects convertSecondsToTimeString:currentTimeSecs];
     }
+}
+
+- (void)updateView {
     
+    // duration
+    if (!_totalTimeSet && _tung.totalSeconds > 0) {
+        _totalTimeLabel.text = [TungCommonObjects convertSecondsToTimeString:_tung.totalSeconds];
+        _totalTimeSet = YES;
+        [_posbar setEnabled:YES];
+    }
+    
+    // posbar
+    if (!_posbarIsBeingDragged) {
+        
+        [self updateTimeElapsedAndPosbar];
+    
+    }
+    // record time/playing
     if (_isRecording) {
         
         long recordTime = lroundf(fabs([_recordStartTime timeIntervalSinceNow]));
@@ -956,21 +989,15 @@ static CGRect buttonsScrollViewHomeRect;
         
         _recordingDurationLabel.text = [NSString stringWithFormat:@":%02ld", lroundf(_audioPlayer.currentTime)];
     }
-    
-    // prebuffered amount for progress bar
-    /*
-    float buffered = _tung.streamer.prebufferedByteCount + _tung.streamer.currentSeekByteOffset.start;
-    float progress = buffered / _tung.streamer.configuration.maxPrebufferedByteCount;
-    _progressBar.progress = progress;
-    */
-    
-    float buffered = _tung.trackData.length;
-    float progress = buffered / _tung.npEpisodeEntity.dataLength.floatValue;
-    _progressBar.progress = progress;
-    
-    //NSLog(@"buffered: %f, maxPrebufferedByteCount: %d, content length: %llu", buffered, _tung.streamer.configuration.maxPrebufferedByteCount, _tung.streamer.contentLength);
-    //NSLog(@"content seek byte offset - start: %llu, end: %llu, position: %f", _tung.streamer.currentSeekByteOffset.start, _tung.streamer.currentSeekByteOffset.end, _tung.streamer.currentSeekByteOffset.position);
-    
+    // progress bar
+    if (!_tung.fileIsLocal) {
+        float buffered = _tung.trackData.length;
+        float progress = buffered / _tung.npEpisodeEntity.dataLength.floatValue;
+        //NSLog(@"buffered: %f, total: %f, progress: %f", buffered, _tung.npEpisodeEntity.dataLength.floatValue, progress);
+        _progressBar.progress = progress;
+    } else {
+        _progressBar.progress = 1;
+    }
     
 }
 
@@ -1002,7 +1029,7 @@ static CGRect buttonsScrollViewHomeRect;
 
 - (void) newComment {
     _shareIntention = kNewCommentIntention;
-    _shareTimestamp = [TungCommonObjects convertSecondsToTimeString:_tung.streamer.currentTimePlayed.playbackTimeInSeconds];
+    _shareTimestamp = [TungCommonObjects convertSecondsToTimeString:CMTimeGetSeconds(_tung.player.currentTime)];
     _shareLabel.text = [NSString stringWithFormat:@"New comment @ %@", _shareTimestamp];
     _commentAndPostView.commentTextView.text = @"";
     [_commentAndPostView.postButton setEnabled:NO];
@@ -1069,41 +1096,46 @@ static CGRect buttonsScrollViewHomeRect;
     }
 }
 
+
+- (void) posbarTouched:(UISlider *)slider {
+    _posbarIsBeingDragged = YES;
+}
+
 - (void) posbarChanged:(UISlider *)slider {
     
     // display position as time elapsed value
-    float secondsAtPosition = floorf(slider.value * _totalSeconds);
-    NSLog(@"seconds @ position: %f", secondsAtPosition);
+    float secondsAtPosition = floorf(slider.value * _tung.totalSeconds);
     _timeElapsedLabel.text = [TungCommonObjects convertSecondsToTimeString:secondsAtPosition];
     
     // limit to preloaded amount
-    // temporarily disable until caching is done
-    /*
     if (slider.value > _progressBar.progress) {
         slider.value = _progressBar.progress - 0.001;
     }
-     */
 }
-- (void) posbarTouched:(UISlider *)slider {
-    _tung.lockPosbar = YES;
-}
-
 - (void) posbarReleased:(UISlider *)slider {
     
-    _tung.lockPosbar = NO;
+    _posbarIsBeingDragged = NO;
     
-    int secs = floor(slider.value * _totalSeconds);
-    NSLog(@"seek to position %f - %d seconds", slider.value, secs);
+    int secs = floor(slider.value * _tung.totalSeconds);
+    //NSLog(@"seek to position %f - %d seconds", slider.value, secs);
     
     CMTime time = CMTimeMake((secs * 100), 100);
-    
-    NSLog(@"playback buffer empty: %@", (_tung.player.currentItem.playbackBufferEmpty) ? @"Yes" : @"No");
-    NSLog(@"playback buffer full: %@", (_tung.player.currentItem.playbackBufferFull) ? @"Yes" : @"No");
-    NSLog(@"playback likely to keep up: %@", (_tung.player.currentItem.playbackLikelyToKeepUp) ? @"Yes" : @"No");
 
-    [_tung.player seekToTime:time];
+    // disable posbar and show spinner while player seeks
+    if (_tung.fileIsStreaming) {
+        // see if file is cached yet
+        if (_tung.fileIsLocal) {
+            [_tung replacePlayerItemWithLocalCopy];
+        } else {
+            [_posbar setEnabled:NO];
+            [_tung playerPause];
+        }
+    }
+    [_tung.player seekToTime:time completionHandler:^(BOOL finished) {
+        //NSLog(@"finished seeking to time (%@)", (finished) ? @"yes" : @"no");
+        [_posbar setEnabled:YES];
+    }];
     
-    if (![_tung isPlaying]) [_tung playerPlay];
     
 
 }

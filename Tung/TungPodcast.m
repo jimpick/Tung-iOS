@@ -671,7 +671,7 @@ static NSString *rawFeedsDirName = @"rawFeeds";
 
 
 -(void) setUpHeaderView:(HeaderView *)headerView forEpisode:(EpisodeEntity *)episodeEntity orPodcast:(BOOL)forPodcast {
-    NSLog(@"set up header view");
+    //NSLog(@"set up header view");
     headerView.hidden = NO;
     headerView.clipsToBounds = YES;
     
@@ -762,7 +762,7 @@ static NSString *rawFeedsDirName = @"rawFeeds";
             _podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
             _podcastEntity.dateSubscribed = dateSubscribed;
             
-            [_tung subscribeToPodcast:_podcastEntity andButton:subscribeButton];
+            [_tung subscribeToPodcast:_podcastEntity withButton:subscribeButton];
         }
         // unsubscribe
         else {
@@ -772,7 +772,7 @@ static NSString *rawFeedsDirName = @"rawFeeds";
             NSLog(@"isSubscribted changed to %@", _podcastEntity.isSubscribed);
             _podcastEntity.dateSubscribed = nil;
             
-            [_tung unsubscribeFromPodcast:_podcastEntity andButton:subscribeButton];
+            [_tung unsubscribeFromPodcast:_podcastEntity withButton:subscribeButton];
         }
         [TungCommonObjects saveContextWithReason:@"(un)subscribed to podcast"];
     }

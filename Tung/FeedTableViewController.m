@@ -173,12 +173,15 @@
                         [_tung restorePodcastDataWithCallback:^(BOOL success, NSDictionary *response) {
                             if (success && [response objectForKey:@"results"]) {
                                 NSArray *data = [response objectForKey:@"results"];
-                                //NSLog(@"restoring podcast data from dict: %@", data);
-                                
+                                NSLog(@"restoring podcast data...");
                                 for (NSDictionary *story in data) {
+                                    //NSLog(@"story dict: %@", story);
                                     NSMutableDictionary *podcastDict, *episodeDict;
                                     PodcastEntity *podcastEntity = nil;
                                     EpisodeEntity *episodeEntity = nil;
+                                    BOOL isSubscribeStory = NO;
+                                    BOOL isRecommendStory = NO;
+                                    
                                     for (NSString* key in story) {
                                         // podcast
                                         if ([key isEqualToString:@"podcast"]) {
@@ -200,26 +203,32 @@
                                             }
                                         }
                                         // events
-                                        BOOL isSubscribeStory = NO;
                                         if ([key isEqualToString:@"events"]) {
                                     		for (NSDictionary *event in [story objectForKey:@"events"]) {
                                                 NSString *type = [event objectForKey:@"type"];
                                                 if ([type isEqualToString:@"recommended"]) {
-                                                    episodeEntity.isRecommended = [NSNumber numberWithBool:YES];
+                                                    isRecommendStory = YES;
                                                 }
                                                 if ([type isEqualToString:@"subscribed"]) {
-                                                    podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
                                                     isSubscribeStory = YES;
                                                 }
                                             }
                                         }
-                                        // story shortlink
-                                        if ([key isEqualToString:@"shortlink"]) {
-                                            if (!isSubscribeStory) {
-                                                episodeEntity.storyShortlink = [story objectForKey:@"shortlink"];
-                                            }
+                                    }
+                                    
+                                    if (isSubscribeStory) {
+                                        podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
+                                        double secs = [[story objectForKey:@"time_secs"] doubleValue];
+                                        NSDate *subDate = [NSDate dateWithTimeIntervalSince1970:secs];
+                                        podcastEntity.dateSubscribed = subDate;
+                                    }
+                                    else {
+                                        episodeEntity.storyShortlink = [story objectForKey:@"shortlink"];
+                                        if (isRecommendStory) {
+                                            episodeEntity.isRecommended = [NSNumber numberWithBool:YES];
                                         }
                                     }
+                                    
                                     [TungCommonObjects saveContextWithReason:@"restoring podcast data"];
                                 }
                             }

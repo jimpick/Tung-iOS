@@ -12,7 +12,7 @@
 #import "CircleButton.h"
 #import "HeaderView.h"
 
-@interface PodcastViewController : UIViewController
+@interface PodcastViewController : UIViewController <ControlButtonDelegate>
 
 @property (strong, nonatomic) NSMutableDictionary *podcastDict;
 

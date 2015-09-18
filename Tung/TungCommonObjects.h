@@ -9,7 +9,7 @@
  - manage user credentials
  - manage server session
  - manage global properties
- - manage 1 global streamer instance
+ - manage 1 global player instance
  - manage player controls
  - manage podcast episode entities
  - manage twitter integration
@@ -21,34 +21,26 @@
 #import <FacebookSDK/FacebookSDK.h>
 #import <Social/Social.h>
 
-#import "FSAudioStream.h" // to be removed
-
 #import <AVFoundation/AVFoundation.h>
 #import <AudioToolbox/AudioToolbox.h> // do I need this?
 
 #import "CircleButton.h"
 #import "AppDelegate.h"
 
-typedef enum : NSUInteger {
-    kPlayerStateInactive,
-    kPlayerStatePlaying,
-    kPlayerStatePaused
-} PlayerState;
-
 @protocol ControlButtonDelegate <NSObject>
 
-@required
+//@required
 
--(void) initiateSearch;
--(void) dismissPodcastSearch;
 
 @optional
 
+-(void) initiateSearch;
+-(void) dismissPodcastSearch;
 -(void) nowPlayingDidChange;
 
 @end
 
-@interface TungCommonObjects : NSObject <UIAlertViewDelegate, UIActionSheetDelegate, NSURLConnectionDataDelegate, AVAssetResourceLoaderDelegate, FSPCMAudioStreamDelegate>
+@interface TungCommonObjects : NSObject <UIAlertViewDelegate, UIActionSheetDelegate, NSURLConnectionDataDelegate, AVAssetResourceLoaderDelegate>
 
 @property (nonatomic, assign) id <ControlButtonDelegate> ctrlBtnDelegate;
 // for presenting views, etc.
@@ -74,22 +66,17 @@ typedef enum : NSUInteger {
 @property NSMutableDictionary *npPodcastDict;
 @property (strong, nonatomic) UIButton *btn_player;
 @property (nonatomic, retain) NSNumberFormatter *clipDurationFormatter;
-@property NSNumber *totalSeconds;
-
-// TODO: remove
-@property (nonatomic, readonly) FSAudioStream *streamer;
-@property (nonatomic) FSAudioStreamState streamerState;
-
-// new
+@property CGFloat totalSeconds;
 @property (nonatomic, strong) AVPlayer *player;
-@property (nonatomic, assign) PlayerState playerState;
 @property (nonatomic, strong) NSMutableData *trackData; // data being downloaded
 
 @property (strong, nonatomic) NSMutableArray *playQueue;
 @property (strong, nonatomic) UIActivityIndicatorView *btnActivityIndicator;
-@property BOOL lockPosbar;
 @property BOOL npViewSetupForCurrentEpisode;
 @property BOOL canRecord;
+@property BOOL fileIsLocal;
+@property BOOL fileIsStreaming; // file can be local and streaming at the same time
+@property BOOL shouldStayPaused;
 // twitter
 @property (nonatomic, strong) NSArray *arrayOfTwitterAccounts;
 @property (nonatomic, strong) ACAccount *twitterAccountToUse;
@@ -100,7 +87,7 @@ typedef enum : NSUInteger {
 // player
 - (void) controlButtonTapped;
 - (void) queueAndPlaySelectedEpisode:(NSString *)urlString;
-- (void) playNextPodcast;
+- (void) playNextEpisode;
 - (void) dismissSearch;
 - (void) cacheFeed:(NSDictionary *)feed forEntity:(PodcastEntity *)entity;
 - (NSDictionary*) retrieveCachedFeedForEntity:(PodcastEntity *)entity;
@@ -109,10 +96,12 @@ typedef enum : NSUInteger {
 - (BOOL) isPlaying;
 - (void) playerPlay;
 - (void) playerPause;
-
-+ (NSString*) convertSecondsToTimeString:(CGFloat)totalSeconds;
-+ (double) convertDurationStringToSeconds:(NSString *)duration;
-+ (NSURL *) getClipFileURL;
+- (void) setControlButtonStateToPlay;
+- (void) setControlButtonStateToPause;
+- (void) setControlButtonStateToAdd;
+- (void) setControlButtonStateToBuffering;
+- (NSURL *) getEpisodeUrl:(NSURL *)url;
+- (void) replacePlayerItemWithLocalCopy;
 
 // core data
 + (BOOL) saveContextWithReason:(NSString*)reason;
@@ -143,8 +132,8 @@ typedef enum : NSUInteger {
 - (void) addPodcast:(PodcastEntity *)podcastEntity withCallback:(void (^)(void))callback;
 - (void) addEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
 - (void) restorePodcastDataWithCallback:(void (^)(BOOL success, NSDictionary *response))callback;
-- (void) subscribeToPodcast:(PodcastEntity *)podcastEntity andButton:(CircleButton *)button;
-- (void) unsubscribeFromPodcast:(PodcastEntity *)podcastEntity andButton:(CircleButton *)button;
+- (void) subscribeToPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button;
+- (void) unsubscribeFromPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button;
 - (void) recommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) unRecommendEpisode:(EpisodeEntity *)episodeEntity;
 - (void) incrementListenCount:(EpisodeEntity *)episodeEntity;
@@ -182,5 +171,8 @@ typedef enum : NSUInteger {
 + (void)fadeOutView:(UIView *)view;
 + (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString;
 + (NSString *)timeElapsed: (NSString *)secondsString;
++ (NSString*) convertSecondsToTimeString:(CGFloat)totalSeconds;
++ (double) convertDurationStringToSeconds:(NSString *)duration;
++ (NSURL *) getClipFileURL;
 
 @end

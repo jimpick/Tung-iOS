@@ -13,7 +13,7 @@
         <attribute name="shortlink" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="storyShortlink" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="title" attributeType="String" syncable="YES"/>
-        <attribute name="trackPosition" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="trackProgress" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
         <attribute name="url" attributeType="String" syncable="YES"/>
         <relationship name="podcast" maxCount="1" deletionRule="Nullify" destinationEntity="PodcastEntity" inverseName="episodes" inverseEntity="PodcastEntity" syncable="YES"/>
     </entity>
