@@ -27,6 +27,10 @@
 #import "CircleButton.h"
 #import "AppDelegate.h"
 
+#import <FBSDKCoreKit/FBSDKCoreKit.h>
+#import <FBSDKLoginKit/FBSDKLoginKit.h>
+#import <FBSDKShareKit/FBSDKShareKit.h>
+
 @protocol ControlButtonDelegate <NSObject>
 
 //@required
@@ -40,7 +44,7 @@
 
 @end
 
-@interface TungCommonObjects : NSObject <UIAlertViewDelegate, UIActionSheetDelegate, NSURLConnectionDataDelegate, AVAssetResourceLoaderDelegate>
+@interface TungCommonObjects : NSObject <UIAlertViewDelegate, UIActionSheetDelegate, NSURLConnectionDataDelegate, AVAssetResourceLoaderDelegate, FBSDKSharingDelegate>
 
 @property (nonatomic, assign) id <ControlButtonDelegate> ctrlBtnDelegate;
 // for presenting views, etc.
@@ -150,7 +154,7 @@
 - (void) establishTwitterAccount;
 - (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url;
 // facebook
-- (void) postToFacebookWithText:(NSString *)text andShortLink:(NSString *)shortLink tag:(BOOL)tag;
+- (void) postToFacebookWithLink:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity;
 // class methods
 + (id) establishTungObjects;
 + (void) clearTempDirectory;

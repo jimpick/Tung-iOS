@@ -99,6 +99,13 @@ static NSString * const reuseIdentifier = @"artCell";
     }
     
 }
+
+- (void) viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    
+    _tung.viewController = self;
+}
+
 #pragma mark - tungObjects/tungPodcasts delegate methods
 
 // ControlButtonDelegate required method

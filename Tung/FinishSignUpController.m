@@ -10,6 +10,8 @@
 #import "TungCommonObjects.h"
 #import <Security/Security.h>
 
+//#import <FBSDKCoreKit/FBSDKCoreKit.h>
+
 @class BrowserViewController;
 
 @interface FinishSignUpController ()
@@ -144,6 +146,10 @@
                     [TungCommonObjects saveUserWithDict:userDict];
                     
                     // TODO: request to mutually follow all users
+                    
+                    // TODO: log fb activation...is this done automatically?
+                    //[FBSDKAppEvents activateApp];
+                    
 
                     
                 	// show feed

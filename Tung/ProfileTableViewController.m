@@ -31,7 +31,7 @@
 
 // Unique to ProfileTableViewController:
 
-@property (nonatomic, assign) BOOL userIsSelf;
+@property (nonatomic, assign) BOOL isLoggedInUser;
 @property (strong, nonatomic) NSArray *profileControls;
 @property (strong, nonatomic) NSString *profileURLString;
 @property (strong, nonatomic) UIBarButtonItem *headerLabel;
@@ -52,11 +52,11 @@ CGFloat screenWidth;
     _stories = [TungStories new];
     
     // set defaults for required properties
-    if (_profiledUserId == NULL) _profiledUserId = _tung.tungId;
+    if (!_profiledUserId) _profiledUserId = _tung.tungId;
     
     // check if the profiled user is themself
     if ([_tung.tungId isEqualToString:_profiledUserId]) {
-        _userIsSelf = YES;
+        _isLoggedInUser = YES;
         NSLog(@"user is self");
     }
     
@@ -93,6 +93,8 @@ CGFloat screenWidth;
 - (void) viewDidAppear:(BOOL)animated {
 
     [super viewDidAppear:animated];
+    
+    _tung.viewController = self;
 
     // check for new posts
     if (!_feedRefreshed) [self refreshFeed];
@@ -129,33 +131,40 @@ CGFloat screenWidth;
                 mostRecent = [NSNumber numberWithInt:0];
             }
         	*/
-            [_tung getProfileDataForUser:_profiledUserId withCallback:^(NSDictionary *jsonData) {
-                if (jsonData != nil) {
-                    NSDictionary *responseDict = jsonData;
-                    if ([responseDict objectForKey:@"user"]) {
-                        _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
-                        NSLog(@"profiled user data established");
-                        //_tungStereo.profiledUserData = _profiledUserData;
-                        // navigation bar title
-                        NSLog(@"set navigation title: %@", [_profiledUserData objectForKey:@"username"]);
-                        self.navigationItem.title = [_profiledUserData objectForKey:@"username"];
+            if (_isLoggedInUser) {
+                _profiledUserData = [[_tung getLoggedInUserData] mutableCopy];
+                [_profiledUserData setObject:@"--" forKey:@"followingCount"];
+                [_profiledUserData setObject:@"--" forKey:@"followerCount"];
+                // TODO: made request that just returns following/follower count for id
+            }
+            else {
+                [_tung getProfileDataForUser:_profiledUserId withCallback:^(NSDictionary *jsonData) {
+                    if (jsonData != nil) {
+                        NSDictionary *responseDict = jsonData;
+                        if ([responseDict objectForKey:@"user"]) {
+                            _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
+                            NSLog(@"profiled user data established");
+                            //_tungStereo.profiledUserData = _profiledUserData;
+                            // navigation bar title
+                            self.navigationItem.title = [_profiledUserData objectForKey:@"username"];
 
-                        [self.tableView reloadData];
-                        /*
-                        [_tungStereo requestPostsNewerThan:mostRecent
-                                               orOlderThan:[NSNumber numberWithInt:0]
-                                                  fromUser:_profiledUserId
-                                                orCategory:_profiledCategory
-                                            withSearchTerm:_searchTerm];
-                         */
+                            [self.tableView reloadData];
+                            /*
+                            [_tungStereo requestPostsNewerThan:mostRecent
+                                                   orOlderThan:[NSNumber numberWithInt:0]
+                                                      fromUser:_profiledUserId
+                                                    orCategory:_profiledCategory
+                                                withSearchTerm:_searchTerm];
+                             */
+                        }
+                        else if ([responseDict objectForKey:@"error"]) {
+                            UIAlertView *profileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+                            [profileErrorAlert show];
+                            // TODO: user not found, if user was deleted
+                        }
                     }
-                    else if ([responseDict objectForKey:@"error"]) {
-                        UIAlertView *profileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-                        [profileErrorAlert show];
-                        // TODO: user not found, if user was deleted
-                    }
-                }
-            }];
+                }];
+            }
         }
         // unreachable
         else {
@@ -280,7 +289,7 @@ CGFloat screenWidth;
     if (section == 0) {
         // don't show the profile cell(s) until we have data
         if (_profiledUserData.count > 0)
-            if (_userIsSelf)
+            if (_isLoggedInUser)
             	return 2 + _profileControls.count;
         	else
                 return 2;
@@ -294,9 +303,6 @@ CGFloat screenWidth;
         return 0;
     }
 }
-
-static UIColor *keyColor1;
-static UIColor *keyColor2;
 
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath
 {
@@ -351,15 +357,6 @@ static UIColor *keyColor2;
             cell.largeAvView.avatar = largeAvImage;
             [cell.largeAvView setNeedsDisplay];
             
-            // key colors
-            if (!keyColor1) {
-                NSArray *keyColors = [_tung determineKeyColorsFromImage:largeAvImage];
-                NSLog(@"profile key colors: %@", keyColors);
-                keyColor1 = [keyColors objectAtIndex:0];
-                keyColor2 = [keyColors objectAtIndex:1];
-            }
-            // cell background color
-            cell.backgroundColor = keyColor1;
             // selected color
             /*
             UIView *bgColorView = [[UIView alloc] init];
@@ -462,7 +459,7 @@ static UIColor *keyColor2;
                     [cell.bioLabel setAttributes:hotwordAttributes hotWord:STTweetHashtag];
                     [cell.bioLabel setAttributes:hotwordAttributes hotWord:STTweetLink];
                     
-                    /* TODO: FIX
+                    /* TODO: FIX HOTWORDS
                     [cell.bioLabel setDetectionBlock:^(STTweetHotWord hotWord, NSString *string, NSString *protocol, NSRange range) {
                         NSArray *hotWords = @[@"Handle", @"Hashtag", @"Link"];
                         
@@ -518,7 +515,7 @@ static UIColor *keyColor2;
             [fCell.followerCountBtn addTarget:self action:@selector(viewFollowers) forControlEvents:UIControlEventTouchUpInside];
             // button
             fCell.followBtn.backgroundColor = [UIColor clearColor];
-            if (_userIsSelf) {
+            if (_isLoggedInUser) {
                 [fCell.followBtn addTarget:self action:@selector(editProfile) forControlEvents:UIControlEventTouchUpInside];
             } else {
                 [fCell.followBtn addTarget:self action:@selector(followOrUnfollowUser) forControlEvents:UIControlEventTouchUpInside];
@@ -531,8 +528,6 @@ static UIColor *keyColor2;
                     fCell.followBtn.buttonText = @"Follow";
                 }
             }
-            
-            fCell.backgroundColor = [_tung darkenKeyColor:keyColor1];
             
             fCell.selectionStyle = UITableViewCellSelectionStyleNone;
             // kill insets for iOS 8
@@ -551,13 +546,11 @@ static UIColor *keyColor2;
             NSLog(@"profile control cell");
             static NSString *controlCellIdentifier = @"ProfileControlCell";
             UITableViewCell *cCell = [[UITableViewCell alloc] initWithStyle:UITableViewCellStyleDefault reuseIdentifier:controlCellIdentifier];
-            cCell.textLabel.textColor = [UIColor whiteColor];
+            cCell.textLabel.textColor = _tung.tungColor;
             cCell.textLabel.text = [_profileControls objectAtIndex:indexPath.row -2];
             cCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-            cCell.backgroundColor = _tung.tungColor;
-            UIView *bgColorView = [[UIView alloc] init];
-            bgColorView.backgroundColor = [_tung darkenKeyColor:keyColor2];
-            [cCell setSelectedBackgroundView:bgColorView];
+            cCell.backgroundColor = [UIColor whiteColor];
+            /*
             // kill insets for iOS 8
             if ([[UIDevice currentDevice].systemVersion floatValue] >= 8) {
                 cCell.preservesSuperviewLayoutMargins = NO;
@@ -566,6 +559,7 @@ static UIColor *keyColor2;
             // iOS 7 and later
             if ([cCell respondsToSelector:@selector(setSeparatorInset:)])
                 [cCell setSeparatorInset:UIEdgeInsetsZero];
+             */
             return cCell;
         }
     }
@@ -668,7 +662,7 @@ static UIColor *keyColor2;
 - (NSString *) determineProfileTableHeader {
     NSString *headerText;
     if (_stories.storiesArray.count > 0) {
-        if (_userIsSelf) {
+        if (_isLoggedInUser) {
              headerText = @" My posts";
         } else {
             headerText = [NSString stringWithFormat:@" Posts by %@", [_profiledUserData objectForKey:@"username"]];

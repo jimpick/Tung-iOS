@@ -2,8 +2,8 @@
 //  EpisodeEntity.h
 //  Tung
 //
-//  Created by Jamie Perkins on 9/17/15.
-//  Copyright (c) 2015 Jamie Perkins. All rights reserved.
+//  Created by Jamie Perkins on 9/21/15.
+//  Copyright © 2015 Jamie Perkins. All rights reserved.
 //
 
 #import <Foundation/Foundation.h>
@@ -11,22 +11,14 @@
 
 @class PodcastEntity;
 
+NS_ASSUME_NONNULL_BEGIN
+
 @interface EpisodeEntity : NSManagedObject
 
-@property (nonatomic, retain) NSNumber * collectionId;
-@property (nonatomic, retain) NSNumber * dataLength;
-@property (nonatomic, retain) NSString * desc;
-@property (nonatomic, retain) NSString * duration;
-@property (nonatomic, retain) NSString * episodeImageUrl;
-@property (nonatomic, retain) NSString * guid;
-@property (nonatomic, retain) NSString * id;
-@property (nonatomic, retain) NSNumber * isRecommended;
-@property (nonatomic, retain) NSDate * pubDate;
-@property (nonatomic, retain) NSString * shortlink;
-@property (nonatomic, retain) NSString * storyShortlink;
-@property (nonatomic, retain) NSString * title;
-@property (nonatomic, retain) NSNumber * trackProgress;
-@property (nonatomic, retain) NSString * url;
-@property (nonatomic, retain) PodcastEntity *podcast;
+// Insert code here to declare functionality of your managed object subclass
 
 @end
+
+NS_ASSUME_NONNULL_END
+
+#import "EpisodeEntity+CoreDataProperties.h"

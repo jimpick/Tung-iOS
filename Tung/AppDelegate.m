@@ -10,6 +10,7 @@
 #import <Security/Security.h>
 #import <Fabric/Fabric.h>
 #import <Crashlytics/Crashlytics.h>
+#import <FBSDKCoreKit/FBSDKCoreKit.h>
 
 
 @implementation AppDelegate
@@ -74,7 +75,9 @@
     
     //[Fabric with:@[CrashlyticsKit]];
 
-    return YES;
+    //return YES;
+    return [[FBSDKApplicationDelegate sharedInstance] application:application
+                                    didFinishLaunchingWithOptions:launchOptions];
 }
 /*
 - (NSUInteger)application:(UIApplication *)application supportedInterfaceOrientationsForWindow:(UIWindow *)window {
@@ -102,7 +105,6 @@
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
-    [FBAppCall handleDidBecomeActive];
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application
@@ -111,81 +113,16 @@
     [self saveContext];
 }
 
-#pragma mark - Facebook methods
-
-// This method will handle ALL the session state changes in the app
-- (void)sessionStateChanged:(FBSession *)session state:(FBSessionState) state error:(NSError *)error
-{
-    
-    NSLog(@"facebook session state changed: %ul", (unsigned int)state);
-    // If the session was opened successfully
-    if (!error && state == FBSessionStateOpen){
-        NSLog(@"- Session opened");
-        return;
-    }
-    if (state == FBSessionStateClosed || state == FBSessionStateClosedLoginFailed){
-        // If the session is closed
-        NSLog(@"- Session closed");
-    }
-    
-    // Handle errors
-    if (error){
-        
-        [_welcomeViewController.activityIndicator stopAnimating];
-        _welcomeViewController.working = NO;
-        
-        NSString *alertText;
-        NSString *alertTitle;
-        // If the error requires people using an app to make an action outside of the app in order to recover
-        if ([FBErrorUtility shouldNotifyUserForError:error] == YES){
-            alertTitle = @"Something went wrong";
-            alertText = [FBErrorUtility userMessageForError:error];
-            [self showMessage:alertText withTitle:alertTitle];
-        } else {
-            
-            // If the user cancelled login, do nothing
-            if ([FBErrorUtility errorCategoryForError:error] == FBErrorCategoryUserCancelled) {
-                NSLog(@"User cancelled login");
-                
-                // Handle session closures that happen outside of the app
-            } else if ([FBErrorUtility errorCategoryForError:error] == FBErrorCategoryAuthenticationReopenSession){
-                alertTitle = @"Session Error";
-                alertText = @"Your current session is no longer valid. Please log in again.";
-                [self showMessage:alertText withTitle:alertTitle];
-                
-                // For simplicity, here we just show a generic message for all other errors
-            } else {
-                //Get more error information from the error
-                NSDictionary *errorInformation = [[[error.userInfo objectForKey:@"com.facebook.sdk:ParsedJSONResponseKey"] objectForKey:@"body"] objectForKey:@"error"];
-                
-                // Show the user an error message
-                alertTitle = @"Something went wrong";
-                alertText = [NSString stringWithFormat:@"Please retry. \n\n If the problem persists contact us and mention this error code: %@", [errorInformation objectForKey:@"message"]];
-                [self showMessage:alertText withTitle:alertTitle];
-            }
-        }
-        // Clear this token
-        [FBSession.activeSession closeAndClearTokenInformation];
-        NSLog(@"facebook - logged out");
-    }
-}
-    
-// Show an alert message
-- (void)showMessage:(NSString *)text withTitle:(NSString *)title
-{
-    NSLog(@"facebook error: %@ - %@", title, text);
-    [[[UIAlertView alloc] initWithTitle:title
-                                message:text
-                               delegate:self
-                      cancelButtonTitle:@"OK"
-                      otherButtonTitles:nil] show];
-}
-
+#pragma mark - Facebook url handling
 
 - (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
 {
-    NSLog(@"fb open url: %@, source application: %@, annotation: %@", url, sourceApplication, annotation);
-    return [FBSession.activeSession handleOpenURL:url];
+    //NSLog(@"fb open url: %@, source application: %@, annotation: %@", url, sourceApplication, annotation);
+    return [[FBSDKApplicationDelegate sharedInstance] application:application
+                                                          openURL:url
+                                                sourceApplication:sourceApplication
+                                                       annotation:annotation
+            ];
 }
 
 

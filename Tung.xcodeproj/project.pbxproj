@@ -33,6 +33,11 @@
 		7D43368A1926C6AF00CBC02E /* UINavigationBarBackIndicatorDefault@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4336891926C6AF00CBC02E /* UINavigationBarBackIndicatorDefault@2x.png */; };
 		7D46A8931999CCE700F83C23 /* ProfileTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D46A8921999CCE700F83C23 /* ProfileTableViewController.m */; };
 		7D46A8961999CE7E00F83C23 /* LargeAvatarContainerView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D46A8951999CE7E00F83C23 /* LargeAvatarContainerView.m */; };
+		7D46DC001BB07854009379FF /* FBSDKCoreKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D46DBFD1BB07854009379FF /* FBSDKCoreKit.framework */; settings = {ASSET_TAGS = (); }; };
+		7D46DC011BB07854009379FF /* FBSDKLoginKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D46DBFE1BB07854009379FF /* FBSDKLoginKit.framework */; settings = {ASSET_TAGS = (); }; };
+		7D46DC021BB07854009379FF /* FBSDKShareKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D46DBFF1BB07854009379FF /* FBSDKShareKit.framework */; settings = {ASSET_TAGS = (); }; };
+		7D46DC131BB0CC30009379FF /* EpisodeEntity+CoreDataProperties.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D46DC101BB0CC30009379FF /* EpisodeEntity+CoreDataProperties.m */; settings = {ASSET_TAGS = (); }; };
+		7D46DC141BB0CC30009379FF /* EpisodeEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D46DC121BB0CC30009379FF /* EpisodeEntity.m */; settings = {ASSET_TAGS = (); }; };
 		7D4925051B28A7C60034AD31 /* FeedCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4925041B28A7C60034AD31 /* FeedCell.m */; };
 		7D49E9251B4ED35400A75797 /* SearchTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D49E9241B4ED35400A75797 /* SearchTableViewController.m */; };
 		7D4B259A1A0AE6B20035FD35 /* ProfileListCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4B25991A0AE6B20035FD35 /* ProfileListCell.m */; };
@@ -79,7 +84,6 @@
 		7D61F95118A1ED4700710CA7 /* MainStoryboard.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7D61F95018A1ED4700710CA7 /* MainStoryboard.storyboard */; };
 		7D63F80D1AF6CBA100765289 /* HeaderView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7D63F80C1AF6CBA100765289 /* HeaderView.xib */; };
 		7D63F8101AF6CBCC00765289 /* HeaderView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D63F80F1AF6CBCC00765289 /* HeaderView.m */; };
-		7D6437651BAB470A00766BB4 /* EpisodeEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6437641BAB470A00766BB4 /* EpisodeEntity.m */; };
 		7D64376A1BAB58B800766BB4 /* IconView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6437691BAB58B800766BB4 /* IconView.m */; };
 		7D6459931A083DBA00BAC445 /* ProfileListTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6459921A083DBA00BAC445 /* ProfileListTableViewController.m */; };
 		7D670F301934EE7600239673 /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D670F2F1934EE7600239673 /* Reachability.m */; };
@@ -219,6 +223,13 @@
 		7D46A8921999CCE700F83C23 /* ProfileTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProfileTableViewController.m; sourceTree = "<group>"; };
 		7D46A8941999CE7E00F83C23 /* LargeAvatarContainerView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LargeAvatarContainerView.h; sourceTree = "<group>"; };
 		7D46A8951999CE7E00F83C23 /* LargeAvatarContainerView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LargeAvatarContainerView.m; sourceTree = "<group>"; };
+		7D46DBFD1BB07854009379FF /* FBSDKCoreKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = FBSDKCoreKit.framework; sourceTree = "<group>"; };
+		7D46DBFE1BB07854009379FF /* FBSDKLoginKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = FBSDKLoginKit.framework; sourceTree = "<group>"; };
+		7D46DBFF1BB07854009379FF /* FBSDKShareKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = FBSDKShareKit.framework; sourceTree = "<group>"; };
+		7D46DC0F1BB0CC30009379FF /* EpisodeEntity+CoreDataProperties.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "EpisodeEntity+CoreDataProperties.h"; sourceTree = "<group>"; };
+		7D46DC101BB0CC30009379FF /* EpisodeEntity+CoreDataProperties.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "EpisodeEntity+CoreDataProperties.m"; sourceTree = "<group>"; };
+		7D46DC111BB0CC30009379FF /* EpisodeEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodeEntity.h; sourceTree = "<group>"; };
+		7D46DC121BB0CC30009379FF /* EpisodeEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodeEntity.m; sourceTree = "<group>"; };
 		7D4925031B28A7C60034AD31 /* FeedCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FeedCell.h; sourceTree = "<group>"; };
 		7D4925041B28A7C60034AD31 /* FeedCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FeedCell.m; sourceTree = "<group>"; };
 		7D49E9231B4ED35400A75797 /* SearchTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SearchTableViewController.h; sourceTree = "<group>"; };
@@ -281,8 +292,6 @@
 		7D63F80C1AF6CBA100765289 /* HeaderView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = HeaderView.xib; sourceTree = "<group>"; };
 		7D63F80E1AF6CBCC00765289 /* HeaderView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HeaderView.h; sourceTree = "<group>"; };
 		7D63F80F1AF6CBCC00765289 /* HeaderView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HeaderView.m; sourceTree = "<group>"; };
-		7D6437631BAB470A00766BB4 /* EpisodeEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodeEntity.h; sourceTree = "<group>"; };
-		7D6437641BAB470A00766BB4 /* EpisodeEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodeEntity.m; sourceTree = "<group>"; };
 		7D6437681BAB58B800766BB4 /* IconView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IconView.h; sourceTree = "<group>"; };
 		7D6437691BAB58B800766BB4 /* IconView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IconView.m; sourceTree = "<group>"; };
 		7D6459911A083DBA00BAC445 /* ProfileListTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProfileListTableViewController.h; sourceTree = "<group>"; };
@@ -415,6 +424,7 @@
 			files = (
 				7DE7809E1AEAEBFA0081E28E /* CFNetwork.framework in Frameworks */,
 				7DDF1BBF198AA43F008CB927 /* AudioToolbox.framework in Frameworks */,
+				7D46DC021BB07854009379FF /* FBSDKShareKit.framework in Frameworks */,
 				7DC923B319072AB4004A5E96 /* Social.framework in Frameworks */,
 				7DC923B119072842004A5E96 /* Accounts.framework in Frameworks */,
 				7D56613318B9B46E0006269B /* MediaPlayer.framework in Frameworks */,
@@ -423,9 +433,11 @@
 				7D61F91E18A1EB2F00710CA7 /* CoreGraphics.framework in Frameworks */,
 				7D61F92218A1EB2F00710CA7 /* CoreData.framework in Frameworks */,
 				7DBCC19C1A1020E2006AB72D /* Fabric.framework in Frameworks */,
+				7D46DC001BB07854009379FF /* FBSDKCoreKit.framework in Frameworks */,
 				7DA465EF19AFDF7300DA3EE7 /* FacebookSDK.framework in Frameworks */,
 				7D61F92018A1EB2F00710CA7 /* UIKit.framework in Frameworks */,
 				7DBCC19B1A1020E2006AB72D /* Crashlytics.framework in Frameworks */,
+				7D46DC011BB07854009379FF /* FBSDKLoginKit.framework in Frameworks */,
 				7D61F91C18A1EB2F00710CA7 /* Foundation.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -477,6 +489,9 @@
 		7D61F91A18A1EB2F00710CA7 /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
+				7D46DBFD1BB07854009379FF /* FBSDKCoreKit.framework */,
+				7D46DBFE1BB07854009379FF /* FBSDKLoginKit.framework */,
+				7D46DBFF1BB07854009379FF /* FBSDKShareKit.framework */,
 				7DE7809D1AEAEBFA0081E28E /* CFNetwork.framework */,
 				7DA465EE19AFDF7300DA3EE7 /* FacebookSDK.framework */,
 				7DDF1BBE198AA43F008CB927 /* AudioToolbox.framework */,
@@ -513,8 +528,10 @@
 				7DF5664F199D4B56003176C1 /* BrowserViewController.m */,
 				7D61F93218A1EB2F00710CA7 /* Images.xcassets */,
 				7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */,
-				7D6437631BAB470A00766BB4 /* EpisodeEntity.h */,
-				7D6437641BAB470A00766BB4 /* EpisodeEntity.m */,
+				7D46DC0F1BB0CC30009379FF /* EpisodeEntity+CoreDataProperties.h */,
+				7D46DC101BB0CC30009379FF /* EpisodeEntity+CoreDataProperties.m */,
+				7D46DC111BB0CC30009379FF /* EpisodeEntity.h */,
+				7D46DC121BB0CC30009379FF /* EpisodeEntity.m */,
 				7DA237C31BA08D7C00A9466B /* PodcastEntity.h */,
 				7DA237C41BA08D7C00A9466B /* PodcastEntity.m */,
 				7D59CCDB1B6A7BFD0055D300 /* UserEntity.h */,
@@ -938,6 +955,7 @@
 			files = (
 				7D4B259D1A0AF2370035FD35 /* tungPeople.m in Sources */,
 				7DA5ED471B548181007BD424 /* BlurView.m in Sources */,
+				7D46DC141BB0CC30009379FF /* EpisodeEntity.m in Sources */,
 				7DE99BD61ACE3F02007A154F /* EpisodeCell.m in Sources */,
 				7DA465EA19AF9A2D00DA3EE7 /* TungStyleKit.m in Sources */,
 				7DA465E119AE2F2C00DA3EE7 /* HorizontalLine.m in Sources */,
@@ -954,7 +972,7 @@
 				7DDC9BED1B67DAB7005E4E52 /* DescriptionWebViewController.m in Sources */,
 				7D6D55EB1B66A06000DFF759 /* EpisodeTableViewController.m in Sources */,
 				7D282C791AF2852500495E74 /* SoundClipCell.m in Sources */,
-				7D6437651BAB470A00766BB4 /* EpisodeEntity.m in Sources */,
+				7D46DC131BB0CC30009379FF /* EpisodeEntity+CoreDataProperties.m in Sources */,
 				7D12A4ED1A01308700A9A004 /* IconButton.m in Sources */,
 				7D5BC1A71A546A61008C008D /* MainTabBarController.m in Sources */,
 				7DE249A41B3917BB00128607 /* TungStories.m in Sources */,

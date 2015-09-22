@@ -12,7 +12,10 @@
 #import <QuartzCore/QuartzCore.h>
 #import <Security/Security.h>
 #import "TungCommonObjects.h"
-#import <FacebookSDK/FacebookSDK.h>
+
+#import <FBSDKCoreKit/FBSDKCoreKit.h>
+#import <FBSDKLoginKit/FBSDKLoginKit.h>
+
 #import "AppDelegate.h"
 
 @interface WelcomeViewController ()
@@ -152,12 +155,22 @@
 
 #pragma mark - Signing in
 
+- (void) loginRequestBegan {
+    _activityIndicator.alpha = 1;
+    [_activityIndicator startAnimating];
+    _working = YES;
+}
+
+- (void) loginRequestEnded {
+    
+    _activityIndicator.alpha = 0;
+    _working = NO;
+}
+
 - (IBAction)signUpWithTwitter:(id)sender {
     NSLog(@"sign up with twitter");
     if (!_working) {
-        _activityIndicator.alpha = 1;
-        [_activityIndicator startAnimating];
-        _working = YES;
+        [self loginRequestBegan];
         
         if (!_tung.twitterAccountToUse) {
             // watch for account to get set or fail
@@ -178,8 +191,7 @@
     
     if ([keyPath isEqualToString:@"tung.twitterAccountStatus"]) {
         if ([_tung.twitterAccountStatus isEqualToString:@"failed"]) {
-            [_activityIndicator stopAnimating];
-            _working = NO;
+            [self loginRequestEnded];
         }
         else if ([_tung.twitterAccountStatus isEqualToString:@"success"]) {
             [self continueTwitterSignUpWithAccount:_tung.twitterAccountToUse];
@@ -256,9 +268,41 @@
     
     if (!_working) {
         
-        _activityIndicator.alpha = 1;
-        [_activityIndicator startAnimating];
+        [self loginRequestBegan];
         
+        if (![FBSDKAccessToken currentAccessToken]) {
+            
+            FBSDKLoginManager *login = [[FBSDKLoginManager alloc] init];
+            [login logInWithReadPermissions: @[@"public_profile", @"email", @"user_location", @"user_website", @"user_about_me"]
+                         fromViewController:self
+                                    handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
+                                         if (error) {
+                                             NSLog(@"fb - Process error: %@", error);
+                                             NSString *alertText = [NSString stringWithFormat:@"\"%@\"", error];
+                                             UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Facebook error" message:alertText delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                                             [errorAlert show];
+                                             [self loginRequestEnded];
+                                         }
+                                         else if (result.isCancelled) {
+                                             NSLog(@"fb - login cancelled");
+                                             [self loginRequestEnded];
+                                         }
+                                         else {
+                                             NSLog(@"fb - Logged in");
+                                             if ([FBSDKAccessToken currentAccessToken]) {
+                                                [self continueFacebookSignup];
+                                             }
+                                         }
+             }];
+        }
+        else {
+            [self continueFacebookSignup];
+            
+        }
+
+        
+        // OLD DEPRECATED FB SDK 3.X CODE
+        /*
         // clear any active tokens
         [FBSession.activeSession closeAndClearTokenInformation];
         // get a new session token
@@ -278,37 +322,42 @@
                                               _activityIndicator.alpha = 0;
                                               _working = NO;
                                           }
-                                      }];
+                                      }];*/
 
     }
 }
 
 - (void) continueFacebookSignup {
     
-    [[FBRequest requestForMe] startWithCompletionHandler:^(FBRequestConnection *connection, NSDictionary<FBGraphUser> *fbUser, NSError *error) {
-        if (error) {
-            // Handle error
-            NSLog(@"request for me error: %@", error);
-        }
-        else {
-            NSLog(@"fbUser: %@", fbUser);
-            NSString *userImageURL = [NSString stringWithFormat:@"https://graph.facebook.com/%@/picture?type=square&height=640&width=640", [fbUser objectID]];
-            _profileData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                            userImageURL, @"avatarURL",
-                            [fbUser objectForKey:@"id"], @"facebook_id",
-                            @"", @"username",
-                            [fbUser name], @"name",
-                            [fbUser objectForKey:@"location"], @"location",
-                            [fbUser objectForKey:@"bio"], @"bio",
-                            [fbUser objectForKey:@"website"], @"url", nil];
-            NSLog(@"profile data: %@", _profileData);
-            
-            // continue...
-            [self getTokenWithCallback:^{
-                [self signInOrSignUpUsing:@"facebook"];
-            }];
-        }
-    }];
+    NSDictionary *params = @{ @"fields": @"id,name,email,location,bio,website" };
+    [[[FBSDKGraphRequest alloc] initWithGraphPath:@"me" parameters:params]
+     startWithCompletionHandler:^(FBSDKGraphRequestConnection *connection, id result, NSError *error) {
+         if (!error) {
+             NSLog(@"fetched user:%@", result);
+             
+             NSDictionary *fbUser = result;
+             
+             NSString *userImageURL = [NSString stringWithFormat:@"https://graph.facebook.com/%@/picture?type=square&height=640&width=640", [fbUser objectForKey:@"id"]];
+             _profileData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+                             userImageURL, @"avatarURL",
+                             [fbUser objectForKey:@"id"], @"facebook_id",
+                             @"", @"username",
+                             [fbUser objectForKey:@"name"], @"name",
+                             [fbUser objectForKey:@"email"], @"email",
+                             [[fbUser objectForKey:@"location"] objectForKey:@"name"], @"location",
+                             [fbUser objectForKey:@"bio"], @"bio",
+                             [fbUser objectForKey:@"website"], @"url", nil];
+             NSLog(@"profile data: %@", _profileData);
+             
+             // continue...
+             [self getTokenWithCallback:^{
+                 [self signInOrSignUpUsing:@"facebook"];
+             }];
+         }
+         else {
+             NSLog(@"request for me error: %@", error);
+         }
+     }];
     
 }
 
@@ -395,6 +444,8 @@
                     // store user data
                     [TungCommonObjects saveUserWithDict:userDict];
                     NSLog(@"saved user data: %@", userDict);
+                    
+                    [self loginRequestEnded];
                 
                     // show feed
                     UIViewController *feed = [self.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];

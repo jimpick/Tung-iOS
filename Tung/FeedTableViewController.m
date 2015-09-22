@@ -29,7 +29,6 @@
     _tung = [TungCommonObjects establishTungObjects];
     [_tung establishCred];
     _tung.ctrlBtnDelegate = self;
-    _tung.viewController = self;
     
     // for search controller
     _podcast = [TungPodcast new];
@@ -93,6 +92,8 @@
 
 -(void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
+    
+    _tung.viewController = self;
     
     //self.navigationController.navigationBar.translucent = NO;
 }

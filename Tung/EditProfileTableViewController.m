@@ -118,6 +118,7 @@ static UIImage *iconRedX;
     _field_name.delegate = self;
     _field_name.inputAccessoryView = _keyboardToolbar;
     [_field_name addTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
+    if ([_profileData objectForKey:@"email"]) _field_email.text = [_profileData objectForKey:@"email"];
     _field_email.delegate = self;
     _field_email.inputAccessoryView = _keyboardToolbar;
     [_field_email addTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
@@ -152,7 +153,7 @@ static UIImage *iconRedX;
     NSDictionary* keyboardInfo = [notification userInfo];
     NSValue* keyboardFrameBegin = [keyboardInfo valueForKey:UIKeyboardFrameBeginUserInfoKey];
     CGRect keyboardRect = [keyboardFrameBegin CGRectValue];
-    NSLog(@"keyboard rect: %@", NSStringFromCGRect(keyboardRect));
+    //NSLog(@"keyboard rect: %@", NSStringFromCGRect(keyboardRect));
     
     self.tableView.contentInset =  UIEdgeInsetsMake(0, 0, keyboardRect.size.height, 0);
 }
@@ -376,8 +377,8 @@ static UIImage *iconRedX;
         account = @"Facebook";
     else
         account = @"Twitter";
-    NSString *message = [NSString stringWithFormat:@"Your avatar will be changed to the one currently being used by your %@ account. Are you sure?", account];
-    UIAlertView *changeAvatarConfirm = [[UIAlertView alloc] initWithTitle:@"Update Avatar?" message:message delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Yes", nil];
+    NSString *message = [NSString stringWithFormat:@"Your avatar will be changed to the one currently being used by your %@ account. Sound good?", account];
+    UIAlertView *changeAvatarConfirm = [[UIAlertView alloc] initWithTitle:@"Update Avatar?" message:message delegate:self cancelButtonTitle:@"No" otherButtonTitles:@"Yes", nil];
     changeAvatarConfirm.tag = 79;
     [changeAvatarConfirm show];
 }
@@ -392,32 +393,18 @@ static UIImage *iconRedX;
     NSDictionary *userData = [_tung getLoggedInUserData];
     if ([[userData objectForKey:@"facebook_id"] integerValue] > 0) {
         // Facebook
-        // check session in case it has changed since they turned on facebook sharing
-        if (FBSession.activeSession.state == FBSessionStateOpen
-            || FBSession.activeSession.state == FBSessionStateOpenTokenExtended) {
-            
-            [self requestAndSaveNewFacebookAvatar];
-            
-        } else {
-            [FBSession openActiveSessionWithReadPermissions:@[@"public_profile", @"publish_actions"]
-                                               allowLoginUI:YES
-                                          completionHandler:
-             ^(FBSession *session, FBSessionState state, NSError *error) {
-                 // Retrieve the app delegate
-                 AppDelegate* appDelegate = [UIApplication sharedApplication].delegate;
-                 // Call the app delegate's sessionStateChanged:state:error method to handle session state changes
-                 [appDelegate sessionStateChanged:session state:state error:error];
-                 if (state == FBSessionStateOpen) {
-                     // post
-                     [self requestAndSaveNewFacebookAvatar];
-                     
-                 } else {
-                     UIAlertView *noFacebookAccessAlert = [[UIAlertView alloc] initWithTitle:@"No Facebook Access" message:@"Your avatar could not be updated because Facebook access was denied." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                     noFacebookAccessAlert.tag = 69;
-                     [noFacebookAccessAlert show];
-                 }
-             }];
-        }
+        NSString *avatarURL = [NSString stringWithFormat:@"https://graph.facebook.com/%@/picture?type=square&height=640&width=640", [userData objectForKey:@"facebook_id"]];
+        
+        [_profileData setObject:avatarURL forKey:@"avatarURL"];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            [self createAvatarSizesAndSetAvatarWithCallback:^(BOOL success) {
+                if (success) {
+                    [self updateAvatar];
+                } else {
+                    NSLog(@"error creating avatar sizes");
+                }
+            }];
+        });
 
     }
     else if ([[userData objectForKey:@"twitter_id"] integerValue] > 0) {
@@ -430,31 +417,6 @@ static UIImage *iconRedX;
             [self getTwitterAvatarUrl];
         }
     }
-}
-
--(void) requestAndSaveNewFacebookAvatar {
-    [[FBRequest requestForMe] startWithCompletionHandler:^(FBRequestConnection *connection, NSDictionary<FBGraphUser> *fbUser, NSError *error) {
-        if (error) {
-            // Handle error
-            NSLog(@"request for me error: %@", error);
-        }
-        else {
-            NSLog(@"fbUser: %@", fbUser);
-            NSString *avatarURL = [NSString stringWithFormat:@"https://graph.facebook.com/%@/picture?type=square&height=640&width=640", [fbUser objectID]];
-            
-            [_profileData setObject:avatarURL forKey:@"avatarURL"];
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [self createAvatarSizesAndSetAvatarWithCallback:^(BOOL success) {
-                    if (success) {
-                        [self updateAvatar];
-                    } else {
-                        NSLog(@"error creating avatar sizes");
-                    }
-                }];
-            });
-            
-        }
-    }];
 }
 
 // wait for twitter account to be established, then request avatar url

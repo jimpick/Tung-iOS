@@ -7,7 +7,6 @@
 //
 
 #import <UIKit/UIKit.h>
-#import <FacebookSDK/FacebookSDK.h>
 #import "WelcomeViewController.h"
 #import "PodcastEntity.h"
 #import "EpisodeEntity.h"
@@ -26,6 +25,5 @@
 
 - (void)saveContext;
 - (NSURL *)applicationDocumentsDirectory;
-- (void)sessionStateChanged:(FBSession *)session state:(FBSessionState) state error:(NSError *)error;
 
 @end

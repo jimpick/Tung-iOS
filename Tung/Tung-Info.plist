@@ -51,7 +51,7 @@
 	<key>FacebookAppID</key>
 	<string>823428404348902</string>
 	<key>FacebookDisplayName</key>
-	<string>tung</string>
+	<string>${PRODUCT_NAME}</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>NSAppTransportSecurity</key>
@@ -77,6 +77,13 @@
 	<array>
 		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+	        <string>fbapi</string>
+	        <string>fb-messenger-api</string>
+	        <string>fbauth2</string>
+	        <string>fbshareextension</string>
 	</array>
 </dict>
 </plist>

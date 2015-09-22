@@ -16,6 +16,9 @@
 
 #include <AudioToolbox/AudioToolbox.h>
 
+#import <FBSDKCoreKit/FBSDKCoreKit.h>
+#import <FBSDKLoginKit/FBSDKLoginKit.h>
+
 #define MAX_RECORD_TIME 19
 #define MIN_RECORD_TIME 2
 #define MAX_COMMENT_CHARS 220
@@ -201,6 +204,8 @@ static NSString *kShareStoryIntention = @"Share your interactions";
     _shareLabel.text = @"";
     _shareLabel.alpha = 0;
     _shareLabel.textColor = _tung.tungColor;
+    
+    [self setUpViewForNothingPlaying];
 
 }
 
@@ -212,6 +217,8 @@ static NSString *kShareStoryIntention = @"Share your interactions";
 
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
+    
+    _tung.viewController = self;
     
     // set up views, order below is important for entity assigning
     if (!_npControlsViewIsSetup) [self setUpNowPlayingControlView];
@@ -1473,6 +1480,31 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
     [btn setNeedsDisplay];
     
     if (btn.on) {
+        
+        if ([FBSDKAccessToken currentAccessToken] || ![[FBSDKAccessToken currentAccessToken] hasGranted:@"publish_actions"]) {
+            
+            FBSDKLoginManager *loginManager = [[FBSDKLoginManager alloc] init];
+            [loginManager logInWithPublishPermissions:@[@"publish_actions"] fromViewController:self handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
+                if (error) {
+                    NSString *alertText = [NSString stringWithFormat:@"\"%@\"", error];
+                    UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Facebook error" message:alertText delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                    [errorAlert show];
+                }
+                else if (result.isCancelled) {
+                    NSString *alertTitle = @"Tung was denied permission";
+                    NSString *alertText = @"Tung cannot currently post to Facebook because it was denied posting permission.";
+                    UIAlertView *fbAlert = [[UIAlertView alloc] initWithTitle:alertTitle
+                                                                      message:alertText
+                                                                     delegate:self
+                                                            cancelButtonTitle:@"OK"
+                                                            otherButtonTitles:nil];
+                    [fbAlert show];
+                }
+            }];
+        }
+        
+        // DEPRECATED FB SDK 3.X CODE
+        /*
         // check facebook session
         NSLog(@"checking FB session state....");
         //NSLog(@"facebook session state at toggle: %lu", FBSession.activeSession.state);
@@ -1518,6 +1550,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                  }
              }];
         }
+         */
     }
 }
 
@@ -1627,15 +1660,14 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                 NSString *storyShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"storyShortlink"];
                 _tung.npEpisodeEntity.storyShortlink = storyShortlink;
                 [TungCommonObjects saveContextWithReason:@"got episode shortlinks from new comment"];
-                NSString *eventShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"eventShortlink"];
-                NSString *link = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, eventShortlink];
+                NSString *link = [NSString stringWithFormat:@"%@s/%@", _tung.tungSiteRootUrl, storyShortlink];
                 // tweet?
                 if (_commentAndPostView.twitterButton.on) {
                     [_tung postTweetWithText:text andUrl:link];
                 }
                 // fb share?
                 if (_commentAndPostView.facebookButton.on) {
-                    [_tung postToFacebookWithText:text andShortLink:link tag:NO];
+                    [_tung postToFacebookWithLink:link andEpisode:_tung.npEpisodeEntity];
                 }
             }
             else {
@@ -1686,7 +1718,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                 }
                 // fb share?
                 if (_commentAndPostView.facebookButton.on) {
-                    [_tung postToFacebookWithText:caption andShortLink:link tag:NO];
+                    [_tung postToFacebookWithLink:link andEpisode:_tung.npEpisodeEntity];
                 }
             }
             else {
@@ -1723,7 +1755,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
             }
             // fb share?
             if (_commentAndPostView.facebookButton.on) {
-                [_tung postToFacebookWithText:caption andShortLink:link tag:NO];
+                [_tung postToFacebookWithLink:link andEpisode:_tung.npEpisodeEntity];
             }
         }
     }

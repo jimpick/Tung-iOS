@@ -26,7 +26,7 @@
 #import "ALDisk.h"
 #import "CCColorCube.h"
 
-#import <MobileCoreServices/MobileCoreServices.h>
+#import <MobileCoreServices/MobileCoreServices.h> // do I need this?
 
 @interface TungCommonObjects()
 
@@ -150,8 +150,11 @@
 
 - (void) determineTotalSeconds {
     // need to wait until player is playing to get duration or app freezes
+    NSLog(@"determineTotalSeconds");
     if ([self isPlaying]) {
+        NSLog(@"determined total seconds. invalidate timer on thread: %@", [NSThread currentThread]);
         [_getTotalSecondsTimer invalidate];
+        _getTotalSecondsTimer = nil;
         _totalSeconds = CMTimeGetSeconds(_player.currentItem.asset.duration);
     }
 }
@@ -173,25 +176,24 @@
                 // check for track progress
                 float secs = 0;
                 CMTime time;
-                if (_npEpisodeEntity.trackProgress.floatValue > 0) {
+                if (_npEpisodeEntity.trackProgress.floatValue > 0 && _npEpisodeEntity.trackPosition.floatValue < 1) {
                     secs = _npEpisodeEntity.trackProgress.floatValue;
-                    NSLog(@"found track progress, seeking to time: %f", secs);
                     time = CMTimeMake((secs * 100), 100);
                 }
                 
                 if (secs > 0) {
                     [_player seekToTime:time completionHandler:^(BOOL finished) {
+                        NSLog(@"found track progress, seeking to time: %f", secs);
                         [self playerPlay];
-                        _getTotalSecondsTimer = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:YES];
+                        
                     }];
                 } else {
                     [_player prerollAtRate:1.0 completionHandler:^(BOOL finished) {
                         dispatch_async(dispatch_get_main_queue(), ^{
-                            NSLog(@"finished preroll: %d", finished);
-                            [self playerPlay];
-                            _getTotalSecondsTimer = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:YES];
+                            NSLog(@"No track progress, start from beginning. finished preroll: %d", finished);
                         });
                     }];
+                    
                 }
                 break;
             case AVPlayerItemStatusUnknown:
@@ -209,6 +211,10 @@
                 [self setControlButtonStateToPause];
             } else if (!_shouldStayPaused && ![self isPlaying]) {
                 [self playerPlay];
+            }
+            if (_totalSeconds == 0) {
+                NSLog(@"fire timer from thread: %@", [NSThread currentThread]);
+                _getTotalSecondsTimer = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:YES];
             }
             
         } else {
@@ -325,6 +331,7 @@
             [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:_player.currentItem];
             [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemPlaybackStalledNotification object:_player.currentItem];
             [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemFailedToPlayToEndTimeNotification object:_player.currentItem];
+            [_player cancelPendingPrerolls];
             _player = nil;
         }
         
@@ -359,8 +366,6 @@
             NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex.intValue];
             _npEpisodeEntity = [TungCommonObjects getEntityForPodcast:_npPodcastDict andEpisode:episodeDict save:YES];
         }
-        NSLog(@"NP entity changed to: %@", _npEpisodeEntity.title);
-        NSLog(@"NP entity track progress: %f", _npEpisodeEntity.trackProgress.floatValue);
         
         // clear leftover connection data
         if (self.connection) {
@@ -404,6 +409,10 @@
     float secs = CMTimeGetSeconds(_player.currentTime);
     
     _npEpisodeEntity.trackProgress = [NSNumber numberWithFloat:secs];
+    if (_totalSeconds > 0) {
+        float pos = secs / _totalSeconds;
+        _npEpisodeEntity.trackPosition = [NSNumber numberWithFloat:pos];
+    }
     [TungCommonObjects saveContextWithReason:[NSString stringWithFormat:@"saving track progress: %f", secs]];
 }
 
@@ -413,7 +422,7 @@
     [self incrementListenCount:_npEpisodeEntity];
     // custom eject
     if (_playQueue.count > 0) {
-        _npEpisodeEntity.trackProgress = [NSNumber numberWithFloat:0];
+        _npEpisodeEntity.trackPosition = [NSNumber numberWithFloat:1];
         [TungCommonObjects saveContextWithReason:[NSString stringWithFormat:@"saving track progress: %d", 0]];
         [_playQueue removeObjectAtIndex:0];
     }
@@ -1073,6 +1082,7 @@ static NSString *feedDictsDirName = @"feedDicts";
         episodeEntity.isRecommended = [NSNumber numberWithBool:NO];
         episodeEntity.pubDate = [episodeDict objectForKey:@"pubDate"];
         episodeEntity.trackProgress = [NSNumber numberWithFloat:0];
+        episodeEntity.trackPosition = [NSNumber numberWithFloat:0];
         episodeEntity.podcast = podcastEntity; // move out of if/else? podcast entity seems static
         if ([episodeDict objectForKey:@"itunes:duration"]) {
             episodeEntity.duration = [episodeDict objectForKey:@"itunes:duration"];
@@ -1271,6 +1281,35 @@ static NSString *feedDictsDirName = @"feedDicts";
     } else {
         return NO;
     }
+}
+
++ (void) removePodcastAndEpisodeData {
+    
+    NSLog(@"remove podcast and episode data");
+    
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    // delete episode entity data
+    NSFetchRequest *eRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
+    NSError *eError = nil;
+    NSArray *eResult = [appDelegate.managedObjectContext executeFetchRequest:eRequest error:&eError];
+    if (eResult.count > 0) {
+        for (int i = 0; i < eResult.count; i++) {
+            [appDelegate.managedObjectContext deleteObject:[eResult objectAtIndex:i]];
+            NSLog(@"deleted episode record at index: %d", i);
+        }
+    }
+    
+    NSFetchRequest *pRequest = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
+    NSError *pError = nil;
+    NSArray *pResult = [appDelegate.managedObjectContext executeFetchRequest:pRequest error:&pError];
+    if (pResult.count > 0) {
+        for (int i = 0; i < pResult.count; i++) {
+            [appDelegate.managedObjectContext deleteObject:[pResult objectAtIndex:i]];
+            NSLog(@"deleted podcast record at index: %d", i);
+        }
+    }
+    
+    [self saveContextWithReason:@"removed podcast and episode data"];
 }
 
 #pragma mark - Key Colors
@@ -2079,8 +2118,7 @@ static NSArray *colors;
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
-                    NSLog(@"successfully posted comment and got shortlink: %@", shortlink);
+                    NSLog(@"successfully posted comment");
                     callback(YES, responseDict);
                 }
             }
@@ -2163,8 +2201,7 @@ static NSArray *colors;
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
-                    NSLog(@"successfully posted clip and got shortlink: %@", shortlink);
+                    NSLog(@"successfully posted clip");
                     callback(YES, responseDict);
                 }
             }
@@ -2388,6 +2425,7 @@ static NSArray *colors;
     NSLog(@"signing out");
     
     [self deleteLoggedInUserData];
+    [TungCommonObjects removePodcastAndEpisodeData];
     
     _tungId = @"";
     _tungToken = @"";
@@ -2399,12 +2437,8 @@ static NSArray *colors;
     [TungCommonObjects deleteCredentials];
     
     // close FB session if open
-    if (FBSession.activeSession.state == FBSessionStateOpen
-        || FBSession.activeSession.state == FBSessionStateOpenTokenExtended) {
-        
-        // Close the session and remove the access token from the cache
-        // The session state handler (in the app delegate) will be called automatically
-        [FBSession.activeSession closeAndClearTokenInformation];
+    if ([FBSDKAccessToken currentAccessToken]) {
+    	[[FBSDKLoginManager new] logOut];
     }
 
     // since this method can get called by dismissing an unauthorized alert
@@ -2519,107 +2553,44 @@ static NSArray *colors;
     }];
 }
 
-#pragma mark - Facebook
+#pragma mark - Facebook sharing and share delegate methods
 
-- (void) postToFacebookWithText:(NSString *)text andShortLink:(NSString *)shortlink tag:(BOOL)tag {
+- (void) postToFacebookWithLink:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity {
+    
+    FBSDKShareLinkContent *content = [[FBSDKShareLinkContent alloc] init];
+    content.contentURL = [NSURL URLWithString:link];
+    content.imageURL = [NSURL URLWithString:episodeEntity.podcast.artworkUrl600];
+    content.contentDescription = @"Tung.fm - a social podcast player";
     
     NSDictionary *userData = [self getLoggedInUserData];
     NSArray *firstAndLastName = [[userData objectForKey:@"name"] componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
     
-    NSString *description = @"Tung.fm - a social podcast player";
-    NSString *image = _npEpisodeEntity.podcast.artworkUrl600;
+    content.contentTitle = [NSString stringWithFormat:@"%@ listened to a podcast on Tung", [firstAndLastName objectAtIndex:0]];
     
-    // dialog params
-    NSMutableDictionary *linkParams = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                       [firstAndLastName objectAtIndex:0], @"name",
-                                       text, @"caption",
-                                       description, @"description",
-                                       shortlink, @"link",
-                                       image, @"picture",
-                                       nil];
-    // link params
-    FBLinkShareParams *dialogParams = [[FBLinkShareParams alloc] init];
-    dialogParams.link = [NSURL URLWithString:shortlink];
-    dialogParams.name = [firstAndLastName objectAtIndex:0];
-    dialogParams.caption = text;
-    dialogParams.linkDescription = description;
-    dialogParams.picture = [NSURL URLWithString:image];
+    // with dialog
+    //[FBSDKShareDialog showFromViewController:_viewController withContent:content delegate:self];
     
-    // tagging not currently used.
-    if (tag) {
-        // post and tag friends
-        if ([FBDialogs canPresentShareDialogWithParams:dialogParams]) {
-            // Present the share dialog via native FB app
-            
-            NSLog(@"post to facebook and tag friends with params: %@", dialogParams);
-            [FBDialogs presentShareDialogWithLink:dialogParams.link
-                                          handler:^(FBAppCall *call, NSDictionary *results, NSError *error) {
-                                              
-                                              if (error) {
-                                                  NSLog(@"Error publishing story: %@", error.description);
-                                              } else {
-                                                  // Success
-                                                  NSLog(@"Success: %@", results);
-                                              }
-                                          }];
-        } else {
-            // Present the web feed dialog
-            [FBWebDialogs presentFeedDialogModallyWithSession:nil
-                                                   parameters:linkParams
-                                                      handler:^(FBWebDialogResult result, NSURL *resultURL, NSError *error) {
-                                                        
-                                                          if (error) {
-                                                              NSLog(@"Error publishing story: %@", error.description);
-                                                          } else {
-                                                              if (result == FBWebDialogResultDialogNotCompleted) {
-                                                                  // User cancelled.
-                                                                  NSLog(@"User cancelled.");
-                                                              } else {
-                                                                  // Handle the publish feed callback
-                                                                  NSDictionary *urlParams = [self parseURLParams:[resultURL query]];
-                                                                  if (![urlParams valueForKey:@"post_id"]) {
-                                                                      // User cancelled.
-                                                                      NSLog(@"User cancelled.");
-                                                                      
-                                                                  } else {
-                                                                      // User clicked the Share button
-                                                                      NSString *result = [NSString stringWithFormat: @"Posted story, id: %@", [urlParams valueForKey:@"post_id"]];
-                                                                      NSLog(@"result %@", result);
-                                                                  }
-                                                              }
-                                                          }
-                                                      }];
-        }
-    }
-    else {
-        // just post
-        NSLog(@"post to facebook with params: %@", linkParams);
-        [FBRequestConnection startWithGraphPath:@"/me/feed"
-                                     parameters:linkParams
-                                     HTTPMethod:@"POST"
-                              completionHandler:^(FBRequestConnection *connection, id result, NSError *error) {
-                                  if (!error) {
-                                      // Link posted successfully to Facebook
-                                      NSLog(@"Posted to facebook successfully: %@", result);
-                                  } else {
-                                      // error
-                                      NSLog(@"Error posting to fb: %@", error.description);
-                                  }
-                              }];
-    }
+    // direct api post
+    [FBSDKShareAPI shareWithContent:content delegate:self];
+
 }
-// A function for parsing URL parameters returned by the FB Feed Dialog.
-- (NSDictionary*) parseURLParams:(NSString *)query {
-    NSArray *pairs = [query componentsSeparatedByString:@"&"];
-    NSMutableDictionary *params = [[NSMutableDictionary alloc] init];
-    for (NSString *pair in pairs) {
-        NSArray *kv = [pair componentsSeparatedByString:@"="];
-        NSString *val =
-        [kv[1] stringByReplacingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
-        params[kv[0]] = val;
-    }
-    return params;
+
+- (void) sharer:(id<FBSDKSharing>)sharer didCompleteWithResults:(NSDictionary *)results {
+    
+    NSLog(@"successfully shared story to FB. results: %@", results);
 }
+
+- (void) sharer:(id<FBSDKSharing>)sharer didFailWithError:(NSError *)error {
+    
+    NSLog(@"failed to share to FB. Error: %@", error);
+}
+
+- (void) sharerDidCancel:(id<FBSDKSharing>)sharer {
+    
+    NSLog(@"FB sharing cancelled");
+    
+}
+
 
 #pragma mark - handle alerts
 
