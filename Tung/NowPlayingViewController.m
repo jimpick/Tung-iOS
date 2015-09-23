@@ -62,9 +62,6 @@
 @property NSDate *recordStartTime;
 @property CGFloat recordStartMarker;
 @property CGFloat recordEndMarker;
-
-@property NSInteger playbackSpeedIndex;
-@property NSArray *playbackSpeeds;
 @property BOOL totalTimeSet;
 
 - (void) switchViews:(id)sender;
@@ -80,6 +77,7 @@ CGFloat commentAndPostViewHeight = 123;
 
 static NSString *kNewClipIntention = @"New clip";
 static NSString *kNewCommentIntention = @"New comment";
+static NSArray *playbackRateStrings;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -195,9 +193,7 @@ static NSString *kNewCommentIntention = @"New comment";
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillAppear:) name:UIKeyboardWillShowNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillBeHidden:) name:UIKeyboardWillHideNotification object:nil];
     
-    // playback speed
-    _playbackSpeeds = @[@".75x", @"1.0x", @"1.5x", @"2.0x"];
-    _playbackSpeedIndex = 1;
+	playbackRateStrings = @[@".75x", @"1.0x", @"1.5x", @"2.0x"];
     
     // share label
     _shareLabel.text = @"";
@@ -308,6 +304,9 @@ static NSString *kNewCommentIntention = @"New comment";
     
     _episodeView.noResults = _podcast.noResults;
     [_episodeView.tableView reloadData];
+    
+    NSIndexPath *activeRow = [NSIndexPath indexPathForItem:_tung.currentFeedIndex.integerValue inSection:0];
+    [_episodeView.tableView scrollToRowAtIndexPath:activeRow atScrollPosition:UITableViewScrollPositionTop animated:YES];
     
 }
 
@@ -539,8 +538,8 @@ static CGRect buttonsScrollViewHomeRect;
     _speedButton = [CircleButton new];
     _speedButton.type = kCircleTypeSpeed;
     [self setupCircleButton:_speedButton withWidth:circleButtonDimension andHeight:circleButtonDimension andSuperView:extraButtonsSubView];
-    _speedButton.buttonText = [_playbackSpeeds objectAtIndex:_playbackSpeedIndex];
-    [_speedButton addTarget:self action:@selector(togglePlaybackSpeed) forControlEvents:UIControlEventTouchUpInside];
+    _speedButton.buttonText = [NSString stringWithFormat:@"%@",[playbackRateStrings objectAtIndex:_tung.playbackRateIndex]];
+    [_speedButton addTarget:self action:@selector(toggleplaybackRate) forControlEvents:UIControlEventTouchUpInside];
     UILabel *speedLabel = [UILabel new];
     speedLabel.text = @"Speed";
     [self setupButtonLabel:speedLabel withButtonDimension:circleButtonDimension andSuperView:extraButtonsSubView];
@@ -658,48 +657,34 @@ static CGRect buttonsScrollViewHomeRect;
 }
 
 // in progress
-- (void) togglePlaybackSpeed {
+- (void) toggleplaybackRate {
     
-    if (_playbackSpeedIndex < _playbackSpeeds.count - 1) {
-        _playbackSpeedIndex++;
+    if (_tung.playbackRateIndex < _tung.playbackRates.count - 1) {
+        _tung.playbackRateIndex++;
     } else {
-        _playbackSpeedIndex = 0;
+        _tung.playbackRateIndex = 0;
     }
     
-    _speedButton.buttonText = [_playbackSpeeds objectAtIndex:_playbackSpeedIndex];
+    NSNumber *rate = [_tung.playbackRates objectAtIndex:_tung.playbackRateIndex];
+    _speedButton.buttonText = [NSString stringWithFormat:@"%@", [playbackRateStrings objectAtIndex:_tung.playbackRateIndex]];
     [_speedButton setNeedsDisplay];
     
-    switch (_playbackSpeedIndex) {
-        case 0: {
-            NSLog(@"set play rate to .75x");
-            [_tung.player setRate:.75];
-            break;
-        }
-        case 1: {
-            NSLog(@"set play rate to 1x");
-            [_tung.player setRate:1.0];
-            break;
-        }
-        case 2: {
-            NSLog(@"set play rate to 1.5x");
-            [_tung.player setRate:1.5];
-            break;
-        }
-        case 3: {
-            NSLog(@"set play rate to 2x");
-            [_tung.player setRate:2.0];
-            break;
-        }
-        default:
-            break;
-    }
+    NSLog(@"set playback rate to %@", rate);
+    [_tung.player setRate:rate.floatValue];
+    [_tung.trackInfo setObject:[NSNumber numberWithFloat:rate.floatValue] forKey:MPNowPlayingInfoPropertyPlaybackRate];
+    [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_tung.trackInfo];
+    
+    if ([_tung isPlaying]) [_tung setControlButtonStateToPause];
 }
 
 - (void) setPlaybackRateToOne {
-    _playbackSpeedIndex = 1;
-    _speedButton.buttonText = [_playbackSpeeds objectAtIndex:_playbackSpeedIndex];
+    _tung.playbackRateIndex = 1;
+    NSNumber *rate = [_tung.playbackRates objectAtIndex:_tung.playbackRateIndex];
+    _speedButton.buttonText = [NSString stringWithFormat:@"%@", [playbackRateStrings objectAtIndex:_tung.playbackRateIndex]];
+    [_tung.trackInfo setObject:[NSNumber numberWithFloat:rate.floatValue] forKey:MPNowPlayingInfoPropertyPlaybackRate];
+    [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_tung.trackInfo];
     [_speedButton setNeedsDisplay];
-    [_tung.player setRate:1.0];
+    [_tung.player setRate:rate.floatValue];
 }
 
 #pragma mark - UIWebView delegate methods

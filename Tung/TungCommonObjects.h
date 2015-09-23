@@ -17,15 +17,14 @@
 
 #import <Foundation/Foundation.h>
 #import <Security/Security.h>
+#import "AppDelegate.h"
 #import "Reachability.h"
-#import <FacebookSDK/FacebookSDK.h>
 #import <Social/Social.h>
 
 #import <AVFoundation/AVFoundation.h>
-#import <AudioToolbox/AudioToolbox.h> // do I need this?
+#import <MediaPlayer/MediaPlayer.h>
 
 #import "CircleButton.h"
-#import "AppDelegate.h"
 
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
@@ -73,6 +72,10 @@
 @property CGFloat totalSeconds;
 @property (nonatomic, strong) AVPlayer *player;
 @property (nonatomic, strong) NSMutableData *trackData; // data being downloaded
+@property NSNumber *currentFeedIndex;
+@property NSMutableDictionary *trackInfo;
+@property NSInteger playbackRateIndex;
+@property NSArray *playbackRates;
 
 @property (strong, nonatomic) NSMutableArray *playQueue;
 @property (strong, nonatomic) UIActivityIndicatorView *btnActivityIndicator;

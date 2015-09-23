@@ -1722,7 +1722,7 @@
                                             <action selector="touchDownInShowHideControlsButton:" destination="HYq-2V-aHS" eventType="touchDown" id="Bg1-Ce-TzI"/>
                                         </connections>
                                     </button>
-                                    <pageControl opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" numberOfPages="3" currentPage="1" translatesAutoresizingMaskIntoConstraints="NO" id="qbb-m2-RZS">
+                                    <pageControl opaque="NO" userInteractionEnabled="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" numberOfPages="3" currentPage="1" translatesAutoresizingMaskIntoConstraints="NO" id="qbb-m2-RZS">
                                         <rect key="frame" x="-19" y="-18" width="39" height="37"/>
                                         <color key="pageIndicatorTintColor" red="0.01176470588" green="0.0" blue="0.0" alpha="0.10000000000000001" colorSpace="custom" customColorSpace="sRGB"/>
                                         <color key="currentPageIndicatorTintColor" red="0.01176470588" green="0.0" blue="0.0" alpha="0.29999999999999999" colorSpace="custom" customColorSpace="sRGB"/>
