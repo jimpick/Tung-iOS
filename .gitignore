@@ -4,22 +4,8 @@
 build/
 
 ## Various settings
-*.pbxuser
-!default.pbxuser
-*.mode1v3
-!default.mode1v3
-*.mode2v3
-!default.mode2v3
-*.perspectivev3
-!default.perspectivev3
-Tung.xcodeproj/project.xcworkspace/xcuserdata/
-
-## Other
-*.xccheckout
-*.moved-aside
+Tung.xcodeproj/project.xcworkspace/xcuserdata/Jamie.xcuserdatad/UserInterfaceState.xcuserstate
 *.xcuserstate
-*.xcscmblueprint
-*.xcworkspace
 
 ## Obj-C/Swift specific
 *.hmap
