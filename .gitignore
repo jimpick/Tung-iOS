@@ -2,7 +2,6 @@
 
 ## Build generated
 build/
-DerivedData
 
 ## Various settings
 *.pbxuser
@@ -13,7 +12,7 @@ DerivedData
 !default.mode2v3
 *.perspectivev3
 !default.perspectivev3
-xcuserdata
+Tung.xcodeproj/project.xcworkspace/xcuserdata
 
 ## Other
 *.xccheckout
