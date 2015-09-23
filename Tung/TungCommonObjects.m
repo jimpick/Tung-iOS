@@ -47,7 +47,6 @@
 @property (nonatomic, strong) NSURLConnection *connection;
 @property (nonatomic, strong) NSHTTPURLResponse *response;
 @property (nonatomic, strong) NSMutableArray *pendingRequests;
-@property (nonatomic, strong) NSTimer *getTotalSecondsTimer;
 
 @end
 
@@ -150,12 +149,12 @@
 
 - (void) determineTotalSeconds {
     // need to wait until player is playing to get duration or app freezes
-    NSLog(@"determineTotalSeconds");
     if ([self isPlaying]) {
-        NSLog(@"determined total seconds. invalidate timer on thread: %@", [NSThread currentThread]);
-        [_getTotalSecondsTimer invalidate];
-        _getTotalSecondsTimer = nil;
+        //NSLog(@"determined total seconds.");
         _totalSeconds = CMTimeGetSeconds(_player.currentItem.asset.duration);
+    }
+    else if (_totalSeconds == 0) {
+        [NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:NO];
     }
 }
 
@@ -188,12 +187,7 @@
                         
                     }];
                 } else {
-                    [_player prerollAtRate:1.0 completionHandler:^(BOOL finished) {
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            NSLog(@"No track progress, start from beginning. finished preroll: %d", finished);
-                        });
-                    }];
-                    
+                    [_player prerollAtRate:1.0 completionHandler:nil];
                 }
                 break;
             case AVPlayerItemStatusUnknown:
@@ -214,7 +208,7 @@
             }
             if (_totalSeconds == 0) {
                 NSLog(@"fire timer from thread: %@", [NSThread currentThread]);
-                _getTotalSecondsTimer = [NSTimer scheduledTimerWithTimeInterval:0.1 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:YES];
+                [NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:NO];
             }
             
         } else {
@@ -272,7 +266,7 @@
 
 // for dismissing search from main tab bar by tapping icon
 - (void) dismissSearch {
-    if ([_ctrlBtnDelegate respondsToSelector:@selector(dismissPodcastSearch)]) {
+    if (_ctrlBtnDelegate && [_ctrlBtnDelegate respondsToSelector:@selector(dismissPodcastSearch)]) {
         [_ctrlBtnDelegate dismissPodcastSearch];
     }
 }
@@ -1806,6 +1800,51 @@ static NSArray *colors;
     }];
 }
 
+- (void) getEpisodeInfoForEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+    NSLog(@"get episode info for episode");
+    NSURL *getEpisodeInfoRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/get-episode-info.php", _apiRootUrl]];
+    NSMutableURLRequest *getEpisodeInfoRequest = [NSMutableURLRequest requestWithURL:getEpisodeInfoRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [getEpisodeInfoRequest setHTTPMethod:@"POST"];
+    NSDictionary *params = @{@"collectionId": episodeEntity.podcast.collectionId,
+                             @"GUID": episodeEntity.guid
+                             };
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [getEpisodeInfoRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:getEpisodeInfoRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                NSLog(@"%@", responseDict);
+                if ([responseDict objectForKey:@"error"]) {
+                    // no podcast record
+                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
+                        __unsafe_unretained typeof(self) weakSelf = self;
+                        [self addEpisode:episodeEntity withCallback:^ {
+                            [weakSelf getEpisodeInfoForEpisode:episodeEntity withCallback:callback];
+                        }];
+                    }
+                    else {
+                        NSLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        callback(NO, responseDict);
+                    }
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    NSLog(@"successfully recommended podcast");
+                    callback(YES, responseDict);
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                NSLog(@"Error. HTML: %@", html);
+                callback(NO, @{@"error": @"Unspecified error"});
+            }
+        });
+    }];
+}
+
 // SUBSCRIBING
 - (void) subscribeToPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button {
     NSLog(@"subscribe request for podcast with id %@", podcastEntity.collectionId);
@@ -2555,8 +2594,9 @@ static NSArray *colors;
 
 #pragma mark - Facebook sharing and share delegate methods
 
-- (void) postToFacebookWithLink:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity {
+- (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity {
     
+    /*
     FBSDKShareLinkContent *content = [[FBSDKShareLinkContent alloc] init];
     content.contentURL = [NSURL URLWithString:link];
     content.imageURL = [NSURL URLWithString:episodeEntity.podcast.artworkUrl600];
@@ -2570,8 +2610,23 @@ static NSArray *colors;
     // with dialog
     //[FBSDKShareDialog showFromViewController:_viewController withContent:content delegate:self];
     
-    // direct api post
+    // direct api post link
     [FBSDKShareAPI shareWithContent:content delegate:self];
+    */
+    
+    // status message
+    NSDictionary *params = @{@"message": text,
+                             @"link": link
+                             };
+    /* make the API call */
+    FBSDKGraphRequest *request = [[FBSDKGraphRequest alloc]
+                                  initWithGraphPath:@"/me/feed"
+                                  parameters:params
+                                  HTTPMethod:@"POST"];
+    [request startWithCompletionHandler:^(FBSDKGraphRequestConnection *connection, id result, NSError *error) {
+        // Handle the result
+        NSLog(@"facebook share result: %@", result);
+    }];
 
 }
 

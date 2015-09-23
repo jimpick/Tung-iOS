@@ -44,6 +44,7 @@
 @property NSLayoutConstraint *commentViewTopLayoutConstraint;
 @property BOOL clipConfirmActive;
 @property BOOL keyboardActive;
+@property BOOL searchActive;
 @property NSString *shareIntention;
 @property NSString *shareTimestamp;
 
@@ -79,7 +80,6 @@ CGFloat commentAndPostViewHeight = 123;
 
 static NSString *kNewClipIntention = @"New clip";
 static NSString *kNewCommentIntention = @"New comment";
-static NSString *kShareStoryIntention = @"Share your interactions";
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -88,7 +88,6 @@ static NSString *kShareStoryIntention = @"Share your interactions";
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
     
     _tung = [TungCommonObjects establishTungObjects];
-    _tung.ctrlBtnDelegate = self;
     _podcast = [TungPodcast new];
     
     // for search controller
@@ -218,6 +217,7 @@ static NSString *kShareStoryIntention = @"Share your interactions";
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
+    _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
     
     // set up views, order below is important for entity assigning
@@ -234,7 +234,6 @@ static NSString *kShareStoryIntention = @"Share your interactions";
     NSLog(@"view will disappear");
     [super viewWillDisappear:animated];
     [_onEnterFrame invalidate];
-    [self resetRecording];
     //self.navigationController.navigationBar.translucent = YES;
 }
 
@@ -316,6 +315,10 @@ static NSString *kShareStoryIntention = @"Share your interactions";
 
 // ControlButtonDelegate required method
 - (void) initiateSearch {
+    
+    // in case sharing in progress, don't animate share view
+    _searchActive = YES;
+    
     [_podcast.searchController setActive:YES];
     
     CATransition *animation = [CATransition animation];
@@ -332,6 +335,7 @@ static NSString *kShareStoryIntention = @"Share your interactions";
 }
 // ControlButtonDelegate required method
 -(void) dismissPodcastSearch {
+    
     [_podcast.searchController setActive:NO];
     
     CATransition *animation = [CATransition animation];
@@ -507,7 +511,7 @@ static CGRect buttonsScrollViewHomeRect;
     CircleButton *shareButton = [CircleButton new];
     shareButton.type = kCircleTypeShare;
     [self setupCircleButton:shareButton withWidth:circleButtonDimension andHeight:circleButtonDimension andSuperView:buttonsSubView];
-    [shareButton addTarget:self action:@selector(shareStory) forControlEvents:UIControlEventTouchUpInside];
+    [shareButton addTarget:self action:@selector(getTextForShareSheet) forControlEvents:UIControlEventTouchUpInside];
     UILabel *shareLabel = [UILabel new];
     shareLabel.text = @"Share";
     [self setupButtonLabel:shareLabel withButtonDimension:circleButtonDimension andSuperView:buttonsSubView];
@@ -1003,19 +1007,44 @@ static CGRect buttonsScrollViewHomeRect;
     [self toggleNewComment];
 }
 
-- (void) shareStory {
-    // make sure there is a story to share
-    if (_tung.npEpisodeEntity.shortlink) {
-        _shareIntention = kShareStoryIntention;
-        _shareLabel.text = @"Post to Twitter and Facebook";
-        _commentAndPostView.commentTextView.text = [NSString stringWithFormat:@"Listening to %@ on #Tung: %@s/%@", _tung.npEpisodeEntity.title, _tung.tungSiteRootUrl, _tung.npEpisodeEntity.shortlink];
-        [self toggleNewComment];
-    } else {
-        // temporary - tell them they can't share anything
-        // (until I get the podcast page built)
-        UIAlertView *cantShareAlert = [[UIAlertView alloc] initWithTitle:@"Nothing to share" message:@"Post a comment, clip, or recommend the episode to share your interactions" delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-        [cantShareAlert show];
+- (void) getTextForShareSheet {
+    
+    NSString *text;
+    // if there's a story to share, share it
+    if (_tung.npEpisodeEntity.storyShortlink) {
+        text = [NSString stringWithFormat:@"Listening to %@ on #Tung: %@s/%@", _tung.npEpisodeEntity.title, _tung.tungSiteRootUrl, _tung.npEpisodeEntity.storyShortlink];
+        [self openShareSheetForText:text];
+        
     }
+    // otherise share episode
+    else if (_tung.npEpisodeEntity.shortlink) {
+        text = [NSString stringWithFormat:@"Listening to %@ on #Tung: %@e/%@", _tung.npEpisodeEntity.title, _tung.tungSiteRootUrl, _tung.npEpisodeEntity.shortlink];
+        [self openShareSheetForText:text];
+    }
+    // need to get episode shortlink
+    else {
+        [_tung getEpisodeInfoForEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *response) {
+            if (success) {
+                // save episode id, shortlink
+                NSString *episodeId = [[response objectForKey:@"success"] objectForKey:@"id"];
+                _tung.npEpisodeEntity.id = episodeId;
+                NSString *episodeShortlink = [[response objectForKey:@"success"] objectForKey:@"shortlink"];
+                _tung.npEpisodeEntity.shortlink = episodeShortlink;
+                [TungCommonObjects saveContextWithReason:@"got episode id and shortlink for sharing"];
+                NSString *text = [NSString stringWithFormat:@"Listening to %@ on #Tung: %@e/%@", _tung.npEpisodeEntity.title, _tung.tungSiteRootUrl, _tung.npEpisodeEntity.shortlink];
+                [self openShareSheetForText:text];
+            } else {
+                NSString *errorMsg = [response objectForKey:@"error"];
+                [self displayErrorAlertWithMessage:errorMsg];
+            }
+        }];
+    }
+}
+
+- (void) openShareSheetForText:(NSString *)text {
+    
+    UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[text] applicationActivities:nil];
+    [self presentViewController:shareSheet animated:YES completion:nil];
 }
 
 // show comment and post view with keyboard for sharing or new comment
@@ -1313,7 +1342,8 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
 - (void)textViewDidChange:(UITextView *)textView {
     
     // enable post button if there's text
-    if (textView.text.length > 0 && !_commentAndPostView.postButton.enabled) {
+    NSString *nonWhitespace = [textView.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    if (nonWhitespace.length > 0 && !_commentAndPostView.postButton.enabled) {
         [_commentAndPostView.postButton setEnabled:YES];
     }
     // count characters?
@@ -1351,7 +1381,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
 
 - (void) keyboardWillAppear:(NSNotification*)notification {
     
-    if (_shareIntention) {
+    if (_shareIntention && !_searchActive) {
         
         // disable search
         [self.navigationItem.rightBarButtonItem setEnabled:NO];
@@ -1378,7 +1408,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
             _npControlsBottomLayoutConstraint.constant = clipConfirmConstraint + keyboardRect.size.height - 44;
         }
         // for new comment
-        else if ([_shareIntention isEqualToString:kNewCommentIntention] || [_shareIntention isEqualToString:kShareStoryIntention]) {
+        else if ([_shareIntention isEqualToString:kNewCommentIntention]) {
             _npControlsBottomLayoutConstraint.constant = openConstraint + keyboardRect.size.height - 44;
             _buttonsScrollView.alpha = 0;
             _posbar.alpha = 0;
@@ -1399,45 +1429,49 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
 
 - (void) keyboardWillBeHidden:(NSNotification*)notification {
     
-    _hideControlsButton.hidden = NO;
-    _buttonsScrollView.hidden = NO;
-    _posbar.hidden = NO;
-    
-    [UIView beginAnimations:@"keyboard down" context:NULL];
-    [UIView setAnimationDuration:[notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
-    [UIView setAnimationCurve:[notification.userInfo[UIKeyboardAnimationCurveUserInfoKey] integerValue]];
-    [UIView setAnimationBeginsFromCurrentState:YES];
-    [UIView setAnimationDelegate:self];
-    [UIView setAnimationDidStopSelector:@selector(keyboardAnimationStopped:finished:context:)];
-    // hide clip comment view
+    if (_shareIntention && !_searchActive) {
+        _hideControlsButton.hidden = NO;
+        _buttonsScrollView.hidden = NO;
+        _posbar.hidden = NO;
+        
+        [UIView beginAnimations:@"keyboard down" context:NULL];
+        [UIView setAnimationDuration:[notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
+        [UIView setAnimationCurve:[notification.userInfo[UIKeyboardAnimationCurveUserInfoKey] integerValue]];
+        [UIView setAnimationBeginsFromCurrentState:YES];
+        [UIView setAnimationDelegate:self];
+        [UIView setAnimationDidStopSelector:@selector(keyboardAnimationStopped:finished:context:)];
+        // hide clip comment view
 
-    _hideControlsButton.alpha = 1;
-    _npControlsBottomLayoutConstraint.constant = openConstraint;
-    _posbar.alpha = 1;
-    _progressBar.alpha = 1;
-    _timeElapsedLabel.alpha = 1;
-    _totalTimeLabel.alpha = 1;
-    _pageControl.alpha = 1;
-    _hideControlsButton.alpha = 1;
-    _buttonsScrollView.alpha = 1;
-    _commentAndPostView.alpha = 0;
-    _shareLabel.alpha = 0;
-    [self.view layoutIfNeeded];
-    
-    [UIView commitAnimations];
-    
+        _hideControlsButton.alpha = 1;
+        _npControlsBottomLayoutConstraint.constant = openConstraint;
+        _posbar.alpha = 1;
+        _progressBar.alpha = 1;
+        _timeElapsedLabel.alpha = 1;
+        _totalTimeLabel.alpha = 1;
+        _pageControl.alpha = 1;
+        _hideControlsButton.alpha = 1;
+        _buttonsScrollView.alpha = 1;
+        _commentAndPostView.alpha = 0;
+        _shareLabel.alpha = 0;
+        [self.view layoutIfNeeded];
+        
+        [UIView commitAnimations];
+    }
+    _searchActive = NO;
     _keyboardActive = NO;
 }
 
 - (void) keyboardAnimationStopped:(NSString *)animationId finished:(NSNumber *)finished context:(void *)context {
-    
+    NSLog(@"keyboard animation stopped");
+    // keyboard going up
     if ([animationId isEqualToString:@"keyboard up"]) {
         _hideControlsButton.hidden = YES;
         // for new comment
         if ([_shareIntention isEqualToString:kNewCommentIntention]) {
             _buttonsScrollView.hidden = YES;
         }
-    } else {
+    }
+    else {
         _shareIntention = nil;
         _shareTimestamp = nil;
         _commentAndPostView.hidden = YES;
@@ -1481,143 +1515,37 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
     
     if (btn.on) {
         
-        if ([FBSDKAccessToken currentAccessToken] || ![[FBSDKAccessToken currentAccessToken] hasGranted:@"publish_actions"]) {
-            
-            FBSDKLoginManager *loginManager = [[FBSDKLoginManager alloc] init];
-            [loginManager logInWithPublishPermissions:@[@"publish_actions"] fromViewController:self handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
-                if (error) {
-                    NSString *alertText = [NSString stringWithFormat:@"\"%@\"", error];
-                    UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Facebook error" message:alertText delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                    [errorAlert show];
-                }
-                else if (result.isCancelled) {
-                    NSString *alertTitle = @"Tung was denied permission";
-                    NSString *alertText = @"Tung cannot currently post to Facebook because it was denied posting permission.";
-                    UIAlertView *fbAlert = [[UIAlertView alloc] initWithTitle:alertTitle
-                                                                      message:alertText
-                                                                     delegate:self
-                                                            cancelButtonTitle:@"OK"
-                                                            otherButtonTitles:nil];
-                    [fbAlert show];
-                }
-            }];
+        if ([FBSDKAccessToken currentAccessToken]) {
+            if (![[FBSDKAccessToken currentAccessToken] hasGranted:@"publish_actions"]) {
+                [self getFacebookSharingPermissions];
+            }
         }
-        
-        // DEPRECATED FB SDK 3.X CODE
-        /*
-        // check facebook session
-        NSLog(@"checking FB session state....");
-        //NSLog(@"facebook session state at toggle: %lu", FBSession.activeSession.state);
-        // the state if someone has already logged in with fb in a past session
-        if (FBSession.activeSession.state == FBSessionStateCreatedTokenLoaded) {
-            NSLog(@"fb session state created token loaded.");
-            [FBSession.activeSession openWithCompletionHandler:^(FBSession *session, FBSessionState status, NSError *error) {
-                if (FBSession.activeSession.state == FBSessionStateOpen) {
-                    [self checkForFacebookSharingPermissions];
-                }
-            }];
+        else {
+            [self getFacebookSharingPermissions];
         }
-        // the state if they've logged in this session
-        else if (FBSession.activeSession.state == FBSessionStateOpen
-                 || FBSession.activeSession.state == FBSessionStateOpenTokenExtended) {
-            // check for permissions
-            NSLog(@"facebook session already open");
-            [self checkForFacebookSharingPermissions];
-            
-        } else {
-            NSLog(@"open new facebook session");
-            // clear any active session
-            [FBSession.activeSession closeAndClearTokenInformation];
-            // request new session
-            [FBSession openActiveSessionWithReadPermissions:@[@"public_profile", @"publish_actions"]
-                                               allowLoginUI:YES
-                                          completionHandler:
-             ^(FBSession *session, FBSessionState state, NSError *error) {
-                 // Retrieve the app delegate
-                 AppDelegate* appDelegate = [UIApplication sharedApplication].delegate;
-                 // Call the app delegate's sessionStateChanged:state:error method to handle session state changes
-                 [appDelegate sessionStateChanged:session state:state error:error];
-                 // debug: state can be open, but not equal to FBSessionStateOpen
-                 
-                 if (state == FBSessionStateOpen) {
-                     // check for permissions
-                     [self checkForFacebookSharingPermissions];
-                 } else {
-                     
-                     NSLog(@"turned off facebook sharing bc: no active session");
-                     _commentAndPostView.facebookButton.on = NO;
-                     [_commentAndPostView.facebookButton setNeedsDisplay];
-                 }
-             }];
-        }
-         */
+     
     }
 }
 
-- (void) checkForFacebookSharingPermissions {
-    NSLog(@"Check for publish permissions");
-    if ([FBSession.activeSession.permissions indexOfObject:@"publish_actions"] == NSNotFound){
-        NSLog(@"making permission check request");
-        [FBRequestConnection startWithGraphPath:@"/me/permissions"
-                              completionHandler:^(FBRequestConnection *connection, id result, NSError *error) {
-                                  if (!error){
-                                      NSArray *permissions = [result objectForKey:@"data"];
-                                      BOOL permissionGranted = NO;
-                                      for (NSDictionary *permission in permissions) {
-                                          if ([[permission objectForKey:@"permission"] isEqualToString:@"publish_actions"] &&
-                                              [[permission objectForKey:@"status"] isEqualToString:@"granted"])
-                                              permissionGranted = YES;
-                                      }
-                                      
-                                      if (!permissionGranted) {
-                                          // Publish permissions not found, ask for publish_actions
-                                          [self requestFacebookSharingPermissions];;
-                                      }
-                                      else {
-                                          NSLog(@"sharing permissions granted.");
-                                      }
-                                  } else {
-                                      // error
-                                      NSLog(@"turned off facebook sharing bc: unable to check for permissions: %@", error);
-                                      _commentAndPostView.facebookButton.on = NO;
-                                      [_commentAndPostView.facebookButton setNeedsDisplay];
-                                  }
-                              }];
-    }
-    else {
-        NSLog(@"sharing permissions granted.");
-    }
-}
-
-- (void) requestFacebookSharingPermissions {
-    NSLog(@"Request publish_actions");
-    [FBSession.activeSession requestNewPublishPermissions:[NSArray arrayWithObject:@"publish_actions"]
-                                          defaultAudience:FBSessionDefaultAudienceFriends
-                                        completionHandler:^(FBSession *session, NSError *error) {
-                                            __block NSString *alertText;
-                                            __block NSString *alertTitle;
-                                            if (!error) {
-                                                if ([FBSession.activeSession.permissions indexOfObject:@"publish_actions"] == NSNotFound){
-                                                    // Permission not granted, tell the user tung cannot publish
-                                                    alertTitle = @"Tung was denied permission";
-                                                    alertText = @"Tung cannot currently post to Facebook because it was denied sharing permission.";
-                                                    UIAlertView *fbAlert = [[UIAlertView alloc] initWithTitle:alertTitle
-                                                                                                      message:alertText
-                                                                                                     delegate:self
-                                                                                            cancelButtonTitle:@"OK"
-                                                                                            otherButtonTitles:nil];
-                                                    [fbAlert setTag:2];
-                                                    [fbAlert show];
-                                                } else {
-                                                    NSLog(@"fb sharing permission granted.");
-                                                }
-                                            } else {
-                                                NSLog(@"turned off facebook sharing bc: error requesting facebook permissions: %@", error);
-                                                _commentAndPostView.facebookButton.on = NO;
-                                                [_commentAndPostView.facebookButton setNeedsDisplay];
-                                                
-                                            }
-                                        }];
+- (void) getFacebookSharingPermissions {
+    FBSDKLoginManager *loginManager = [[FBSDKLoginManager alloc] init];
+    [loginManager logInWithPublishPermissions:@[@"publish_actions"] fromViewController:self handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
+        if (error) {
+            NSString *alertText = [NSString stringWithFormat:@"\"%@\"", error];
+            UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Facebook error" message:alertText delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+            [errorAlert show];
+        }
+        else if (result.isCancelled) {
+            NSString *alertTitle = @"Tung was denied permission";
+            NSString *alertText = @"Tung cannot currently post to Facebook because it was denied posting permission.";
+            UIAlertView *fbAlert = [[UIAlertView alloc] initWithTitle:alertTitle
+                                                              message:alertText
+                                                             delegate:self
+                                                    cancelButtonTitle:@"OK"
+                                                    otherButtonTitles:nil];
+            [fbAlert show];
+        }
+    }];
 }
 
 -(void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
@@ -1636,14 +1564,15 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
 
 - (void) post {
     
+    NSString *text = [_commentAndPostView.commentTextView.text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceAndNewlineCharacterSet]];
+    
     // post a comment
+    // assumed to have text since otherwise post button is disabled
     if ([_shareIntention isEqualToString:kNewCommentIntention]) {
         
         [TungCommonObjects fadeOutView:_commentAndPostView.cancelButton];
         [_commentAndPostView.postButton setEnabled:NO];
         [_commentAndPostView.postActivityIndicator startAnimating];
-        // assumed to have text since otherwise post button is disabled
-        NSString *text = _commentAndPostView.commentTextView.text;
         
         [_tung postComment:text atTime:_shareTimestamp onEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
             [_commentAndPostView.postActivityIndicator stopAnimating];
@@ -1667,7 +1596,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                 }
                 // fb share?
                 if (_commentAndPostView.facebookButton.on) {
-                    [_tung postToFacebookWithLink:link andEpisode:_tung.npEpisodeEntity];
+                    [_tung postToFacebookWithText:text Link:link andEpisode:_tung.npEpisodeEntity];
                 }
             }
             else {
@@ -1682,8 +1611,6 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         
         [_commentAndPostView.postButton setEnabled:NO];
         [_commentAndPostView.postActivityIndicator startAnimating];
-        
-        NSString *text = _commentAndPostView.commentTextView.text;
         
         [_tung postClipWithComment:text atTime:_shareTimestamp withDuration:[_recordingDurationLabel.text substringFromIndex:1] onEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
             [_commentAndPostView.postActivityIndicator stopAnimating];
@@ -1718,7 +1645,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                 }
                 // fb share?
                 if (_commentAndPostView.facebookButton.on) {
-                    [_tung postToFacebookWithLink:link andEpisode:_tung.npEpisodeEntity];
+                    [_tung postToFacebookWithText:text Link:link andEpisode:_tung.npEpisodeEntity];
                 }
             }
             else {
@@ -1731,33 +1658,6 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                 [self toggleConfirmClip];
             }
         }];
-    }
-    // share
-    else if ([_shareIntention isEqualToString:kShareStoryIntention]) {
-        if (!_commentAndPostView.twitterButton.on && !_commentAndPostView.facebookButton.on) {
-            UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Choose social network(s)" message:@"Turn on Twitter or Facebook sharing before you post." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-            [errorAlert show];
-        } else {
-            NSLog(@"post to twitter/facebook");
-            
-            NSString *link = [NSString stringWithFormat:@"%@s/%@", _tung.tungSiteRootUrl, _tung.npEpisodeEntity.storyShortlink];
-            NSString *text = _commentAndPostView.commentTextView.text;
-            // caption
-            NSString *caption;
-            if (text && text.length > 0) {
-                caption = [text stringByTrimmingCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-            } else {
-                caption = [NSString stringWithFormat:@"Listening to %@ on #tung", _tung.npEpisodeEntity.title];
-            }
-            // tweet?
-            if (_commentAndPostView.twitterButton.on) {
-                [_tung postTweetWithText:text andUrl:link];
-            }
-            // fb share?
-            if (_commentAndPostView.facebookButton.on) {
-                [_tung postToFacebookWithLink:link andEpisode:_tung.npEpisodeEntity];
-            }
-        }
     }
 }
 - (void) recommendEpisode {

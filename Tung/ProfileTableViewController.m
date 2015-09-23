@@ -7,7 +7,6 @@
 //
 
 #import "ProfileTableViewController.h"
-#import "TungCommonObjects.h"
 #import "TungStories.h"
 #import "ProfileCell.h"
 #import "FollowersCell.h"
@@ -94,6 +93,7 @@ CGFloat screenWidth;
 
     [super viewDidAppear:animated];
     
+    _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
 
     // check for new posts

@@ -8,9 +8,10 @@
 
 #import <UIKit/UIKit.h>
 #import <AVFoundation/AVFoundation.h>
+#import "TungCommonObjects.h"
 #import "LargeAvatarContainerView.h"
 
-@interface ProfileTableViewController : UITableViewController <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, UIAlertViewDelegate>
+@interface ProfileTableViewController : UITableViewController <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, UIAlertViewDelegate, ControlButtonDelegate>
 
 @property (strong, nonatomic) NSString *profiledUserId;
 @property (strong, nonatomic) NSMutableDictionary *profiledUserData;

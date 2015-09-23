@@ -34,7 +34,6 @@ static NSString * const reuseIdentifier = @"artCell";
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
     
     _tung = [TungCommonObjects establishTungObjects];
-    _tung.ctrlBtnDelegate = self;
     _podcast = [TungPodcast new];
     
     // for search controller
@@ -103,6 +102,7 @@ static NSString * const reuseIdentifier = @"artCell";
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
+    _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
 }
 

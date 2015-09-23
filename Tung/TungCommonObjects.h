@@ -135,6 +135,7 @@
 - (void) addPodcast:(PodcastEntity *)podcastEntity withCallback:(void (^)(void))callback;
 - (void) addEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
 - (void) restorePodcastDataWithCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+- (void) getEpisodeInfoForEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) subscribeToPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button;
 - (void) unsubscribeFromPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button;
 - (void) recommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
@@ -154,7 +155,7 @@
 - (void) establishTwitterAccount;
 - (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url;
 // facebook
-- (void) postToFacebookWithLink:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity;
+- (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity;
 // class methods
 + (id) establishTungObjects;
 + (void) clearTempDirectory;

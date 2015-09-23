@@ -28,7 +28,6 @@
     
     _tung = [TungCommonObjects establishTungObjects];
     [_tung establishCred];
-    _tung.ctrlBtnDelegate = self;
     
     // for search controller
     _podcast = [TungPodcast new];
@@ -56,6 +55,11 @@
     [self.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
     
     //[TungCommonObjects clearTempDirectory]; // DEV only
+    
+    /* dev purposes - log out of fb
+    if ([FBSDKAccessToken currentAccessToken]) {
+        [[FBSDKLoginManager new] logOut];
+    } */
     
     // Show user entities
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
@@ -93,6 +97,7 @@
 -(void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
+    _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
     
     //self.navigationController.navigationBar.translucent = NO;
