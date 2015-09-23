@@ -88,6 +88,7 @@
 		7D6459931A083DBA00BAC445 /* ProfileListTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6459921A083DBA00BAC445 /* ProfileListTableViewController.m */; };
 		7D670F301934EE7600239673 /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D670F2F1934EE7600239673 /* Reachability.m */; };
 		7D6D55EB1B66A06000DFF759 /* EpisodeTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6D55EA1B66A06000DFF759 /* EpisodeTableViewController.m */; };
+		7D6F631B1BB338D600D7EB88 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 7D6F631A1BB338D600D7EB88 /* .gitignore */; settings = {ASSET_TAGS = (); }; };
 		7D768C93192D1B10000C8E3E /* icon-check-green@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D768C92192D1B10000C8E3E /* icon-check-green@2x.png */; };
 		7D768C96192D3373000C8E3E /* UIButtonBarArrowLeft@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D768C94192D3373000C8E3E /* UIButtonBarArrowLeft@2x.png */; };
 		7D768C97192D3373000C8E3E /* UIButtonBarArrowRight@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D768C95192D3373000C8E3E /* UIButtonBarArrowRight@2x.png */; };
@@ -300,6 +301,7 @@
 		7D670F2F1934EE7600239673 /* Reachability.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Reachability.m; sourceTree = "<group>"; };
 		7D6D55E91B66A06000DFF759 /* EpisodeTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodeTableViewController.h; sourceTree = "<group>"; };
 		7D6D55EA1B66A06000DFF759 /* EpisodeTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodeTableViewController.m; sourceTree = "<group>"; };
+		7D6F631A1BB338D600D7EB88 /* .gitignore */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		7D768C92192D1B10000C8E3E /* icon-check-green@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-check-green@2x.png"; sourceTree = "<group>"; };
 		7D768C94192D3373000C8E3E /* UIButtonBarArrowLeft@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "UIButtonBarArrowLeft@2x.png"; sourceTree = "<group>"; };
 		7D768C95192D3373000C8E3E /* UIButtonBarArrowRight@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "UIButtonBarArrowRight@2x.png"; sourceTree = "<group>"; };
@@ -470,6 +472,7 @@
 		7D61F90F18A1EB2F00710CA7 = {
 			isa = PBXGroup;
 			children = (
+				7D6F631A1BB338D600D7EB88 /* .gitignore */,
 				7D61F92318A1EB2F00710CA7 /* Tung */,
 				7D61F94018A1EB2F00710CA7 /* TungTests */,
 				7D61F91A18A1EB2F00710CA7 /* Frameworks */,
@@ -912,6 +915,7 @@
 				7DBD622D1AE3675E00233005 /* btn-player-play-down@2x.png in Resources */,
 				7DBD62231AE3675E00233005 /* btn-player-add@2x.png in Resources */,
 				7D768C97192D3373000C8E3E /* UIButtonBarArrowRight@2x.png in Resources */,
+				7D6F631B1BB338D600D7EB88 /* .gitignore in Resources */,
 				7D61F93318A1EB2F00710CA7 /* Images.xcassets in Resources */,
 				7D76CADE1B700C8C0059279E /* tung-end-of-file.png in Resources */,
 				7D5A594D19D3D177005DCF01 /* icon-facebook-off@3x.png in Resources */,
