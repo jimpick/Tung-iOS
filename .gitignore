@@ -19,6 +19,7 @@ Tung.xcodeproj/project.xcworkspace/xcuserdata/
 *.moved-aside
 *.xcuserstate
 *.xcscmblueprint
+*.xcworkspace
 
 ## Obj-C/Swift specific
 *.hmap
