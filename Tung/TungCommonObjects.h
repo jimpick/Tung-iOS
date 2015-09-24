@@ -121,6 +121,7 @@
 + (NSDictionary *) userEntityToDict:(UserEntity *)userEntity;
 - (NSDictionary *) getLoggedInUserData;
 - (void) deleteLoggedInUserData;
++ (BOOL) checkForUserData;
 + (BOOL) checkForPodcastData;
 
 // key colors
@@ -153,6 +154,7 @@
 - (void) updateUserWithDictionary:(NSDictionary *)userInfo withCallback:(void (^)(NSDictionary *jsonData))callback;
 - (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback;
 - (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback;
+- (void) followAllUsersFromId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) signOut;
 // twittter
 - (void) establishTwitterAccount;

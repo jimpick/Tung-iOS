@@ -153,6 +153,7 @@
         [_player play];
         _shouldStayPaused = NO;
         [self setControlButtonStateToPause];
+        if (_totalSeconds == 0) [self determineTotalSeconds];
     }
 }
 - (void) playerPause {
@@ -259,7 +260,6 @@
             } else if (!_shouldStayPaused && ![self isPlaying]) {
                 [self playerPlay];
             }
-            if (_totalSeconds == 0) [self determineTotalSeconds];
             
         } else {
             NSLog(@"-- player NOT likely to keep up");
@@ -1176,7 +1176,8 @@ static NSString *feedDictsDirName = @"feedDicts";
 }
 
 + (UserEntity *) saveUserWithDict:(NSDictionary *)userDict {
-    NSString *tungId = [[userDict objectForKey:@"_id"] objectForKey:@"$id"];
+    
+    NSString *tungId = [userDict objectForKey:@"tung_id"];
     NSLog(@"save user with id: %@", tungId);
     UserEntity *userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:tungId];
     
@@ -1204,7 +1205,6 @@ static NSString *feedDictsDirName = @"feedDicts";
     	userEntity.twitter_username = twitter_username;
     }
     if ([userDict objectForKey:@"facebook_id"] != (id)[NSNull null]) {
-        NSLog(@"%@ not null", [userDict objectForKey:@"facebook_id"]);
         NSString *facebook_id = [userDict objectForKey:@"facebook_id"]; //ensure string
         userEntity.facebook_id = facebook_id;
     }
@@ -1249,6 +1249,7 @@ static NSString *feedDictsDirName = @"feedDicts";
     
 }
 
+// not used
 - (void) deleteLoggedInUserData {
     
     UserEntity *userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
@@ -1256,6 +1257,28 @@ static NSString *feedDictsDirName = @"feedDicts";
         AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
         [appDelegate.managedObjectContext deleteObject:userEntity];
         [TungCommonObjects saveContextWithReason:@"delete logged in user entity"];
+    }
+}
+
++ (BOOL) checkForUserData {
+    // Show user entities
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSError *error = nil;
+    NSFetchRequest *findUsers = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
+    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findUsers error:&error];
+    if (result.count > 0) {
+        /*
+        for (int i = 0; i < result.count; i++) {
+            UserEntity *userEntity = [result objectAtIndex:i];
+            NSDictionary *userDict = [TungCommonObjects userEntityToDict:userEntity];
+            NSLog(@"user at index: %d", i);
+            NSLog(@"%@", userDict);
+        }
+        */
+        return YES;
+    } else {
+        NSLog(@"no user entities found");
+        return NO;
     }
 }
 
@@ -1327,6 +1350,21 @@ static NSString *feedDictsDirName = @"feedDicts";
     }
     
     [self saveContextWithReason:@"removed podcast and episode data"];
+}
+
++ (void) removeAllUserData {
+    NSLog(@"remove all user data");
+    
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
+    NSError *error = nil;
+    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
+    if (result.count > 0) {
+        for (int i = 0; i < result.count; i++) {
+            [appDelegate.managedObjectContext deleteObject:[result objectAtIndex:i]];
+            NSLog(@"deleted user record at index: %d", i);
+        }
+    }
 }
 
 #pragma mark - Key Colors
@@ -1545,12 +1583,6 @@ static NSArray *colors;
                     dispatch_async(dispatch_get_main_queue(), ^{
                         // callback
                         callback();
-                        // new version notification
-                        if (![[responseDict objectForKey:@"version"] isEqualToString:_tung_version]) {
-                            NSLog(@"session response: %@", responseDict);
-                            UIAlertView *newVersionAlert = [[UIAlertView alloc] initWithTitle:[responseDict objectForKey:@"alertTitle"] message:[responseDict objectForKey:@"alertBody"] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-                            [newVersionAlert show];
-                        }
                     });
                 }
                 else if ([responseDict objectForKey:@"error"]) {
@@ -2483,10 +2515,47 @@ static NSArray *colors;
     }];
 }
 
+// for beta period
+- (void) followAllUsersFromId:(NSString *)user_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+    NSLog(@"follow all users with id: %@", user_id);
+    NSURL *followAllUsersRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/follow-all.php", _apiRootUrl]];
+    NSMutableURLRequest *followAllUsersRequest = [NSMutableURLRequest requestWithURL:followAllUsersRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [followAllUsersRequest setHTTPMethod:@"POST"];
+    NSDictionary *params = @{@"new_user_id": user_id};
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [followAllUsersRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:followAllUsersRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                if ([responseDict objectForKey:@"error"]) {
+                    callback(NO, [responseDict objectForKey:@"error"]);
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    callback(YES, [responseDict objectForKey:@"success"]);
+                } else {
+                    callback(NO, @{@"error": @"unspecified error"});
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                NSLog(@"HTML: %@", html);
+                callback(NO, @{@"error": @"unspecified error"});
+            }
+        });
+    }];
+}
+
+
+
 -(void) signOut {
     NSLog(@"signing out");
     
-    [self deleteLoggedInUserData];
+    //[self deleteLoggedInUserData];
+    [TungCommonObjects removeAllUserData];
     [TungCommonObjects removePodcastAndEpisodeData];
     
     _tungId = @"";

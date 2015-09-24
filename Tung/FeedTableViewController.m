@@ -12,9 +12,9 @@
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (strong, nonatomic) TungPodcast *podcast;
-
-@property (nonatomic, assign) BOOL feedRefreshed;
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
+
+@property BOOL hasPodcastData;
 
 @end
 
@@ -61,21 +61,8 @@
         [[FBSDKLoginManager new] logOut];
     } */
     
-    // Show user entities
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
-    NSError *error = nil;
-    NSFetchRequest *findUsers = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
-    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findUsers error:&error];
-    if (result.count > 0) {
-        for (int i = 0; i < result.count; i++) {
-            UserEntity *userEntity = [result objectAtIndex:i];
-            NSDictionary *userDict = [TungCommonObjects userEntityToDict:userEntity];
-            NSLog(@"user at index: %d", i);
-            NSLog(@"%@", userDict);
-        }
-    } else {
-        NSLog(@"no user entities found");
-    }
+    _hasPodcastData = [TungCommonObjects checkForPodcastData];
+
     
     // let's get retarded in here
     [self refreshFeed];
@@ -143,9 +130,8 @@
     
     [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
         if (reachable) {
-            _feedRefreshed = YES;
             // refresh feed
-            if (_tung.sessionId != NULL && _tung.sessionId.length > 0) {
+            if (_tung.sessionId && _tung.sessionId.length > 0) {
 //                NSLog(@"refresh feed");
 //                [self.refreshControl beginRefreshing];
 //                
@@ -173,9 +159,8 @@
                     // since this is the first call the app makes and we now have session
                     // check to see if user has no podcast data so it can be restored
                     // does not sync track progress
-                    BOOL hasPodcastData = [TungCommonObjects checkForPodcastData];
-                    NSLog(@"has podcast data: %@", (hasPodcastData) ? @"Yes" : @"No");
-                    if (!hasPodcastData) {
+                    NSLog(@"has podcast data: %@", (_hasPodcastData) ? @"Yes" : @"No");
+                    if (!_hasPodcastData) {
                         [_tung restorePodcastDataWithCallback:^(BOOL success, NSDictionary *response) {
                             if (success && [response objectForKey:@"results"]) {
                                 NSArray *data = [response objectForKey:@"results"];
@@ -237,6 +222,7 @@
                                     BOOL saved = [TungCommonObjects saveContextWithReason:@"restoring podcast data"];
                                     if (!saved) NSLog(@"error on story: %@", story);
                                 }
+                                _hasPodcastData = YES;
                             }
                             // <INSERT FEED QUERY HERE>
                         }];

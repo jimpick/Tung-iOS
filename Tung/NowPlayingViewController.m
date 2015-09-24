@@ -408,7 +408,7 @@ static NSArray *playbackRateStrings;
         // description
         // description style
         NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:_podcast.podcastEntity.keyColor1];
-        NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:4px 13px; color:#666; font: .9em/1.4em -apple-system; } a { color:%@; } img { max-width:100%%; height:auto; } .endOfFile { margin:40px auto 20px; clear:both; width:60px; height:auto; display:block }</style>\n", keyColor1HexString];
+        NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:4px 13px; color:#666; font: .9em/1.4em -apple-system, Helvetica; } a { color:%@; } img { max-width:100%%; height:auto; } .endOfFile { margin:40px auto 20px; clear:both; width:60px; height:auto; display:block }</style>\n", keyColor1HexString];
         // description script:
         NSString *scriptPath = [[NSBundle mainBundle] pathForResource:@"description" ofType:@"js"];
         NSURL *scriptUrl = [NSURL fileURLWithPath:scriptPath];
@@ -656,7 +656,6 @@ static CGRect buttonsScrollViewHomeRect;
     
 }
 
-// in progress
 - (void) toggleplaybackRate {
     
     if (_tung.playbackRateIndex < _tung.playbackRates.count - 1) {

@@ -20,7 +20,6 @@
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (strong, nonatomic) TungStories *stories;
 
-@property (nonatomic, assign) BOOL feedRefreshed;
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
 
 @property (strong, nonatomic) UIBarButtonItem *btn_seekBack;
@@ -34,6 +33,8 @@
 @property (strong, nonatomic) NSArray *profileControls;
 @property (strong, nonatomic) NSString *profileURLString;
 @property (strong, nonatomic) UIBarButtonItem *headerLabel;
+
+@property BOOL hasUserData;
 
 @end
 
@@ -56,7 +57,7 @@ CGFloat screenWidth;
     // check if the profiled user is themself
     if ([_tung.tungId isEqualToString:_profiledUserId]) {
         _isLoggedInUser = YES;
-        NSLog(@"user is self");
+        NSLog(@"is logged in user");
     }
     
     if (!screenWidth) screenWidth = self.view.frame.size.width;
@@ -71,7 +72,6 @@ CGFloat screenWidth;
     self.tableView.backgroundColor = _tung.bkgdGrayColor;
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
     self.tableView.scrollsToTop = YES;
-    self.tableView.separatorColor = [UIColor whiteColor];
     self.tableView.separatorInset = UIEdgeInsetsMake(0, 0, 0, 0);
     self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 35, 0);
     
@@ -79,8 +79,26 @@ CGFloat screenWidth;
 	self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
     
-    // get feed
-    [self refreshFeed];
+    _hasUserData = [TungCommonObjects checkForUserData];
+    
+    [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
+        if (reachable) {
+            if (_tung.sessionId && _tung.sessionId.length > 0) {
+    			[self requestPageData];
+            }
+            else {
+                [_tung getSessionWithCallback:^{
+                    [self requestPageData];
+                }];
+            }
+        }
+        // unreachable
+        else {
+            UIAlertView *noReachabilityAlert = [[UIAlertView alloc] initWithTitle:@"No Connection" message:@"tung requires an internet connection" delegate:self cancelButtonTitle:@"Retry" otherButtonTitles:nil];
+            [noReachabilityAlert setTag:49];
+            [noReachabilityAlert show];
+        }
+    }];
     
 }
 
@@ -96,8 +114,6 @@ CGFloat screenWidth;
     _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
 
-    // check for new posts
-    if (!_feedRefreshed) [self refreshFeed];
 }
 - (void) viewWillDisappear:(BOOL)animated {
 
@@ -110,69 +126,79 @@ CGFloat screenWidth;
     // Dispose of any resources that can be recreated.
 }
 
-- (void) refreshFeed {
+- (void) requestPageData {
     
-    [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
-        if (reachable) {
-            _feedRefreshed = YES;
-            /*
-            if (_tung.needsReload.boolValue) {
-                NSLog(@"needed reload");
-                _tungStereo.clipArray = [[NSMutableArray alloc] init];
+    // make sure user has there own data saved
+    if (!_hasUserData) {
+        // restore logged in user data
+        [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
+            if (jsonData != nil) {
+                NSDictionary *responseDict = jsonData;
+                if ([responseDict objectForKey:@"user"]) {
+                    NSLog(@"got user: %@", [responseDict objectForKey:@"user"]);
+                    [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
+                    _hasUserData = YES;
+                    _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
+                    self.navigationItem.title = [_profiledUserData objectForKey:@"username"];
+                    [self.tableView reloadData];
+                    [self refreshFeed];
+                }
             }
-            NSNumber *mostRecent;
-            if (_tungStereo.clipArray.count > 0) {
-                
-                NSLog(@"profile view: refresh feed");
-                [self.refreshControl beginRefreshing];
-                mostRecent = [[_tungStereo.clipArray objectAtIndex:0] objectForKey:@"time_secs"];
-            } else { // if initial request timed out and they are trying again
-                NSLog(@"profile view: get feed");
-                mostRecent = [NSNumber numberWithInt:0];
-            }
-        	*/
-            if (_isLoggedInUser) {
-                _profiledUserData = [[_tung getLoggedInUserData] mutableCopy];
-                [_profiledUserData setObject:@"--" forKey:@"followingCount"];
-                [_profiledUserData setObject:@"--" forKey:@"followerCount"];
-                // TODO: made request that just returns following/follower count for id
-            }
-            else {
-                [_tung getProfileDataForUser:_profiledUserId withCallback:^(NSDictionary *jsonData) {
-                    if (jsonData != nil) {
-                        NSDictionary *responseDict = jsonData;
-                        if ([responseDict objectForKey:@"user"]) {
-                            _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
-                            NSLog(@"profiled user data established");
-                            //_tungStereo.profiledUserData = _profiledUserData;
-                            // navigation bar title
-                            self.navigationItem.title = [_profiledUserData objectForKey:@"username"];
-
-                            [self.tableView reloadData];
-                            /*
-                            [_tungStereo requestPostsNewerThan:mostRecent
-                                                   orOlderThan:[NSNumber numberWithInt:0]
-                                                      fromUser:_profiledUserId
-                                                    orCategory:_profiledCategory
-                                                withSearchTerm:_searchTerm];
-                             */
-                        }
-                        else if ([responseDict objectForKey:@"error"]) {
-                            UIAlertView *profileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-                            [profileErrorAlert show];
-                            // TODO: user not found, if user was deleted
-                        }
+        }];
+    }
+    else {
+    
+        if (_isLoggedInUser) {
+            _profiledUserData = [[_tung getLoggedInUserData] mutableCopy];
+            [_profiledUserData setObject:@"" forKey:@"followingCount"];
+            [_profiledUserData setObject:@"" forKey:@"followerCount"];
+            self.navigationItem.title = [_profiledUserData objectForKey:@"username"];
+            [self.tableView reloadData];
+            // request profile just to get current follower/following counts
+            [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
+                if (jsonData != nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"user"]) {
+                        _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
+                        [self.tableView reloadData];
+            			[self refreshFeed];
                     }
-                }];
-            }
+                }
+            }];
         }
-        // unreachable
         else {
-            UIAlertView *noReachabilityAlert = [[UIAlertView alloc] initWithTitle:@"No Connection" message:@"tung requires an internet connection" delegate:self cancelButtonTitle:@"Retry" otherButtonTitles:nil];
-            [noReachabilityAlert setTag:49];
-            [noReachabilityAlert show];
+            [_tung getProfileDataForUser:_profiledUserId withCallback:^(NSDictionary *jsonData) {
+                if (jsonData != nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"user"]) {
+                        _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
+                        NSLog(@"profiled user data established");
+                        //_tungStereo.profiledUserData = _profiledUserData;
+                        // navigation bar title
+                        self.navigationItem.title = [_profiledUserData objectForKey:@"username"];
+                        [self.tableView reloadData];
+                        
+                        [self refreshFeed];
+                    }
+                    else if ([responseDict objectForKey:@"error"]) {
+                        UIAlertView *profileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+                        [profileErrorAlert show];
+                        // TODO: user not found, if user was deleted
+                    }
+                }
+            }];
         }
-    }];
+    }
+}
+
+- (void) refreshFeed {
+    /*
+    [_tungStereo requestPostsNewerThan:mostRecent
+                           orOlderThan:[NSNumber numberWithInt:0]
+                              fromUser:_profiledUserId
+                            orCategory:_profiledCategory
+                        withSearchTerm:_searchTerm];
+     */
 }
 
 -(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {

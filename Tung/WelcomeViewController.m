@@ -299,31 +299,6 @@
             [self continueFacebookSignup];
             
         }
-
-        
-        // OLD DEPRECATED FB SDK 3.X CODE
-        /*
-        // clear any active tokens
-        [FBSession.activeSession closeAndClearTokenInformation];
-        // get a new session token
-        [FBSession openActiveSessionWithReadPermissions:@[@"public_profile", @"publish_actions", @"user_website", @"user_about_me"]
-                                           allowLoginUI:YES
-                                      completionHandler:^(FBSession *session, FBSessionState state, NSError *error) {
-                                          // Retrieve the app delegate
-                                          AppDelegate* appDelegate = [UIApplication sharedApplication].delegate;
-                                          // Call the app delegate's sessionStateChanged:state:error method to handle session state changes
-                                          [appDelegate sessionStateChanged:session state:state error:error];
-                                          if (state == FBSessionStateOpen) {
-                                              [self continueFacebookSignup];
-                                          }
-                                          else {
-                                              //UIAlertView *fbLoginAlert = [[UIAlertView alloc] initWithTitle:@"Facebook login was cancelled" message:nil delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                                              //[fbLoginAlert show];
-                                              _activityIndicator.alpha = 0;
-                                              _working = NO;
-                                          }
-                                      }];*/
-
     }
 }
 

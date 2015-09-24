@@ -37,6 +37,7 @@
     [super viewDidLoad];
     
     _tung = [TungCommonObjects establishTungObjects];
+    _tung.viewController = self;
     
     // navigation bar
     self.navigationItem.titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"tungNavBarLogo.png"]];
@@ -136,25 +137,40 @@
             else if ([responseDict objectForKey:@"user"]) {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     NSDictionary *userDict = [responseDict objectForKey:@"user"];
+                    NSLog(@"got user dict from registration: %@", userDict);
+                    
                     // construct token of id and token together
-                    NSString *tungCred = [NSString stringWithFormat:@"%@:%@", [[userDict objectForKey:@"_id"] objectForKey:@"$id"], [userDict objectForKey:@"token"]];
+                    NSString *userId = [userDict objectForKey:@"tung_id"];
+                    NSString *tungCred = [NSString stringWithFormat:@"%@:%@", userId, [userDict objectForKey:@"token"]];
                 	
-                    // save cred to keychain
-                    [TungCommonObjects saveKeychainCred:tungCred];
-                    
-                    // store user data
-                    [TungCommonObjects saveUserWithDict:userDict];
-                    
-                    // TODO: request to mutually follow all users
+                    // request to mutually follow all users
+                    [_tung followAllUsersFromId:userId withCallback:^(BOOL success, NSDictionary *response) {
+                        if (success) {
+                            NSLog(@"successfully followed all users: %@", response);
+                            
+                            // save cred to keychain
+                            [TungCommonObjects saveKeychainCred:tungCred];
+                            
+                            // store user data
+                            [TungCommonObjects saveUserWithDict:userDict];
+                            
+                            // show feed
+                            UIViewController *feed = [self.navigationController.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];
+                            [self presentViewController:feed animated:YES completion:^{}];
+                        } else {
+                            NSLog(@"failed to follow all users: %@", response);
+                            // something f'd up. sign out and try again
+                            UIAlertView *followError = [[UIAlertView alloc] initWithTitle:@"Oops" message:@"Something went wrong... please try signing up again." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                            followError.tag = 34;
+                            [followError show];
+                            
+                            [_tung signOut];
+                        }
+                    }];
                     
                     // TODO: log fb activation...is this done automatically?
                     //[FBSDKAppEvents activateApp];
                     
-
-                    
-                	// show feed
-                    UIViewController *feed = [self.navigationController.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];
-                    [self presentViewController:feed animated:YES completion:^{}];
                 });
             }           
         }
