@@ -7,13 +7,13 @@
 //
 
 #import <UIKit/UIKit.h>
-#import "followButton.h"
+#import "PillButton.h"
 
 @interface FollowersCell : UITableViewCell
 
 @property (strong, nonatomic) IBOutlet UIButton *followingCountBtn;
 @property (strong, nonatomic) IBOutlet UIButton *followerCountBtn;
+@property (strong, nonatomic) IBOutlet PillButton *followButton;
 
-@property (strong, nonatomic) IBOutlet followButton *followBtn;
 
 @end

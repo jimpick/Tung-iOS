@@ -128,7 +128,7 @@ CGFloat screenWidth;
 
 - (void) requestPageData {
     
-    // make sure user has there own data saved
+    // make sure user has their own data saved
     if (!_hasUserData) {
         // restore logged in user data
         [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
@@ -540,18 +540,18 @@ CGFloat screenWidth;
             [fCell.followerCountBtn setTitle:[TungCommonObjects formatNumberForCount:[_profiledUserData objectForKey:@"followerCount"]] forState:UIControlStateNormal];
             [fCell.followerCountBtn addTarget:self action:@selector(viewFollowers) forControlEvents:UIControlEventTouchUpInside];
             // button
-            fCell.followBtn.backgroundColor = [UIColor clearColor];
+            fCell.followButton.backgroundColor = [UIColor clearColor];
             if (_isLoggedInUser) {
-                [fCell.followBtn addTarget:self action:@selector(editProfile) forControlEvents:UIControlEventTouchUpInside];
+                [fCell.followButton addTarget:self action:@selector(editProfile) forControlEvents:UIControlEventTouchUpInside];
             } else {
-                [fCell.followBtn addTarget:self action:@selector(followOrUnfollowUser) forControlEvents:UIControlEventTouchUpInside];
+                [fCell.followButton addTarget:self action:@selector(followOrUnfollowUser) forControlEvents:UIControlEventTouchUpInside];
                 BOOL follows = [[_profiledUserData objectForKey:@"userFollows"] boolValue];
                 if (follows) {
-                	fCell.followBtn.buttonText = @"Following";
-                    fCell.followBtn.isOn = YES;
+                	fCell.followButton.buttonText = @"Following";
+                    fCell.followButton.on = YES;
                 }
                 else {
-                    fCell.followBtn.buttonText = @"Follow";
+                    fCell.followButton.buttonText = @"Follow";
                 }
             }
             

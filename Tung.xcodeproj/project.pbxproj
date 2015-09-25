@@ -169,6 +169,7 @@
 		7DF8A8B318A29A52002332A1 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DF8A8B218A29A52002332A1 /* CoreAudio.framework */; };
 		7DF8A8B518A2A277002332A1 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DF8A8B418A2A277002332A1 /* AVFoundation.framework */; };
 		7DF8A8C218A2A62F002332A1 /* tungNavBarLogo@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DF8A8BF18A2A62F002332A1 /* tungNavBarLogo@2x.png */; };
+		7DF9823C1BB42B6A00D76B9F /* PillButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DF9823B1BB42B6A00D76B9F /* PillButton.m */; settings = {ASSET_TAGS = (); }; };
 		7DFE859E199A7B56000379B6 /* ProfileCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DFE859D199A7B56000379B6 /* ProfileCell.m */; };
 		7DFE85A1199AB143000379B6 /* btn-profile-plain-down@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DFE859F199AB143000379B6 /* btn-profile-plain-down@2x.png */; };
 		7DFE85A2199AB143000379B6 /* btn-profile-plain@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DFE85A0199AB143000379B6 /* btn-profile-plain@2x.png */; };
@@ -413,6 +414,8 @@
 		7DF8A8B218A29A52002332A1 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
 		7DF8A8B418A2A277002332A1 /* AVFoundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AVFoundation.framework; path = System/Library/Frameworks/AVFoundation.framework; sourceTree = SDKROOT; };
 		7DF8A8BF18A2A62F002332A1 /* tungNavBarLogo@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tungNavBarLogo@2x.png"; sourceTree = "<group>"; };
+		7DF9823A1BB42B5E00D76B9F /* PillButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PillButton.h; sourceTree = "<group>"; };
+		7DF9823B1BB42B6A00D76B9F /* PillButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PillButton.m; sourceTree = "<group>"; };
 		7DFE859C199A7B56000379B6 /* ProfileCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProfileCell.h; sourceTree = "<group>"; };
 		7DFE859D199A7B56000379B6 /* ProfileCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProfileCell.m; sourceTree = "<group>"; };
 		7DFE859F199AB143000379B6 /* btn-profile-plain-down@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "btn-profile-plain-down@2x.png"; sourceTree = "<group>"; };
@@ -609,10 +612,12 @@
 				7DE4B1C11B726F8600C02BE2 /* TextAreaBkgdView.h */,
 				7DE4B1C21B726F8600C02BE2 /* TextAreaBkgdView.m */,
 				7D282C7B1AF29D3400495E74 /* TungPodcastStyleKit.m */,
-				7D8228C61AFBE271004EB4B2 /* CircleButton.h */,
-				7D8228C71AFBE271004EB4B2 /* CircleButton.m */,
 				7D2165F11AFEBC590020356C /* ShowHideControlsButton.h */,
 				7D2165F21AFEBC590020356C /* ShowHideControlsButton.m */,
+				7D8228C61AFBE271004EB4B2 /* CircleButton.h */,
+				7D8228C71AFBE271004EB4B2 /* CircleButton.m */,
+				7DF9823A1BB42B5E00D76B9F /* PillButton.h */,
+				7DF9823B1BB42B6A00D76B9F /* PillButton.m */,
 				7D12D5C41B17429E00532FC0 /* NowPlayingControlView.h */,
 				7D12D5C51B17429E00532FC0 /* NowPlayingControlView.m */,
 				7DA5ED481B548882007BD424 /* FXBlurView.h */,
@@ -1018,6 +1023,7 @@
 				7DCAC60519FFDF71004B6182 /* followButton.m in Sources */,
 				7D670F301934EE7600239673 /* Reachability.m in Sources */,
 				7D63F8101AF6CBCC00765289 /* HeaderView.m in Sources */,
+				7DF9823C1BB42B6A00D76B9F /* PillButton.m in Sources */,
 				7DA336B819D0DF8B009CA162 /* PlayIndicatorView.m in Sources */,
 				7D282C881AF2C89F00495E74 /* TungDataModel.xcdatamodeld in Sources */,
 				7D4F352D1AB797FF0090EE81 /* FeedTableViewController.m in Sources */,

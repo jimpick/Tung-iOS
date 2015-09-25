@@ -7,7 +7,7 @@
 //
 
 #import "tungButtonOnWhite.h"
-#import "TungStyleKit.h"
+#import "TungPodcastStyleKit.h"
 
 @interface tungButtonOnWhite ()
 
@@ -33,7 +33,7 @@
 
 - (void)drawRect:(CGRect)rect
 {
-    [TungStyleKit drawTungButtonOnWhiteWithFrame:rect pressed:_isPressed buttonText:_buttonText];
+    [TungPodcastStyleKit drawTungButtonOnWhiteWithFrame:rect down:self.highlighted buttonText:_buttonText];
 }
 
 - (void) touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {

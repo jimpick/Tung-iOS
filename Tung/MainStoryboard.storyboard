@@ -768,7 +768,7 @@
                         <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                         <subviews>
-                            <view contentMode="scaleToFill" ambiguous="YES" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ga5-xO-Urj" customClass="tungButtonOnWhite">
+                            <view contentMode="scaleToFill" ambiguous="YES" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="ga5-xO-Urj" customClass="PillButton">
                                 <rect key="frame" x="67" y="222" width="186" height="79"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
                                 <constraints>
@@ -791,7 +791,7 @@
                                     <action selector="signUp:" destination="Hcj-BH-u4k" eventType="touchUpInside" id="hyj-rk-m1X"/>
                                 </connections>
                             </view>
-                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" misplaced="YES" text="All done." textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6TH-cs-OOT">
+                            <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" ambiguous="YES" misplaced="YES" text="All done. For new sign-ups during the beta, you will follow everyone, and everyone will automatically follow you." textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="4" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6TH-cs-OOT">
                                 <rect key="frame" x="48" y="196" width="224" height="18"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="15"/>
                                 <color key="textColor" red="0.65490196079999996" green="0.66274509800000003" blue="0.67450980390000004" alpha="1" colorSpace="calibratedRGB"/>
@@ -852,6 +852,7 @@
                     <size key="freeformSize" width="320" height="568"/>
                     <connections>
                         <outlet property="activityIndicator" destination="lGk-Kj-YKl" id="KIB-CJ-skk"/>
+                        <outlet property="signUpButton" destination="ga5-xO-Urj" id="r45-Nb-mzA"/>
                         <outlet property="termsNoticeWebView" destination="59E-yK-J3R" id="8uz-Ax-UTz"/>
                         <segue destination="Cnf-Bh-DVb" kind="unwind" identifier="unwindToSignUp" unwindAction="unwindToSignUp:" id="Vc2-KQ-pEQ"/>
                         <segue destination="wD7-6S-Iws" kind="presentation" identifier="presentTerms" id="pGF-82-xjV"/>
@@ -860,7 +861,7 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="fvm-47-7rl" userLabel="First Responder" sceneMemberID="firstResponder"/>
                 <exit id="Cnf-Bh-DVb" userLabel="Exit" sceneMemberID="exit"/>
             </objects>
-            <point key="canvasLocation" x="2100" y="-662"/>
+            <point key="canvasLocation" x="2106" y="-646"/>
         </scene>
         <!--Browser View Controller-->
         <scene sceneID="dxw-z0-OqQ">
@@ -1395,7 +1396,7 @@
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="zZl-0C-GPj" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1942.5" y="864"/>
+            <point key="canvasLocation" x="1947" y="804"/>
         </scene>
         <!--Description Web View Controller-->
         <scene sceneID="jJ3-K5-Q8J">
@@ -1450,7 +1451,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="qYq-I6-wIs" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2734.5" y="864"/>
+            <point key="canvasLocation" x="2760" y="804"/>
         </scene>
         <!--Search Table View Controller-->
         <scene sceneID="5e7-Wc-JQf">
@@ -1573,7 +1574,7 @@
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="xYW-mB-8lN" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="3504" y="864"/>
+            <point key="canvasLocation" x="3537" y="804"/>
         </scene>
         <!--Podcast View Controller-->
         <scene sceneID="Cyv-n0-P7M">
@@ -1592,7 +1593,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="N56-8k-TJo" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1017" y="872"/>
+            <point key="canvasLocation" x="1147.5" y="804"/>
         </scene>
         <!--Now Playing View Controller-->
         <scene sceneID="Aye-OL-5BL">
@@ -1983,7 +1984,7 @@
                 </navigationController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="OBD-Tr-6Ol" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-1267.5" y="1601"/>
+            <point key="canvasLocation" x="-1405.5" y="804"/>
         </scene>
         <!--Profile Table View Controller-->
         <scene sceneID="9NS-l2-JSJ">
@@ -2048,7 +2049,7 @@
                                             <color key="textColor" red="1" green="1" blue="1" alpha="0.5" colorSpace="custom" customColorSpace="sRGB"/>
                                             <nil key="highlightedColor"/>
                                         </label>
-                                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="sJp-yu-8Lm" customClass="followButton">
+                                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="sJp-yu-8Lm" customClass="PillButton">
                                             <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
                                             <constraints>
                                                 <constraint firstAttribute="width" constant="137" id="6oC-by-8Dg"/>
@@ -2184,7 +2185,7 @@
                                 </tableViewCellContentView>
                                 <color key="backgroundColor" red="0.45098039215686275" green="0.49411764705882355" blue="0.90588235294117647" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                 <connections>
-                                    <outlet property="followBtn" destination="sJp-yu-8Lm" id="9tZ-9n-SjX"/>
+                                    <outlet property="followButton" destination="sJp-yu-8Lm" id="iO1-Ve-SfC"/>
                                     <outlet property="followerCountBtn" destination="M2y-aa-NTJ" id="nqU-mo-BgV"/>
                                     <outlet property="followingCountBtn" destination="NCQ-XP-up6" id="iBw-ai-EIG"/>
                                 </connections>
@@ -2204,7 +2205,7 @@
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="sQC-yF-0Qk" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-442.5" y="1601"/>
+            <point key="canvasLocation" x="-457.5" y="804"/>
         </scene>
         <!--Profile Navigation Controller-->
         <scene sceneID="mKt-ky-dkf">
@@ -2217,7 +2218,7 @@
                 </navigationController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="eEi-Wa-xXx" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="444" y="1601"/>
+            <point key="canvasLocation" x="262.5" y="804"/>
         </scene>
         <!--Profile Search Table View Controller-->
         <scene sceneID="kSJ-kH-cb3">
@@ -2436,7 +2437,7 @@
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="HxR-Fg-ysV" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="4305" y="872"/>
+            <point key="canvasLocation" x="3058.5" y="1601"/>
         </scene>
         <!--Tung Nav Controller-->
         <scene sceneID="ajy-vc-ATn">
