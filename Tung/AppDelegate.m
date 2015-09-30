@@ -73,7 +73,7 @@
     NSString *storyboardId = isLoggedIn ? @"authenticated" : @"welcome";
     self.window.rootViewController = [self.window.rootViewController.storyboard instantiateViewControllerWithIdentifier:storyboardId];
     
-    //[Fabric with:@[CrashlyticsKit]];
+    [Fabric with:@[CrashlyticsKit]];
 
     //return YES;
     return [[FBSDKApplicationDelegate sharedInstance] application:application

@@ -16,5 +16,6 @@
 @property (strong, nonatomic) IBOutlet UIButton *usernameButton;
 @property (strong, nonatomic) IBOutlet UIButton *avatarButton;
 @property (strong, nonatomic) IBOutlet AvatarContainerView *avatarContainerView;
+@property (strong, nonatomic) IBOutlet UILabel *episodeTitle;
 
 @end

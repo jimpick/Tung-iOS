@@ -216,7 +216,7 @@
                 
                 NSLog(@"got results: %lu", (unsigned long)_podcastArray.count);
                 //NSLog(@"%@", _podcastArray);
-                [self preloadPodcastArt];
+                [_tung preloadPodcastArtForArray:_podcastArray];
                 [self preloadFeedsWithLimit:5];
                 [_searchTableViewController.tableView reloadData];
                 //});
@@ -480,36 +480,6 @@ static NSDateFormatter *airDateFormatter = nil;
 
 
 #pragma mark - Preloading
-
--(void) preloadPodcastArt {
-    
-    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
-    NSError *error;
-    if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
-        
-        NSArray *podcastArrayCopy = [_podcastArray copy];
-        
-        NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
-        preloadQueue.maxConcurrentOperationCount = 3;
-        // download and save podcast art to temp directory if it doesn't exist
-        
-        for (int i = 0; i < podcastArrayCopy.count; i++) {
-            
-            [preloadQueue addOperationWithBlock:^{
-                
-                NSString *artURLString = [[podcastArrayCopy objectAtIndex:i] objectForKey:@"artworkUrl600"];
-                
-                NSArray *components = [artURLString pathComponents];
-                NSString *artFilename = [NSString stringWithFormat:@"%@%@", components[components.count-2], components[components.count-1]];
-                NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
-                if (![[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
-                    NSData *artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:artURLString]];
-                    [artImageData writeToFile:artFilepath atomically:YES];
-                }
-            }];
-        }
-    }
-}
 
 static NSString *rawFeedsDirName = @"rawFeeds";
 

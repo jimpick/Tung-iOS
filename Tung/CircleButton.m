@@ -16,7 +16,11 @@
     switch (_type) {
             
         case kCircleTypeSubscribe:
-            [TungPodcastStyleKit drawSubscribeButtonWithFrame:rect color:_color on:_subscribed down:self.highlighted];
+            if (rect.size.width > 0) {
+                [TungPodcastStyleKit drawSubscribeButtonWithFrame:rect color:_color on:_subscribed down:self.highlighted];
+            } else {
+                NSLog(@"bad rect");
+            }
             break;
             
         case kCircleTypeNewClip:
