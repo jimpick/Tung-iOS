@@ -22,6 +22,9 @@
         
         _storiesArray = [NSMutableArray new];
         
+        _activeCellIndex = 0;
+        _activeClipIndex = 0;
+        
     }
     return self;
 }
@@ -32,13 +35,16 @@ NSString static *audioClipsDir;
 - (void) configureFeedCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
     
     FeedCell *feedCell = (FeedCell *)cell;
+    //NSLog(@"story cell for row at index path, row: %ld", (long)indexPath.row);
     
     // cell data
     NSDictionary *storyDict = [NSDictionary dictionaryWithDictionary:[_storiesArray objectAtIndex:indexPath.row]];
     NSDictionary *podcastDict = [storyDict objectForKey:@"podcast"];
     NSDictionary *userDict = [storyDict objectForKey:@"user"];
     //NSArray *events = [storyDict objectForKey:@"events"];
-    //NSLog(@"story cell for row at index path, row: %ld", (long)indexPath.row);
+    
+    // color
+    feedCell.backgroundColor = [TungCommonObjects colorFromHexString:[podcastDict objectForKey:@"keyColor1Hex"]];
     
     // user
     feedCell.usernameButton.tag = 101;
@@ -72,9 +78,9 @@ NSString static *audioClipsDir;
     
 	// title
     if ([podcastDict objectForKey:@"episode"]) {
-        feedCell.title = [[podcastDict objectForKey:@"episode"] objectForKey:@"title"];
+        feedCell.title.text = [[podcastDict objectForKey:@"episode"] objectForKey:@"title"];
     } else {
-        feedCell.title = [podcastDict objectForKey:@"collectionName"];
+        feedCell.title.text = [podcastDict objectForKey:@"collectionName"];
     }
     
     // post date
@@ -133,6 +139,7 @@ NSString static *audioClipsDir;
     [NSURLConnection sendAsynchronousRequest:feedRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
         if (error == nil) {
             id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            NSLog(@"got response: %@", jsonData);
             if (jsonData != nil && error == nil) {
                 if ([jsonData isKindOfClass:[NSDictionary class]]) {
                     NSDictionary *responseDict = jsonData;

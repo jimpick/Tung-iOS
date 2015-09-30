@@ -38,6 +38,10 @@
     
     // for feed
     _stories = [TungStories new];
+    _stories.tableView = self.tableView;
+    _stories.refreshControl = self.refreshControl;
+    _stories.loadMoreIndicator = self.loadMoreIndicator;
+    _stories.feedSection = 0;
     
     // additional table setup
     self.tableView.backgroundColor = _tung.bkgdGrayColor;
@@ -47,12 +51,12 @@
     self.tableView.contentInset = UIEdgeInsetsMake(1, 0, 10, 0);
     self.tableView.separatorColor = [UIColor whiteColor];
     self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 0, 0);
-    /*
-    _tableSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-    _tableSpinner.alpha = 1;
-    [_tableSpinner startAnimating];
-    tableView.backgroundView = _tableSpinner;
-     */
+    
+    UIActivityIndicatorView *tableSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+    tableSpinner.alpha = 1;
+    [tableSpinner startAnimating];
+    self.tableView.backgroundView = tableSpinner;
+    
     
     // refresh control
     self.refreshControl = [[UIRefreshControl alloc] init];
@@ -282,11 +286,14 @@ static NSDateFormatter *pubDateInterpreter = nil;
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return _stories.storiesArray.count;
+    if (section == _stories.feedSection) {
+    	return _stories.storiesArray.count;
+    } else {
+        return 0;
+    }
 }
 
 static NSString *cellIdentifier = @"feedCell";
-
 - (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
