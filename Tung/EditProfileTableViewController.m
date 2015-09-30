@@ -764,7 +764,7 @@ static UIImage *iconRedX;
 }
 -(void) validateEmailField:(UITextField *)textField {
     if ([textField.text length] > 0) {
-        NSString *emailRegexString = @"^[\\w\\d\\+\\.\\-]+@[a-zA-Z\\d\\.\\-]{2,}\\.[a-zA-Z]{2,15}$";
+        NSString *emailRegexString = @"^[\\w\\d\\+\\.\\-]+@[a-zA-Z\\d\\.\\-]+\\.[a-zA-Z]{2,15}$";
         NSRegularExpression *emailRegex = [NSRegularExpression regularExpressionWithPattern:emailRegexString options:NSRegularExpressionCaseInsensitive error:nil];
         NSUInteger match = [emailRegex numberOfMatchesInString:textField.text options:0 range:NSMakeRange(0, [textField.text length])];
         if (match > 0) {
@@ -782,7 +782,7 @@ static UIImage *iconRedX;
 }
 -(void) validateURLField:(UITextField *)textField {
     if ([textField.text length] > 0) {
-        NSString *urlRegexString = @"^(https?:\\/\\/)?[a-zA-Z\\d\\.\\-]{2,}\\.[a-zA-Z]{2,15}([\\/\\w-]*)*\\/?\\??([^#\\n\\r\\s]*)?#?([^\\n\\r\\s]*)$";
+        NSString *urlRegexString = @"^(https?:\\/\\/)?[a-zA-Z\\d\\.\\-]+\\.[a-zA-Z]{2,15}([\\/\\w-]*)*\\/?\\??([^#\\n\\r\\s]*)?#?([^\\n\\r\\s]*)$";
         NSRegularExpression *urlRegex = [NSRegularExpression regularExpressionWithPattern:urlRegexString options:NSRegularExpressionCaseInsensitive error:nil];
         NSUInteger match = [urlRegex numberOfMatchesInString:textField.text options:0 range:NSMakeRange(0, [textField.text length])];
         if (match > 0) {
