@@ -18,13 +18,14 @@
         case kCircleTypeSubscribe:
             if (rect.size.width > 0) {
                 [TungPodcastStyleKit drawSubscribeButtonWithFrame:rect color:_color on:_subscribed down:self.highlighted];
-            } else {
-                NSLog(@"bad rect");
             }
+            //else {
+            //    NSLog(@"bad rect");
+            //}
             break;
             
         case kCircleTypeNewClip:
-            [TungPodcastStyleKit drawClipButtonWithFrame:rect down:self.highlighted];
+            [TungPodcastStyleKit drawClipButtonWithFrame:rect color:_color down:self.highlighted];
             break;
             
         case kCircleTypeRecommend:
@@ -80,7 +81,7 @@
             break;
             
         default:
-            [TungPodcastStyleKit drawClipButtonWithFrame:rect down:self.highlighted];
+            [TungPodcastStyleKit drawClipButtonWithFrame:rect color:_color down:self.highlighted];
             break;
     }
 }

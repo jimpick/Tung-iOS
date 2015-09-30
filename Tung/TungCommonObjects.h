@@ -88,7 +88,7 @@
 @property (nonatomic, strong) ACAccount *twitterAccountToUse;
 @property (nonatomic, strong) NSString *twitterAccountStatus;
 // table
-@property (strong, nonatomic) NSNumber *needsReload;
+@property (strong, nonatomic) NSNumber *feedNeedsRefresh;
 
 // player
 - (void) controlButtonTapped;

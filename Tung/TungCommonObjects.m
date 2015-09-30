@@ -71,7 +71,7 @@
         _tungSiteRootUrl = @"https://tung.fm/";
         _twitterApiRootUrl = @"https://api.twitter.com/1.1/";
         // refresh feed flag
-        _needsReload = [NSNumber numberWithBool:NO];
+        _feedNeedsRefresh = [NSNumber numberWithBool:NO];
         // colors
         _tungColor = [UIColor colorWithRed:87.0/255 green:90.0/255 blue:215.0/255 alpha:1];
         _darkTungColor = [UIColor colorWithRed:58.0/255 green:65.0/255 blue:175.0/255 alpha:1];
@@ -80,9 +80,9 @@
         _twitterColor = [UIColor colorWithRed:42.0/255 green:169.0/255 blue:224.0/255 alpha:1];
         
         /* remove after tungStereo removed */
-        _clipDurationFormatter = [[NSNumberFormatter alloc] init];
-        [_clipDurationFormatter setMinimumIntegerDigits:2];
-        [_clipDurationFormatter setMinimumFractionDigits:0];
+//        _clipDurationFormatter = [[NSNumberFormatter alloc] init];
+//        [_clipDurationFormatter setMinimumIntegerDigits:2];
+//        [_clipDurationFormatter setMinimumFractionDigits:0];
         
         [self readPlayQueueFromDisk];
         NSLog(@"play queue read from disk: %@", _playQueue);
@@ -1942,6 +1942,7 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     [button setEnabled:YES];
+                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
                     NSLog(@"successfully subscribed to podcast");
                     // important: do not assign shortlink from subscribe story to episode entity
                 }
@@ -1997,6 +1998,7 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     [button setEnabled:YES];
+                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
                     NSLog(@"successfully unsubbed from podcast");
                 }
             }
@@ -2054,6 +2056,7 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     NSLog(@"successfully recommended podcast");
+                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
                     callback(YES, responseDict);
                 }
             }
@@ -2107,6 +2110,7 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     NSLog(@"successfully UN-recommended podcast");
+                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
                 }
             }
             else {
@@ -2213,6 +2217,7 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     NSLog(@"successfully posted comment");
+                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
                     callback(YES, responseDict);
                 }
             }
@@ -2296,6 +2301,7 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     NSLog(@"successfully posted clip");
+                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
                     callback(YES, responseDict);
                 }
             }

@@ -12,6 +12,7 @@
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (strong, nonatomic) TungPodcast *podcast;
+@property (strong, nonatomic) TungStories *stories;
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
 
 @property BOOL hasPodcastData;
@@ -34,6 +35,9 @@
     self.definesPresentationContext = YES;
     _podcast.navController = [self navigationController];
     _podcast.delegate = self;
+    
+    // for feed
+    _stories = [TungStories new];
     
     // additional table setup
     self.tableView.backgroundColor = _tung.bkgdGrayColor;
@@ -62,11 +66,10 @@
     } */
     
     _hasPodcastData = [TungCommonObjects checkForPodcastData];
-
     
-    // let's get retarded in here
-    [self refreshFeed];
-
+    // first load
+    _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
+    
 }
 
 - (void)didReceiveMemoryWarning {
@@ -86,6 +89,11 @@
     
     _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
+    
+    // let's get retarded in here
+    if (_tung.feedNeedsRefresh.boolValue) {
+    	[self refreshFeed];
+    }
     
     //self.navigationController.navigationBar.translucent = NO;
 }
@@ -132,25 +140,18 @@
         if (reachable) {
             // refresh feed
             if (_tung.sessionId && _tung.sessionId.length > 0) {
-//                NSLog(@"refresh feed");
-//                [self.refreshControl beginRefreshing];
-//                
-//                if (_tung.needsReload.boolValue) {
-//                    NSLog(@"needed reload");
-//                    _tungStereo.clipArray = [[NSMutableArray alloc] init];
-//                    _tung.needsReload = [NSNumber numberWithBool:NO];
-//                }
-//                NSNumber *mostRecent;
-//                if (_tungStereo.clipArray.count > 0) {
-//                    mostRecent = [[_tungStereo.clipArray objectAtIndex:0] objectForKey:@"time_secs"];
-//                } else { // if initial request timed out and they are trying again
-//                    mostRecent = [NSNumber numberWithInt:0];
-//                }
-//                [_tungStereo requestPostsNewerThan:mostRecent
-//                                       orOlderThan:[NSNumber numberWithInt:0]
-//                                          fromUser:_profiledUser
-//                                        orCategory:_profiledCategory
-//                                    withSearchTerm:@""];
+                NSLog(@"refresh feed");
+                [self.refreshControl beginRefreshing];
+                
+                NSNumber *mostRecent;
+                if (_stories.storiesArray.count > 0) {
+                    mostRecent = [[_stories.storiesArray objectAtIndex:0] objectForKey:@"time_secs"];
+                } else { // if initial request timed out and they are trying again
+                    mostRecent = [NSNumber numberWithInt:0];
+                }
+                [_stories requestPostsNewerThan:mostRecent
+                                       orOlderThan:[NSNumber numberWithInt:0]
+                                          fromUser:@""];
             }
             // get session then feed
             else {
@@ -224,10 +225,18 @@
                                 }
                                 _hasPodcastData = YES;
                             }
-                            // <INSERT FEED QUERY HERE>
+                            // get feed
+                            [_stories requestPostsNewerThan:[NSNumber numberWithInt:0]
+                                                orOlderThan:[NSNumber numberWithInt:0]
+                                                   fromUser:@""];
                         }];
-                    } else {
-                    	// <INSERT FEED QUERY HERE>
+                    }
+                    // if _hasPodcastData
+                    else {
+                        // get feed
+                        [_stories requestPostsNewerThan:[NSNumber numberWithInt:0]
+                                            orOlderThan:[NSNumber numberWithInt:0]
+                                               fromUser:@""];
                     }
                 }];
             }
@@ -273,13 +282,16 @@ static NSDateFormatter *pubDateInterpreter = nil;
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
-    return 0;
+    return _stories.storiesArray.count;
 }
+
+static NSString *cellIdentifier = @"feedCell";
 
 - (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    // tung activity cell
-    return nil;
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
+    [_stories configureFeedCell:cell forIndexPath:indexPath];
+    return cell;
     
 }
 
@@ -297,7 +309,7 @@ static NSDateFormatter *pubDateInterpreter = nil;
 
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    return 60;
+    return 127;
 }
 
 
@@ -314,17 +326,16 @@ static NSDateFormatter *pubDateInterpreter = nil;
         float bottomOffset = scrollView.contentSize.height - scrollView.frame.size.height;
         if (scrollView.contentOffset.y >= bottomOffset) {
             // request more posts if they didn't reach the end
-//            if (!_tungStereo.requestingMore && !_tungStereo.noMoreItemsToGet && _tungStereo.clipArray.count > 0) {
-//                _tungStereo.requestingMore = YES;
-//                _loadMoreIndicator.alpha = 1;
-//                [_loadMoreIndicator startAnimating];
-//                NSNumber *oldest = [[_tungStereo.clipArray objectAtIndex:_tungStereo.clipArray.count-1] objectForKey:@"time_secs"];
-//                [_tungStereo requestPostsNewerThan:[NSNumber numberWithInt:0]
-//                                       orOlderThan:oldest
-//                                          fromUser:_profiledUser
-//                                        orCategory:_profiledCategory
-//                                    withSearchTerm:_searchTerm];
-//            }
+            if (!_stories.requestingMore && !_stories.noMoreItemsToGet && _stories.storiesArray.count > 0) {
+                _stories.requestingMore = YES;
+                _loadMoreIndicator.alpha = 1;
+                [_loadMoreIndicator startAnimating];
+                NSNumber *oldest = [[_stories.storiesArray objectAtIndex:_stories.storiesArray.count-1] objectForKey:@"time_secs"];
+                
+                [_stories requestPostsNewerThan:[NSNumber numberWithInt:0]
+                                    orOlderThan:oldest
+                                       fromUser:@""];
+            }
         }
     }
 }

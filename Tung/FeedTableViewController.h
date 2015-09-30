@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "TungPodcast.h"
 #import "TungCommonObjects.h"
+#import "TungStories.h"
 
 @interface FeedTableViewController : UITableViewController <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, TungPodcastsDelegate, ControlButtonDelegate>
 

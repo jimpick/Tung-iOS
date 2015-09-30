@@ -560,7 +560,7 @@ static UIImage *iconRedX;
                     NSLog(@"saving new profile data: %@", _profileData);
                     [TungCommonObjects saveUserWithDict:_profileData];
                     // set "needs reload" flag
-                    _tung.needsReload = [NSNumber numberWithBool:YES];
+                    _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
                 });
             }
         }
