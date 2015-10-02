@@ -293,12 +293,25 @@ static NSDateFormatter *pubDateInterpreter = nil;
     }
 }
 
-static NSString *cellIdentifier = @"feedCell";
+static NSString *feedCellIdentifier = @"storyHeaderCell";
+static NSString *eventCellIdentifier = @"storyEventCell";
+static NSString *footerCellIdentifier = @"storyFooterCell";
+
 - (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
-    [_stories configureFeedCell:cell forIndexPath:indexPath];
-    return cell;
+    if ([[_stories.storiesArray objectAtIndex:indexPath.row] objectForKey:@"user"]) {
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:feedCellIdentifier];
+        [_stories configureHeaderCell:cell forIndexPath:indexPath];
+        return cell;
+    } else if ([[_stories.storiesArray objectAtIndex:indexPath.row] objectForKey:@"type"]) {
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:eventCellIdentifier];
+        [_stories configureEventCell:cell forIndexPath:indexPath];
+        return cell;
+    } else {
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:footerCellIdentifier];
+        [_stories configureFooterCell:cell forIndexPath:indexPath];
+        return cell;
+    }
     
 }
 
@@ -309,14 +322,26 @@ static NSString *cellIdentifier = @"feedCell";
     //NSLog(@"selected cell at row %ld", (long)[indexPath row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
-    
+    if ([[_stories.storiesArray objectAtIndex:indexPath.row] objectForKey:@"user"]) {
+        // push podcast view
+    } else if ([[_stories.storiesArray objectAtIndex:indexPath.row] objectForKey:@"type"]) {
+        // if clip, play
+    } else {
+        // push story view
+    }    
 }
 
 //- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
 
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    return 127;
+    if ([[_stories.storiesArray objectAtIndex:indexPath.row] objectForKey:@"user"]) {
+        return 127;
+    } else if ([[_stories.storiesArray objectAtIndex:indexPath.row] objectForKey:@"type"]) {
+        return 57;
+    } else {
+        return 38;
+    }
 }
 
 

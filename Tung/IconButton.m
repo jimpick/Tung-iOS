@@ -7,59 +7,27 @@
 //
 
 #import "IconButton.h"
-#import "TungStyleKit.h"
+#import "TungPodcastStyleKit.h"
 
 @implementation IconButton
 
-- (id)initWithFrame:(CGRect)frame
-{
-    self = [super initWithFrame:frame];
-    if (self) {
-        // Initialization code
-        _type = kIconTypePlayCount;
-    }
-    return self;
-}
-
--(void) awakeFromNib {
-    [super awakeFromNib];
-}
 
 - (void)drawRect:(CGRect)rect
 {
     switch (_type) {
-        case kIconTypePlayCount: {
-            [TungStyleKit drawIconPlayCountWithFrame:rect];
+        case kIconButtonTypeOptions:
+            [TungPodcastStyleKit drawOptionsIconWithFrame:rect color:_color];
             break;
-        }
-        case kIconTypeLike: {
-            [TungStyleKit drawIconLikeWithFrame:rect on:_isOn];
+        case kIconButtonTypeQueue:
+            [TungPodcastStyleKit drawQueueIconWithFrame:rect color:_color];
             break;
-        }
-        case kIconTypeLikeSmall: {
-            [TungStyleKit drawIconLikeSmallWithFrame:rect];
+        case kIconButtonTypeSave:
+            [TungPodcastStyleKit drawSaveIconWithFrame:rect color:_color];
             break;
-        }
-        case kIconTypeEcho: {
-            [TungStyleKit drawIconEchoWithFrame:rect on:_isOn disabled:_isDisabled];
+            
+        default:
+            [TungPodcastStyleKit drawOptionsIconWithFrame:rect color:_color];
             break;
-        }
-        case kIconTypeEchoSmall: {
-            [TungStyleKit drawIconEchoSmallWithFrame:rect];
-            break;
-        }
-        case kIconTypeOptions: {
-            [TungStyleKit drawIconOptionsWithFrame:rect];
-            break;
-        }
-        case kIconTypeAddSmall: {
-            [TungStyleKit drawIconAddSmallWithFrame:rect];
-            break;
-        }
-        default: {
-            [TungStyleKit drawIconPlayCountWithFrame:rect];
-            break;
-        }
     }
 }
 

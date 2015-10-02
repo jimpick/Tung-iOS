@@ -8,7 +8,9 @@
 
 #import "TungStories.h"
 #import "TungCommonObjects.h"
-#import "FeedCell.h"
+#import "StoryHeaderCell.h"
+#import "StoryEventCell.h"
+#import "StoryFooterCell.h"
 
 @implementation TungStories
 
@@ -32,26 +34,29 @@
 NSString static *avatarsDir;
 NSString static *audioClipsDir;
 
-- (void) configureFeedCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
+- (void) configureHeaderCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
     
-    FeedCell *feedCell = (FeedCell *)cell;
+    StoryHeaderCell *headerCell = (StoryHeaderCell *)cell;
     //NSLog(@"story cell for row at index path, row: %ld", (long)indexPath.row);
     
     // cell data
     NSDictionary *storyDict = [NSDictionary dictionaryWithDictionary:[_storiesArray objectAtIndex:indexPath.row]];
     NSDictionary *podcastDict = [storyDict objectForKey:@"podcast"];
     NSDictionary *userDict = [storyDict objectForKey:@"user"];
-    //NSArray *events = [storyDict objectForKey:@"events"];
     
     // color
-    feedCell.backgroundColor = [TungCommonObjects colorFromHexString:[podcastDict objectForKey:@"keyColor1Hex"]];
+    UIColor *keyColor = [TungCommonObjects colorFromHexString:[podcastDict objectForKey:@"keyColor1Hex"]];
+    headerCell.backgroundColor = keyColor;
+    UIView *bgColorView = [[UIView alloc] init];
+    bgColorView.backgroundColor = [_tung darkenKeyColor:keyColor];
+    [headerCell setSelectedBackgroundView:bgColorView];
     
     // user
-    feedCell.usernameButton.tag = 101;
-    [feedCell.usernameButton addTarget:self action:@selector(feedCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
-    [feedCell.usernameButton setTitle:[userDict objectForKey:@"username"] forState:UIControlStateNormal];
-    feedCell.avatarButton.tag = 101;
-    [feedCell.avatarButton addTarget:self action:@selector(feedCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+    headerCell.usernameButton.tag = 101;
+    [headerCell.usernameButton addTarget:self action:@selector(headerCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+    [headerCell.usernameButton setTitle:[userDict objectForKey:@"username"] forState:UIControlStateNormal];
+    headerCell.avatarButton.tag = 101;
+    [headerCell.avatarButton addTarget:self action:@selector(headerCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     
     // avatar
     NSString *avatarFilename = [[userDict objectForKey:@"small_av_url"] lastPathComponent];
@@ -64,38 +69,117 @@ NSString static *audioClipsDir;
         avatarImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: [userDict objectForKey:@"small_av_url"]]];
         [avatarImageData writeToFile:avatarFilepath atomically:YES];
     }
-    feedCell.avatarContainerView.backgroundColor = [UIColor clearColor];
-    feedCell.avatarContainerView.avatar = nil;
-    feedCell.avatarContainerView.avatar = [[UIImage alloc] initWithData:avatarImageData];
-    feedCell.avatarContainerView.borderColor = [UIColor whiteColor];
-    [feedCell.avatarContainerView setNeedsDisplay];
+    headerCell.avatarContainerView.backgroundColor = [UIColor clearColor];
+    headerCell.avatarContainerView.avatar = nil;
+    headerCell.avatarContainerView.avatar = [[UIImage alloc] initWithData:avatarImageData];
+    headerCell.avatarContainerView.borderColor = [UIColor whiteColor];
+    [headerCell.avatarContainerView setNeedsDisplay];
     
     // album art
     NSString *artUrlString = [podcastDict objectForKey:@"artworkUrl600"];
     NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
-    feedCell.albumArt.image = artImage;
+    headerCell.albumArt.image = artImage;
     
 	// title
+    NSString *title;
     if ([podcastDict objectForKey:@"episode"]) {
-        feedCell.title.text = [[podcastDict objectForKey:@"episode"] objectForKey:@"title"];
+        title = [[podcastDict objectForKey:@"episode"] objectForKey:@"title"];
     } else {
-        feedCell.title.text = [podcastDict objectForKey:@"collectionName"];
+        title = [podcastDict objectForKey:@"collectionName"];
+    }
+    headerCell.title.text = title;
+    headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
+    if (title.length > 42) {
+        headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
+    }
+    if (title.length > 62) {
+        headerCell.title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
     }
     
     // post date
-    feedCell.postedDateLabel.text = [TungCommonObjects timeElapsed:[storyDict objectForKey:@"time_secs"]];
+    headerCell.postedDateLabel.text = [TungCommonObjects timeElapsed:[storyDict objectForKey:@"time_secs"]];
 
     // kill insets for iOS 8+
+    /*
     if ([[UIDevice currentDevice].systemVersion floatValue] >= 8) {
-        feedCell.preservesSuperviewLayoutMargins = NO;
-        [feedCell setLayoutMargins:UIEdgeInsetsZero];
+        headerCell.preservesSuperviewLayoutMargins = NO;
+        [headerCell setLayoutMargins:UIEdgeInsetsZero];
     }
+     */
+}
+
+- (void) configureEventCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
+    
+    StoryEventCell *eventCell = (StoryEventCell *)cell;
+    
+    NSDictionary *eventDict = [_storiesArray objectAtIndex:indexPath.row];
+    
+    // color
+    UIColor *keyColor = (UIColor *)[eventDict objectForKey:@"keyColor"];
+    eventCell.backgroundColor = keyColor;
+    UIView *bgColorView = [[UIView alloc] init];
+    bgColorView.backgroundColor = [_tung darkenKeyColor:keyColor];
+    [eventCell setSelectedBackgroundView:bgColorView];
+    
+    // event
+    NSString *type = [eventDict objectForKey:@"type"];
+    NSString *eventLabelText;
+    if ([type isEqualToString:@"recommended"]) {
+        eventCell.iconView.type = kIconTypeRecommend;
+        eventLabelText = @"Recommended this episode";
+    }
+    else if ([type isEqualToString:@"subscribed"]) {
+        eventCell.iconView.type = kIconTypeSubscribe;
+        eventLabelText = @"Subscribed to this podcast";
+    }
+    else if ([type isEqualToString:@"comment"]) {
+        eventCell.iconView.type = kIconTypeComment;
+        eventLabelText = [NSString stringWithFormat:@"Commented @ %@", [eventDict objectForKey:@"timestamp"]];
+    }
+    else if ([type isEqualToString:@"clip"]) {
+        eventCell.iconView.type = kIconTypeClip;
+        eventLabelText = [NSString stringWithFormat:@"Shared a clip @ %@ (tap to play)", [eventDict objectForKey:@"timestamp"]];
+    }
+    eventCell.eventLabel.text = eventLabelText;
+    eventCell.iconView.color = [UIColor whiteColor];
+    eventCell.iconView.backgroundColor = [UIColor clearColor];
+    [eventCell.iconView setNeedsDisplay];
+    
+}
+
+- (void) configureFooterCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
+    
+    StoryFooterCell *footerCell = (StoryFooterCell *)cell;
+    
+    NSDictionary *footerDict = [_storiesArray objectAtIndex:indexPath.row];
+    
+    // view all
+    NSNumber *moreEvents = [footerDict objectForKey:@"moreEvents"];
+    footerCell.viewAllLabel.hidden = YES;
+    if (moreEvents.boolValue) {
+        footerCell.viewAllLabel.hidden = NO;
+    }
+    
+    // options button
+    footerCell.optionsButton.type = kIconButtonTypeOptions;
+    footerCell.optionsButton.color = [UIColor whiteColor];
+    
+    // color
+    UIColor *keyColor = (UIColor *)[footerDict objectForKey:@"keyColor"];
+    footerCell.backgroundColor = keyColor;
+    UIView *bgColorView = [[UIView alloc] init];
+    bgColorView.backgroundColor = [_tung darkenKeyColor:keyColor];
+    [footerCell setSelectedBackgroundView:bgColorView];
+    
+    // kill insets for iOS 8+
+    footerCell.preservesSuperviewLayoutMargins = NO;
+    [footerCell setLayoutMargins:UIEdgeInsetsZero];
 }
 
 #pragma mark - Feed cell controls
 
--(void) feedCellButtonTapped:(id)sender {
+-(void) headerCellButtonTapped:(id)sender {
     
 }
 
@@ -105,15 +189,17 @@ NSString static *audioClipsDir;
     
 }
 
-- (void) resetActivefeedCellReference {
+- (void) resetActiveheaderCellReference {
     
     // reset references to active progress bar and duration label
+    /*
     NSIndexPath *indexPath = [NSIndexPath indexPathForRow:_activeCellIndex inSection:_feedSection];
     UITableViewCell* tcell = [_tableView cellForRowAtIndexPath:indexPath];
-    FeedCell *activeCell = (FeedCell *)tcell;
-    //_activeProgressBar = activeCell.progressBar;
-    //_activeDurationLabel = activeCell.durationLabel;
+    StoryEventCell *activeCell = ( StoryEventCell  *)tcell;
+    _activeProgressBar = activeCell.progressBar;
+    _activeDurationLabel = activeCell.durationLabel;
     NSLog(@"set active clip cell reference to row: %ld, and section: %ld", (long)_activeClipIndex, (long)_feedSection);
+    */
 }
 
 #pragma mark - Requests
@@ -179,11 +265,12 @@ NSString static *audioClipsDir;
                         if ([afterTime intValue] > 0 && newPosts.count > 0) {
                             NSLog(@"\tgot posts newer than: %@", afterTime);
                             [self stopClipPlayback];
-                            NSArray *newFeedArray = [newPosts arrayByAddingObjectsFromArray:_storiesArray];
+                            NSArray *newItems = [self processStories:newPosts];
+                            NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
                             _storiesArray = [newFeedArray mutableCopy];
                             newFeedArray = nil;
                             NSMutableArray *newIndexPaths = [[NSMutableArray alloc] init];
-                            for (int i = 0; i < newPosts.count; i++) {
+                            for (int i = 0; i < newItems.count; i++) {
                                 [newIndexPaths addObject:[NSIndexPath indexPathForRow:i inSection:_feedSection]];
                             }
                             // if new posts were retrieved
@@ -194,7 +281,7 @@ NSString static *audioClipsDir;
                             [_tableView endUpdates];
                             [_tableView reloadData];
                             
-                            [self resetActivefeedCellReference];
+                            [self resetActiveheaderCellReference];
                         }
                         // auto-loaded posts as user scrolls down
                         else if ([beforeTime intValue] > 0) {
@@ -214,7 +301,7 @@ NSString static *audioClipsDir;
                                 NSLog(@"\tgot posts older than: %@", beforeTime);
                                 int startingIndex = (int)_storiesArray.count;
                                 // NSLog(@"\tstarting index: %d", startingIndex);
-                                NSArray *newFeedArray = [_storiesArray arrayByAddingObjectsFromArray:newPosts];
+                                NSArray *newFeedArray = [_storiesArray arrayByAddingObjectsFromArray:[self processStories:newPosts]];
                                 _storiesArray = [newFeedArray mutableCopy];
                                 newFeedArray = nil;
                                 NSMutableArray *newIndexPaths = [[NSMutableArray alloc] init];
@@ -226,14 +313,14 @@ NSString static *audioClipsDir;
                                 [_tableView endUpdates];
                                 [_tableView reloadData];
                                 
-                                [self resetActivefeedCellReference];
+                                [self resetActiveheaderCellReference];
                                 
                             }
                         }
                         // initial request
                         else {
+                            _storiesArray = [self processStories:newPosts];
                             NSLog(@"got posts. storiesArray count: %lu", (unsigned long)[_storiesArray count]);
-                            _storiesArray = [newPosts mutableCopy];
                             [_tableView reloadData];
                         }
                         // feed is now refreshed
@@ -246,6 +333,7 @@ NSString static *audioClipsDir;
                     });
                 }
             }
+            // errors
             else if ([data length] == 0 && error == nil) {
                 NSLog(@"no response");
                 _requestingMore = NO;
@@ -263,7 +351,7 @@ NSString static *audioClipsDir;
                 NSLog(@"HTML: %@", html);
             }
         }
-        // error
+        // connection error
         else {
             _requestingMore = NO;
             dispatch_async(dispatch_get_main_queue(), ^{
@@ -278,6 +366,43 @@ NSString static *audioClipsDir;
             });
         }
     }];
+}
+
+// break events apart from story and into their own array items in _storiesArray
+- (NSMutableArray *) processStories:(NSArray *)stories {
+    
+    NSMutableArray *results = [NSMutableArray new];
+    for (int i = 0; i < stories.count; i++) {
+        
+        NSMutableDictionary *dict = [[stories objectAtIndex:i] mutableCopy];
+        UIColor *keyColor = [TungCommonObjects colorFromHexString:[[dict objectForKey:@"podcast"] objectForKey:@"keyColor1Hex"]];
+        NSArray *events = [dict objectForKey:@"events"];
+        [results addObject:dict];
+        for (int e = 0; e < events.count; e++) {
+            
+            NSMutableDictionary *eventDict = [[events objectAtIndex:e] mutableCopy];
+            [eventDict setObject:keyColor forKey:@"keyColor"];
+            if (e < 5) {
+                [results addObject:eventDict];
+            } else {
+                break;
+            }
+        }
+        [dict removeObjectForKey:@"events"];
+        NSNumber *moreEvents = [NSNumber numberWithBool:events.count > 5];
+        NSDictionary *footerDict = [NSDictionary dictionaryWithObjects:@[
+                                                                         [dict objectForKey:@"shortlink"],
+                                                                         keyColor,
+                                                                         moreEvents,
+                                                                         [dict objectForKey:@"time_secs"]]
+                                                               forKeys:@[@"shortlink",
+                                                                         @"keyColor",
+                                                                         @"moreEvents",
+                                                                         @"time_secs"]];
+        [results addObject:footerDict];
+
+    }
+    return results;
 }
 
 -(void) preloadAudioClipsAndAvatars {

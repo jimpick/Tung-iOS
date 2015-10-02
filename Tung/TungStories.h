@@ -33,7 +33,9 @@
 @property (strong, nonatomic) UITableView *tableView;
 
 // methods
-- (void) configureFeedCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
+- (void) configureHeaderCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
+- (void) configureEventCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
+- (void) configureFooterCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) requestPostsNewerThan:(NSNumber *)afterTime orOlderThan:(NSNumber *)beforeTime fromUser:(NSString *)user_id;
 
 @end

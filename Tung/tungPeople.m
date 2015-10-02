@@ -243,16 +243,9 @@
         profileCell.iconView.backgroundColor = [UIColor clearColor];
 //        NSLog(@"action: %@", action);
         NSString *eventString;
-        if ([action isEqualToString:@"liked"]) {
-            profileCell.iconView.type = kIconTypeLikeSmall;
-            eventString = @"Liked your clip";
-        }
-        else if ([action isEqualToString:@"echoed"]) {
-            profileCell.iconView.type = kIconTypeEchoSmall;
-            eventString = @"Echoed your clip";
-        }
-        else if ([action isEqualToString:@"followed"]) {
-            profileCell.iconView.type = kIconTypeAddSmall;
+        if ([action isEqualToString:@"followed"]) {
+            profileCell.iconView.type = kIconTypeAdd;
+            profileCell.iconView.color = [UIColor grayColor];
             eventString = @"Followed you";
         }
         profileCell.subLabel.text = eventString;

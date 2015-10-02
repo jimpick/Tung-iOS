@@ -25,7 +25,7 @@
             break;
             
         case kCircleTypeNewClip:
-            [TungPodcastStyleKit drawClipButtonWithFrame:rect color:_color down:self.highlighted];
+            [TungPodcastStyleKit drawClipButtonWithFrame:rect down:self.highlighted];
             break;
             
         case kCircleTypeRecommend:
@@ -81,7 +81,7 @@
             break;
             
         default:
-            [TungPodcastStyleKit drawClipButtonWithFrame:rect color:_color down:self.highlighted];
+            [TungPodcastStyleKit drawClipButtonWithFrame:rect down:self.highlighted];
             break;
     }
 }

@@ -541,12 +541,16 @@ CGFloat screenWidth;
             [fCell.followerCountBtn addTarget:self action:@selector(viewFollowers) forControlEvents:UIControlEventTouchUpInside];
             // button
             fCell.followButton.backgroundColor = [UIColor clearColor];
+            fCell.followButton.on = NO;
+            fCell.followButton.type = kPillTypeFollow;
+            NSLog(@"follow button rect: %@", NSStringFromCGRect(fCell.followButton.frame));
             if (_isLoggedInUser) {
+                fCell.followButton.buttonText = @"Edit profile";
                 [fCell.followButton addTarget:self action:@selector(editProfile) forControlEvents:UIControlEventTouchUpInside];
+                
             } else {
                 [fCell.followButton addTarget:self action:@selector(followOrUnfollowUser) forControlEvents:UIControlEventTouchUpInside];
-                BOOL follows = [[_profiledUserData objectForKey:@"userFollows"] boolValue];
-                if (follows) {
+                if ([[_profiledUserData objectForKey:@"userFollows"] boolValue]) {
                 	fCell.followButton.buttonText = @"Following";
                     fCell.followButton.on = YES;
                 }

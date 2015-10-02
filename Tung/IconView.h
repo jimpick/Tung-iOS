@@ -13,7 +13,11 @@ typedef enum {
     kIconTypeNowPlaying,
     kIconTypeSave,
     kIconTypeQueue,
-    kIconTypeRecommend
+    kIconTypeRecommend,
+    kIconTypeSubscribe,
+    kIconTypeComment,
+    kIconTypeClip,
+    kIconTypeAdd
 } IconType;
 
 @interface IconView : UIView

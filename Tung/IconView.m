@@ -28,6 +28,17 @@
         case kIconTypeSave:
             [TungPodcastStyleKit drawSaveIconWithFrame:rect color:_color];
             break;
+        case kIconTypeSubscribe:
+            [TungPodcastStyleKit drawSubscribeIconWithFrame:rect color:_color];
+            break;
+        case kIconTypeComment:
+            [TungPodcastStyleKit drawCommentIconWithFrame:rect color:_color];
+            break;
+        case kIconTypeClip:
+            [TungPodcastStyleKit drawClipIconWithFrame:rect color:_color];
+            break;
+        case kIconTypeAdd:
+            [TungPodcastStyleKit drawAddCircleIconWithFrame:rect color:_color];
         default:
             break;
     }

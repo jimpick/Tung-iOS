@@ -8,7 +8,7 @@
 
 #import <UIKit/UIKit.h>
 #import "AvatarContainerView.h"
-#import "IconButton.h"
+#import "IconView.h"
 
 @interface ProfileListCell : UITableViewCell
 
@@ -17,7 +17,6 @@
 @property (strong, nonatomic) IBOutlet UIButton *usernameButton;
 @property (strong, nonatomic) IBOutlet UILabel *subLabel;
 @property (strong, nonatomic) IBOutlet NSLayoutConstraint *subLabelLeadingConstraint;
-@property (strong, nonatomic) IBOutlet IconButton *iconView;
-@property (strong, nonatomic) IBOutlet NSLayoutConstraint *usernameTopConstraint;
+@property (strong, nonatomic) IBOutlet IconView *iconView;
 
 @end

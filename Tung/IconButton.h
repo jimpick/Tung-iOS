@@ -9,20 +9,15 @@
 #import <UIKit/UIKit.h>
 
 typedef enum {
-    kIconTypePlayCount,
-    kIconTypeLike,
-    kIconTypeLikeSmall,
-    kIconTypeEcho,
-    kIconTypeEchoSmall,
-    kIconTypeOptions,
-    kIconTypeAddSmall
+    kIconButtonTypeSave,
+    kIconButtonTypeOptions,
+    kIconButtonTypeQueue,
 } IconButtonType;
 
 @interface IconButton : UIButton
 
-@property BOOL isOn;
-@property BOOL isDisabled;
 @property (nonatomic) IconButtonType type;
+@property (copy) UIColor *color;
 
 @end
 
