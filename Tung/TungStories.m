@@ -25,7 +25,9 @@
         _storiesArray = [NSMutableArray new];
         
         _activeCellIndex = 0;
-        _activeClipIndex = 0;
+        _activeSectionIndex = 0;
+        
+        self.requestStatus = @"";
         
     }
     return self;
@@ -33,14 +35,16 @@
 
 NSString static *avatarsDir;
 NSString static *audioClipsDir;
+NSString static *podcastArtDir;
 
 - (void) configureHeaderCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
     
     StoryHeaderCell *headerCell = (StoryHeaderCell *)cell;
-    //NSLog(@"story cell for row at index path, row: %ld", (long)indexPath.row);
+    headerCell.clipsToBounds = YES;
+    //NSLog(@"story header cell for row at index path, section: %ld", (long)indexPath.section);
     
     // cell data
-    NSDictionary *storyDict = [NSDictionary dictionaryWithDictionary:[_storiesArray objectAtIndex:indexPath.row]];
+    NSDictionary *storyDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
     NSDictionary *podcastDict = [storyDict objectForKey:@"podcast"];
     NSDictionary *userDict = [storyDict objectForKey:@"user"];
     
@@ -100,20 +104,16 @@ NSString static *audioClipsDir;
     // post date
     headerCell.postedDateLabel.text = [TungCommonObjects timeElapsed:[storyDict objectForKey:@"time_secs"]];
 
-    // kill insets for iOS 8+
-    /*
-    if ([[UIDevice currentDevice].systemVersion floatValue] >= 8) {
-        headerCell.preservesSuperviewLayoutMargins = NO;
-        [headerCell setLayoutMargins:UIEdgeInsetsZero];
-    }
-     */
+    // separator
+    headerCell.preservesSuperviewLayoutMargins = NO;
+    [headerCell setLayoutMargins:UIEdgeInsetsZero];
 }
 
 - (void) configureEventCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
     
     StoryEventCell *eventCell = (StoryEventCell *)cell;
     
-    NSDictionary *eventDict = [_storiesArray objectAtIndex:indexPath.row];
+    NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
     
     // color
     UIColor *keyColor = (UIColor *)[eventDict objectForKey:@"keyColor"];
@@ -146,13 +146,24 @@ NSString static *audioClipsDir;
     eventCell.iconView.backgroundColor = [UIColor clearColor];
     [eventCell.iconView setNeedsDisplay];
     
+    // bkgd image (album shadow)
+    if (indexPath.row == 1) {
+        eventCell.bkgdImage.hidden = NO;
+    } else {
+        eventCell.bkgdImage.hidden = YES;
+    }
+    
+    // separator
+    eventCell.preservesSuperviewLayoutMargins = NO;
+    [eventCell setLayoutMargins:UIEdgeInsetsZero];
+    
 }
 
 - (void) configureFooterCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
     
     StoryFooterCell *footerCell = (StoryFooterCell *)cell;
     
-    NSDictionary *footerDict = [_storiesArray objectAtIndex:indexPath.row];
+    NSDictionary *footerDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
     
     // view all
     NSNumber *moreEvents = [footerDict objectForKey:@"moreEvents"];
@@ -172,7 +183,7 @@ NSString static *audioClipsDir;
     bgColorView.backgroundColor = [_tung darkenKeyColor:keyColor];
     [footerCell setSelectedBackgroundView:bgColorView];
     
-    // kill insets for iOS 8+
+    // separator
     footerCell.preservesSuperviewLayoutMargins = NO;
     [footerCell setLayoutMargins:UIEdgeInsetsZero];
 }
@@ -189,7 +200,7 @@ NSString static *audioClipsDir;
     
 }
 
-- (void) resetActiveheaderCellReference {
+- (void) resetActiveCellReference {
     
     // reset references to active progress bar and duration label
     /*
@@ -209,7 +220,8 @@ NSString static *audioClipsDir;
                   orOlderThan:(NSNumber *)beforeTime
                      fromUser:(NSString *)user_id {
     NSLog(@"feed request for posts newer than: %@, or older than: %@, from user: %@", afterTime, beforeTime, user_id);
-    _noResults = NO;
+    self.requestStatus = @"initiated";
+
     NSURL *feedURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/feed.php", _tung.apiRootUrl]];
     NSMutableURLRequest *feedRequest = [NSMutableURLRequest requestWithURL:feedURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [feedRequest setHTTPMethod:@"POST"];
@@ -238,7 +250,7 @@ NSString static *audioClipsDir;
                                     [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id];
                                 }];
                             } else {
-                                [self.refreshControl endRefreshing];
+                                self.requestStatus = @"finished";
                                 // other error - alert user
                                 UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
                                 [errorAlert show];
@@ -253,35 +265,27 @@ NSString static *audioClipsDir;
                         NSArray *newPosts = jsonData;
                         NSLog(@"new posts count: %lu", (unsigned long)newPosts.count);
                         
-                        if (newPosts.count == 0) _noResults = YES;
-                        else _noResults = NO;
-                        
-                        _queryExecuted = YES;
                         // end refreshing
-                        [_refreshControl endRefreshing];
+                        self.requestStatus = @"finished";
                         _tableView.backgroundView = nil;
-                        
+                            
                         // pull refresh
-                        if ([afterTime intValue] > 0 && newPosts.count > 0) {
-                            NSLog(@"\tgot posts newer than: %@", afterTime);
-                            [self stopClipPlayback];
-                            NSArray *newItems = [self processStories:newPosts];
-                            NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
-                            _storiesArray = [newFeedArray mutableCopy];
-                            newFeedArray = nil;
-                            NSMutableArray *newIndexPaths = [[NSMutableArray alloc] init];
-                            for (int i = 0; i < newItems.count; i++) {
-                                [newIndexPaths addObject:[NSIndexPath indexPathForRow:i inSection:_feedSection]];
+                        if ([afterTime intValue] > 0) {
+                            if (newPosts.count > 0) {
+                                NSLog(@"\tgot posts newer than: %@", afterTime);
+                                [self stopClipPlayback];
+                                NSArray *newItems = [self processStories:newPosts];
+                                NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
+                                _storiesArray = [newFeedArray mutableCopy];
+
+                                for (int i = 0; i < newPosts.count-1; i++) {
+                                    [_tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                                }
+                                
+                                [_tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:_feedSectionStartingIndex] atScrollPosition:UITableViewScrollPositionTop animated:YES];
+                                
+                                [self resetActiveCellReference];
                             }
-                            // if new posts were retrieved
-                            [_tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionTop animated:YES];
-                            
-                            [_tableView beginUpdates];
-                            [_tableView insertRowsAtIndexPaths:newIndexPaths withRowAnimation:UITableViewRowAnimationLeft];
-                            [_tableView endUpdates];
-                            [_tableView reloadData];
-                            
-                            [self resetActiveheaderCellReference];
                         }
                         // auto-loaded posts as user scrolls down
                         else if ([beforeTime intValue] > 0) {
@@ -291,7 +295,7 @@ NSString static *audioClipsDir;
                             
                             if (newPosts.count == 0) {
                                 NSLog(@"no more posts to get");
-                                _noMoreItemsToGet = YES;
+                                _reachedEndOfPosts = YES;
                                 // hide footer
                                 //[_tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_storiesArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
                                 _loadMoreIndicator.alpha = 0;
@@ -304,16 +308,14 @@ NSString static *audioClipsDir;
                                 NSArray *newFeedArray = [_storiesArray arrayByAddingObjectsFromArray:[self processStories:newPosts]];
                                 _storiesArray = [newFeedArray mutableCopy];
                                 newFeedArray = nil;
-                                NSMutableArray *newIndexPaths = [[NSMutableArray alloc] init];
-                                for (int i = startingIndex; i < _storiesArray.count; i++) {
-                                    [newIndexPaths addObject:[NSIndexPath indexPathForRow:i inSection:_feedSection]];
-                                }
-                                [_tableView beginUpdates];
-                                [_tableView insertRowsAtIndexPaths:newIndexPaths withRowAnimation:UITableViewRowAnimationLeft];
-                                [_tableView endUpdates];
-                                [_tableView reloadData];
                                 
-                                [self resetActiveheaderCellReference];
+                                [_tableView beginUpdates];
+                                for (int i = startingIndex-1; i < _storiesArray.count-1; i++) {
+                                    [_tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                                }
+                                [_tableView endUpdates];
+                                
+                                [self resetActiveCellReference];
                                 
                             }
                         }
@@ -323,12 +325,9 @@ NSString static *audioClipsDir;
                             NSLog(@"got posts. storiesArray count: %lu", (unsigned long)[_storiesArray count]);
                             [_tableView reloadData];
                         }
+                        
                         // feed is now refreshed
                         _tung.feedNeedsRefresh = [NSNumber numberWithBool:NO];
-                        
-                        // preload
-                        [_tung preloadPodcastArtForArray:_storiesArray];
-                        [self preloadAudioClipsAndAvatars];
                         
                     });
                 }
@@ -336,14 +335,16 @@ NSString static *audioClipsDir;
             // errors
             else if ([data length] == 0 && error == nil) {
                 NSLog(@"no response");
-                _requestingMore = NO;
                 dispatch_async(dispatch_get_main_queue(), ^{
+                    _requestingMore = NO;
+                    self.requestStatus = @"finished";
                     _loadMoreIndicator.alpha = 0;
                 });
             }
             else if (error != nil) {
-                _requestingMore = NO;
                 dispatch_async(dispatch_get_main_queue(), ^{
+                    _requestingMore = NO;
+                    self.requestStatus = @"finished";
                     _loadMoreIndicator.alpha = 0;
                 });
                 NSLog(@"Error: %@", error);
@@ -353,11 +354,11 @@ NSString static *audioClipsDir;
         }
         // connection error
         else {
-            _requestingMore = NO;
             dispatch_async(dispatch_get_main_queue(), ^{
+                _requestingMore = NO;
                 _loadMoreIndicator.alpha = 0;
                 // end refreshing
-                [self.refreshControl endRefreshing];
+                self.requestStatus = @"finished";
                 _tableView.backgroundView = nil;
                 
                 UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
@@ -368,22 +369,72 @@ NSString static *audioClipsDir;
     }];
 }
 
-// break events apart from story and into their own array items in _storiesArray
+// break events apart from story and into their own array items in _storiesArray,
+// while we're at it, preload avatars, album art and clips.
 - (NSMutableArray *) processStories:(NSArray *)stories {
     
+    // for preloading
+    if (!audioClipsDir) {
+        audioClipsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"audioClips"];
+        avatarsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"avatars"];
+        podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
+    }
+    NSError *error;
+    [[NSFileManager defaultManager] createDirectoryAtPath:audioClipsDir withIntermediateDirectories:YES attributes:nil error:&error];
+    [[NSFileManager defaultManager] createDirectoryAtPath:avatarsDir withIntermediateDirectories:YES attributes:nil error:&error];
+    [[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error];
+    
+    NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
+    preloadQueue.maxConcurrentOperationCount = 3;
+    
+    // process stories
     NSMutableArray *results = [NSMutableArray new];
     for (int i = 0; i < stories.count; i++) {
-        
+
+        NSMutableArray *storyArray = [NSMutableArray new];
         NSMutableDictionary *dict = [[stories objectAtIndex:i] mutableCopy];
         UIColor *keyColor = [TungCommonObjects colorFromHexString:[[dict objectForKey:@"podcast"] objectForKey:@"keyColor1Hex"]];
         NSArray *events = [dict objectForKey:@"events"];
-        [results addObject:dict];
+        [storyArray addObject:dict];
+        
+        // preload avatar and album art
+        [preloadQueue addOperationWithBlock:^{
+            // avatar
+            NSString *avatarURLString = [[dict objectForKey:@"user"] objectForKey:@"small_av_url"];
+            NSString *avatarFilename = [avatarURLString lastPathComponent];
+            NSString *avatarFilepath = [avatarsDir stringByAppendingPathComponent:avatarFilename];
+            if (![[NSFileManager defaultManager] fileExistsAtPath:avatarFilepath]) {
+                NSData *avatarImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:avatarURLString]];
+                [avatarImageData writeToFile:avatarFilepath atomically:YES];
+            }
+            // album art
+            NSString *artURLString = [[dict objectForKey:@"podcast"] objectForKey:@"artworkUrl600"];
+            NSString *artFilename = [TungCommonObjects getAlbumArtFilenameFromUrlString:artURLString];
+            NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
+            if (![[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
+                NSData *artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:artURLString]];
+                [artImageData writeToFile:artFilepath atomically:YES];
+            }
+        }];
+        
         for (int e = 0; e < events.count; e++) {
             
             NSMutableDictionary *eventDict = [[events objectAtIndex:e] mutableCopy];
             [eventDict setObject:keyColor forKey:@"keyColor"];
+            // preload clip
+            if ([[eventDict objectForKey:@"type"] isEqualToString:@"clip"]) {
+                [preloadQueue addOperationWithBlock:^{
+                    NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
+                    NSString *clipFilename = [clipURLString lastPathComponent];
+                    NSString *clipFilepath = [audioClipsDir stringByAppendingPathComponent:clipFilename];
+                    if (![[NSFileManager defaultManager] fileExistsAtPath:clipFilepath]) {
+                        NSData *clipData = [NSData dataWithContentsOfURL:[NSURL URLWithString:clipURLString]];
+                        [clipData writeToFile:clipFilepath atomically:YES];
+                    }
+                }];
+            }
             if (e < 5) {
-                [results addObject:eventDict];
+                [storyArray addObject:eventDict];
             } else {
                 break;
             }
@@ -393,64 +444,15 @@ NSString static *audioClipsDir;
         NSDictionary *footerDict = [NSDictionary dictionaryWithObjects:@[
                                                                          [dict objectForKey:@"shortlink"],
                                                                          keyColor,
-                                                                         moreEvents,
-                                                                         [dict objectForKey:@"time_secs"]]
+                                                                         moreEvents]
                                                                forKeys:@[@"shortlink",
                                                                          @"keyColor",
-                                                                         @"moreEvents",
-                                                                         @"time_secs"]];
-        [results addObject:footerDict];
+                                                                         @"moreEvents"]];
+        [storyArray addObject:footerDict];
+        [results addObject:storyArray];
 
     }
     return results;
-}
-
--(void) preloadAudioClipsAndAvatars {
-    
-    if (!audioClipsDir) {
-        audioClipsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"audioClips"];
-        avatarsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"avatars"];
-    }
-    NSError *error;
-    [[NSFileManager defaultManager] createDirectoryAtPath:audioClipsDir withIntermediateDirectories:YES attributes:nil error:&error];
-    [[NSFileManager defaultManager] createDirectoryAtPath:avatarsDir withIntermediateDirectories:YES attributes:nil error:&error];
-        
-    NSArray *itemArrayCopy = [_storiesArray copy];
-    
-    NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
-    preloadQueue.maxConcurrentOperationCount = 3;
-    
-    for (int i = 0; i < itemArrayCopy.count; i++) {
-        
-        // avatar
-        [preloadQueue addOperationWithBlock:^{
-            NSString *avatarURLString = [[[itemArrayCopy objectAtIndex:i] objectForKey:@"user"] objectForKey:@"small_av_url"];
-            NSString *avatarFilename = [avatarURLString lastPathComponent];
-            NSString *avatarFilepath = [avatarsDir stringByAppendingPathComponent:avatarFilename];
-            if (![[NSFileManager defaultManager] fileExistsAtPath:avatarFilepath]) {
-                NSData *avatarImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:avatarURLString]];
-                [avatarImageData writeToFile:avatarFilepath atomically:YES];
-            }
-        }];
-        
-        // clip(s)
-        NSArray *events = [[itemArrayCopy objectAtIndex:i] objectForKey:@"events"];
-        for (int j = 0; j < events.count; j++) {
-            
-            if ([[[events objectAtIndex:j] objectForKey:@"type"] isEqualToString:@"clip"]) {
-                [preloadQueue addOperationWithBlock:^{
-                    
-                    NSString *clipURLString = [[events objectAtIndex:j] objectForKey:@"clip_url"];
-                    NSString *clipFilename = [clipURLString lastPathComponent];
-                    NSString *clipFilepath = [audioClipsDir stringByAppendingPathComponent:clipFilename];
-                    if (![[NSFileManager defaultManager] fileExistsAtPath:clipFilepath]) {
-                        NSData *clipData = [NSData dataWithContentsOfURL:[NSURL URLWithString:clipURLString]];
-                        [clipData writeToFile:clipFilepath atomically:YES];
-                    }
-                }];
-            }
-        }
-    }
 }
 
 

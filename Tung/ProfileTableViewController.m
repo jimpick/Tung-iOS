@@ -72,8 +72,9 @@ CGFloat screenWidth;
     self.tableView.backgroundColor = _tung.bkgdGrayColor;
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
     self.tableView.scrollsToTop = YES;
-    self.tableView.separatorInset = UIEdgeInsetsMake(0, 0, 0, 0);
+    self.tableView.separatorInset = UIEdgeInsetsZero;
     self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 35, 0);
+    self.tableView.separatorColor = [UIColor whiteColor];
     
     // refresh control
 	self.refreshControl = [[UIRefreshControl alloc] init];
@@ -693,15 +694,15 @@ CGFloat screenWidth;
     NSString *headerText;
     if (_stories.storiesArray.count > 0) {
         if (_isLoggedInUser) {
-             headerText = @" My posts";
+             headerText = @" My activity";
         } else {
-            headerText = [NSString stringWithFormat:@" Posts by %@", [_profiledUserData objectForKey:@"username"]];
+            headerText = [NSString stringWithFormat:@" %@'s activity", [_profiledUserData objectForKey:@"username"]];
         }
     } else {
-        if (_stories.queryExecuted) {
-        	headerText = @" No posts yet.";
+        if ([_stories.requestStatus isEqualToString:@"finished"]) {
+        	headerText = @" No activity yet.";
         } else {
-            headerText = @" Getting posts...";
+            headerText = @" Getting activity...";
         }
     }
     return headerText;
@@ -709,16 +710,16 @@ CGFloat screenWidth;
 
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
 
-    if (!_stories.noMoreItemsToGet && section == 1)
+    if (!_stories.reachedEndOfPosts && section == 1)
     	return 66.0;
-    else if (_stories.noMoreItemsToGet && section == 2)
+    else if (_stories.reachedEndOfPosts && section == 2)
         return 66.0;
     else
         return 0;
 }
 
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
-    if (_stories.noMoreItemsToGet && section == 2) {
+    if (_stories.reachedEndOfPosts && section == 2) {
         UILabel *noMoreLabel = [[UILabel alloc] init];
         noMoreLabel.text = @"That's everything.";
         noMoreLabel.textColor = [UIColor grayColor];
@@ -740,7 +741,7 @@ CGFloat screenWidth;
         if (scrollView.contentOffset.y >= bottomOffset) {
             // request more posts if they didn't reach the end
             /*
-            if (!_tungStereo.requestingMore && !_tungStereo.noMoreItemsToGet && _tungStereo.clipArray.count > 0) {
+            if (!_tungStereo.requestingMore && !_tungStereo.reachedEndOfPosts && _tungStereo.clipArray.count > 0) {
                 _tungStereo.requestingMore = YES;
                 _loadMoreIndicator.alpha = 1;
                 [_loadMoreIndicator startAnimating];

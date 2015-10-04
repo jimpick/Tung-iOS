@@ -8,14 +8,14 @@
 
 #import "ProfileListTableViewController.h"
 #import "TungCommonObjects.h"
-#import "tungPeople.h"
+#import "TungPeople.h"
 #import "ProfileListCell.h"
 #import "ProfileSearchTableViewController.h"
 
 @interface ProfileSearchTableViewController ()
 
 @property (nonatomic, retain) TungCommonObjects *tungObjects;
-@property (strong, nonatomic) tungPeople *tungPeople;
+@property (strong, nonatomic) TungPeople *tungPeople;
 
 @property (nonatomic, assign) BOOL feedRefreshed;
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
@@ -35,7 +35,7 @@
     _tungObjects = [TungCommonObjects establishTungObjects];
     _tungObjects.viewController = self;
     
-    _tungPeople = [[tungPeople alloc] init];
+    _tungPeople = [[TungPeople alloc] init];
     _tungPeople.tableView = self.tableView;
     _tungPeople.viewController = self;
     _tungPeople.queryType = @"";
@@ -64,21 +64,6 @@
     self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
     _tungPeople.refreshControl = self.refreshControl;
-    
-    // set up toolbar
-    UIBarButtonItem *btn_seekBack = [_tungPeople generateStereoButtonWithImageName:@"btn-seek-back-disabled.png"];
-    UIBarButtonItem *btn_seekForward = [_tungPeople generateStereoButtonWithImageName:@"btn-seek-forward-disabled.png"];
-    UIBarButtonItem *btn_playPause = [_tungPeople generateStereoButtonWithImageName:@"btn-play-disabled.png"];
-    UIBarButtonItem *btn_loop = [_tungPeople generateStereoButtonWithImageName:@"btn-loop-disabled.png"];
-    UIBarButtonItem *fixedSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:self action:nil];
-    fixedSpace.width = 120;
-    UIBarButtonItem *fSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
-    [self setToolbarItems:@[btn_seekBack, fSpace,
-                            btn_loop, fSpace,
-                            fixedSpace, fSpace,
-                            btn_playPause, fSpace,
-                            btn_seekForward] animated:NO];
-    self.navigationController.toolbar.clipsToBounds = YES;
     
     // get feed
     [self refreshFeed];

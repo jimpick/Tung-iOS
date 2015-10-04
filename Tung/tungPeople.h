@@ -9,7 +9,7 @@
 #import <Foundation/Foundation.h>
 #import "TungCommonObjects.h"
 
-@interface tungPeople : NSObject
+@interface TungPeople : NSObject
 
 @property (nonatomic, retain) TungCommonObjects *tungObjects;
 @property (strong, nonatomic) NSMutableArray *itemArray;
@@ -36,7 +36,6 @@
                         orSearchTerm:(NSString *)term
                            newerThan:(NSNumber *)afterTime
                          orOlderThan:(NSNumber *)beforeTime;
-- (UIBarButtonItem *) generateStereoButtonWithImageName:(NSString *)imageName;
 - (void) configureProfileListCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) tableCellButtonTapped:(id)sender;
 - (void) pushProfileForUserAtIndex:(NSInteger)index;

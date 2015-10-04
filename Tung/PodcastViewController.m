@@ -52,6 +52,7 @@
     // add child table view controller
     _episodeView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodeView"];
     _episodeView.edgesForExtendedLayout = UIRectEdgeNone;
+    if (_focusedGUID) _episodeView.focusedGUID = _focusedGUID;
     [self addChildViewController:_episodeView];
     [self.view addSubview:_episodeView.view];
     
@@ -167,6 +168,10 @@
     
     _episodeView.noResults = _podcast.noResults;
     [_episodeView.tableView reloadData];
+    
+    if (_focusedGUID) {
+        [_episodeView.tableView scrollToRowAtIndexPath:_episodeView.focusedIndexPath atScrollPosition:UITableViewScrollPositionTop animated:YES];
+    }
 
 }
 

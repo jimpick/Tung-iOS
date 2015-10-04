@@ -74,6 +74,7 @@
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
         // colors
         _tungColor = [UIColor colorWithRed:87.0/255 green:90.0/255 blue:215.0/255 alpha:1];
+        _lightTungColor = [UIColor colorWithRed:238.0/255 green:239.0/255 blue:251.0/255 alpha:1];
         _darkTungColor = [UIColor colorWithRed:58.0/255 green:65.0/255 blue:175.0/255 alpha:1];
         _bkgdGrayColor = [UIColor colorWithRed:230.0/255.0 green:230.0/255.0 blue:230.0/255.0 alpha:1];
         _facebookColor = [UIColor colorWithRed:61.0/255 green:90.0/255 blue:152.0/255 alpha:1];
@@ -2314,40 +2315,6 @@ static NSArray *colors;
     }];
 }
 
--(void) preloadPodcastArtForArray:(NSArray*)itemArray {
-    
-    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
-    NSError *error;
-    if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
-        
-        NSArray *itemArrayCopy = [itemArray copy];
-        
-        NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
-        preloadQueue.maxConcurrentOperationCount = 3;
-        // download and save podcast art to temp directory if it doesn't exist
-        
-        for (int i = 0; i < itemArrayCopy.count; i++) {
-            
-            [preloadQueue addOperationWithBlock:^{
-                NSString *artURLString;
-                if ([[itemArrayCopy objectAtIndex:i] objectForKey:@"artworkUrl600"]) {
-                	artURLString = [[itemArrayCopy objectAtIndex:i] objectForKey:@"artworkUrl600"];
-                } else {
-                    artURLString = [[[itemArrayCopy objectAtIndex:i] objectForKey:@"podcast"] objectForKey:@"artworkUrl600"];
-                }
-                
-                NSArray *components = [artURLString pathComponents];
-                NSString *artFilename = [NSString stringWithFormat:@"%@%@", components[components.count-2], components[components.count-1]];
-                NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
-                if (![[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
-                    NSData *artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:artURLString]];
-                    [artImageData writeToFile:artFilepath atomically:YES];
-                }
-            }];
-        }
-    }
-}
-
 /*//////////////////////////////////
  Users
  /////////////////////////////////*/
@@ -3227,6 +3194,11 @@ static NSDateFormatter *dayDateFormatter = nil;
     
     NSString *clipFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"recording.m4a"];
     return [NSURL fileURLWithPath:clipFilePath];
+}
+
++ (NSString *) getAlbumArtFilenameFromUrlString:(NSString *)artURLString {
+    NSArray *components = [artURLString pathComponents];
+    return [NSString stringWithFormat:@"%@%@", components[components.count-2], components[components.count-1]];
 }
 
 @end

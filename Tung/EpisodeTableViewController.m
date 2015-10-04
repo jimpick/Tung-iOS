@@ -73,7 +73,14 @@ static NSString *cellIdentifier = @"EpisodeCell";
     
     // title
     episodeCell.episodeTitle.text = [episodeDict objectForKey:@"title"];
-    episodeCell.episodeTitle.textColor = [_podcastDict objectForKey:@"keyColor1"];
+    UIColor *keyColor;
+    if ([_podcastDict objectForKey:@"keyColor1"]) {
+        keyColor = [_podcastDict objectForKey:@"keyColor1"];
+    }
+    else if ([_podcastDict objectForKey:@"keyColor1Hex"]) {
+        keyColor = [TungCommonObjects colorFromHexString:[_podcastDict objectForKey:@"keyColor1Hex"]];
+    }
+    episodeCell.episodeTitle.textColor = keyColor;
     // air date
     if (!airDateFormatter) {
         airDateFormatter = [[NSDateFormatter alloc] init];
@@ -96,7 +103,15 @@ static NSString *cellIdentifier = @"EpisodeCell";
             episodeCell.leadingTitleConstraint.constant = 12;
         }
         [episodeCell.iconView setNeedsDisplay];
-    }    
+    }
+    
+    // focused episode?
+    if (_focusedGUID) {
+        if ([_focusedGUID isEqualToString:[episodeDict objectForKey:@"guid"]]) {
+            _focusedIndexPath = indexPath;
+            episodeCell.backgroundColor = _tung.lightTungColor;
+        }
+    }
     
     // kill insets for iOS 8
     if ([[UIDevice currentDevice].systemVersion floatValue] >= 8) {

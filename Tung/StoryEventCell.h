@@ -14,5 +14,6 @@
 @property (strong, nonatomic) IBOutlet IconView *iconView;
 @property (strong, nonatomic) IBOutlet UILabel *eventLabel;
 @property (strong, nonatomic) IBOutlet UIView *clipProgress;
+@property (strong, nonatomic) IBOutlet UIImageView *bkgdImage;
 
 @end

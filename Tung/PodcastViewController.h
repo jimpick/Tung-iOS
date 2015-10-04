@@ -15,5 +15,6 @@
 @interface PodcastViewController : UIViewController <ControlButtonDelegate>
 
 @property (strong, nonatomic) NSMutableDictionary *podcastDict;
+@property (strong, nonatomic) NSString *focusedGUID;
 
 @end

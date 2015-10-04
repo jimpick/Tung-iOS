@@ -44,7 +44,7 @@
 		7D4925051B28A7C60034AD31 /* FeedCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4925041B28A7C60034AD31 /* FeedCell.m */; };
 		7D49E9251B4ED35400A75797 /* SearchTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D49E9241B4ED35400A75797 /* SearchTableViewController.m */; };
 		7D4B259A1A0AE6B20035FD35 /* ProfileListCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4B25991A0AE6B20035FD35 /* ProfileListCell.m */; };
-		7D4B259D1A0AF2370035FD35 /* tungPeople.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4B259C1A0AF2370035FD35 /* tungPeople.m */; };
+		7D4B259D1A0AF2370035FD35 /* TungPeople.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4B259C1A0AF2370035FD35 /* TungPeople.m */; };
 		7D4F34F61AB778910090EE81 /* tabBar-feed-inactive@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F34F41AB778910090EE81 /* tabBar-feed-inactive@2x.png */; };
 		7D4F34F71AB778910090EE81 /* tabBar-feed@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F34F51AB778910090EE81 /* tabBar-feed@2x.png */; };
 		7D4F35291AB7849E0090EE81 /* btn-player-shadow@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F351B1AB7849E0090EE81 /* btn-player-shadow@2x.png */; };
@@ -152,6 +152,8 @@
 		7DDC9BED1B67DAB7005E4E52 /* DescriptionWebViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DDC9BEC1B67DAB7005E4E52 /* DescriptionWebViewController.m */; };
 		7DDF1B9F1987F87A008CB927 /* AvatarContainerView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DDF1B9E1987F87A008CB927 /* AvatarContainerView.m */; };
 		7DDF1BBF198AA43F008CB927 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DDF1BBE198AA43F008CB927 /* AudioToolbox.framework */; };
+		7DE094941BC0A48C005B596D /* albumShawdowCellSection@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DE094921BC0A48C005B596D /* albumShawdowCellSection@3x.png */; settings = {ASSET_TAGS = (); }; };
+		7DE094951BC0A48C005B596D /* albumShawdowCellSection@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DE094931BC0A48C005B596D /* albumShawdowCellSection@2x.png */; settings = {ASSET_TAGS = (); }; };
 		7DE249A41B3917BB00128607 /* TungStories.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DE249A31B3917BB00128607 /* TungStories.m */; };
 		7DE4B1BE1B726D6C00C02BE2 /* CommentAndPostView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DE4B1BD1B726D6C00C02BE2 /* CommentAndPostView.m */; };
 		7DE4B1C01B726D9800C02BE2 /* CommentAndPostView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7DE4B1BF1B726D9800C02BE2 /* CommentAndPostView.xib */; };
@@ -241,8 +243,8 @@
 		7D49E9241B4ED35400A75797 /* SearchTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SearchTableViewController.m; sourceTree = "<group>"; };
 		7D4B25981A0AE6B20035FD35 /* ProfileListCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProfileListCell.h; sourceTree = "<group>"; };
 		7D4B25991A0AE6B20035FD35 /* ProfileListCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProfileListCell.m; sourceTree = "<group>"; };
-		7D4B259B1A0AF2370035FD35 /* tungPeople.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = tungPeople.h; sourceTree = "<group>"; };
-		7D4B259C1A0AF2370035FD35 /* tungPeople.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = tungPeople.m; sourceTree = "<group>"; };
+		7D4B259B1A0AF2370035FD35 /* TungPeople.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TungPeople.h; sourceTree = "<group>"; };
+		7D4B259C1A0AF2370035FD35 /* TungPeople.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TungPeople.m; sourceTree = "<group>"; };
 		7D4F34F41AB778910090EE81 /* tabBar-feed-inactive@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tabBar-feed-inactive@2x.png"; sourceTree = "<group>"; };
 		7D4F34F51AB778910090EE81 /* tabBar-feed@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tabBar-feed@2x.png"; sourceTree = "<group>"; };
 		7D4F351B1AB7849E0090EE81 /* btn-player-shadow@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "btn-player-shadow@2x.png"; sourceTree = "<group>"; };
@@ -383,6 +385,8 @@
 		7DDF1B9D1987F87A008CB927 /* AvatarContainerView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AvatarContainerView.h; sourceTree = "<group>"; };
 		7DDF1B9E1987F87A008CB927 /* AvatarContainerView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AvatarContainerView.m; sourceTree = "<group>"; };
 		7DDF1BBE198AA43F008CB927 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
+		7DE094921BC0A48C005B596D /* albumShawdowCellSection@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "albumShawdowCellSection@3x.png"; sourceTree = "<group>"; };
+		7DE094931BC0A48C005B596D /* albumShawdowCellSection@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "albumShawdowCellSection@2x.png"; sourceTree = "<group>"; };
 		7DE249A21B3917BB00128607 /* TungStories.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TungStories.h; sourceTree = "<group>"; };
 		7DE249A31B3917BB00128607 /* TungStories.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TungStories.m; sourceTree = "<group>"; };
 		7DE4B1BC1B726D6C00C02BE2 /* CommentAndPostView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CommentAndPostView.h; sourceTree = "<group>"; };
@@ -603,6 +607,8 @@
 				7D4F352F1AB7A2720090EE81 /* TungPodcast.m */,
 				7DE249A21B3917BB00128607 /* TungStories.h */,
 				7DE249A31B3917BB00128607 /* TungStories.m */,
+				7D4B259B1A0AF2370035FD35 /* TungPeople.h */,
+				7D4B259C1A0AF2370035FD35 /* TungPeople.m */,
 				7DE780951AE950F20081E28E /* JPXMLtoDictionary.h */,
 				7DE780961AE950F20081E28E /* JPXMLtoDictionary.m */,
 				7D282C7A1AF29D3400495E74 /* TungPodcastStyleKit.h */,
@@ -625,8 +631,6 @@
 				7D12A4EC1A01308700A9A004 /* IconButton.m */,
 				7DA5ED451B548181007BD424 /* BlurView.h */,
 				7DA5ED461B548181007BD424 /* BlurView.m */,
-				7D4B259B1A0AF2370035FD35 /* tungPeople.h */,
-				7D4B259C1A0AF2370035FD35 /* tungPeople.m */,
 				7D8F02BF1B619AA300A30492 /* ALDisk.h */,
 				7D8F02C01B619AA300A30492 /* ALDisk.m */,
 				7D4F35341AB89DB40090EE81 /* CCColorCube.h */,
@@ -678,6 +682,8 @@
 		7DF8A8BC18A2A5FC002332A1 /* images */ = {
 			isa = PBXGroup;
 			children = (
+				7DE094921BC0A48C005B596D /* albumShawdowCellSection@3x.png */,
+				7DE094931BC0A48C005B596D /* albumShawdowCellSection@2x.png */,
 				7D76CADD1B700C8C0059279E /* tung-end-of-file.png */,
 				7D9551A11B69395F004B56A6 /* find-podcasts-here@2x.png */,
 				7D9551A21B69395F004B56A6 /* find-podcasts-here@3x.png */,
@@ -897,6 +903,7 @@
 				7D0DC1061AAAB12F00E8490C /* tabBar-nowPlaying-inactive@2x.png in Resources */,
 				7DA76A551B4F411600F1A9F4 /* navBarBkgd.png in Resources */,
 				7D0DC1071AAAB12F00E8490C /* tabBar-nowPlaying@2x.png in Resources */,
+				7DE094951BC0A48C005B596D /* albumShawdowCellSection@2x.png in Resources */,
 				7D76CADA1B6FE4550059279E /* description.js in Resources */,
 				7D0DC1081AAAB12F00E8490C /* tungNavBarLogo@3x.png in Resources */,
 				7D5A595619D3D414005DCF01 /* icon-X-red@3x.png in Resources */,
@@ -910,6 +917,7 @@
 				7D76CADE1B700C8C0059279E /* tung-end-of-file.png in Resources */,
 				7D5A594D19D3D177005DCF01 /* icon-facebook-off@3x.png in Resources */,
 				7D0964551AB0EE9800DBF295 /* prototype-screens-02.png in Resources */,
+				7DE094941BC0A48C005B596D /* albumShawdowCellSection@3x.png in Resources */,
 				7D5BC1B51A547AC9008C008D /* tabBar-search@2x.png in Resources */,
 				7D4336871926C65600CBC02E /* UINavigationBarNextIndicatorDefault@2x.png in Resources */,
 				7DBD62251AE3675E00233005 /* btn-player-bkgd-down@2x.png in Resources */,
@@ -947,7 +955,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				7D4B259D1A0AF2370035FD35 /* tungPeople.m in Sources */,
+				7D4B259D1A0AF2370035FD35 /* TungPeople.m in Sources */,
 				7DA5ED471B548181007BD424 /* BlurView.m in Sources */,
 				7D46DC141BB0CC30009379FF /* EpisodeEntity.m in Sources */,
 				7DE99BD61ACE3F02007A154F /* EpisodeCell.m in Sources */,

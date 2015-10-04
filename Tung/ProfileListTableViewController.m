@@ -8,14 +8,14 @@
 
 #import "ProfileListTableViewController.h"
 #import "TungCommonObjects.h"
-#import "tungPeople.h"
+#import "TungPeople.h"
 #import "ProfileListCell.h"
 #import "ProfileTableViewController.h"
 
 @interface ProfileListTableViewController ()
 
 @property (nonatomic, retain) TungCommonObjects *tungObjects;
-@property (strong, nonatomic) tungPeople *tungPeople;
+@property (strong, nonatomic) TungPeople *tungPeople;
 
 @property (strong, nonatomic) UIRefreshControl *refreshControl;
 @property (nonatomic, assign) BOOL feedRefreshed;
@@ -36,7 +36,7 @@
     if (_queryType == NULL) _queryType = @"Activity";
     if (_target_id == NULL) _target_id = _tungObjects.tungId;
     
-    _tungPeople = [[tungPeople alloc] init];
+    _tungPeople = [[TungPeople alloc] init];
     _tungPeople.tableView = self.tableView;
     _tungPeople.viewController = self;
     _tungPeople.queryType = _queryType;

@@ -216,7 +216,7 @@
                 
                 NSLog(@"got results: %lu", (unsigned long)_podcastArray.count);
                 //NSLog(@"%@", _podcastArray);
-                [_tung preloadPodcastArtForArray:_podcastArray];
+                [self preloadPodcastArtForArray:_podcastArray];
                 [self preloadFeedsWithLimit:5];
                 [_searchTableViewController.tableView reloadData];
                 //});
@@ -480,6 +480,33 @@ static NSDateFormatter *airDateFormatter = nil;
 
 
 #pragma mark - Preloading
+
+-(void) preloadPodcastArtForArray:(NSArray*)itemArray {
+    
+    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
+    NSError *error;
+    if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+        
+        NSArray *itemArrayCopy = [itemArray copy];
+        
+        NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
+        preloadQueue.maxConcurrentOperationCount = 3;
+        // download and save podcast art to temp directory if it doesn't exist
+        
+        for (int i = 0; i < itemArrayCopy.count; i++) {
+            
+            [preloadQueue addOperationWithBlock:^{
+                NSString *artURLString = [[itemArrayCopy objectAtIndex:i] objectForKey:@"artworkUrl600"];
+                NSString *artFilename = [TungCommonObjects getAlbumArtFilenameFromUrlString:artURLString];
+                NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
+                if (![[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
+                    NSData *artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:artURLString]];
+                    [artImageData writeToFile:artFilepath atomically:YES];
+                }
+            }];
+        }
+    }
+}
 
 static NSString *rawFeedsDirName = @"rawFeeds";
 

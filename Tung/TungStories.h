@@ -18,19 +18,19 @@
 
 // request flags
 @property (nonatomic, assign) BOOL requestingMore;
-@property (nonatomic, assign) BOOL noMoreItemsToGet;
+@property (nonatomic, assign) BOOL reachedEndOfPosts;
 @property (nonatomic, assign) BOOL noResults;
-@property (nonatomic, assign) BOOL queryExecuted;
+@property (strong, nonatomic) NSString *requestStatus;
 
 // indexes
-@property (nonatomic, assign) NSInteger feedSection;
+@property (nonatomic, assign) NSInteger feedSectionStartingIndex;
 @property (nonatomic, assign) NSInteger activeCellIndex;
-@property (nonatomic, assign) NSInteger activeClipIndex;
+@property (nonatomic, assign) NSInteger activeSectionIndex;
 
 // references to host viewcontroller's properties
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
-@property (strong, nonatomic) UIRefreshControl *refreshControl;
 @property (strong, nonatomic) UITableView *tableView;
+@property (strong, nonatomic) UINavigationController *navController;
 
 // methods
 - (void) configureHeaderCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;

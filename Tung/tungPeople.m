@@ -6,11 +6,11 @@
 //  Copyright (c) 2014 Jamie Perkins. All rights reserved.
 //
 
-#import "tungPeople.h"
+#import "TungPeople.h"
 #import "ProfileListCell.h"
 #import "ProfileTableViewController.h"
 
-@implementation tungPeople
+@implementation TungPeople
 
 - (id)init {
     
@@ -184,13 +184,17 @@
     preloadQueue.maxConcurrentOperationCount = 3;
     // download and save avatars to temp directory if they don't exist
     
+    NSError *error;
+    NSString *avatarsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"avatars"];
+    [[NSFileManager defaultManager] createDirectoryAtPath:avatarsDir withIntermediateDirectories:YES attributes:nil error:&error];
+    
     for (int i = 0; i < _itemArray.count; i++) {
         
         [preloadQueue addOperationWithBlock:^{
             // avatar
             NSString *avatarURLString = [[[_itemArray objectAtIndex:i] objectForKey:@"user"] objectForKey:@"small_av_url"];
             NSString *avatarFilename = [avatarURLString lastPathComponent];
-            NSString *avatarFilepath = [NSTemporaryDirectory() stringByAppendingPathComponent:avatarFilename];
+            NSString *avatarFilepath = [avatarsDir stringByAppendingPathComponent:avatarFilename];
             if (![[NSFileManager defaultManager] fileExistsAtPath:avatarFilepath]) {
                 NSData *avatarImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:avatarURLString]];
                 [avatarImageData writeToFile:avatarFilepath atomically:YES];
@@ -265,14 +269,6 @@
 
 }
 
--(UIBarButtonItem *) generateStereoButtonWithImageName:(NSString *)imageName {
-    
-    UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
-    btn.frame = CGRectMake(0, 0, 38, 44);
-    [btn setImage:[UIImage imageNamed:imageName] forState:UIControlStateNormal];
-    [btn setContentMode:UIViewContentModeCenter];
-    return [[UIBarButtonItem alloc] initWithCustomView:btn];
-}
 
 - (void) tableCellButtonTapped:(id)sender {
     long tag = [sender tag];
