@@ -14,7 +14,6 @@
 
 @property (strong, nonatomic) NSArray *episodeArray;
 @property (strong, nonatomic) NSMutableDictionary *podcastDict;
-@property (strong, nonatomic) NSString *focusedGUID;
 @property (strong, nonatomic) NSIndexPath *focusedIndexPath;
 @property BOOL noResults;
 

@@ -18,9 +18,11 @@
         case kPillTypeOnWhite:
             [TungPodcastStyleKit drawTungButtonOnWhiteWithFrame:rect down:self.highlighted buttonText:_buttonText];
             break;
-            
+        case kPillTypeOnDark:
+            [TungPodcastStyleKit drawPillButtonOnDarkWithFrame:rect down:self.highlighted buttonText:_buttonText];
+            break;
         case kPillTypeFollow:
-            [TungPodcastStyleKit drawFollowButtonWithFrame:rect on:_on down:self.highlighted buttonText:_buttonText];
+            [TungPodcastStyleKit drawFollowButtonWithFrame:rect on:_on down:self.highlighted];
             break;
             
         default:

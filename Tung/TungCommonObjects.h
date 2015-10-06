@@ -61,6 +61,7 @@
 // colors
 @property (nonatomic, retain) UIColor *tungColor;
 @property (nonatomic, retain) UIColor *lightTungColor;
+@property (nonatomic, retain) UIColor *mediumTungColor;
 @property (nonatomic, retain) UIColor *darkTungColor;
 @property (nonatomic, retain) UIColor *bkgdGrayColor;
 @property (nonatomic, retain) UIColor *facebookColor;

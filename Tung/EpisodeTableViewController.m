@@ -105,12 +105,11 @@ static NSString *cellIdentifier = @"EpisodeCell";
         [episodeCell.iconView setNeedsDisplay];
     }
     
-    // focused episode?
-    if (_focusedGUID) {
-        if ([_focusedGUID isEqualToString:[episodeDict objectForKey:@"guid"]]) {
-            _focusedIndexPath = indexPath;
-            episodeCell.backgroundColor = _tung.lightTungColor;
-        }
+    // background color
+    if (_focusedIndexPath && _focusedIndexPath.row == indexPath.row) {
+        episodeCell.backgroundColor = _tung.lightTungColor;
+    } else {
+        episodeCell.backgroundColor = [UIColor whiteColor];
     }
     
     // kill insets for iOS 8

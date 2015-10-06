@@ -42,6 +42,7 @@
     
     // get podcast entity
     _podcast.podcastEntity = [TungCommonObjects getEntityForPodcast:_podcastDict save:NO];
+    NSLog(@"podcast entity: %@", [TungCommonObjects podcastEntityToDict:_podcast.podcastEntity]);
     
     // header view
     _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 160)];
@@ -52,7 +53,7 @@
     // add child table view controller
     _episodeView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodeView"];
     _episodeView.edgesForExtendedLayout = UIRectEdgeNone;
-    if (_focusedGUID) _episodeView.focusedGUID = _focusedGUID;
+    NSLog(@"focused GUID: %@", _focusedGUID);
     [self addChildViewController:_episodeView];
     [self.view addSubview:_episodeView.view];
     
@@ -136,6 +137,14 @@
     if (!cached)
         [_tung cacheFeed:dict forEntity:_podcast.podcastEntity];
     
+    // find focused indexPath if focused GUID
+    if (_focusedGUID) {
+        for (int i = 0; i < _episodeView.episodeArray.count; i++) {
+            if ([[[_episodeView.episodeArray objectAtIndex:i] objectForKey:@"guid"] isEqualToString:_focusedGUID]) {
+                _episodeView.focusedIndexPath = [NSIndexPath indexPathForRow:i inSection:0];
+            }
+        }
+    }
     [_episodeView.refreshControl endRefreshing];
     
     NSString *descText = [TungCommonObjects findPodcastDescriptionWithDict:dict];
@@ -170,7 +179,7 @@
     [_episodeView.tableView reloadData];
     
     if (_focusedGUID) {
-        [_episodeView.tableView scrollToRowAtIndexPath:_episodeView.focusedIndexPath atScrollPosition:UITableViewScrollPositionTop animated:YES];
+        [_episodeView.tableView scrollToRowAtIndexPath:_episodeView.focusedIndexPath atScrollPosition:UITableViewScrollPositionMiddle animated:YES];
     }
 
 }

@@ -6,21 +6,19 @@
 //  Copyright (c) 2014 Jamie Perkins. All rights reserved.
 //
 
-#import "FeedTableViewController.h"
-#import "PodcastViewController.h"
+#import "FeedViewController.h"
 
-@interface FeedTableViewController ()
+@interface FeedViewController ()
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (strong, nonatomic) TungPodcast *podcast;
 @property (strong, nonatomic) TungStories *stories;
-@property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
 
 @property BOOL hasPodcastData;
 
 @end
 
-@implementation FeedTableViewController
+@implementation FeedViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -37,35 +35,20 @@
     _podcast.navController = [self navigationController];
     _podcast.delegate = self;
     
-    // for feed
+    // FEED
     _stories = [TungStories new];
-    _stories.tableView = self.tableView;
-    _stories.loadMoreIndicator = self.loadMoreIndicator;
-    _stories.feedSectionStartingIndex = 0;
     _stories.navController = [self navigationController];
+    _stories.profiledUserId = @"";
     
-    [_stories addObserver:self forKeyPath:@"requestStatus" options:NSKeyValueObservingOptionNew context:nil];
-
+    _stories.feedTableViewController.edgesForExtendedLayout = UIRectEdgeNone;
+    [self addChildViewController:_stories.feedTableViewController];
+    [self.view addSubview:_stories.feedTableViewController.view];
     
-    // additional table setup
-    self.tableView.backgroundColor = _tung.bkgdGrayColor;
-    self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
-    self.tableView.scrollsToTop = YES;
-    self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
-    self.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
-    self.tableView.separatorColor = [UIColor colorWithWhite:1 alpha:.7];
-
-//    self.tableView.separatorStyle = UITableViewCellSeparatorStyleSingleLineEtched;
-    
-    UIActivityIndicatorView *tableSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-    tableSpinner.alpha = 1;
-    [tableSpinner startAnimating];
-    self.tableView.backgroundView = tableSpinner;
-    
-    
-    // refresh control
-    self.refreshControl = [[UIRefreshControl alloc] init];
-    [self.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
+    _stories.feedTableViewController.view.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeTop multiplier:1 constant:20]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-44]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
     //[TungCommonObjects clearTempDirectory]; // DEV only
     
@@ -79,15 +62,6 @@
     // first load
     _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
     
-}
-
-- (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
-    
-    if (object == _stories && [keyPath isEqualToString:@"requestStatus"]) {
-        if ([_stories.requestStatus isEqualToString:@"finished"]) {
-            [self.refreshControl endRefreshing];
-        }
-    }
 }
 
 - (void)didReceiveMemoryWarning {
@@ -158,18 +132,7 @@
         if (reachable) {
             // refresh feed
             if (_tung.sessionId && _tung.sessionId.length > 0) {
-                NSLog(@"refresh feed");
-                [self.refreshControl beginRefreshing];
-                
-                NSNumber *mostRecent;
-                if (_stories.storiesArray.count > 0) {
-                    mostRecent = [[[_stories.storiesArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
-                } else { // if initial request timed out and they are trying again
-                    mostRecent = [NSNumber numberWithInt:0];
-                }
-                [_stories requestPostsNewerThan:mostRecent
-                                       orOlderThan:[NSNumber numberWithInt:0]
-                                          fromUser:@""];
+                [_stories refreshFeed];
             }
             // get session then feed
             else {
@@ -244,17 +207,13 @@
                                 _hasPodcastData = YES;
                             }
                             // get feed
-                            [_stories requestPostsNewerThan:[NSNumber numberWithInt:0]
-                                                orOlderThan:[NSNumber numberWithInt:0]
-                                                   fromUser:@""];
+                            [_stories refreshFeed];
                         }];
                     }
                     // if _hasPodcastData
                     else {
                         // get feed
-                        [_stories requestPostsNewerThan:[NSNumber numberWithInt:0]
-                                            orOlderThan:[NSNumber numberWithInt:0]
-                                               fromUser:@""];
+                        [_stories refreshFeed];
                     }
                 }];
             }
@@ -289,149 +248,6 @@ static NSDateFormatter *pubDateInterpreter = nil;
     return date;
     
 }
-
-
-#pragma mark - Table view data source
-
-- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
-{
-    return _stories.storiesArray.count + 1;
-}
-
-- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
-{
-    if (_stories.storiesArray.count) {
-        if (section < _stories.storiesArray.count) {
-    		return [[_stories.storiesArray objectAtIndex:section] count];
-        } else {
-            return 0;
-        }
-    } else {
-        return 0;
-    }
-}
-
-static NSString *feedCellIdentifier = @"storyHeaderCell";
-static NSString *eventCellIdentifier = @"storyEventCell";
-static NSString *footerCellIdentifier = @"storyFooterCell";
-
-- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
-    
-    if (indexPath.row == 0) {
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:feedCellIdentifier];
-        [_stories configureHeaderCell:cell forIndexPath:indexPath];
-        return cell;
-    } else if (indexPath.row == [[_stories.storiesArray objectAtIndex:indexPath.section] count] - 1) {
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:footerCellIdentifier];
-        [_stories configureFooterCell:cell forIndexPath:indexPath];
-        return cell;
-    } else {
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:eventCellIdentifier];
-        [_stories configureEventCell:cell forIndexPath:indexPath];
-        return cell;
-    }
-    
-}
-
-#pragma mark - Table view delegate methods
-
-- (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    
-    //NSLog(@"selected cell at row %ld", (long)[indexPath row]);
-    [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    
-    if (indexPath.row == 0) {
-        // push podcast view
-        NSDictionary *storyDict = [[_stories.storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
-        NSDictionary *podcastDict = [NSDictionary dictionaryWithDictionary:[storyDict objectForKey:@"podcast"]];
-        //NSLog(@"selected %@", [podcastDict objectForKey:@"collectionName"]);
-        
-        PodcastViewController *podcastView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"podcastView"];
-        if ([podcastDict objectForKey:@"episode"]) {
-            podcastView.focusedGUID = [[podcastDict objectForKey:@"episode"] objectForKey:@"guid"];
-        }
-        podcastView.podcastDict = [podcastDict mutableCopy];
-        [self.navigationController pushViewController:podcastView animated:YES];
-    }
-    else if (indexPath.row == [[_stories.storiesArray objectAtIndex:indexPath.section] count] - 1) {
-        // push story view
-    }
-    else {
-        // if clip, play
-    }
-
-}
-
-//- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
-
--(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    
-    if (indexPath.row == 0) {
-        // header cell
-        return 127;
-    } else if (indexPath.row == [[_stories.storiesArray objectAtIndex:indexPath.section] count] - 1) {
-        // footer cell
-        return 35;
-    } else {
-        // event cell
-        return 57;
-    }
-}
-
-
--(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
-    
-    if (section == _stories.storiesArray.count) {
-        return 66.0;
-    }
-    else {
-        return 1;
-    }
-}
-
--(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
-    if (section == _stories.storiesArray.count) {
-        if (_stories.reachedEndOfPosts) {
-            UILabel *noMoreLabel = [[UILabel alloc] init];
-            noMoreLabel.text = @"That's everything.";
-            noMoreLabel.textColor = [UIColor grayColor];
-            noMoreLabel.textAlignment = NSTextAlignmentCenter;
-            return noMoreLabel;
-        } else {
-            _loadMoreIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-            _stories.loadMoreIndicator = _loadMoreIndicator;
-            return _loadMoreIndicator;
-        }
-    } else {
-        UIView *separator = [UIView new];
-        separator.backgroundColor = [UIColor whiteColor];
-        return separator;
-    }
-}
-
-
-#pragma mark - scroll view delegate methods
-
-- (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    if (scrollView == self.tableView) {
-        // detect when user hits bottom of feed
-        float bottomOffset = scrollView.contentSize.height - scrollView.frame.size.height;
-        if (scrollView.contentOffset.y >= bottomOffset) {
-            // request more posts if they didn't reach the end
-            if (!_stories.requestingMore && !_stories.reachedEndOfPosts && _stories.storiesArray.count > 0) {
-                _stories.requestingMore = YES;
-                _loadMoreIndicator.alpha = 1;
-                [_loadMoreIndicator startAnimating];
-                NSNumber *oldest = [[[_stories.storiesArray objectAtIndex:_stories.storiesArray.count-1] objectAtIndex:0] objectForKey:@"time_secs"];
-                
-                [_stories requestPostsNewerThan:[NSNumber numberWithInt:0]
-                                    orOlderThan:oldest
-                                       fromUser:@""];
-            }
-        }
-    }
-}
-
 
 
 @end

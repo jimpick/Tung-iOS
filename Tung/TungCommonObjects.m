@@ -75,6 +75,7 @@
         // colors
         _tungColor = [UIColor colorWithRed:87.0/255 green:90.0/255 blue:215.0/255 alpha:1];
         _lightTungColor = [UIColor colorWithRed:238.0/255 green:239.0/255 blue:251.0/255 alpha:1];
+        _mediumTungColor = [UIColor colorWithRed:115.0/255 green:126.0/255 blue:231.0/255 alpha:1];
         _darkTungColor = [UIColor colorWithRed:58.0/255 green:65.0/255 blue:175.0/255 alpha:1];
         _bkgdGrayColor = [UIColor colorWithRed:230.0/255.0 green:230.0/255.0 blue:230.0/255.0 alpha:1];
         _facebookColor = [UIColor colorWithRed:61.0/255 green:90.0/255 blue:152.0/255 alpha:1];
@@ -1051,10 +1052,26 @@ static NSString *feedDictsDirName = @"feedDicts";
         podcastEntity.artistName = [podcastDict objectForKey:@"artistName"];
         podcastEntity.feedUrl = [podcastDict objectForKey:@"feedUrl"];
         podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
-        podcastEntity.keyColor1 = [podcastDict objectForKey:@"keyColor1"];
-        podcastEntity.keyColor1Hex = [TungCommonObjects UIColorToHexString:[podcastDict objectForKey:@"keyColor1"]];
-        podcastEntity.keyColor2 = [podcastDict objectForKey:@"keyColor2"];
-        podcastEntity.keyColor2Hex = [TungCommonObjects UIColorToHexString:[podcastDict objectForKey:@"keyColor2"]];
+        UIColor *keyColor1, *keyColor2;
+        NSString *keyColor1Hex, *keyColor2Hex;
+        // datasource: podcast search
+        if ([podcastDict objectForKey:@"keyColor1"]) {
+            keyColor1 = [podcastDict objectForKey:@"keyColor1"];
+            keyColor2 = [podcastDict objectForKey:@"keyColor2"];
+            keyColor1Hex = [TungCommonObjects UIColorToHexString:keyColor1];
+            keyColor2Hex = [TungCommonObjects UIColorToHexString:keyColor2];
+        }
+        // datasource: social feed
+        else {
+            keyColor1Hex = [podcastDict objectForKey:@"keyColor1Hex"];
+            keyColor2Hex = [podcastDict objectForKey:@"keyColor2Hex"];
+            keyColor1 = [TungCommonObjects colorFromHexString:keyColor1Hex];
+            keyColor2 = [TungCommonObjects colorFromHexString:keyColor2Hex];
+        }
+        podcastEntity.keyColor1 = keyColor1;
+        podcastEntity.keyColor1Hex = keyColor1Hex;
+        podcastEntity.keyColor2 = keyColor2;
+        podcastEntity.keyColor2Hex = keyColor2Hex;
         if ([podcastDict objectForKey:@"artworkUrlSSL"]) podcastEntity.artworkUrlSSL = [podcastDict objectForKey:@"artworkUrlSSL"];
         if ([podcastDict objectForKey:@"website"]) podcastEntity.website = [podcastDict objectForKey:@"website"];
         if ([podcastDict objectForKey:@"email"]) podcastEntity.email = [podcastDict objectForKey:@"email"];
@@ -1261,6 +1278,7 @@ static NSString *feedDictsDirName = @"feedDicts";
     }
 }
 
+// not used
 + (BOOL) checkForUserData {
     // Show user entities
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];

@@ -10,11 +10,16 @@
 
 @class TungCommonObjects;
 
-@interface TungStories : NSObject
+@interface TungStories : NSObject <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate>
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 
 @property (strong, nonatomic) NSMutableArray *storiesArray;
+@property UITableViewController *feedTableViewController;
+@property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
+
+@property (strong, nonatomic) NSString *profiledUserId;
+@property UIBarButtonItem *headerLabel;
 
 // request flags
 @property (nonatomic, assign) BOOL requestingMore;
@@ -23,16 +28,15 @@
 @property (strong, nonatomic) NSString *requestStatus;
 
 // indexes
-@property (nonatomic, assign) NSInteger feedSectionStartingIndex;
 @property (nonatomic, assign) NSInteger activeCellIndex;
 @property (nonatomic, assign) NSInteger activeSectionIndex;
 
 // references to host viewcontroller's properties
-@property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
-@property (strong, nonatomic) UITableView *tableView;
 @property (strong, nonatomic) UINavigationController *navController;
 
 // methods
+- (void) refreshFeed;
+- (void) determineProfileTableHeaderTextFromDict:(NSDictionary *)profiledUserData;
 - (void) configureHeaderCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) configureEventCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) configureFooterCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;

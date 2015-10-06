@@ -11,6 +11,6 @@
 #import "TungCommonObjects.h"
 #import "TungStories.h"
 
-@interface FeedTableViewController : UITableViewController <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, TungPodcastsDelegate, ControlButtonDelegate>
+@interface FeedViewController : UIViewController <TungPodcastsDelegate, ControlButtonDelegate>
 
 @end

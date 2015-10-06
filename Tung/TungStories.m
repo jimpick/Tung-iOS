@@ -11,6 +11,7 @@
 #import "StoryHeaderCell.h"
 #import "StoryEventCell.h"
 #import "StoryFooterCell.h"
+#import "PodcastViewController.h"
 
 @implementation TungStories
 
@@ -29,9 +30,193 @@
         
         self.requestStatus = @"";
         
+        // feed table
+        _feedTableViewController = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"feedTableViewController"];
+        _feedTableViewController.tableView.delegate = self;
+        _feedTableViewController.tableView.dataSource = self;
+        _feedTableViewController.tableView.backgroundColor = _tung.bkgdGrayColor;
+        _feedTableViewController.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
+        _feedTableViewController.tableView.scrollsToTop = YES;
+        _feedTableViewController.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
+        _feedTableViewController.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
+        _feedTableViewController.tableView.separatorColor = [UIColor colorWithWhite:1 alpha:.7];
+        // refresh control
+        _feedTableViewController.refreshControl = [[UIRefreshControl alloc] init];
+        [_feedTableViewController.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
+        // table bkgd
+        UIActivityIndicatorView *tableSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+        tableSpinner.alpha = 1;
+        [tableSpinner startAnimating];
+        _feedTableViewController.tableView.backgroundView = tableSpinner;
+        
     }
     return self;
 }
+
+- (void) refreshFeed {
+    NSLog(@"refresh feed");
+    
+    NSNumber *mostRecent;
+    if (_storiesArray.count > 0) {
+        [_feedTableViewController.refreshControl beginRefreshing];
+        mostRecent = [[[_storiesArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
+    } else { // if initial request timed out and they are trying again
+        mostRecent = [NSNumber numberWithInt:0];
+    }
+    [self requestPostsNewerThan:mostRecent
+                        orOlderThan:[NSNumber numberWithInt:0]
+                           fromUser:_profiledUserId];
+}
+
+// override setProfiledUserId so we can make a table header for feed on profile page
+- (void) setProfiledUserId:(NSString *)profiledUserId {
+    _profiledUserId = profiledUserId;
+    
+    UIToolbar *headerBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, _feedTableViewController.tableView.bounds.size.width, 44)];
+    headerBar.translucent = YES;
+    _headerLabel = [[UIBarButtonItem alloc] initWithTitle:@"" style:UIBarButtonItemStylePlain target:self action:nil];
+    _headerLabel.tintColor = [UIColor grayColor];
+    [headerBar setItems:@[_headerLabel] animated:NO];
+    _feedTableViewController.tableView.tableHeaderView = headerBar;
+
+}
+
+- (void) determineProfileTableHeaderTextFromDict:(NSDictionary *)profiledUserData {
+    NSString *headerText;
+    if ([_requestStatus isEqualToString:@"finished"]) {
+        if (_storiesArray.count > 0) {
+            NSString *userId = [profiledUserData objectForKey:@"tung_id"];
+            if ([userId isEqualToString:_tung.tungId]) {
+                headerText = @" My activity";
+            } else {
+                headerText = [NSString stringWithFormat:@" %@'s activity", [profiledUserData objectForKey:@"username"]];
+            }
+        }
+        headerText = @" No activity yet.";
+    } else {
+        headerText = @" Getting activity...";
+    }
+    _headerLabel.title =  headerText;
+}
+
+#pragma mark - Table view data source
+
+- (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
+{
+    return _storiesArray.count + 1;
+}
+
+- (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
+{
+    if (_storiesArray.count) {
+        if (section < _storiesArray.count) {
+            return [[_storiesArray objectAtIndex:section] count];
+        } else {
+            return 0;
+        }
+    } else {
+        return 0;
+    }
+}
+
+static NSString *feedCellIdentifier = @"storyHeaderCell";
+static NSString *eventCellIdentifier = @"storyEventCell";
+static NSString *footerCellIdentifier = @"storyFooterCell";
+
+- (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    if (indexPath.row == 0) {
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:feedCellIdentifier];
+        [self configureHeaderCell:cell forIndexPath:indexPath];
+        return cell;
+    } else if (indexPath.row == [[_storiesArray objectAtIndex:indexPath.section] count] - 1) {
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:footerCellIdentifier];
+        [self configureFooterCell:cell forIndexPath:indexPath];
+        return cell;
+    } else {
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:eventCellIdentifier];
+        [self configureEventCell:cell forIndexPath:indexPath];
+        return cell;
+    }
+    
+}
+
+#pragma mark - Table view delegate methods
+
+- (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    //NSLog(@"selected cell at row %ld", (long)[indexPath row]);
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    
+    if (indexPath.row == 0) {
+        // push podcast view
+        NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
+        NSDictionary *podcastDict = [NSDictionary dictionaryWithDictionary:[storyDict objectForKey:@"podcast"]];
+        //NSLog(@"selected %@", [podcastDict objectForKey:@"collectionName"]);
+        
+        PodcastViewController *podcastView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"podcastView"];
+        if ([podcastDict objectForKey:@"episode"]) {
+            podcastView.focusedGUID = [[podcastDict objectForKey:@"episode"] objectForKey:@"guid"];
+        }
+        podcastView.podcastDict = [podcastDict mutableCopy];
+        [_navController pushViewController:podcastView animated:YES];
+    }
+    else if (indexPath.row == [[_storiesArray objectAtIndex:indexPath.section] count] - 1) {
+        // push story view
+    }
+    else {
+        // if clip, play
+    }
+    
+}
+
+//- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
+
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    if (indexPath.row == 0) {
+        // header cell
+        return 127;
+    } else if (indexPath.row == [[_storiesArray objectAtIndex:indexPath.section] count] - 1) {
+        // footer cell
+        return 35;
+    } else {
+        // event cell
+        return 57;
+    }
+}
+
+
+-(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
+    
+    if (section == _storiesArray.count) {
+        return 66.0;
+    }
+    else {
+        return 1;
+    }
+}
+
+-(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
+    if (section == _storiesArray.count) {
+        if (_reachedEndOfPosts) {
+            UILabel *noMoreLabel = [[UILabel alloc] init];
+            noMoreLabel.text = @"That's everything.";
+            noMoreLabel.textColor = [UIColor grayColor];
+            noMoreLabel.textAlignment = NSTextAlignmentCenter;
+            return noMoreLabel;
+        } else {
+            _loadMoreIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+            return _loadMoreIndicator;
+        }
+    } else {
+        UIView *separator = [UIView new];
+        separator.backgroundColor = [UIColor whiteColor];
+        return separator;
+    }
+}
+
+
 
 NSString static *avatarsDir;
 NSString static *audioClipsDir;
@@ -205,7 +390,7 @@ NSString static *podcastArtDir;
     // reset references to active progress bar and duration label
     /*
     NSIndexPath *indexPath = [NSIndexPath indexPathForRow:_activeCellIndex inSection:_feedSection];
-    UITableViewCell* tcell = [_tableView cellForRowAtIndexPath:indexPath];
+    UITableViewCell* tcell = [_feedTableViewController.tableView cellForRowAtIndexPath:indexPath];
     StoryEventCell *activeCell = ( StoryEventCell  *)tcell;
     _activeProgressBar = activeCell.progressBar;
     _activeDurationLabel = activeCell.durationLabel;
@@ -262,29 +447,31 @@ NSString static *podcastArtDir;
                     
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
-                        NSArray *newPosts = jsonData;
-                        NSLog(@"new posts count: %lu", (unsigned long)newPosts.count);
+                        NSArray *newStories = jsonData;
+                        NSLog(@"new posts count: %lu", (unsigned long)newStories.count);
                         
                         // end refreshing
                         self.requestStatus = @"finished";
-                        _tableView.backgroundView = nil;
+                        _feedTableViewController.tableView.backgroundView = nil;
                             
                         // pull refresh
                         if ([afterTime intValue] > 0) {
-                            if (newPosts.count > 0) {
+                            if (newStories.count > 0) {
                                 NSLog(@"\tgot posts newer than: %@", afterTime);
                                 [self stopClipPlayback];
-                                NSArray *newItems = [self processStories:newPosts];
+                                NSArray *newItems = [self processStories:newStories];
                                 NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
                                 _storiesArray = [newFeedArray mutableCopy];
-
-                                for (int i = 0; i < newPosts.count-1; i++) {
-                                    [_tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                                
+                                [UIView setAnimationsEnabled:NO];
+                                [_feedTableViewController.tableView beginUpdates];
+                                for (NSInteger i = 0; i < newStories.count-1; i++) {
+                                    [_feedTableViewController.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
                                 }
+                                [_feedTableViewController.tableView endUpdates];
+                                [UIView setAnimationsEnabled:YES];
                                 
-                                [_tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:_feedSectionStartingIndex] atScrollPosition:UITableViewScrollPositionTop animated:YES];
-                                
-                                [self resetActiveCellReference];
+                                [_feedTableViewController.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
                             }
                         }
                         // auto-loaded posts as user scrolls down
@@ -293,37 +480,37 @@ NSString static *podcastArtDir;
                             _requestingMore = NO;
                             _loadMoreIndicator.alpha = 0;
                             
-                            if (newPosts.count == 0) {
+                            if (newStories.count == 0) {
                                 NSLog(@"no more posts to get");
                                 _reachedEndOfPosts = YES;
                                 // hide footer
-                                //[_tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_storiesArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
-                                _loadMoreIndicator.alpha = 0;
-                                [_tableView reloadData];
+                                //[_feedTableViewController.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_storiesArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
+                                [_feedTableViewController.tableView reloadData];
                                 
                             } else {
                                 NSLog(@"\tgot posts older than: %@", beforeTime);
                                 int startingIndex = (int)_storiesArray.count;
-                                // NSLog(@"\tstarting index: %d", startingIndex);
-                                NSArray *newFeedArray = [_storiesArray arrayByAddingObjectsFromArray:[self processStories:newPosts]];
+                                
+                                NSArray *newFeedArray = [_storiesArray arrayByAddingObjectsFromArray:[self processStories:newStories]];
                                 _storiesArray = [newFeedArray mutableCopy];
                                 newFeedArray = nil;
                                 
-                                [_tableView beginUpdates];
+                                [UIView setAnimationsEnabled:NO];
+                                [_feedTableViewController.tableView beginUpdates];
                                 for (int i = startingIndex-1; i < _storiesArray.count-1; i++) {
-                                    [_tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                                    [_feedTableViewController.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
                                 }
-                                [_tableView endUpdates];
+                                [_feedTableViewController.tableView endUpdates];
+                                [UIView setAnimationsEnabled:YES];
                                 
-                                [self resetActiveCellReference];
                                 
                             }
                         }
                         // initial request
                         else {
-                            _storiesArray = [self processStories:newPosts];
+                            _storiesArray = [self processStories:newStories];
                             NSLog(@"got posts. storiesArray count: %lu", (unsigned long)[_storiesArray count]);
-                            [_tableView reloadData];
+                            [_feedTableViewController.tableView reloadData];
                         }
                         
                         // feed is now refreshed
@@ -359,10 +546,10 @@ NSString static *podcastArtDir;
                 _loadMoreIndicator.alpha = 0;
                 // end refreshing
                 self.requestStatus = @"finished";
-                _tableView.backgroundView = nil;
+                _feedTableViewController.tableView.backgroundView = nil;
                 
                 UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                self.tableView.backgroundView = nil;
+                _feedTableViewController.tableView.backgroundView = nil;
                 [connectionErrorAlert show];
             });
         }
@@ -454,6 +641,30 @@ NSString static *podcastArtDir;
     }
     return results;
 }
+
+#pragma mark - scroll view delegate methods
+
+- (void)scrollViewDidScroll:(UIScrollView *)scrollView {
+    if (scrollView == _feedTableViewController.tableView) {
+        // detect when user hits bottom of feed
+        float bottomOffset = scrollView.contentSize.height - scrollView.frame.size.height;
+        if (scrollView.contentOffset.y >= bottomOffset) {
+            // request more posts if they didn't reach the end
+            if (!_requestingMore && !_reachedEndOfPosts && _storiesArray.count > 0) {
+                _requestingMore = YES;
+                _loadMoreIndicator.alpha = 1;
+                [_loadMoreIndicator startAnimating];
+                NSNumber *oldest = [[[_storiesArray objectAtIndex:_storiesArray.count-1] objectAtIndex:0] objectForKey:@"time_secs"];
+                
+                [self requestPostsNewerThan:[NSNumber numberWithInt:0]
+                                    orOlderThan:oldest
+                                       fromUser:@""];
+            }
+        }
+    }
+}
+
+
 
 
 @end

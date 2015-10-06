@@ -10,6 +10,7 @@
 
 typedef enum {
     kPillTypeOnWhite,
+    kPillTypeOnDark,
     kPillTypeFollow
 } PillButtonType;
 

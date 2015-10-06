@@ -49,7 +49,13 @@ CGFloat screenWidth;
     _tung = [TungCommonObjects establishTungObjects];
     _tung.viewController = self;
     
+    // for feed
     _stories = [TungStories new];
+    //_stories.tableView = self.tableView;
+    _stories.loadMoreIndicator = self.loadMoreIndicator;
+    //_stories.feedSectionStartingIndex = 1;
+    _stories.navController = [self navigationController];
+    [_stories addObserver:self forKeyPath:@"requestStatus" options:NSKeyValueObservingOptionNew context:nil];
     
     // set defaults for required properties
     if (!_profiledUserId) _profiledUserId = _tung.tungId;
@@ -72,9 +78,10 @@ CGFloat screenWidth;
     self.tableView.backgroundColor = _tung.bkgdGrayColor;
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
     self.tableView.scrollsToTop = YES;
-    self.tableView.separatorInset = UIEdgeInsetsZero;
-    self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 35, 0);
-    self.tableView.separatorColor = [UIColor whiteColor];
+    self.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
+    self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
+    self.tableView.separatorColor = [UIColor colorWithWhite:1 alpha:.7];
+
     
     // refresh control
 	self.refreshControl = [[UIRefreshControl alloc] init];
@@ -102,6 +109,16 @@ CGFloat screenWidth;
     }];
     
 }
+
+- (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
+    
+    if (object == _stories && [keyPath isEqualToString:@"requestStatus"]) {
+        if ([_stories.requestStatus isEqualToString:@"finished"]) {
+            [self.refreshControl endRefreshing];
+        }
+    }
+}
+
 
 - (void) viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
@@ -193,13 +210,19 @@ CGFloat screenWidth;
 }
 
 - (void) refreshFeed {
-    /*
-    [_tungStereo requestPostsNewerThan:mostRecent
-                           orOlderThan:[NSNumber numberWithInt:0]
-                              fromUser:_profiledUserId
-                            orCategory:_profiledCategory
-                        withSearchTerm:_searchTerm];
-     */
+    NSLog(@"refresh feed");
+    
+    NSNumber *mostRecent;
+    if (_stories.storiesArray.count > 0) {
+        [self.refreshControl beginRefreshing];
+        mostRecent = [[[_stories.storiesArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
+    } else { // if initial request timed out and they are trying again
+        mostRecent = [NSNumber numberWithInt:0];
+    }
+    [_stories requestPostsNewerThan:mostRecent
+                        orOlderThan:[NSNumber numberWithInt:0]
+                           fromUser:_profiledUserId];
+
 }
 
 -(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {

@@ -42,14 +42,13 @@
 		7D46DC131BB0CC30009379FF /* EpisodeEntity+CoreDataProperties.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D46DC101BB0CC30009379FF /* EpisodeEntity+CoreDataProperties.m */; settings = {ASSET_TAGS = (); }; };
 		7D46DC141BB0CC30009379FF /* EpisodeEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D46DC121BB0CC30009379FF /* EpisodeEntity.m */; settings = {ASSET_TAGS = (); }; };
 		7D4925051B28A7C60034AD31 /* FeedCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4925041B28A7C60034AD31 /* FeedCell.m */; };
-		7D49E9251B4ED35400A75797 /* SearchTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D49E9241B4ED35400A75797 /* SearchTableViewController.m */; };
 		7D4B259A1A0AE6B20035FD35 /* ProfileListCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4B25991A0AE6B20035FD35 /* ProfileListCell.m */; };
 		7D4B259D1A0AF2370035FD35 /* TungPeople.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4B259C1A0AF2370035FD35 /* TungPeople.m */; };
 		7D4F34F61AB778910090EE81 /* tabBar-feed-inactive@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F34F41AB778910090EE81 /* tabBar-feed-inactive@2x.png */; };
 		7D4F34F71AB778910090EE81 /* tabBar-feed@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F34F51AB778910090EE81 /* tabBar-feed@2x.png */; };
 		7D4F35291AB7849E0090EE81 /* btn-player-shadow@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F351B1AB7849E0090EE81 /* btn-player-shadow@2x.png */; };
 		7D4F352A1AB7849E0090EE81 /* btn-player-shadow@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F351C1AB7849E0090EE81 /* btn-player-shadow@3x.png */; };
-		7D4F352D1AB797FF0090EE81 /* FeedTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4F352C1AB797FF0090EE81 /* FeedTableViewController.m */; };
+		7D4F352D1AB797FF0090EE81 /* FeedViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4F352C1AB797FF0090EE81 /* FeedViewController.m */; };
 		7D4F35301AB7A2720090EE81 /* TungPodcast.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4F352F1AB7A2720090EE81 /* TungPodcast.m */; };
 		7D4F35331AB894560090EE81 /* PodcastResultCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4F35321AB894560090EE81 /* PodcastResultCell.m */; };
 		7D4F35361AB89DB40090EE81 /* CCColorCube.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4F35351AB89DB40090EE81 /* CCColorCube.m */; };
@@ -154,6 +153,9 @@
 		7DDF1BBF198AA43F008CB927 /* AudioToolbox.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DDF1BBE198AA43F008CB927 /* AudioToolbox.framework */; };
 		7DE094941BC0A48C005B596D /* albumShawdowCellSection@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DE094921BC0A48C005B596D /* albumShawdowCellSection@3x.png */; settings = {ASSET_TAGS = (); }; };
 		7DE094951BC0A48C005B596D /* albumShawdowCellSection@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DE094931BC0A48C005B596D /* albumShawdowCellSection@2x.png */; settings = {ASSET_TAGS = (); }; };
+		7DE0949E1BC1C20F005B596D /* ProfileHeaderView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DE0949D1BC1C20F005B596D /* ProfileHeaderView.m */; settings = {ASSET_TAGS = (); }; };
+		7DE094A01BC1C238005B596D /* ProfileHeaderView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7DE0949F1BC1C238005B596D /* ProfileHeaderView.xib */; settings = {ASSET_TAGS = (); }; };
+		7DE094A31BC1D2F4005B596D /* ProfileViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DE094A21BC1D2F4005B596D /* ProfileViewController.m */; settings = {ASSET_TAGS = (); }; };
 		7DE249A41B3917BB00128607 /* TungStories.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DE249A31B3917BB00128607 /* TungStories.m */; };
 		7DE4B1BE1B726D6C00C02BE2 /* CommentAndPostView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DE4B1BD1B726D6C00C02BE2 /* CommentAndPostView.m */; };
 		7DE4B1C01B726D9800C02BE2 /* CommentAndPostView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7DE4B1BF1B726D9800C02BE2 /* CommentAndPostView.xib */; };
@@ -239,8 +241,6 @@
 		7D46DC121BB0CC30009379FF /* EpisodeEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodeEntity.m; sourceTree = "<group>"; };
 		7D4925031B28A7C60034AD31 /* FeedCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FeedCell.h; sourceTree = "<group>"; };
 		7D4925041B28A7C60034AD31 /* FeedCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FeedCell.m; sourceTree = "<group>"; };
-		7D49E9231B4ED35400A75797 /* SearchTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SearchTableViewController.h; sourceTree = "<group>"; };
-		7D49E9241B4ED35400A75797 /* SearchTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SearchTableViewController.m; sourceTree = "<group>"; };
 		7D4B25981A0AE6B20035FD35 /* ProfileListCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProfileListCell.h; sourceTree = "<group>"; };
 		7D4B25991A0AE6B20035FD35 /* ProfileListCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProfileListCell.m; sourceTree = "<group>"; };
 		7D4B259B1A0AF2370035FD35 /* TungPeople.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TungPeople.h; sourceTree = "<group>"; };
@@ -249,8 +249,8 @@
 		7D4F34F51AB778910090EE81 /* tabBar-feed@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tabBar-feed@2x.png"; sourceTree = "<group>"; };
 		7D4F351B1AB7849E0090EE81 /* btn-player-shadow@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "btn-player-shadow@2x.png"; sourceTree = "<group>"; };
 		7D4F351C1AB7849E0090EE81 /* btn-player-shadow@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "btn-player-shadow@3x.png"; sourceTree = "<group>"; };
-		7D4F352B1AB797FF0090EE81 /* FeedTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FeedTableViewController.h; sourceTree = "<group>"; };
-		7D4F352C1AB797FF0090EE81 /* FeedTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FeedTableViewController.m; sourceTree = "<group>"; };
+		7D4F352B1AB797FF0090EE81 /* FeedViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FeedViewController.h; sourceTree = "<group>"; };
+		7D4F352C1AB797FF0090EE81 /* FeedViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FeedViewController.m; sourceTree = "<group>"; };
 		7D4F352E1AB7A2720090EE81 /* TungPodcast.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TungPodcast.h; sourceTree = "<group>"; };
 		7D4F352F1AB7A2720090EE81 /* TungPodcast.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TungPodcast.m; sourceTree = "<group>"; };
 		7D4F35311AB894560090EE81 /* PodcastResultCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PodcastResultCell.h; sourceTree = "<group>"; };
@@ -387,6 +387,11 @@
 		7DDF1BBE198AA43F008CB927 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
 		7DE094921BC0A48C005B596D /* albumShawdowCellSection@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "albumShawdowCellSection@3x.png"; sourceTree = "<group>"; };
 		7DE094931BC0A48C005B596D /* albumShawdowCellSection@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "albumShawdowCellSection@2x.png"; sourceTree = "<group>"; };
+		7DE0949C1BC1C20F005B596D /* ProfileHeaderView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProfileHeaderView.h; sourceTree = "<group>"; };
+		7DE0949D1BC1C20F005B596D /* ProfileHeaderView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProfileHeaderView.m; sourceTree = "<group>"; };
+		7DE0949F1BC1C238005B596D /* ProfileHeaderView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = ProfileHeaderView.xib; sourceTree = "<group>"; };
+		7DE094A11BC1D2F4005B596D /* ProfileViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProfileViewController.h; sourceTree = "<group>"; };
+		7DE094A21BC1D2F4005B596D /* ProfileViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProfileViewController.m; sourceTree = "<group>"; };
 		7DE249A21B3917BB00128607 /* TungStories.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TungStories.h; sourceTree = "<group>"; };
 		7DE249A31B3917BB00128607 /* TungStories.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TungStories.m; sourceTree = "<group>"; };
 		7DE4B1BC1B726D6C00C02BE2 /* CommentAndPostView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CommentAndPostView.h; sourceTree = "<group>"; };
@@ -543,8 +548,8 @@
 				7DAD37B818A202A5000C164D /* NavController.m */,
 				7DA76A511B4F401500F1A9F4 /* TungNavController.h */,
 				7DA76A521B4F401500F1A9F4 /* TungNavController.m */,
-				7D4F352B1AB797FF0090EE81 /* FeedTableViewController.h */,
-				7D4F352C1AB797FF0090EE81 /* FeedTableViewController.m */,
+				7D4F352B1AB797FF0090EE81 /* FeedViewController.h */,
+				7D4F352C1AB797FF0090EE81 /* FeedViewController.m */,
 				7DC58A8C1AEFF125000DBAF8 /* PodcastViewController.h */,
 				7DC58A8D1AEFF125000DBAF8 /* PodcastViewController.m */,
 				7D6D55E91B66A06000DFF759 /* EpisodeTableViewController.h */,
@@ -563,6 +568,11 @@
 				7DF2FACD1AF3ACCD004C66E6 /* SubscriptionsCollectionView.m */,
 				7DF2FACF1AF3BE3F004C66E6 /* SubscriptionViewCell.h */,
 				7DF2FAD01AF3BE3F004C66E6 /* SubscriptionViewCell.m */,
+				7DE094A11BC1D2F4005B596D /* ProfileViewController.h */,
+				7DE094A21BC1D2F4005B596D /* ProfileViewController.m */,
+				7DE0949C1BC1C20F005B596D /* ProfileHeaderView.h */,
+				7DE0949D1BC1C20F005B596D /* ProfileHeaderView.m */,
+				7DE0949F1BC1C238005B596D /* ProfileHeaderView.xib */,
 				7D46A8911999CCE700F83C23 /* ProfileTableViewController.h */,
 				7D46A8921999CCE700F83C23 /* ProfileTableViewController.m */,
 				7D6459911A083DBA00BAC445 /* ProfileListTableViewController.h */,
@@ -591,8 +601,6 @@
 				7DCAC60119FEF81A004B6182 /* FollowersCell.m */,
 				7D12A4F71A01A08700A9A004 /* ProfileNavigationController.h */,
 				7D12A4F81A01A08700A9A004 /* ProfileNavigationController.m */,
-				7D49E9231B4ED35400A75797 /* SearchTableViewController.h */,
-				7D49E9241B4ED35400A75797 /* SearchTableViewController.m */,
 				7D61F92418A1EB2F00710CA7 /* Supporting Files */,
 			);
 			path = Tung;
@@ -896,6 +904,7 @@
 				7D61F92818A1EB2F00710CA7 /* InfoPlist.strings in Resources */,
 				7D4F35291AB7849E0090EE81 /* btn-player-shadow@2x.png in Resources */,
 				7D87187818FE3141001E954A /* icon-facebook-on@2x.png in Resources */,
+				7DE094A01BC1C238005B596D /* ProfileHeaderView.xib in Resources */,
 				7D43368A1926C6AF00CBC02E /* UINavigationBarBackIndicatorDefault@2x.png in Resources */,
 				7DFE85A2199AB143000379B6 /* btn-profile-plain@2x.png in Resources */,
 				7D5BC1B21A547AC9008C008D /* tabBar-activity@2x.png in Resources */,
@@ -964,6 +973,7 @@
 				7D4F35361AB89DB40090EE81 /* CCColorCube.m in Sources */,
 				7DF2FAD11AF3BE3F004C66E6 /* SubscriptionViewCell.m in Sources */,
 				7D12D5C61B17429E00532FC0 /* NowPlayingControlView.m in Sources */,
+				7DE0949E1BC1C20F005B596D /* ProfileHeaderView.m in Sources */,
 				7DA2124C1AFA8A7F00C619F9 /* NowPlayingViewController.m in Sources */,
 				7DA237C51BA08D7C00A9466B /* PodcastEntity.m in Sources */,
 				7D64376A1BAB58B800766BB4 /* IconView.m in Sources */,
@@ -985,7 +995,6 @@
 				7D59CCDD1B6A7BFD0055D300 /* UserEntity.m in Sources */,
 				7D3B735A19227F92005413F1 /* WelcomeViewController.m in Sources */,
 				7DE4B1C31B726F8600C02BE2 /* TextAreaBkgdView.m in Sources */,
-				7D49E9251B4ED35400A75797 /* SearchTableViewController.m in Sources */,
 				7DF2FACE1AF3ACCD004C66E6 /* SubscriptionsCollectionView.m in Sources */,
 				7D6459931A083DBA00BAC445 /* ProfileListTableViewController.m in Sources */,
 				7D2165F31AFEBC590020356C /* ShowHideControlsButton.m in Sources */,
@@ -1006,6 +1015,7 @@
 				7DF56650199D4B56003176C1 /* BrowserViewController.m in Sources */,
 				7D1407791BBEB83500BD4F89 /* StoryFooterCell.m in Sources */,
 				7D4925051B28A7C60034AD31 /* FeedCell.m in Sources */,
+				7DE094A31BC1D2F4005B596D /* ProfileViewController.m in Sources */,
 				7D768CA0192EB20B000C8E3E /* TungCommonObjects.m in Sources */,
 				7D292A1F19DCF16600EC3472 /* STTweetTextStorage.m in Sources */,
 				7DFE859E199A7B56000379B6 /* ProfileCell.m in Sources */,
@@ -1016,7 +1026,7 @@
 				7D63F8101AF6CBCC00765289 /* HeaderView.m in Sources */,
 				7DF9823C1BB42B6A00D76B9F /* PillButton.m in Sources */,
 				7D282C881AF2C89F00495E74 /* TungDataModel.xcdatamodeld in Sources */,
-				7D4F352D1AB797FF0090EE81 /* FeedTableViewController.m in Sources */,
+				7D4F352D1AB797FF0090EE81 /* FeedViewController.m in Sources */,
 				7D46A8961999CE7E00F83C23 /* LargeAvatarContainerView.m in Sources */,
 				7D61F92A18A1EB2F00710CA7 /* main.m in Sources */,
 			);
