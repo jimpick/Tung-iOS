@@ -111,7 +111,6 @@
 }
 // ControlButtonDelegate required method
 -(void) dismissPodcastSearch {
-    [_podcast.searchController setActive:NO];
     
     CATransition *animation = [CATransition animation];
     animation.duration = .4;

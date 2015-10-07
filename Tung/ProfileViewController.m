@@ -126,7 +126,7 @@ CGFloat screenWidth;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:headerBar.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
     // watch request status so we can update table header
-    [_stories addObserver:self forKeyPath:@"requestStatus" options:NSKeyValueObservingOptionNew context:nil];
+    [self addObserver:self forKeyPath:@"stories.requestStatus" options:NSKeyValueObservingOptionNew context:nil];
     
     [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
         if (reachable) {
@@ -163,17 +163,20 @@ CGFloat screenWidth;
 
 - (void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
-    @try {
-    	[_stories removeObserver:self forKeyPath:@"requestStatus"];
-    }
-    @catch (id exception) {
-        
-    }
+//    @try {
+//    	[_stories removeObserver:self forKeyPath:@"requestStatus"];
+//    }
+//    @catch (id exception) {
+//        
+//    }
+    [self removeObserver:self forKeyPath:@"stories.requestStatus"];
 }
 
 - (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context {
 	
-    if (object == _stories && [keyPath isEqualToString:@"requestStatus"]) {
+    //if (object == _stories && [keyPath isEqualToString:@"requestStatus"]) {
+    if ([keyPath isEqualToString:@"stories.requestStatus"]) {
+        NSLog(@"stories request status changed: %@", _stories.requestStatus);
         [self determineTableHeaderText];
     }
 }

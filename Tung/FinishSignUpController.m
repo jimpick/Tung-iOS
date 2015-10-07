@@ -160,6 +160,7 @@
                             // show feed
                             UIViewController *feed = [self.navigationController.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];
                             [self presentViewController:feed animated:YES completion:^{}];
+                            
                         } else {
                             NSLog(@"failed to follow all users: %@", response);
                             // something f'd up. sign out and try again

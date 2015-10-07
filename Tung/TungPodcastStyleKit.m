@@ -2860,7 +2860,7 @@ static UIColor* _tungColorMediumLight = nil;
 
 
     //// Text Drawing
-    CGRect textRect = CGRectMake(CGRectGetMinX(frame) + 0.5, CGRectGetMinY(frame) + 9.43, 39, 21.13);
+    CGRect textRect = CGRectMake(CGRectGetMinX(frame) + 0.5, CGRectGetMinY(frame) + 9, 39, 21.13);
     NSMutableParagraphStyle* textStyle = NSMutableParagraphStyle.defaultParagraphStyle.mutableCopy;
     textStyle.alignment = NSTextAlignmentCenter;
 

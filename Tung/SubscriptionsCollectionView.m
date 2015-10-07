@@ -147,7 +147,6 @@ static NSString * const reuseIdentifier = @"artCell";
                          completion:nil
          ];
     }
-    [_podcast.searchController setActive:NO];
     
     CATransition *animation = [CATransition animation];
     animation.duration = .4;

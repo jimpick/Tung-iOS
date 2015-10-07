@@ -45,8 +45,8 @@
         _searchTableViewController.tableView.contentInset = UIEdgeInsetsMake(1, 0, 10, 0);
         _searchTableViewController.tableView.backgroundColor = [UIColor clearColor];
         _searchTableViewController.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
-        _searchTableViewController.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero]; // does nothing
-        _searchTableViewController.definesPresentationContext = YES; // does nothing
+        _searchTableViewController.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero];
+        //_searchTableViewController.definesPresentationContext = YES; // does nothing
         
         
         _searchController = [[UISearchController alloc] initWithSearchResultsController:_searchTableViewController];
