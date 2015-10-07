@@ -45,7 +45,7 @@
     [self.view addSubview:_stories.feedTableViewController.view];
     
     _stories.feedTableViewController.view.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeTop multiplier:1 constant:20]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeTop multiplier:1 constant:64]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-44]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
@@ -132,7 +132,7 @@
         if (reachable) {
             // refresh feed
             if (_tung.sessionId && _tung.sessionId.length > 0) {
-                [_stories refreshFeed];
+                [_stories refreshFeed:YES];
             }
             // get session then feed
             else {
@@ -207,13 +207,13 @@
                                 _hasPodcastData = YES;
                             }
                             // get feed
-                            [_stories refreshFeed];
+                            [_stories refreshFeed:YES];
                         }];
                     }
                     // if _hasPodcastData
                     else {
                         // get feed
-                        [_stories refreshFeed];
+                        [_stories refreshFeed:YES];
                     }
                 }];
             }

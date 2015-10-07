@@ -12,9 +12,11 @@
 #import "StoryEventCell.h"
 #import "StoryFooterCell.h"
 #import "PodcastViewController.h"
+#import "ProfileViewController.h"
 
 @implementation TungStories
 
+CGFloat headerViewHeight, headerScrollViewHeight, tableHeaderRow, animationDistance;
 
 - (id)init {
     
@@ -42,61 +44,41 @@
         _feedTableViewController.tableView.separatorColor = [UIColor colorWithWhite:1 alpha:.7];
         // refresh control
         _feedTableViewController.refreshControl = [[UIRefreshControl alloc] init];
-        [_feedTableViewController.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
+        [_feedTableViewController.refreshControl addTarget:self action:@selector(refreshFeed:) forControlEvents:UIControlEventValueChanged];
         // table bkgd
         UIActivityIndicatorView *tableSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
         tableSpinner.alpha = 1;
         [tableSpinner startAnimating];
         _feedTableViewController.tableView.backgroundView = tableSpinner;
         
+        // for animating header height
+        CGFloat minHeaderHeight = 80;
+        tableHeaderRow = 61;
+        headerViewHeight = 223;
+        headerScrollViewHeight = headerViewHeight - tableHeaderRow;
+        animationDistance = headerScrollViewHeight - minHeaderHeight;
+        
     }
     return self;
 }
 
-- (void) refreshFeed {
+- (void) refreshFeed:(BOOL)fullRefresh {
     NSLog(@"refresh feed");
     
     NSNumber *mostRecent;
-    if (_storiesArray.count > 0) {
-        [_feedTableViewController.refreshControl beginRefreshing];
-        mostRecent = [[[_storiesArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
-    } else { // if initial request timed out and they are trying again
+    if (fullRefresh) {
         mostRecent = [NSNumber numberWithInt:0];
+    } else {
+        if (_storiesArray.count > 0) {
+            [_feedTableViewController.refreshControl beginRefreshing];
+            mostRecent = [[[_storiesArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
+        } else { // if initial request timed out and they are trying again
+            mostRecent = [NSNumber numberWithInt:0];
+        }
     }
     [self requestPostsNewerThan:mostRecent
                         orOlderThan:[NSNumber numberWithInt:0]
                            fromUser:_profiledUserId];
-}
-
-// override setProfiledUserId so we can make a table header for feed on profile page
-- (void) setProfiledUserId:(NSString *)profiledUserId {
-    _profiledUserId = profiledUserId;
-    
-    UIToolbar *headerBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, _feedTableViewController.tableView.bounds.size.width, 44)];
-    headerBar.translucent = YES;
-    _headerLabel = [[UIBarButtonItem alloc] initWithTitle:@"" style:UIBarButtonItemStylePlain target:self action:nil];
-    _headerLabel.tintColor = [UIColor grayColor];
-    [headerBar setItems:@[_headerLabel] animated:NO];
-    _feedTableViewController.tableView.tableHeaderView = headerBar;
-
-}
-
-- (void) determineProfileTableHeaderTextFromDict:(NSDictionary *)profiledUserData {
-    NSString *headerText;
-    if ([_requestStatus isEqualToString:@"finished"]) {
-        if (_storiesArray.count > 0) {
-            NSString *userId = [profiledUserData objectForKey:@"tung_id"];
-            if ([userId isEqualToString:_tung.tungId]) {
-                headerText = @" My activity";
-            } else {
-                headerText = [NSString stringWithFormat:@" %@'s activity", [profiledUserData objectForKey:@"username"]];
-            }
-        }
-        headerText = @" No activity yet.";
-    } else {
-        headerText = @" Getting activity...";
-    }
-    _headerLabel.title =  headerText;
 }
 
 #pragma mark - Table view data source
@@ -376,7 +358,20 @@ NSString static *podcastArtDir;
 #pragma mark - Feed cell controls
 
 -(void) headerCellButtonTapped:(id)sender {
+    long tag = [sender tag];
     
+    if (tag == 101) {
+        StoryHeaderCell *cell = (StoryHeaderCell *)[[sender superview] superview];
+        NSIndexPath *indexPath = [_feedTableViewController.tableView indexPathForCell:cell];
+        NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
+        NSString *userId = [[storyDict objectForKey:@"user"] objectForKey:@"id"];
+        // push profile
+        if (![_profiledUserId isEqualToString:userId]) {
+            ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
+            profileView.profiledUserId = userId;
+            [_navController pushViewController:profileView animated:YES];
+        }
+    }
 }
 
 #pragma mark - Audio clips
@@ -451,8 +446,8 @@ NSString static *podcastArtDir;
                         NSLog(@"new posts count: %lu", (unsigned long)newStories.count);
                         
                         // end refreshing
-                        self.requestStatus = @"finished";
                         _feedTableViewController.tableView.backgroundView = nil;
+                        [_feedTableViewController.refreshControl endRefreshing];
                             
                         // pull refresh
                         if ([afterTime intValue] > 0) {
@@ -465,7 +460,7 @@ NSString static *podcastArtDir;
                                 
                                 [UIView setAnimationsEnabled:NO];
                                 [_feedTableViewController.tableView beginUpdates];
-                                for (NSInteger i = 0; i < newStories.count-1; i++) {
+                                for (NSInteger i = 0; i < newStories.count; i++) {
                                     [_feedTableViewController.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
                                 }
                                 [_feedTableViewController.tableView endUpdates];
@@ -514,6 +509,7 @@ NSString static *podcastArtDir;
                         }
                         
                         // feed is now refreshed
+                        self.requestStatus = @"finished";
                         _tung.feedNeedsRefresh = [NSNumber numberWithBool:NO];
                         
                     });
@@ -526,6 +522,7 @@ NSString static *podcastArtDir;
                     _requestingMore = NO;
                     self.requestStatus = @"finished";
                     _loadMoreIndicator.alpha = 0;
+                    [_feedTableViewController.refreshControl endRefreshing];
                 });
             }
             else if (error != nil) {
@@ -533,6 +530,7 @@ NSString static *podcastArtDir;
                     _requestingMore = NO;
                     self.requestStatus = @"finished";
                     _loadMoreIndicator.alpha = 0;
+                    [_feedTableViewController.refreshControl endRefreshing];
                 });
                 NSLog(@"Error: %@", error);
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
@@ -543,6 +541,7 @@ NSString static *podcastArtDir;
         else {
             dispatch_async(dispatch_get_main_queue(), ^{
                 _requestingMore = NO;
+                [_feedTableViewController.refreshControl endRefreshing];
                 _loadMoreIndicator.alpha = 0;
                 // end refreshing
                 self.requestStatus = @"finished";
@@ -646,6 +645,15 @@ NSString static *podcastArtDir;
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     if (scrollView == _feedTableViewController.tableView) {
+        // shrink header
+        if (_profiledUserId.length > 0 && scrollView.contentOffset.y > 0 && scrollView.contentOffset.y <= animationDistance) {
+            //NSLog(@"table offset: %f", scrollView.contentOffset.y);
+            _profileHeaderHeight.constant = headerViewHeight - scrollView.contentOffset.y;
+            _profileHeader.scrollSubView1Height.constant = headerScrollViewHeight - scrollView.contentOffset.y;
+            _profileHeader.scrollSubView2Height.constant = headerScrollViewHeight - scrollView.contentOffset.y;
+            
+            [_profileHeader layoutIfNeeded];
+        }
         // detect when user hits bottom of feed
         float bottomOffset = scrollView.contentSize.height - scrollView.frame.size.height;
         if (scrollView.contentOffset.y >= bottomOffset) {
@@ -664,7 +672,27 @@ NSString static *podcastArtDir;
     }
 }
 
+- (void) scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
+    if (_profiledUserId.length > 0) {
+        [self setScrollViewContentSizeForHeight];
+    }
+}
 
+- (void) scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
+    if (_profiledUserId.length > 0 && !decelerate) {
+        [self setScrollViewContentSizeForHeight];
+    }
+}
+
+- (void) setScrollViewContentSizeForHeight {
+    // set scroll view content size for height
+    CGFloat scrollViewHeight = _profileHeaderHeight.constant - tableHeaderRow;
+//    NSLog(@"scroll view height: %f", scrollViewHeight);
+//    NSLog(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
+    CGSize contentSize = CGSizeMake(_profileHeader.frame.size.width * 2, scrollViewHeight);
+    _profileHeader.scrollView.contentSize = contentSize;
+//    NSLog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
+}
 
 
 @end

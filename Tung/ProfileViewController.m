@@ -19,6 +19,7 @@
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (strong, nonatomic) TungStories *stories;
 @property (strong, nonatomic) ProfileHeaderView *profileHeader;
+@property UIBarButtonItem *tableHeaderLabel;
 @property NSURL *urlToPass;
 
 @property BOOL isLoggedInUser;
@@ -48,39 +49,68 @@ CGFloat screenWidth;
     
     if (!screenWidth) screenWidth = self.view.frame.size.width;
     
+    
     // profile header
     _profileHeader = [[ProfileHeaderView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 228)];
 	[self.view addSubview:_profileHeader];
     _profileHeader.translatesAutoresizingMaskIntoConstraints = NO;
-    CGFloat topConstraint = 64;
-    CGFloat headerViewHeight = 228;
+    CGFloat topConstraint = 0;
+    CGFloat headerViewHeight = 223;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_profileHeader attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeTop multiplier:1 constant:topConstraint]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_profileHeader attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
-    [_profileHeader addConstraint:[NSLayoutConstraint constraintWithItem:_profileHeader attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:headerViewHeight]];
+    NSLayoutConstraint *profileHeaderHeight = [NSLayoutConstraint constraintWithItem:_profileHeader attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:headerViewHeight];
+    [_profileHeader addConstraint:profileHeaderHeight];
     [_profileHeader addConstraint:[NSLayoutConstraint constraintWithItem:_profileHeader attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:self.view.frame.size.width]];
+    
+    _profileHeader.scrollView.delegate = self;
+    _profileHeader.largeAvatarView.backgroundColor = [UIColor clearColor];
+    _profileHeader.largeAvatarView.borderColor = [UIColor whiteColor];
+    _profileHeader.largeAvatarView.hidden = YES;
     
     _profileHeader.basicInfoWebView.delegate = self;
     _profileHeader.bioWebView.delegate = self;
+    [_profileHeader.basicInfoWebView setBackgroundColor:[UIColor clearColor]];
+    [_profileHeader.bioWebView setBackgroundColor:[UIColor clearColor]];
+    [_profileHeader.basicInfoWebView.scrollView setScrollEnabled:NO];
+    [_profileHeader.bioWebView.scrollView setScrollEnabled:NO];
+    
     [_profileHeader.followingCountBtn addTarget:self action:@selector(viewFollowing) forControlEvents:UIControlEventTouchUpInside];
     [_profileHeader.followerCountBtn addTarget:self action:@selector(viewFollowers) forControlEvents:UIControlEventTouchUpInside];
+    [self determineTableHeaderText];
     
     // for feed
     _stories = [TungStories new];
     _stories.navController = [self navigationController];
     _stories.profiledUserId = _profiledUserId;
+    // for animating header
+    _stories.profileHeader = _profileHeader;
+    _stories.profileHeaderHeight = profileHeaderHeight;
     
     _stories.feedTableViewController.edgesForExtendedLayout = UIRectEdgeNone;
+    _stories.feedTableViewController.tableView.contentInset = UIEdgeInsetsMake(44, 0, -5, 0);
     [self addChildViewController:_stories.feedTableViewController];
     [self.view addSubview:_stories.feedTableViewController.view];
     
-    // TODO: Constrain against profile header view
     _stories.feedTableViewController.view.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_profileHeader attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-44]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
     if ([self respondsToSelector:@selector(edgesForExtendedLayout)]) self.edgesForExtendedLayout = UIRectEdgeBottom;
+    
+    // table header toolbar
+    UIToolbar *headerBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 44)];
+    headerBar.clipsToBounds = YES;
+    _tableHeaderLabel = [[UIBarButtonItem alloc] initWithTitle:@"" style:UIBarButtonItemStylePlain target:self action:nil];
+    _tableHeaderLabel.tintColor = _tung.tungColor;
+    [headerBar setItems:@[_tableHeaderLabel] animated:NO];
+    [self.view addSubview:headerBar];
+    headerBar.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_profileHeader attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
+    [headerBar addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:44]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:headerBar.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:headerBar.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
     // watch request status so we can update table header
     [_stories addObserver:self forKeyPath:@"requestStatus" options:NSKeyValueObservingOptionNew context:nil];
@@ -106,11 +136,41 @@ CGFloat screenWidth;
     
 }
 
+- (void) viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    
+    
+    // scroll view
+    CGSize contentSize = _profileHeader.scrollView.contentSize;
+    NSLog(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
+    contentSize.width = contentSize.width * 2;
+    _profileHeader.scrollView.contentSize = contentSize;
+    NSLog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
+}
+
 - (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context {
 	
     if (object == _stories && [keyPath isEqualToString:@"requestStatus"]) {
-        [_stories determineProfileTableHeaderTextFromDict:_profiledUserData];
+        [self determineTableHeaderText];
     }
+}
+
+- (void) determineTableHeaderText {
+    NSString *headerText;
+    if ([_stories.requestStatus isEqualToString:@"finished"]) {
+        if (_stories.storiesArray.count > 0) {
+            if (_isLoggedInUser) {
+                headerText = @" My activity";
+            } else {
+                headerText = [NSString stringWithFormat:@" %@'s activity", [_profiledUserData objectForKey:@"username"]];
+            }
+        } else {
+            headerText = @" No activity yet.";
+        }
+    } else {
+        headerText = @" Getting activity...";
+    }
+    _tableHeaderLabel.title =  headerText;
 }
 
 - (void) requestPageData {
@@ -129,7 +189,7 @@ CGFloat screenWidth;
                     if ([responseDict objectForKey:@"user"]) {
                         _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
                         [self updateUserFollowingData];
-                        [_stories refreshFeed];
+                        [_stories refreshFeed:YES];
                     }
                 }
             }];
@@ -145,7 +205,7 @@ CGFloat screenWidth;
                         _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
                         self.navigationItem.title = [_profiledUserData objectForKey:@"username"];
                         [self setUpProfileHeaderViewForData];
-                        [_stories refreshFeed];
+                        [_stories refreshFeed:YES];
                     }
                 }
             }];
@@ -162,7 +222,7 @@ CGFloat screenWidth;
                     // navigation bar title
                     self.navigationItem.title = [_profiledUserData objectForKey:@"username"];
                     [self setUpProfileHeaderViewForData];
-                    [_stories refreshFeed];
+                    [_stories refreshFeed:YES];
                 }
                 else if ([responseDict objectForKey:@"error"]) {
                     UIAlertView *profileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
@@ -195,8 +255,8 @@ CGFloat screenWidth;
     // bio
     NSString *bio = [_profiledUserData objectForKey:@"bio"];
     if (bio.length > 0) {
-        NSString *bioBody = [NSString stringWithFormat:@"<table><td><p><span class=\"name\">%@</span>", bio];
-        NSString *bioWebViewString = [NSString stringWithFormat:@"%@%@", style, bioBody];
+        NSString *bioBody = [NSString stringWithFormat:@"<table><td>%@", bio];
+        NSString *bioWebViewString = [NSString stringWithFormat:@"%@%@</td></table>", style, bioBody];
         [_profileHeader.bioWebView loadHTMLString:bioWebViewString baseURL:[NSURL URLWithString:@"desc"]];
     }
     else {
@@ -217,8 +277,8 @@ CGFloat screenWidth;
         [largeAvatarImageData writeToFile:largeAvatarFilepath atomically:YES];
     }
     UIImage *largeAvImage = [[UIImage alloc] initWithData:largeAvatarImageData];
+    _profileHeader.largeAvatarView.hidden = NO;
     _profileHeader.largeAvatarView.avatar = largeAvImage;
-    _profileHeader.largeAvatarView.backgroundColor = [UIColor clearColor];
     
     [self updateUserFollowingData];
 
@@ -226,8 +286,6 @@ CGFloat screenWidth;
 }
 
 - (void) updateUserFollowingData {
-    
-    [_stories determineProfileTableHeaderTextFromDict:_profiledUserData];
     
     // following
     NSString *followingString;
@@ -277,7 +335,8 @@ CGFloat screenWidth;
 
 - (void) viewFollowers {
     NSLog(@"view followers");
-    [self pushProfileListForTargetId:_profiledUserId andQuery:@"Followers"];
+    if ([[_profiledUserData objectForKey:@"followerCount"] integerValue] > 0)
+    	[self pushProfileListForTargetId:_profiledUserId andQuery:@"Followers"];
 }
 - (void) viewFollowing {
     NSLog(@"view following");
@@ -375,8 +434,10 @@ CGFloat screenWidth;
         BrowserViewController *browserViewController = (BrowserViewController *)destination;
         [browserViewController setValue:_urlToPass forKey:@"urlToNavigateTo"];
     }
+    else if ([[segue identifier] isEqualToString:@"presentEditProfileView"]) {
+        [destination setValue:@"editProfile" forKey:@"rootView"];
+    }
     
 }
-
 
 @end

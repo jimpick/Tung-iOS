@@ -7,6 +7,7 @@
 //
 
 #import <Foundation/Foundation.h>
+#import "ProfileHeaderView.h"
 
 @class TungCommonObjects;
 
@@ -19,7 +20,6 @@
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
 
 @property (strong, nonatomic) NSString *profiledUserId;
-@property UIBarButtonItem *headerLabel;
 
 // request flags
 @property (nonatomic, assign) BOOL requestingMore;
@@ -33,10 +33,11 @@
 
 // references to host viewcontroller's properties
 @property (strong, nonatomic) UINavigationController *navController;
+@property ProfileHeaderView *profileHeader;
+@property NSLayoutConstraint *profileHeaderHeight;
 
 // methods
-- (void) refreshFeed;
-- (void) determineProfileTableHeaderTextFromDict:(NSDictionary *)profiledUserData;
+- (void) refreshFeed:(BOOL)fullRefresh;
 - (void) configureHeaderCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) configureEventCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) configureFooterCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;

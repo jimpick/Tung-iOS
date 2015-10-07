@@ -148,6 +148,7 @@
 #pragma mark - Player instance methods
 
 - (BOOL) isPlaying {
+    NSLog(@"is playing at rate: %f", _player.rate);
     return (_player && _player.rate > 0.0f);
 }
 - (void) playerPlay {
@@ -155,7 +156,6 @@
         [_player play];
         _shouldStayPaused = NO;
         [self setControlButtonStateToPause];
-        if (_totalSeconds == 0) [self determineTotalSeconds];
     }
 }
 - (void) playerPause {
@@ -231,8 +231,8 @@
                 } else {
                     NSLog(@"No track progress, play from beginning");
                     [_trackInfo setObject:[NSNumber numberWithFloat:0] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
-                    [self playerPlay];
-                    /*
+                    //[self playerPlay];
+                    
                     [_player prerollAtRate:1.0 completionHandler:^(BOOL finished) {
                         NSLog(@"-- finished preroll: %d", finished);
                         if ([self isPlaying]) {
@@ -243,7 +243,7 @@
                             [self playerPlay];
                         }
                     }];
-                     */
+                    
                 }
                 break;
             case AVPlayerItemStatusUnknown:
@@ -257,6 +257,9 @@
         
         if (_player.currentItem.playbackLikelyToKeepUp) {
             NSLog(@"-- player likely to keep up");
+            
+            if (_totalSeconds == 0) [self determineTotalSeconds];
+            
             if ([self isPlaying]) {
                 [self setControlButtonStateToPause];
             } else if (!_shouldStayPaused && ![self isPlaying]) {
@@ -660,7 +663,7 @@
     }
     //[fileURL setResourceValue:[NSNumber numberWithBool:YES] forKey:NSURLIsExcludedFromBackupKey error:&error];
     [_playQueue writeToFile:playQueuePath atomically:YES];
-    //NSLog(@"saved play queue %@ to path: %@", _playQueue, playQueuePath);
+    NSLog(@"saved play queue %@ to path: %@", _playQueue, playQueuePath);
 }
 
 - (void) readPlayQueueFromDisk {
@@ -1906,7 +1909,7 @@ static NSArray *colors;
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    NSLog(@"successfully recommended podcast");
+                    NSLog(@"successfully retrieved episode info");
                     callback(YES, responseDict);
                 }
             }

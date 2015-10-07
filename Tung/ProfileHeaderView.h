@@ -24,5 +24,6 @@
 @property (strong, nonatomic) IBOutlet UIView *scrollSubViewTwo;
 @property (strong, nonatomic) IBOutlet UIWebView *bioWebView;
 
-
+@property (strong, nonatomic) IBOutlet NSLayoutConstraint *scrollSubView1Height;
+@property (strong, nonatomic) IBOutlet NSLayoutConstraint *scrollSubView2Height;
 @end

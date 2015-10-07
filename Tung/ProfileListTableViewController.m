@@ -17,7 +17,6 @@
 @property (nonatomic, retain) TungCommonObjects *tungObjects;
 @property (strong, nonatomic) TungPeople *tungPeople;
 
-@property (strong, nonatomic) UIRefreshControl *refreshControl;
 @property (nonatomic, assign) BOOL feedRefreshed;
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
 
