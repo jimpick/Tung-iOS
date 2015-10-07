@@ -10,7 +10,3 @@ Tung.xcodeproj/project.xcworkspace/xcuserdata/Jamie.xcuserdatad/UserInterfaceSta
 ## Obj-C/Swift specific
 *.hmap
 *.ipa
-
-# Frameworks
-Crashlytics.framework
-Fabric.framework
