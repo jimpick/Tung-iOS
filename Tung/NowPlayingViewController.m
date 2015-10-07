@@ -102,6 +102,12 @@ static NSArray *playbackRateStrings;
     if (!screenWidth) screenWidth = self.view.frame.size.width;
     if (!screenHeight) screenHeight = self.view.frame.size.height;
     
+    // background spinner
+    UIActivityIndicatorView *bkgdSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+    bkgdSpinner.alpha = 1;
+    [bkgdSpinner startAnimating];
+    [self.view addSubview:bkgdSpinner];
+    
     // nothing playing?
     CGRect labelFrame = CGRectMake((screenWidth - 320)/2, (screenHeight - 64)/2, 320, 20);
     _nothingPlayingLabel = [[UILabel alloc] initWithFrame:labelFrame];
@@ -200,7 +206,7 @@ static NSArray *playbackRateStrings;
     _shareLabel.alpha = 0;
     _shareLabel.textColor = _tung.tungColor;
     
-    [self setUpViewForNothingPlaying];
+    //[self setUpViewForNothingPlaying];
 
 }
 

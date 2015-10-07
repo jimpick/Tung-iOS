@@ -81,6 +81,7 @@
     
     _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
+    _stories.screenWidth = self.view.bounds.size.width;
     
     // let's get retarded in here
     if (_tung.feedNeedsRefresh.boolValue) {

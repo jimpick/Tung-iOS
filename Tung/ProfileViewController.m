@@ -11,6 +11,7 @@
 #import "AvatarContainerView.h"
 #import "ProfileListTableViewController.h"
 #import "BrowserViewController.h"
+#import "IconButton.h"
 
 @class TungCommonObjects;
 
@@ -45,10 +46,20 @@ CGFloat screenWidth;
     if ([_tung.tungId isEqualToString:_profiledUserId]) {
         _isLoggedInUser = YES;
         NSLog(@"is logged in user");
+        
+        self.navigationItem.title = @"My Profile";
+        // sign out button
+        IconButton *signOutInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
+        signOutInner.type = kIconButtonTypeSignOut;
+        signOutInner.color = _tung.tungColor;
+        [signOutInner addTarget:self action:@selector(confirmSignOut) forControlEvents:UIControlEventTouchUpInside];
+        UIBarButtonItem *signOutButton = [[UIBarButtonItem alloc] initWithCustomView:signOutInner];
+        self.navigationItem.leftBarButtonItem = signOutButton;
     }
     
     if (!screenWidth) screenWidth = self.view.frame.size.width;
     
+    self.definesPresentationContext = YES;
     
     // profile header
     _profileHeader = [[ProfileHeaderView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 228)];
@@ -102,8 +113,10 @@ CGFloat screenWidth;
     // table header toolbar
     UIToolbar *headerBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 44)];
     headerBar.clipsToBounds = YES;
+    
     _tableHeaderLabel = [[UIBarButtonItem alloc] initWithTitle:@"" style:UIBarButtonItemStylePlain target:self action:nil];
     _tableHeaderLabel.tintColor = _tung.tungColor;
+    //UIBarButtonItem *flexSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
     [headerBar setItems:@[_tableHeaderLabel] animated:NO];
     [self.view addSubview:headerBar];
     headerBar.translatesAutoresizingMaskIntoConstraints = NO;
@@ -138,7 +151,7 @@ CGFloat screenWidth;
 
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    
+    _stories.screenWidth = self.view.bounds.size.width;
     
     // scroll view
     CGSize contentSize = _profileHeader.scrollView.contentSize;
@@ -146,6 +159,16 @@ CGFloat screenWidth;
     contentSize.width = contentSize.width * 2;
     _profileHeader.scrollView.contentSize = contentSize;
     NSLog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
+}
+
+- (void) viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    @try {
+    	[_stories removeObserver:self forKeyPath:@"requestStatus"];
+    }
+    @catch (id exception) {
+        
+    }
 }
 
 - (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context {
@@ -180,7 +203,6 @@ CGFloat screenWidth;
         _profiledUserData = [[_tung getLoggedInUserData] mutableCopy];
         if (_profiledUserData) {
             _profiledUserData = [[_tung getLoggedInUserData] mutableCopy];
-            self.navigationItem.title = [_profiledUserData objectForKey:@"username"];
             [self setUpProfileHeaderViewForData];
             // request profile just to get current follower/following counts
             [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
@@ -203,7 +225,6 @@ CGFloat screenWidth;
                         NSLog(@"got user: %@", [responseDict objectForKey:@"user"]);
                         [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
                         _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
-                        self.navigationItem.title = [_profiledUserData objectForKey:@"username"];
                         [self setUpProfileHeaderViewForData];
                         [_stories refreshFeed:YES];
                     }
@@ -218,7 +239,7 @@ CGFloat screenWidth;
                 NSDictionary *responseDict = jsonData;
                 if ([responseDict objectForKey:@"user"]) {
                     _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
-                    //NSLog(@"profiled user data established");
+                    NSLog(@"profiled user data %@", _profiledUserData);
                     // navigation bar title
                     self.navigationItem.title = [_profiledUserData objectForKey:@"username"];
                     [self setUpProfileHeaderViewForData];
@@ -276,9 +297,11 @@ CGFloat screenWidth;
         largeAvatarImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: [_profiledUserData objectForKey:@"large_av_url"]]];
         [largeAvatarImageData writeToFile:largeAvatarFilepath atomically:YES];
     }
+    NSLog(@"large av image data size: %lu", (unsigned long)largeAvatarFilename.length);
     UIImage *largeAvImage = [[UIImage alloc] initWithData:largeAvatarImageData];
     _profileHeader.largeAvatarView.hidden = NO;
     _profileHeader.largeAvatarView.avatar = largeAvImage;
+    [_profileHeader.largeAvatarView setNeedsDisplay];
     
     [self updateUserFollowingData];
 
@@ -393,6 +416,12 @@ CGFloat screenWidth;
     profileListView.target_id = target_id;
     profileListView.queryType = query;
     [self.navigationController pushViewController:profileListView animated:YES];
+}
+
+- (void) confirmSignOut {
+    UIActionSheet *signOutSheet = [[UIActionSheet alloc] initWithTitle:[NSString stringWithFormat:@"You are running v%@ of tung.", _tung.tung_version] delegate:_tung cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Sign out" otherButtonTitles:nil];
+    [signOutSheet setTag:99];
+    [signOutSheet showFromToolbar:self.navigationController.toolbar];
 }
 
 #pragma mark - UIScrollView delegate

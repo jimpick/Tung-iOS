@@ -8,12 +8,15 @@
 
 #import <UIKit/UIKit.h>
 #import "IconView.h"
+#import "ClipProgressView.h"
 
 @interface StoryEventCell : UITableViewCell
 
 @property (strong, nonatomic) IBOutlet IconView *iconView;
-@property (strong, nonatomic) IBOutlet UILabel *eventLabel;
-@property (strong, nonatomic) IBOutlet UIView *clipProgress;
+@property (strong, nonatomic) IBOutlet UILabel *simpleEventLabel;
 @property (strong, nonatomic) IBOutlet UIImageView *bkgdImage;
+@property (strong, nonatomic) IBOutlet UILabel *eventDetailLabel;
+@property (strong, nonatomic) IBOutlet UILabel *commentLabel;
+@property (strong, nonatomic) IBOutlet ClipProgressView *clipProgress;
 
 @end

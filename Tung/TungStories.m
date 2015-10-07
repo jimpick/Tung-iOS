@@ -27,8 +27,10 @@ CGFloat headerViewHeight, headerScrollViewHeight, tableHeaderRow, animationDista
         
         _storiesArray = [NSMutableArray new];
         
-        _activeCellIndex = 0;
+        _activeRowIndex = 0;
         _activeSectionIndex = 0;
+        _selectedRowIndex = -1;
+        _selectedSectionIndex = -1;
         
         self.requestStatus = @"";
         
@@ -148,11 +150,19 @@ static NSString *footerCellIdentifier = @"storyFooterCell";
     }
     else {
         // if clip, play
+        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
+        if ([eventDict objectForKey:@"clip_url"]) {
+            _selectedSectionIndex = indexPath.section;
+            _selectedRowIndex = indexPath.row;
+            [self playPause];
+        }
     }
     
 }
 
 //- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
+UILabel *prototypeLabel;
+static CGFloat labelWidth = 0;
 
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
     
@@ -164,7 +174,24 @@ static NSString *footerCellIdentifier = @"storyFooterCell";
         return 35;
     } else {
         // event cell
-        return 57;
+        CGFloat defaultEventCellHeight = 57;
+        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
+        if ([[eventDict objectForKey:@"comment"] length] > 0) {
+            if (!prototypeLabel) {
+                prototypeLabel = [[UILabel alloc] init];
+                prototypeLabel.font = [UIFont systemFontOfSize:15];
+                prototypeLabel.numberOfLines = 0;
+            }
+            if (labelWidth == 0) {
+                labelWidth = _screenWidth -63 - 60;
+            }
+            prototypeLabel.text = [eventDict objectForKey:@"comment"];
+            CGSize labelSize = [prototypeLabel sizeThatFits:CGSizeMake(labelWidth, 100)];
+            CGFloat diff = labelSize.height - 18;
+            return defaultEventCellHeight + diff;
+        } else {
+        	return defaultEventCellHeight;
+        }
     }
 }
 
@@ -291,24 +318,50 @@ NSString static *podcastArtDir;
     
     // event
     NSString *type = [eventDict objectForKey:@"type"];
-    NSString *eventLabelText;
     if ([type isEqualToString:@"recommended"]) {
         eventCell.iconView.type = kIconTypeRecommend;
-        eventLabelText = @"Recommended this episode";
+        eventCell.simpleEventLabel.hidden = NO;
+        eventCell.simpleEventLabel.text = @"Recommended this episode";
+        eventCell.eventDetailLabel.hidden = YES;
+        eventCell.commentLabel.hidden = YES;
+        eventCell.clipProgress.hidden = YES;
     }
     else if ([type isEqualToString:@"subscribed"]) {
         eventCell.iconView.type = kIconTypeSubscribe;
-        eventLabelText = @"Subscribed to this podcast";
+        eventCell.simpleEventLabel.hidden = NO;
+        eventCell.simpleEventLabel.text = @"Subscribed to this podcast";
+        eventCell.eventDetailLabel.hidden = YES;
+        eventCell.commentLabel.hidden = YES;
+        eventCell.clipProgress.hidden = YES;
     }
     else if ([type isEqualToString:@"comment"]) {
         eventCell.iconView.type = kIconTypeComment;
-        eventLabelText = [NSString stringWithFormat:@"Commented @ %@", [eventDict objectForKey:@"timestamp"]];
+        eventCell.simpleEventLabel.hidden = YES;
+        eventCell.eventDetailLabel.text = [eventDict objectForKey:@"timestamp"];
+        eventCell.eventDetailLabel.hidden = NO;
+        eventCell.commentLabel.text = [eventDict objectForKey:@"comment"];
+        eventCell.commentLabel.hidden = NO;
+        eventCell.clipProgress.hidden = YES;
     }
     else if ([type isEqualToString:@"clip"]) {
         eventCell.iconView.type = kIconTypeClip;
-        eventLabelText = [NSString stringWithFormat:@"Shared a clip @ %@ (tap to play)", [eventDict objectForKey:@"timestamp"]];
+        if ([[eventDict objectForKey:@"comment"] length] > 0) {
+            eventCell.simpleEventLabel.hidden = YES;
+            eventCell.eventDetailLabel.text = [NSString stringWithFormat:@"%@ - tap to play", [eventDict objectForKey:@"timestamp"]];
+            eventCell.eventDetailLabel.hidden = NO;
+            eventCell.commentLabel.text = [eventDict objectForKey:@"comment"];
+            eventCell.commentLabel.hidden = NO;
+        } else {
+            eventCell.simpleEventLabel.hidden = NO;
+            eventCell.simpleEventLabel.text = [NSString stringWithFormat:@"Shared a clip @ %@ - tap to play", [eventDict objectForKey:@"timestamp"]];
+            eventCell.eventDetailLabel.hidden = YES;
+            eventCell.commentLabel.hidden = YES;
+        }
+        eventCell.clipProgress.hidden = NO;
+        eventCell.clipProgress.arc = 0.0f;
+        eventCell.clipProgress.seconds = [NSString stringWithFormat:@":%@", [eventDict objectForKey:@"duration"]];
+        eventCell.clipProgress.backgroundColor = [UIColor clearColor];
     }
-    eventCell.eventLabel.text = eventLabelText;
     eventCell.iconView.color = [UIColor whiteColor];
     eventCell.iconView.backgroundColor = [UIColor clearColor];
     [eventCell.iconView setNeedsDisplay];
@@ -376,21 +429,124 @@ NSString static *podcastArtDir;
 
 #pragma mark - Audio clips
 
--(void) stopClipPlayback {
+-(void) playPause {
+    // toggle play/pause
+    if (_selectedSectionIndex == _activeSectionIndex && _selectedRowIndex == _activeRowIndex) {
+        if ([_clipPlayer isPlaying]) {
+            [self pauseClipPlayback];
+        } else {
+            [self playbackClip];
+        }
+    }
+    // different clip selected than the one playing
+    else {
+        [self stopClipPlayback];
+        _clipPlayer = nil;
+    }
+    // start playing new clip
+    if (_clipPlayer == nil) {
+        
+        // check for cached audio data and init player
+        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_selectedSectionIndex] objectAtIndex:_selectedRowIndex]];
+        NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
+        NSString *clipFilename = [clipURLString lastPathComponent];
+        NSString *clipFilepath = [audioClipsDir stringByAppendingPathComponent:clipFilename];
+        NSData *clipData;
+        if ([[NSFileManager defaultManager] fileExistsAtPath:clipFilepath]) {
+            clipData = [[NSData alloc] initWithContentsOfFile:clipFilepath];
+        } else {
+            clipData = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString:clipURLString]];
+            [clipData writeToFile:clipFilepath atomically:YES];
+        }
+        NSError *playbackError;
+        _clipPlayer = [[AVAudioPlayer alloc] initWithData:clipData error:&playbackError];
+        
+        // play
+        if (_clipPlayer != nil) {
+            _clipPlayer.delegate = self;
+            // PLAY
+            [self playbackClip];
+            
+        } else {
+            NSLog(@"failed to create audio player: %@", playbackError);
+        }
+        
+    }
+}
+
+- (void) playbackClip {
+    
+    [_tung playerPause];
+    
+    [_clipPlayer prepareToPlay];
+    [_clipPlayer play]; // play on, player
+    
+    _activeSectionIndex = _selectedSectionIndex;
+    _activeRowIndex = _selectedRowIndex;
+    
+    [self setActiveClipCellReference];
+    
+    // begin "onEnterFrame"
+    _onEnterFrame = [CADisplayLink displayLinkWithTarget:self selector:@selector(updateView)];
+    [_onEnterFrame addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+}
+
+- (void) stopClipPlayback {
+    NSLog(@"stop");
+    // stop "onEnterFrame"
+    [_onEnterFrame invalidate];
+    //NSLog(@"%@",[NSThread callStackSymbols]);
+    if ([_clipPlayer isPlaying]) {
+        
+        [_clipPlayer stop];
+        [_clipPlayer setCurrentTime:0];
+    }
+    
+    // reset GUI
+    NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_activeSectionIndex] objectAtIndex:_activeRowIndex]];
+    
+    _activeClipProgressView.seconds = [NSString stringWithFormat:@":%@", [eventDict objectForKey:@"duration"]];
+    _activeClipProgressView.arc = 0.0f;
+    [_activeClipProgressView setNeedsDisplay];
+
+}
+
+- (void) pauseClipPlayback {
+
+    if ([_clipPlayer isPlaying]) [_clipPlayer pause];
+    // stop "onEnterFrame"
+    [_onEnterFrame invalidate];
     
 }
 
-- (void) resetActiveCellReference {
-    
-    // reset references to active progress bar and duration label
-    /*
-    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:_activeCellIndex inSection:_feedSection];
-    UITableViewCell* tcell = [_feedTableViewController.tableView cellForRowAtIndexPath:indexPath];
-    StoryEventCell *activeCell = ( StoryEventCell  *)tcell;
-    _activeProgressBar = activeCell.progressBar;
-    _activeDurationLabel = activeCell.durationLabel;
-    NSLog(@"set active clip cell reference to row: %ld, and section: %ld", (long)_activeClipIndex, (long)_feedSection);
-    */
+- (void) updateView {
+    float progress = _clipPlayer.currentTime / _clipPlayer.duration;
+    float arc = 360 - (360 * progress);
+    _activeClipProgressView.arc = arc;
+    _activeClipProgressView.seconds = [NSString stringWithFormat:@":%02ld", lroundf(_clipPlayer.duration - _clipPlayer.currentTime)];
+    [_activeClipProgressView setNeedsDisplay];
+}
+
+- (void) setActiveClipCellReference {
+
+    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:_activeRowIndex inSection:_activeSectionIndex];
+    UITableViewCell *cell = [_feedTableViewController.tableView cellForRowAtIndexPath:indexPath];
+    StoryEventCell *activeCell = (StoryEventCell *)cell;
+    _activeClipProgressView = activeCell.clipProgress;
+
+}
+
+#pragma mark - Audio player delegate methods
+
+-(void) audioPlayerBeginInterruption:(AVAudioPlayer *)player {
+    [self pauseClipPlayback];
+}
+-(void) audioPlayerEndInterruption:(AVAudioPlayer *)player withOptions:(NSUInteger)flags {
+    if (flags == AVAudioSessionInterruptionOptionShouldResume)
+        [self playbackClip];
+}
+-(void) audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag {
+    [self stopClipPlayback];
 }
 
 #pragma mark - Requests
@@ -689,7 +845,7 @@ NSString static *podcastArtDir;
     CGFloat scrollViewHeight = _profileHeaderHeight.constant - tableHeaderRow;
 //    NSLog(@"scroll view height: %f", scrollViewHeight);
 //    NSLog(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
-    CGSize contentSize = CGSizeMake(_profileHeader.frame.size.width * 2, scrollViewHeight);
+    CGSize contentSize = CGSizeMake(_screenWidth * 2, scrollViewHeight);
     _profileHeader.scrollView.contentSize = contentSize;
 //    NSLog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
 }

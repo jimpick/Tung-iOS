@@ -41,7 +41,6 @@
 		7D46DC021BB07854009379FF /* FBSDKShareKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D46DBFF1BB07854009379FF /* FBSDKShareKit.framework */; settings = {ASSET_TAGS = (); }; };
 		7D46DC131BB0CC30009379FF /* EpisodeEntity+CoreDataProperties.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D46DC101BB0CC30009379FF /* EpisodeEntity+CoreDataProperties.m */; settings = {ASSET_TAGS = (); }; };
 		7D46DC141BB0CC30009379FF /* EpisodeEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D46DC121BB0CC30009379FF /* EpisodeEntity.m */; settings = {ASSET_TAGS = (); }; };
-		7D4925051B28A7C60034AD31 /* FeedCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4925041B28A7C60034AD31 /* FeedCell.m */; };
 		7D4B259A1A0AE6B20035FD35 /* ProfileListCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4B25991A0AE6B20035FD35 /* ProfileListCell.m */; };
 		7D4B259D1A0AF2370035FD35 /* TungPeople.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4B259C1A0AF2370035FD35 /* TungPeople.m */; };
 		7D4F34F61AB778910090EE81 /* tabBar-feed-inactive@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F34F41AB778910090EE81 /* tabBar-feed-inactive@2x.png */; };
@@ -103,6 +102,7 @@
 		7D87187918FE3141001E954A /* icon-twitter-off@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D87187518FE3141001E954A /* icon-twitter-off@2x.png */; };
 		7D87187A18FE3141001E954A /* icon-twitter-on@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D87187618FE3141001E954A /* icon-twitter-on@2x.png */; };
 		7D87ED7B1979C83700F81A77 /* UITableNext@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D87ED7A1979C83700F81A77 /* UITableNext@2x.png */; };
+		7D8974371BC4CDF6005F6273 /* ClipProgressView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D8974361BC4CDF6005F6273 /* ClipProgressView.m */; settings = {ASSET_TAGS = (); }; };
 		7D8F02C11B619AA300A30492 /* ALDisk.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D8F02C01B619AA300A30492 /* ALDisk.m */; };
 		7D9551A31B69395F004B56A6 /* find-podcasts-here@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D9551A11B69395F004B56A6 /* find-podcasts-here@2x.png */; };
 		7D9551A41B69395F004B56A6 /* find-podcasts-here@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D9551A21B69395F004B56A6 /* find-podcasts-here@3x.png */; };
@@ -239,8 +239,6 @@
 		7D46DC101BB0CC30009379FF /* EpisodeEntity+CoreDataProperties.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "EpisodeEntity+CoreDataProperties.m"; sourceTree = "<group>"; };
 		7D46DC111BB0CC30009379FF /* EpisodeEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodeEntity.h; sourceTree = "<group>"; };
 		7D46DC121BB0CC30009379FF /* EpisodeEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodeEntity.m; sourceTree = "<group>"; };
-		7D4925031B28A7C60034AD31 /* FeedCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FeedCell.h; sourceTree = "<group>"; };
-		7D4925041B28A7C60034AD31 /* FeedCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FeedCell.m; sourceTree = "<group>"; };
 		7D4B25981A0AE6B20035FD35 /* ProfileListCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProfileListCell.h; sourceTree = "<group>"; };
 		7D4B25991A0AE6B20035FD35 /* ProfileListCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProfileListCell.m; sourceTree = "<group>"; };
 		7D4B259B1A0AF2370035FD35 /* TungPeople.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TungPeople.h; sourceTree = "<group>"; };
@@ -323,6 +321,8 @@
 		7D87187518FE3141001E954A /* icon-twitter-off@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-twitter-off@2x.png"; sourceTree = "<group>"; };
 		7D87187618FE3141001E954A /* icon-twitter-on@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-twitter-on@2x.png"; sourceTree = "<group>"; };
 		7D87ED7A1979C83700F81A77 /* UITableNext@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "UITableNext@2x.png"; sourceTree = "<group>"; };
+		7D8974351BC4CDF6005F6273 /* ClipProgressView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ClipProgressView.h; sourceTree = "<group>"; };
+		7D8974361BC4CDF6005F6273 /* ClipProgressView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ClipProgressView.m; sourceTree = "<group>"; };
 		7D8F02BF1B619AA300A30492 /* ALDisk.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ALDisk.h; sourceTree = "<group>"; };
 		7D8F02C01B619AA300A30492 /* ALDisk.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ALDisk.m; sourceTree = "<group>"; };
 		7D9551A11B69395F004B56A6 /* find-podcasts-here@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "find-podcasts-here@2x.png"; sourceTree = "<group>"; };
@@ -579,8 +579,6 @@
 				7D6459921A083DBA00BAC445 /* ProfileListTableViewController.m */,
 				7DBFBEA81A14246600CBD677 /* ProfileSearchTableViewController.h */,
 				7DBFBEA91A14246600CBD677 /* ProfileSearchTableViewController.m */,
-				7D4925031B28A7C60034AD31 /* FeedCell.h */,
-				7D4925041B28A7C60034AD31 /* FeedCell.m */,
 				7D14077A1BBEB86D00BD4F89 /* StoryHeaderCell.h */,
 				7D14077B1BBEB86D00BD4F89 /* StoryHeaderCell.m */,
 				7D1407741BBE3D5D00BD4F89 /* StoryEventCell.h */,
@@ -619,9 +617,9 @@
 				7D4B259C1A0AF2370035FD35 /* TungPeople.m */,
 				7DE780951AE950F20081E28E /* JPXMLtoDictionary.h */,
 				7DE780961AE950F20081E28E /* JPXMLtoDictionary.m */,
-				7D282C7A1AF29D3400495E74 /* TungPodcastStyleKit.h */,
 				7DE4B1C11B726F8600C02BE2 /* TextAreaBkgdView.h */,
 				7DE4B1C21B726F8600C02BE2 /* TextAreaBkgdView.m */,
+				7D282C7A1AF29D3400495E74 /* TungPodcastStyleKit.h */,
 				7D282C7B1AF29D3400495E74 /* TungPodcastStyleKit.m */,
 				7D2165F11AFEBC590020356C /* ShowHideControlsButton.h */,
 				7D2165F21AFEBC590020356C /* ShowHideControlsButton.m */,
@@ -639,6 +637,8 @@
 				7D12A4EC1A01308700A9A004 /* IconButton.m */,
 				7DA5ED451B548181007BD424 /* BlurView.h */,
 				7DA5ED461B548181007BD424 /* BlurView.m */,
+				7D8974351BC4CDF6005F6273 /* ClipProgressView.h */,
+				7D8974361BC4CDF6005F6273 /* ClipProgressView.m */,
 				7D8F02BF1B619AA300A30492 /* ALDisk.h */,
 				7D8F02C01B619AA300A30492 /* ALDisk.m */,
 				7D4F35341AB89DB40090EE81 /* CCColorCube.h */,
@@ -999,6 +999,7 @@
 				7D6459931A083DBA00BAC445 /* ProfileListTableViewController.m in Sources */,
 				7D2165F31AFEBC590020356C /* ShowHideControlsButton.m in Sources */,
 				7D1341E319251EB900B95C66 /* SignUpNavController.m in Sources */,
+				7D8974371BC4CDF6005F6273 /* ClipProgressView.m in Sources */,
 				7D12A4F91A01A08700A9A004 /* ProfileNavigationController.m in Sources */,
 				7D1407761BBE3D5D00BD4F89 /* StoryEventCell.m in Sources */,
 				7D8228C81AFBE271004EB4B2 /* CircleButton.m in Sources */,
@@ -1014,7 +1015,6 @@
 				7D4F35301AB7A2720090EE81 /* TungPodcast.m in Sources */,
 				7DF56650199D4B56003176C1 /* BrowserViewController.m in Sources */,
 				7D1407791BBEB83500BD4F89 /* StoryFooterCell.m in Sources */,
-				7D4925051B28A7C60034AD31 /* FeedCell.m in Sources */,
 				7DE094A31BC1D2F4005B596D /* ProfileViewController.m in Sources */,
 				7D768CA0192EB20B000C8E3E /* TungCommonObjects.m in Sources */,
 				7D292A1F19DCF16600EC3472 /* STTweetTextStorage.m in Sources */,

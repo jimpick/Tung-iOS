@@ -152,11 +152,11 @@
                             </state>
                         </button>
                         <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="Bsz-D1-IJJ" customClass="PillButton">
-                            <rect key="frame" x="234" y="14" width="133" height="34"/>
+                            <rect key="frame" x="233" y="12" width="134" height="38"/>
                             <animations/>
                             <constraints>
-                                <constraint firstAttribute="width" constant="133" id="mlJ-pj-0V2"/>
-                                <constraint firstAttribute="height" constant="34" id="zda-kd-1PO"/>
+                                <constraint firstAttribute="width" constant="134" id="mlJ-pj-0V2"/>
+                                <constraint firstAttribute="height" constant="38" id="zda-kd-1PO"/>
                             </constraints>
                         </button>
                     </subviews>

@@ -8,10 +8,12 @@
 
 #import <Foundation/Foundation.h>
 #import "ProfileHeaderView.h"
+#import <AVFoundation/AVFoundation.h>
+#import "ClipProgressView.h"
 
 @class TungCommonObjects;
 
-@interface TungStories : NSObject <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate>
+@interface TungStories : NSObject <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, AVAudioPlayerDelegate>
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 
@@ -28,15 +30,29 @@
 @property (strong, nonatomic) NSString *requestStatus;
 
 // indexes
-@property (nonatomic, assign) NSInteger activeCellIndex;
+@property (nonatomic, assign) NSInteger activeRowIndex;
+@property (nonatomic, assign) NSInteger selectedRowIndex;
 @property (nonatomic, assign) NSInteger activeSectionIndex;
+@property (nonatomic, assign) NSInteger selectedSectionIndex;
 
 // references to host viewcontroller's properties
 @property (strong, nonatomic) UINavigationController *navController;
 @property ProfileHeaderView *profileHeader;
 @property NSLayoutConstraint *profileHeaderHeight;
 
-// methods
+@property CGFloat screenWidth;
+
+// playing clips
+@property (nonatomic, strong) AVAudioPlayer *clipPlayer;
+@property (strong, nonatomic) CADisplayLink *onEnterFrame;
+@property (strong, nonatomic) ClipProgressView *activeClipProgressView;
+- (void) playPause;
+- (void) playbackClip;
+- (void) pauseClipPlayback;
+- (void) stopClipPlayback;
+- (void) setActiveClipCellReference;
+
+// feed related methods
 - (void) refreshFeed:(BOOL)fullRefresh;
 - (void) configureHeaderCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) configureEventCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
