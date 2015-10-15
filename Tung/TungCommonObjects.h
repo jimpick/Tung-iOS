@@ -118,6 +118,7 @@
 + (NSString *) findEpisodeDescriptionWithDict:(NSDictionary *)episodeDict;
 + (NSString *) findPodcastDescriptionWithDict:(NSDictionary *)dict;
 + (NSDictionary *) podcastEntityToDict:(PodcastEntity *)podcastEntity;
++ (NSDate *) ISODateToNSDate: (NSString *)pubDate;
 + (UserEntity *) saveUserWithDict:(NSDictionary *)userDict;
 + (UserEntity *) retrieveUserEntityForUserWithId:(NSString *)userId;
 + (NSDictionary *) userEntityToDict:(UserEntity *)userEntity;
@@ -138,10 +139,9 @@
 - (void) getSessionWithCallback:(void (^)(void))callback;
 - (void) killSessionForTesting;
 // stories requests
-- (void) addPodcast:(PodcastEntity *)podcastEntity withCallback:(void (^)(void))callback;
-- (void) addEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
+- (void) addPodcast:(PodcastEntity *)podcastEntity orEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
 - (void) restorePodcastDataWithCallback:(void (^)(BOOL success, NSDictionary *response))callback;
-- (void) getEpisodeInfoForEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+- (void) getEpisodeInfoForEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
 - (void) subscribeToPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button;
 - (void) unsubscribeFromPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button;
 - (void) recommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;

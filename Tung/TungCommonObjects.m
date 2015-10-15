@@ -64,7 +64,7 @@
     if (self = [super init]) {
         
         NSLog(@"init tung objects");
-        
+        _sessionId = @"";
         _tung_version = @"0.1.0";
         //_apiRootUrl = @"https://api.tung.fm/";
         _apiRootUrl = @"https://staging-api.tung.fm/";
@@ -80,11 +80,6 @@
         _bkgdGrayColor = [UIColor colorWithRed:230.0/255.0 green:230.0/255.0 blue:230.0/255.0 alpha:1];
         _facebookColor = [UIColor colorWithRed:61.0/255 green:90.0/255 blue:152.0/255 alpha:1];
         _twitterColor = [UIColor colorWithRed:42.0/255 green:169.0/255 blue:224.0/255 alpha:1];
-        
-        /* remove after tungStereo removed */
-//        _clipDurationFormatter = [[NSNumberFormatter alloc] init];
-//        [_clipDurationFormatter setMinimumIntegerDigits:2];
-//        [_clipDurationFormatter setMinimumFractionDigits:0];
         
         [self readPlayQueueFromDisk];
         NSLog(@"play queue read from disk: %@", _playQueue);
@@ -161,6 +156,7 @@
 - (void) playerPause {
     if ([self isPlaying]) {
         [_player pause];
+        _shouldStayPaused = YES;
         [self setControlButtonStateToPlay];
         [self savePositionForNowPlaying];
         // see if file is cached yet, so player can switch to local file
@@ -259,10 +255,13 @@
             NSLog(@"-- player likely to keep up");
             
             if (_totalSeconds == 0) [self determineTotalSeconds];
-            
+
+            float currentSecs = CMTimeGetSeconds(_player.currentTime);
+            NSLog(@"current secs: %f, total secs: %f", currentSecs, _totalSeconds);
             if ([self isPlaying]) {
                 [self setControlButtonStateToPause];
-            } else if (!_shouldStayPaused && ![self isPlaying]) {
+            }
+            else if (!_shouldStayPaused && ![self isPlaying]) {
                 [self playerPlay];
             }
             
@@ -1054,7 +1053,16 @@ static NSString *feedDictsDirName = @"feedDicts";
         podcastEntity.artworkUrl600 = [podcastDict objectForKey:@"artworkUrl600"];
         podcastEntity.artistName = [podcastDict objectForKey:@"artistName"];
         podcastEntity.feedUrl = [podcastDict objectForKey:@"feedUrl"];
-        podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
+        // subscribed?
+        if ([podcastDict objectForKey:@"isSubscribed"]) {
+            podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
+            if ([podcastDict objectForKey:@"dateSubscribed"]) {
+            	NSString *dateSubscribed = [podcastDict objectForKey:@"dateSubscribed"];
+                podcastEntity.dateSubscribed = [TungCommonObjects ISODateToNSDate:dateSubscribed];
+            }
+        } else {
+            podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
+        }
         UIColor *keyColor1, *keyColor2;
         NSString *keyColor1Hex, *keyColor2Hex;
         // datasource: podcast search
@@ -1089,7 +1097,6 @@ static NSString *feedDictsDirName = @"feedDicts";
 + (EpisodeEntity *) getEntityForPodcast:(NSDictionary *)podcastDict andEpisode:(NSDictionary *)episodeDict save:(BOOL)save {
     
     NSLog(@"save podcast and episode entity");
-    NSLog(@"episode dict: %@", episodeDict);
     PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
     
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
@@ -1114,11 +1121,29 @@ static NSString *feedDictsDirName = @"feedDicts";
             collectionId = (NSNumber *)collectionIdId;
         }
         episodeEntity.collectionId = collectionId;
-        if ([episodeDict objectForKey:@"itunes:image"])
+        if ([episodeDict objectForKey:@"itunes:image"]) {
             episodeEntity.episodeImageUrl = [[[episodeDict objectForKey:@"itunes:image"] objectForKey:@"el:attributes"] objectForKey:@"href"];
+        }
         episodeEntity.guid = [episodeDict objectForKey:@"guid"];
-        episodeEntity.isRecommended = [NSNumber numberWithBool:NO];
-        episodeEntity.pubDate = [episodeDict objectForKey:@"pubDate"];
+        if ([episodeDict objectForKey:@"isRecommended"]) {
+        	episodeEntity.isRecommended = [NSNumber numberWithBool:YES];
+        } else {
+            episodeEntity.isRecommended = [NSNumber numberWithBool:NO];
+        }
+        if ([episodeDict objectForKey:@"id"]) {
+            episodeEntity.id = [episodeDict objectForKey:@"id"];
+        }
+        if ([episodeDict objectForKey:@"shortlink"]) {
+            episodeEntity.shortlink = [episodeDict objectForKey:@"shortlink"];
+        }
+        id pubDateId = [episodeDict objectForKey:@"pubDate"];
+        NSDate *pubDate;
+        if ([pubDateId isKindOfClass:[NSDate class]]) {
+            pubDate = pubDateId;
+        } else {
+            pubDate = [TungCommonObjects ISODateToNSDate:[episodeDict objectForKey:@"pubDate"]];
+        }
+        episodeEntity.pubDate = pubDate;
         episodeEntity.trackProgress = [NSNumber numberWithFloat:0];
         episodeEntity.trackPosition = [NSNumber numberWithFloat:0];
         episodeEntity.podcast = podcastEntity; // move out of if/else? podcast entity seems static
@@ -1131,9 +1156,6 @@ static NSString *feedDictsDirName = @"feedDicts";
         if ([episodeDict objectForKey:@"enclosure"]) {
         	episodeEntity.dataLength = [NSNumber numberWithDouble:[[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"length"] doubleValue]];
         }
-        if ([episodeDict objectForKey:@"id"]) episodeEntity.id = [episodeDict objectForKey:@"id"];
-        if ([episodeDict objectForKey:@"shortlink"]) episodeEntity.shortlink = [episodeDict objectForKey:@"shortlink"];
-        if ([episodeDict objectForKey:@"storyShortlink"]) episodeEntity.shortlink = [episodeDict objectForKey:@"shortlink"];
     }
     else {
         episodeEntity = [episodeResult lastObject];
@@ -1194,6 +1216,27 @@ static NSString *feedDictsDirName = @"feedDicts";
     NSArray *keys = [[[podcastEntity entity] attributesByName] allKeys];
     NSDictionary *podcastDict = [[podcastEntity dictionaryWithValuesForKeys:keys] mutableCopy];
     return podcastDict;
+}
+
+// date converter for restoring podcast data
+static NSDateFormatter *ISODateInterpreter = nil;
++ (NSDate *) ISODateToNSDate: (NSString *)pubDate {
+    
+    NSDate *date = nil;
+    if (ISODateInterpreter == nil) {
+        ISODateInterpreter = [[NSDateFormatter alloc] init]; // "2014-09-05 14:27:40 +0000",
+        [ISODateInterpreter setDateFormat:@"yyyy-MM-dd HH:mm:ss Z"];
+    }
+    
+    if ([ISODateInterpreter dateFromString:pubDate]) {
+        date = [ISODateInterpreter dateFromString:pubDate];
+    }
+    else {
+        NSLog(@"could not convert date: %@", pubDate);
+        date = [NSDate date];
+    }
+    return date;
+    
 }
 
 + (UserEntity *) saveUserWithDict:(NSDictionary *)userDict {
@@ -1289,14 +1332,14 @@ static NSString *feedDictsDirName = @"feedDicts";
     NSFetchRequest *findUsers = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
     NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findUsers error:&error];
     if (result.count > 0) {
-        /*
+        
         for (int i = 0; i < result.count; i++) {
             UserEntity *userEntity = [result objectAtIndex:i];
             NSDictionary *userDict = [TungCommonObjects userEntityToDict:userEntity];
             NSLog(@"user at index: %d", i);
             NSLog(@"%@", userDict);
         }
-        */
+        
         return YES;
     } else {
         NSLog(@"no user entities found");
@@ -1314,16 +1357,16 @@ static NSString *feedDictsDirName = @"feedDicts";
     NSError *eError = nil;
     NSArray *eResult = [appDelegate.managedObjectContext executeFetchRequest:eRequest error:&eError];
     if (eResult.count > 0) {
-     for (int i = 0; i < eResult.count; i++) {
-         EpisodeEntity *episodeEntity = [eResult objectAtIndex:i];
-         NSLog(@"episode at index: %d", i);
-         // entity -> dict
-         NSArray *ekeys = [[[episodeEntity entity] attributesByName] allKeys];
-         NSDictionary *eDict = [episodeEntity dictionaryWithValuesForKeys:ekeys];
-         NSLog(@"%@", eDict);
-     }
+        for (int i = 0; i < eResult.count; i++) {
+            EpisodeEntity *episodeEntity = [eResult objectAtIndex:i];
+            NSLog(@"episode at index: %d", i);
+            // entity -> dict
+            NSArray *ekeys = [[[episodeEntity entity] attributesByName] allKeys];
+            NSDictionary *eDict = [episodeEntity dictionaryWithValuesForKeys:ekeys];
+            NSLog(@"%@", eDict);
+        }
     }
-    */
+     */
     
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
     NSError *error;
@@ -1570,8 +1613,8 @@ static NSArray *colors;
     NSArray *components = [tungCred componentsSeparatedByString:@":"];
     _tungId = [components objectAtIndex:0];
     _tungToken = [components objectAtIndex:1];
-    NSLog(@"id: %@", _tungId);
-    NSLog(@"token: %@", _tungToken);
+//    NSLog(@"id: %@", _tungId);
+//    NSLog(@"token: %@", _tungToken);
 }
 
 // all requests require a session ID instead of credentials
@@ -1666,115 +1709,38 @@ static NSArray *colors;
  Tung Stories
  /////////////////////////////////*/
 
-- (void) addPodcast:(PodcastEntity *)podcastEntity withCallback:(void (^)(void))callback  {
-    NSLog(@"add podcast request");
-    NSURL *addPodcastRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/add-podcast.php", _apiRootUrl]];
-    NSMutableURLRequest *addPodcastRequest = [NSMutableURLRequest requestWithURL:addPodcastRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
-    [addPodcastRequest setHTTPMethod:@"POST"];
-    NSString *email = (podcastEntity.email) ? podcastEntity.email : @"";
-    NSString *website = (podcastEntity.website) ? podcastEntity.website : @"";
-    NSString *desc = (podcastEntity.desc) ? podcastEntity.desc : @"";
-    //    NSLog(@"podcast entity: %@", podcastEntity);
-    NSDictionary *params = @{@"sessionId":_sessionId,
-                             @"collectionId": podcastEntity.collectionId,
-                             @"collectionName": podcastEntity.collectionName,
-                             @"artistName": podcastEntity.artistName,
-                             @"artworkUrl600": podcastEntity.artworkUrl600,
-                             @"feedUrl": podcastEntity.feedUrl,
-                             @"keyColor1Hex": podcastEntity.keyColor1Hex,
-                             @"keyColor2Hex": podcastEntity.keyColor2Hex,
-                             @"email": email,
-                             @"website": website,
-                             @"desc": desc
-                             };
-    
-    // add content type
-    NSString *boundary = [TungCommonObjects generateHash];
-    NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
-    [addPodcastRequest addValue:contentType forHTTPHeaderField:@"Content-Type"];
-    // add post body
-    NSMutableData *body = [NSMutableData data];
-    [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    // key value pairs
-    [body appendData:[TungCommonObjects generateBodyFromDictionary:params withBoundary:boundary]];
-    
-    // podcast art
-    [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"podcastArt\"; filename=\"%@\"\r\n", @"art.jpg"] dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:[@"Content-Type: image/jpeg\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-    NSData *podcastArtData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600];
-    [body appendData:podcastArtData];
-    [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    
-    // end of body
-    [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    
-    [addPodcastRequest setHTTPBody:body];
-    // set the content-length
-    NSString *postLength = [NSString stringWithFormat:@"%lu", (unsigned long)[body length]];
-    [addPodcastRequest setValue:postLength forHTTPHeaderField:@"Content-Length"];
-    
-    
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    [NSURLConnection sendAsynchronousRequest:addPodcastRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                NSLog(@"%@", responseDict);
-                if ([responseDict objectForKey:@"error"]) {
-                    // session expired
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        NSLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self addPodcast:podcastEntity withCallback:^ {
-                                callback();
-                            }];
-                        }];
-                    }
-                }
-                else if ([responseDict objectForKey:@"success"]) {
-                    callback();
-                }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                NSLog(@"Error. HTML: %@", html);
-            }
-        });
-    }];
-}
 
-
-- (void) addEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback  {
-    NSLog(@"add episode request");
+- (void) addPodcast:(PodcastEntity *)podcastEntity orEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback  {
+    NSLog(@"add podcast/episode request");
     NSURL *addEpisodeRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/add-podcast.php", _apiRootUrl]];
     NSMutableURLRequest *addEpisodeRequest = [NSMutableURLRequest requestWithURL:addEpisodeRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [addEpisodeRequest setHTTPMethod:@"POST"];
     // optional params
-    NSString *email = (episodeEntity.podcast.email) ? episodeEntity.podcast.email : @"";
-    NSString *website = (episodeEntity.podcast.website) ? episodeEntity.podcast.website : @"";
-    NSString *desc = (episodeEntity.podcast.desc) ? episodeEntity.podcast.desc : @"";
+    NSString *email = (podcastEntity.email) ? podcastEntity.email : @"";
+    NSString *website = (podcastEntity.website) ? podcastEntity.website : @"";
     
 //    NSLog(@"episode entity: %@", episodeEntity);
 //    NSLog(@"podcast entity: %@", episodeEntity.podcast);
-    NSDictionary *params = @{@"sessionId":_sessionId,
-                             @"collectionId": episodeEntity.podcast.collectionId,
-                             @"collectionName": episodeEntity.podcast.collectionName,
-                             @"artistName": episodeEntity.podcast.artistName,
-                             @"artworkUrl600": episodeEntity.podcast.artworkUrl600,
-                             @"feedUrl": episodeEntity.podcast.feedUrl,
-                             @"keyColor1Hex": episodeEntity.podcast.keyColor1Hex,
-                             @"keyColor2Hex": episodeEntity.podcast.keyColor2Hex,
-                             @"email": email,
-                             @"website": website,
-                             @"desc": desc,
-                             @"GUID": episodeEntity.guid,
-                             @"episodeUrl": episodeEntity.url,
-                             @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
-                             @"episodeTitle": episodeEntity.title,
-                            };
+    NSMutableDictionary *params = [@{@"sessionId":_sessionId,
+                                @"collectionId": podcastEntity.collectionId,
+                                @"collectionName": podcastEntity.collectionName,
+                                @"artistName": podcastEntity.artistName,
+                                @"artworkUrl600": podcastEntity.artworkUrl600,
+                                @"feedUrl": podcastEntity.feedUrl,
+                                @"keyColor1Hex": podcastEntity.keyColor1Hex,
+                                @"keyColor2Hex": podcastEntity.keyColor2Hex,
+                                @"email": email,
+                                @"website": website
+                                } mutableCopy];
+
+    if (episodeEntity) {
+        NSDictionary *episodeParams = @{@"GUID": episodeEntity.guid,
+                                        @"episodeUrl": episodeEntity.url,
+                                        @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
+                                        @"episodeTitle": episodeEntity.title
+                                        };
+        [params addEntriesFromDictionary:episodeParams];
+    }
     
     // add content type
     NSString *boundary = [TungCommonObjects generateHash];
@@ -1789,7 +1755,7 @@ static NSArray *colors;
     // podcast art
     [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"podcastArt\"; filename=\"%@\"\r\n", @"art.jpg"] dataUsingEncoding:NSUTF8StringEncoding]];
     [body appendData:[@"Content-Type: image/jpeg\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-    NSData *podcastArtData = [TungCommonObjects retrievePodcastArtDataWithUrlString:episodeEntity.podcast.artworkUrl600];
+    NSData *podcastArtData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600];
     [body appendData:podcastArtData];
     [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
     
@@ -1815,13 +1781,21 @@ static NSArray *colors;
                         // get new session and re-request
                         NSLog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
-                            [self addEpisode:episodeEntity withCallback:^ {
-                                callback();
-                            }];
+                            [self addPodcast:podcastEntity orEpisode:episodeEntity withCallback:callback];
                         }];
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
+                    NSString *artworkUrlSSL = [[responseDict objectForKey:@"success"] objectForKey:@"artworkUrlSSL"];
+                    podcastEntity.artworkUrlSSL = artworkUrlSSL;
+                    if (episodeEntity) {
+                        // save episode id and shortlink
+                        NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
+                        NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
+                        episodeEntity.id = episodeId;
+                        episodeEntity.shortlink = shortlink;
+                    }
+                    [TungCommonObjects saveContextWithReason:@"got podcast artwork SSL url and/or episode shortlink and id"];
                     callback();
                 }
             }
@@ -1877,13 +1851,18 @@ static NSArray *colors;
     }];
 }
 
-- (void) getEpisodeInfoForEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+// get shortlink and id for episode
+- (void) getEpisodeInfoForEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback {
     NSLog(@"get episode info for episode");
     NSURL *getEpisodeInfoRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/get-episode-info.php", _apiRootUrl]];
     NSMutableURLRequest *getEpisodeInfoRequest = [NSMutableURLRequest requestWithURL:getEpisodeInfoRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [getEpisodeInfoRequest setHTTPMethod:@"POST"];
-    NSDictionary *params = @{@"collectionId": episodeEntity.podcast.collectionId,
-                             @"GUID": episodeEntity.guid
+    NSDictionary *params = @{@"sessionId":_sessionId,
+                             @"collectionId": episodeEntity.collectionId,
+                             @"GUID": episodeEntity.guid,
+                             @"episodeUrl": episodeEntity.url,
+                             @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
+                             @"episodeTitle": episodeEntity.title
                              };
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [getEpisodeInfoRequest setHTTPBody:serializedParams];
@@ -1899,24 +1878,27 @@ static NSArray *colors;
                     // no podcast record
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
                         __unsafe_unretained typeof(self) weakSelf = self;
-                        [self addEpisode:episodeEntity withCallback:^ {
+                        [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
                             [weakSelf getEpisodeInfoForEpisode:episodeEntity withCallback:callback];
                         }];
                     }
                     else {
                         NSLog(@"Error: %@", [responseDict objectForKey:@"error"]);
-                        callback(NO, responseDict);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    NSLog(@"successfully retrieved episode info");
-                    callback(YES, responseDict);
+                    // save episode id and shortlink
+                    NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
+                    NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
+                    episodeEntity.id = episodeId;
+                    episodeEntity.shortlink = shortlink;
+                    [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
+                    callback();
                 }
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
                 NSLog(@"Error. HTML: %@", html);
-                callback(NO, @{@"error": @"Unspecified error"});
             }
         });
     }];
@@ -1926,7 +1908,7 @@ static NSArray *colors;
 - (void) subscribeToPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button {
     NSLog(@"subscribe request for podcast with id %@", podcastEntity.collectionId);
     [button setEnabled:NO];
-    NSURL *subscribeRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/subscribe.php", _apiRootUrl]];
+    NSURL *subscribeRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/subscribe.php", _apiRootUrl]];
     NSMutableURLRequest *subscribeRequest = [NSMutableURLRequest requestWithURL:subscribeRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [subscribeRequest setHTTPMethod:@"POST"];
     NSDictionary *params = @{@"sessionId":_sessionId,
@@ -1953,7 +1935,7 @@ static NSArray *colors;
                     // no podcast record
                     else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
                         __unsafe_unretained typeof(self) weakSelf = self;
-                        [self addPodcast:podcastEntity withCallback:^{
+                        [self addPodcast:podcastEntity orEpisode:nil withCallback:^ {
                             [weakSelf subscribeToPodcast:podcastEntity withButton:button];
                         }];
                     }
@@ -1964,8 +1946,8 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     [button setEnabled:YES];
-                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
-                    NSLog(@"successfully subscribed to podcast");
+                    //_feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                    NSLog(@"%@", [responseDict objectForKey:@"success"]);
                     // important: do not assign shortlink from subscribe story to episode entity
                 }
             }
@@ -1982,7 +1964,7 @@ static NSArray *colors;
 - (void) unsubscribeFromPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button {
     NSLog(@"unsubscribe request for podcast with id %@", podcastEntity.collectionId);
     [button setEnabled:NO];
-    NSURL *unsubscribeFromPodcastRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/unsubscribe.php", _apiRootUrl]];
+    NSURL *unsubscribeFromPodcastRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/unsubscribe.php", _apiRootUrl]];
     NSMutableURLRequest *unsubscribeFromPodcastRequest = [NSMutableURLRequest requestWithURL:unsubscribeFromPodcastRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [unsubscribeFromPodcastRequest setHTTPMethod:@"POST"];
     NSDictionary *params = @{@"sessionId":_sessionId,
@@ -2009,7 +1991,7 @@ static NSArray *colors;
                     // no podcast record
                     else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
                         __unsafe_unretained typeof(self) weakSelf = self;
-                        [self addPodcast:podcastEntity withCallback:^ {
+                        [self addPodcast:podcastEntity orEpisode:nil withCallback:^ {
                             [weakSelf unsubscribeFromPodcast:podcastEntity withButton:button];
                         }];
                     }
@@ -2020,8 +2002,8 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     [button setEnabled:YES];
-                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
-                    NSLog(@"successfully unsubbed from podcast");
+                    //_feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                    NSLog(@"%@", responseDict);
                 }
             }
             else {
@@ -2035,16 +2017,22 @@ static NSArray *colors;
 
 // RECOMMENDING
 - (void) recommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
-    NSLog(@"recommend episode");
+
     NSURL *recommendPodcastRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/recommend.php", _apiRootUrl]];
     NSMutableURLRequest *recommendPodcastRequest = [NSMutableURLRequest requestWithURL:recommendPodcastRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [recommendPodcastRequest setHTTPMethod:@"POST"];
+    NSString *episodeId = (episodeEntity.id) ? episodeEntity.id : @"";
+    NSString *shortlink = (episodeEntity.shortlink) ? episodeEntity.shortlink : @"";
     NSDictionary *params = @{@"sessionId":_sessionId,
                              @"collectionId": episodeEntity.collectionId,
                              @"GUID": episodeEntity.guid,
                              @"episodeUrl": episodeEntity.url,
-                             @"episodeTitle":episodeEntity.title
+                             @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
+                             @"episodeTitle": episodeEntity.title,
+                             @"episodeId": episodeId,
+                             @"shortlink": shortlink
                              };
+    NSLog(@"recommend episode");
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [recommendPodcastRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -2054,7 +2042,6 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                NSLog(@"%@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
@@ -2067,7 +2054,7 @@ static NSArray *colors;
                     // no podcast record
                     else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
                         __unsafe_unretained typeof(self) weakSelf = self;
-                        [self addEpisode:episodeEntity withCallback:^ {
+                        [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
                             [weakSelf recommendEpisode:episodeEntity withCallback:callback];
                         }];
                     }
@@ -2077,8 +2064,16 @@ static NSArray *colors;
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    NSLog(@"successfully recommended podcast");
+                    NSLog(@"%@", responseDict);
                     _feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                    if (!episodeEntity.id) {
+                        // save episode id and shortlink
+                        NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
+                        NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
+                        episodeEntity.id = episodeId;
+                        episodeEntity.shortlink = shortlink;
+                        [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
+                    }
                     callback(YES, responseDict);
                 }
             }
@@ -2092,14 +2087,15 @@ static NSArray *colors;
 }
 
 - (void) unRecommendEpisode:(EpisodeEntity *)episodeEntity {
-    NSLog(@"un-recommend episode");
     NSURL *unRecommendPodcastRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/un-recommend.php", _apiRootUrl]];
     NSMutableURLRequest *unRecommendPodcastRequest = [NSMutableURLRequest requestWithURL:unRecommendPodcastRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [unRecommendPodcastRequest setHTTPMethod:@"POST"];
+    NSString *episodeId = (episodeEntity.id) ? episodeEntity.id : @"";
     NSDictionary *params = @{@"sessionId":_sessionId,
-                             @"collectionId": episodeEntity.collectionId,
-                             @"GUID": episodeEntity.guid
+                             @"episodeId": episodeId
                              };
+    
+    NSLog(@"un-recommend episode");
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [unRecommendPodcastRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -2119,11 +2115,9 @@ static NSArray *colors;
                             [self unRecommendEpisode:episodeEntity];
                         }];
                     }
-                    // no podcast record
-                    else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
-                        __unsafe_unretained typeof(self) weakSelf = self;
-                        [self addEpisode:episodeEntity withCallback:^ {
-                            [weakSelf unRecommendEpisode:episodeEntity];
+                    else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need episode info"]) {
+                        [self getEpisodeInfoForEpisode:episodeEntity withCallback:^{
+                            [self unRecommendEpisode:episodeEntity];
                         }];
                     }
                     else {
@@ -2131,7 +2125,7 @@ static NSArray *colors;
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    NSLog(@"successfully UN-recommended podcast");
+                    NSLog(@"%@", responseDict);
                     _feedNeedsRefresh = [NSNumber numberWithBool:YES];
                 }
             }
@@ -2144,13 +2138,22 @@ static NSArray *colors;
 }
 
 - (void) incrementListenCount:(EpisodeEntity *)episodeEntity {
-    NSLog(@"increment listen count");
+
     NSURL *incrementListenCountRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/increment-listen-count.php", _apiRootUrl]];
     NSMutableURLRequest *incrementListenCountRequest = [NSMutableURLRequest requestWithURL:incrementListenCountRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [incrementListenCountRequest setHTTPMethod:@"POST"];
+    
+    NSString *episodeId = (episodeEntity.id) ? episodeEntity.id : @"";
+    NSString *shortlink = (episodeEntity.shortlink) ? episodeEntity.shortlink : @"";
     NSDictionary *params = @{@"collectionId": episodeEntity.collectionId,
-                             @"GUID": episodeEntity.guid
+                             @"GUID": episodeEntity.guid,
+                             @"episodeUrl": episodeEntity.url,
+                             @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
+                             @"episodeTitle": episodeEntity.title,
+                             @"episodeId": episodeId,
+                             @"shortlink": shortlink
                              };
+    NSLog(@"increment listen count with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [incrementListenCountRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -2173,7 +2176,8 @@ static NSArray *colors;
                     // no podcast record
                     else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
                         __unsafe_unretained typeof(self) weakSelf = self;
-                        [self addEpisode:episodeEntity withCallback:^ {
+                        NSLog(@"increment listen count error: need podcast info");
+                        [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
                             [weakSelf incrementListenCount:episodeEntity];
                         }];
                     }
@@ -2182,7 +2186,15 @@ static NSArray *colors;
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    NSLog(@"successfully incremented listen count");
+                    NSLog(@"increment listen count result: %@", responseDict);
+                    if (!episodeEntity.id) {
+                        // save episode id and shortlink
+                        NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
+                        NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
+                        episodeEntity.id = episodeId;
+                        episodeEntity.shortlink = shortlink;
+                        [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
+                    }
                 }
             }
             else {
@@ -2198,11 +2210,17 @@ static NSArray *colors;
     NSURL *postCommentRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/new-comment.php", _apiRootUrl]];
     NSMutableURLRequest *postCommentRequest = [NSMutableURLRequest requestWithURL:postCommentRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [postCommentRequest setHTTPMethod:@"POST"];
+    
+    NSString *episodeId = (episodeEntity.id) ? episodeEntity.id : @"";
+    NSString *shortlink = (episodeEntity.shortlink) ? episodeEntity.shortlink : @"";
     NSDictionary *params = @{@"sessionId":_sessionId,
                              @"collectionId": episodeEntity.collectionId,
                              @"GUID": episodeEntity.guid,
                              @"episodeUrl": episodeEntity.url,
-                             @"episodeTitle":episodeEntity.title,
+                             @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
+                             @"episodeTitle": episodeEntity.title,
+                             @"episodeId": episodeId,
+                             @"shortlink": shortlink,
                              @"comment": comment,
                              @"timestamp": timestamp
                              };
@@ -2228,7 +2246,7 @@ static NSArray *colors;
                     // no podcast record
                     else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
                         __unsafe_unretained typeof(self) weakSelf = self;
-                        [self addEpisode:episodeEntity withCallback:^ {
+                        [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
                             [weakSelf postComment:comment atTime:timestamp onEpisode:episodeEntity withCallback:callback];
                         }];
                     }
@@ -2239,6 +2257,14 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     NSLog(@"successfully posted comment");
+                    if (!episodeEntity.id) {
+                        // save episode id and shortlink
+                        NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
+                        NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
+                        episodeEntity.id = episodeId;
+                        episodeEntity.shortlink = shortlink;
+                        [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
+                    }
                     _feedNeedsRefresh = [NSNumber numberWithBool:YES];
                     callback(YES, responseDict);
                 }
@@ -2257,11 +2283,17 @@ static NSArray *colors;
     NSURL *postClipRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/new-clip.php", _apiRootUrl]];
     NSMutableURLRequest *postClipRequest = [NSMutableURLRequest requestWithURL:postClipRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [postClipRequest setHTTPMethod:@"POST"];
+    
+    NSString *episodeId = (episodeEntity.id) ? episodeEntity.id : @"";
+    NSString *shortlink = (episodeEntity.shortlink) ? episodeEntity.shortlink : @"";
     NSDictionary *params = @{@"sessionId":_sessionId,
                              @"collectionId": episodeEntity.collectionId,
                              @"GUID": episodeEntity.guid,
                              @"episodeUrl": episodeEntity.url,
-                             @"episodeTitle":episodeEntity.title,
+                             @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
+                             @"episodeTitle": episodeEntity.title,
+                             @"episodeId": episodeId,
+                             @"shortlink": shortlink,
                              @"comment": comment,
                              @"timestamp": timestamp,
                              @"duration": duration
@@ -2312,7 +2344,7 @@ static NSArray *colors;
                     // no podcast record
                     else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
                         __unsafe_unretained typeof(self) weakSelf = self;
-                        [self addEpisode:episodeEntity withCallback:^ {
+                        [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
                             [weakSelf postClipWithComment:comment atTime:timestamp withDuration:duration onEpisode:episodeEntity withCallback:callback];
                         }];
                     }
@@ -2323,6 +2355,14 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     NSLog(@"successfully posted clip");
+                    if (!episodeEntity.id) {
+                        // save episode id and shortlink
+                        NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
+                        NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
+                        episodeEntity.id = episodeId;
+                        episodeEntity.shortlink = shortlink;
+                        [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
+                    }
                     _feedNeedsRefresh = [NSNumber numberWithBool:YES];
                     callback(YES, responseDict);
                 }
@@ -2581,6 +2621,8 @@ static NSArray *colors;
 
 -(void) signOut {
     NSLog(@"signing out");
+    
+    [self playerPause];
     
     //[self deleteLoggedInUserData];
     [TungCommonObjects removeAllUserData];

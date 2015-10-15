@@ -92,6 +92,7 @@ CGFloat screenWidth;
     // for feed
     _stories = [TungStories new];
     _stories.navController = [self navigationController];
+    _stories.viewController = self;
     _stories.profiledUserId = _profiledUserId;
     // for animating header
     _stories.profileHeader = _profileHeader;
@@ -125,9 +126,6 @@ CGFloat screenWidth;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:headerBar.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:headerBar.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
-    // watch request status so we can update table header
-    [self addObserver:self forKeyPath:@"stories.requestStatus" options:NSKeyValueObservingOptionNew context:nil];
-    
     [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
         if (reachable) {
             if (_tung.sessionId && _tung.sessionId.length > 0) {
@@ -159,17 +157,21 @@ CGFloat screenWidth;
     contentSize.width = contentSize.width * 2;
     _profileHeader.scrollView.contentSize = contentSize;
     NSLog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
+    
+    // watch request status so we can update table header
+    [self addObserver:self forKeyPath:@"stories.requestStatus" options:NSKeyValueObservingOptionNew context:nil];
 }
 
 - (void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
-//    @try {
-//    	[_stories removeObserver:self forKeyPath:@"requestStatus"];
-//    }
-//    @catch (id exception) {
-//        
-//    }
-    [self removeObserver:self forKeyPath:@"stories.requestStatus"];
+    
+    @try {
+    	[self removeObserver:self forKeyPath:@"stories.requestStatus"];
+    }
+    @catch (id exception) {
+        
+    }
+    
 }
 
 - (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context {

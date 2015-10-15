@@ -543,7 +543,7 @@ static UIImage *iconRedX;
                 });
             }
             // success
-            else if ([responseDict objectForKey:@"small_av_url"]) {
+            else if ([responseDict objectForKey:@"success"]) {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     // stop spinner
                     [_avatarActivityIndicator stopAnimating];
@@ -554,8 +554,8 @@ static UIImage *iconRedX;
                     [_profileData removeObjectForKey:@"largeAvatarFilename"];
                     [_profileData removeObjectForKey:@"smallAvatarFilename"];
                     // set new values
-                    [_profileData setObject:[responseDict objectForKey:@"small_av_url"] forKey:@"small_av_url"];
-                    [_profileData setObject:[responseDict objectForKey:@"large_av_url"] forKey:@"large_av_url"];
+                    [_profileData setObject:[[responseDict objectForKey:@"success"] objectForKey:@"small_av_url"] forKey:@"small_av_url"];
+                    [_profileData setObject:[[responseDict objectForKey:@"success"] objectForKey:@"large_av_url"] forKey:@"large_av_url"];
                     // save
                     NSLog(@"saving new profile data: %@", _profileData);
                     [TungCommonObjects saveUserWithDict:_profileData];

@@ -14,6 +14,13 @@
 #import "PodcastViewController.h"
 #import "ProfileViewController.h"
 
+@interface TungStories()
+
+@property NSString *shareLink;
+@property NSString *shareText;
+
+@end
+
 @implementation TungStories
 
 CGFloat headerViewHeight, headerScrollViewHeight, tableHeaderRow, animationDistance;
@@ -52,6 +59,11 @@ CGFloat headerViewHeight, headerScrollViewHeight, tableHeaderRow, animationDista
         tableSpinner.alpha = 1;
         [tableSpinner startAnimating];
         _feedTableViewController.tableView.backgroundView = tableSpinner;
+        // long press recognizer
+        UILongPressGestureRecognizer *longPressRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(tableCellLongPress:)];
+        longPressRecognizer.minimumPressDuration = 1.0; //seconds
+        longPressRecognizer.delegate = self;
+        [_feedTableViewController.tableView addGestureRecognizer:longPressRecognizer];
         
         // for animating header height
         CGFloat minHeaderHeight = 80;
@@ -139,9 +151,8 @@ static NSString *footerCellIdentifier = @"storyFooterCell";
         //NSLog(@"selected %@", [podcastDict objectForKey:@"collectionName"]);
         
         PodcastViewController *podcastView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"podcastView"];
-        if ([podcastDict objectForKey:@"episode"]) {
-            podcastView.focusedGUID = [[podcastDict objectForKey:@"episode"] objectForKey:@"guid"];
-        }
+        podcastView.focusedGUID = [[storyDict objectForKey:@"episode"] objectForKey:@"guid"];
+
         podcastView.podcastDict = [podcastDict mutableCopy];
         [_navController pushViewController:podcastView animated:YES];
     }
@@ -240,6 +251,7 @@ NSString static *podcastArtDir;
     // cell data
     NSDictionary *storyDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
     NSDictionary *podcastDict = [storyDict objectForKey:@"podcast"];
+    NSDictionary *episodeDict = [storyDict objectForKey:@"episode"];
     NSDictionary *userDict = [storyDict objectForKey:@"user"];
     
     // color
@@ -280,12 +292,7 @@ NSString static *podcastArtDir;
     headerCell.albumArt.image = artImage;
     
 	// title
-    NSString *title;
-    if ([podcastDict objectForKey:@"episode"]) {
-        title = [[podcastDict objectForKey:@"episode"] objectForKey:@"title"];
-    } else {
-        title = [podcastDict objectForKey:@"collectionName"];
-    }
+    NSString *title = [episodeDict objectForKey:@"title"];
     headerCell.title.text = title;
     headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
     if (title.length > 42) {
@@ -408,6 +415,90 @@ NSString static *podcastArtDir;
     [footerCell setLayoutMargins:UIEdgeInsetsZero];
 }
 
+#pragma mark - long press and action sheet
+
+- (void) tableCellLongPress:(UILongPressGestureRecognizer *)gestureRecognizer {
+    
+    //NSLog(@"long press detected with state: %ld", (long)gestureRecognizer.state);
+    
+    if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
+        CGPoint loc = [gestureRecognizer locationInView:_feedTableViewController.tableView];
+    	NSIndexPath *longPressIndexPath = [_feedTableViewController.tableView indexPathForRowAtPoint:loc];
+        
+        if (longPressIndexPath) {
+            
+            NSUInteger footerIndex = [[_storiesArray objectAtIndex:longPressIndexPath.section] count] - 1;
+            NSDictionary *headerDict = [[_storiesArray objectAtIndex:longPressIndexPath.section] objectAtIndex:0];
+            NSLog(@"header dict: %@", headerDict);
+            
+            NSArray *options;
+            if (longPressIndexPath.row == 0) {
+                // story header
+                options = @[@"Share this episode", @"Copy link to episode"];
+                _shareLink = [headerDict objectForKey:@"episodeLink"];
+                _shareText = [NSString stringWithFormat:@"Check out this episode of %@ - %@: %@", [[headerDict objectForKey:@"podcast"] objectForKey:@"collectionName"], [[headerDict objectForKey:@"episode"] objectForKey:@"title"], _shareLink];
+            }
+            else if (longPressIndexPath.row == footerIndex) {
+                // story footer
+                options = @[@"Share this interaction", @"Copy link to interaction"];
+                _shareLink = [headerDict objectForKey:@"storyLink"];
+                NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+                NSLog(@"uid: %@", uid);
+                if ([uid isEqualToString:_tung.tungId]) {
+                    _shareText = [NSString stringWithFormat:@"I listened to %@ on #Tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], _shareLink];
+                } else {
+                    _shareText = [NSString stringWithFormat:@"%@ listened to %@ on #Tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"podcast"] objectForKey:@"collectionName"], _shareLink];
+                }
+            }
+            else {
+                // story event
+                NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:longPressIndexPath.section] objectAtIndex:longPressIndexPath.row]];
+                //NSLog(@"event dict: %@", eventDict);
+                NSString *type = [eventDict objectForKey:@"type"];
+                if ([type isEqualToString:@"clip"]) {
+                    options = @[@"Share this clip", @"Copy link to clip"];
+                    NSString *clipShortlink = [eventDict objectForKey:@"shortlink"];
+                    _shareLink = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, clipShortlink];
+                    _shareText = [NSString stringWithFormat:@"Here's a clip from %@: %@", [[headerDict objectForKey:@"podcast"] objectForKey:@"collectionName"], _shareLink];
+                } else {
+                    options = @[@"Share this interaction", @"Copy link to interaction"];
+                    _shareLink = [headerDict objectForKey:@"storyLink"];
+                    NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+                    if ([uid isEqualToString:_tung.tungId]) {
+                        _shareText = [NSString stringWithFormat:@"I listened to %@ on #Tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], _shareLink];
+                    } else {
+                        _shareText = [NSString stringWithFormat:@"%@ listened to %@ on #Tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"podcast"] objectForKey:@"collectionName"], _shareLink];
+                    }
+                }
+                // TODO: add "flag for moderation" destructive option
+            }
+            UIActionSheet *storyOptionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:nil otherButtonTitles:nil];
+            for (NSString *option in options) {
+                [storyOptionSheet addButtonWithTitle:option];
+            }
+            [storyOptionSheet setTag:1];
+            [storyOptionSheet showInView:_viewController.view];
+        }
+    }
+    
+ 
+}
+
+- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
+    
+    NSLog(@"dismissed action sheet with button: %ld", (long)buttonIndex);
+    if (actionSheet.tag == 1) {
+        if (buttonIndex == 1) { // share this
+            
+            UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[_shareText] applicationActivities:nil];
+            [_viewController presentViewController:shareSheet animated:YES completion:nil];
+        }
+        else if (buttonIndex == 2) { // copy link
+            [[UIPasteboard generalPasteboard] setString:_shareLink];
+        }
+    }
+}
+
 #pragma mark - Feed cell controls
 
 -(void) headerCellButtonTapped:(id)sender {
@@ -417,7 +508,7 @@ NSString static *podcastArtDir;
         StoryHeaderCell *cell = (StoryHeaderCell *)[[sender superview] superview];
         NSIndexPath *indexPath = [_feedTableViewController.tableView indexPathForCell:cell];
         NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
-        NSString *userId = [[storyDict objectForKey:@"user"] objectForKey:@"id"];
+        NSString *userId = [[[storyDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
         // push profile
         if (![_profiledUserId isEqualToString:userId]) {
             ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
@@ -661,6 +752,7 @@ NSString static *podcastArtDir;
                         else {
                             _storiesArray = [self processStories:newStories];
                             NSLog(@"got posts. storiesArray count: %lu", (unsigned long)[_storiesArray count]);
+                            //NSLog(@"%@", _storiesArray);
                             [_feedTableViewController.tableView reloadData];
                         }
                         
@@ -737,6 +829,12 @@ NSString static *podcastArtDir;
         NSMutableDictionary *dict = [[stories objectAtIndex:i] mutableCopy];
         UIColor *keyColor = [TungCommonObjects colorFromHexString:[[dict objectForKey:@"podcast"] objectForKey:@"keyColor1Hex"]];
         NSArray *events = [dict objectForKey:@"events"];
+        NSString *username = [[dict objectForKey:@"user"] objectForKey:@"username"];
+        NSString *episodeShortlink = [[dict objectForKey:@"episode"] objectForKey:@"shortlink"];
+        NSString *episodeLink = [NSString stringWithFormat:@"%@e/%@", _tung.tungSiteRootUrl, episodeShortlink];
+        [dict setObject:episodeLink forKey:@"episodeLink"];
+        NSString *storyLink = [NSString stringWithFormat:@"%@e/%@/%@", _tung.tungSiteRootUrl, episodeShortlink, username];
+        [dict setObject:storyLink forKey:@"storyLink"];
         [storyArray addObject:dict];
         
         // preload avatar and album art
@@ -763,8 +861,9 @@ NSString static *podcastArtDir;
             
             NSMutableDictionary *eventDict = [[events objectAtIndex:e] mutableCopy];
             [eventDict setObject:keyColor forKey:@"keyColor"];
+            NSString *type = [eventDict objectForKey:@"type"];
             // preload clip
-            if ([[eventDict objectForKey:@"type"] isEqualToString:@"clip"]) {
+            if ([type isEqualToString:@"clip"]) {
                 [preloadQueue addOperationWithBlock:^{
                     NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
                     NSString *clipFilename = [clipURLString lastPathComponent];
@@ -783,12 +882,9 @@ NSString static *podcastArtDir;
         }
         [dict removeObjectForKey:@"events"];
         NSNumber *moreEvents = [NSNumber numberWithBool:events.count > 5];
-        NSDictionary *footerDict = [NSDictionary dictionaryWithObjects:@[
-                                                                         [dict objectForKey:@"shortlink"],
-                                                                         keyColor,
+        NSDictionary *footerDict = [NSDictionary dictionaryWithObjects:@[keyColor,
                                                                          moreEvents]
-                                                               forKeys:@[@"shortlink",
-                                                                         @"keyColor",
+                                                               forKeys:@[@"keyColor",
                                                                          @"moreEvents"]];
         [storyArray addObject:footerDict];
         [results addObject:storyArray];

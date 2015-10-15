@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="8195" systemVersion="14F27" minimumToolsVersion="Xcode 4.3">
+<model userDefinedModelVersionIdentifier="" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="8195" systemVersion="15A284" minimumToolsVersion="Xcode 4.3">
     <entity name="EpisodeEntity" representedClassName="EpisodeEntity" syncable="YES">
         <attribute name="collectionId" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
         <attribute name="dataLength" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
@@ -11,7 +11,6 @@
         <attribute name="isRecommended" attributeType="Boolean" syncable="YES"/>
         <attribute name="pubDate" attributeType="Date" syncable="YES"/>
         <attribute name="shortlink" optional="YES" attributeType="String" syncable="YES"/>
-        <attribute name="storyShortlink" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="title" attributeType="String" syncable="YES"/>
         <attribute name="trackPosition" optional="YES" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
         <attribute name="trackProgress" optional="YES" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
@@ -52,7 +51,7 @@
         <attribute name="username" attributeType="String" syncable="YES"/>
     </entity>
     <elements>
-        <element name="EpisodeEntity" positionX="-18" positionY="27" width="128" height="285"/>
+        <element name="EpisodeEntity" positionX="-18" positionY="27" width="128" height="270"/>
         <element name="PodcastEntity" positionX="-45" positionY="0" width="128" height="300"/>
         <element name="UserEntity" positionX="-27" positionY="126" width="128" height="225"/>
     </elements>

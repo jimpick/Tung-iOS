@@ -2,7 +2,7 @@
 //  EpisodeEntity+CoreDataProperties.h
 //  Tung
 //
-//  Created by Jamie Perkins on 9/21/15.
+//  Created by Jamie Perkins on 10/8/15.
 //  Copyright © 2015 Jamie Perkins. All rights reserved.
 //
 //  Choose "Create NSManagedObject Subclass…" from the Core Data editor menu
@@ -25,11 +25,10 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nullable, nonatomic, retain) NSNumber *isRecommended;
 @property (nullable, nonatomic, retain) NSDate *pubDate;
 @property (nullable, nonatomic, retain) NSString *shortlink;
-@property (nullable, nonatomic, retain) NSString *storyShortlink;
 @property (nullable, nonatomic, retain) NSString *title;
-@property (nullable, nonatomic, retain) NSString *url;
 @property (nullable, nonatomic, retain) NSNumber *trackPosition;
 @property (nullable, nonatomic, retain) NSNumber *trackProgress;
+@property (nullable, nonatomic, retain) NSString *url;
 @property (nullable, nonatomic, retain) PodcastEntity *podcast;
 
 @end

@@ -15,6 +15,7 @@
 @property (strong, nonatomic) TungStories *stories;
 
 @property BOOL hasPodcastData;
+@property BOOL hasUserData;
 
 @end
 
@@ -38,6 +39,7 @@
     // FEED
     _stories = [TungStories new];
     _stories.navController = [self navigationController];
+    _stories.viewController = self;
     _stories.profiledUserId = @"";
     
     _stories.feedTableViewController.edgesForExtendedLayout = UIRectEdgeNone;
@@ -58,6 +60,7 @@
     } */
     
     _hasPodcastData = [TungCommonObjects checkForPodcastData];
+    _hasUserData = [TungCommonObjects checkForUserData];
     
     // first load
     _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
@@ -139,70 +142,40 @@
                 NSLog(@"get feed");
                 [_tung getSessionWithCallback:^{
                     // since this is the first call the app makes and we now have session
-                    // check to see if user has no podcast data so it can be restored.
-                    // does not sync track progress
-                    NSLog(@"has podcast data: %@", (_hasPodcastData) ? @"Yes" : @"No");
+                    // check to see if user has no podcast data or no user data so it can be restored.
+                    // does not yet sync track progress
+                    NSLog(@"has USER data: %@", (_hasUserData) ? @"Yes" : @"No");
+                    if (!_hasUserData) {
+                        [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
+                            if (jsonData != nil) {
+                                NSDictionary *responseDict = jsonData;
+                                if ([responseDict objectForKey:@"user"]) {
+                                    NSLog(@"got user: %@", [responseDict objectForKey:@"user"]);
+                                    [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
+                                    _hasUserData = YES;
+                                }
+                            }
+                        }];
+                    }
+                    NSLog(@"has PODCAST data: %@", (_hasPodcastData) ? @"Yes" : @"No");
                     if (!_hasPodcastData) {
                         [_tung restorePodcastDataWithCallback:^(BOOL success, NSDictionary *response) {
-                            if (success && [response objectForKey:@"results"]) {
-                                NSArray *data = [response objectForKey:@"results"];
-                                NSLog(@"restoring podcast data...");
-                                for (NSDictionary *story in data) {
-                                    NSMutableDictionary *podcastDict, *episodeDict;
-                                    PodcastEntity *podcastEntity = nil;
-                                    EpisodeEntity *episodeEntity = nil;
-                                    BOOL isSubscribeStory = NO;
-                                    BOOL isRecommendStory = NO;
-                                    
-                                    for (NSString* key in story) {
-                                        // podcast
-                                        if ([key isEqualToString:@"podcast"]) {
-                                            podcastDict = [[story objectForKey:@"podcast"] mutableCopy];
-                                            UIColor *keyColor1 = [TungCommonObjects colorFromHexString:[podcastDict objectForKey:@"keyColor1Hex"]];
-                                            UIColor *keyColor2 = [TungCommonObjects colorFromHexString:[podcastDict objectForKey:@"keyColor2Hex"]];
-                                            [podcastDict setObject:keyColor1 forKey:@"keyColor1"];
-                                            [podcastDict setObject:keyColor2 forKey:@"keyColor2"];
-                                            
-                                            if ([podcastDict objectForKey:@"episode"]) {
-                                                episodeDict = [[podcastDict objectForKey:@"episode"] mutableCopy];
-                                                [episodeDict setObject:[podcastDict objectForKey:@"collectionId"] forKey:@"collectionId"];
-                                                NSDate *pubDate = [self pubDateToNSDate:[episodeDict objectForKey:@"pubDate"]];
-                                                [episodeDict setObject:pubDate forKey:@"pubDate"];
-                                                episodeEntity = [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:NO];
-                                            } else {
-                                                
-                                                podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
-                                            }
-                                        }
-                                        // events
-                                        if ([key isEqualToString:@"events"]) {
-                                    		for (NSDictionary *event in [story objectForKey:@"events"]) {
-                                                NSString *type = [event objectForKey:@"type"];
-                                                if ([type isEqualToString:@"recommended"]) {
-                                                    isRecommendStory = YES;
-                                                }
-                                                if ([type isEqualToString:@"subscribed"]) {
-                                                    isSubscribeStory = YES;
-                                                }
-                                            }
-                                        }
+                            if (success) {
+                                if ([response objectForKey:@"podcasts"]) {
+                                    // restore subscribes
+                                    NSArray *podcasts = [response objectForKey:@"podcasts"];
+                                    for (NSDictionary *podcastDict in podcasts) {
+                                        [TungCommonObjects getEntityForPodcast:podcastDict save:YES];
                                     }
-                                    
-                                    if (isSubscribeStory) {
-                                        podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
-                                        double secs = [[story objectForKey:@"time_secs"] doubleValue];
-                                        NSDate *subDate = [NSDate dateWithTimeIntervalSince1970:secs];
-                                        podcastEntity.dateSubscribed = subDate;
+                                }
+                                if ([response objectForKey:@"episodes"]) {
+                                    // restore recommends
+                                    NSArray *episodes = [response objectForKey:@"episodes"];
+                                    for (NSDictionary *episodeDict in episodes) {
+                                        NSDictionary *eDict = [episodeDict objectForKey:@"episode"];
+                                        NSDictionary *pDict = [episodeDict objectForKey:@"podcast"];
+                                        [TungCommonObjects getEntityForPodcast:pDict andEpisode:eDict save:YES];
                                     }
-                                    else {
-                                        episodeEntity.storyShortlink = [story objectForKey:@"shortlink"];
-                                        if (isRecommendStory) {
-                                            episodeEntity.isRecommended = [NSNumber numberWithBool:YES];
-                                        }
-                                    }
-                                    
-                                    BOOL saved = [TungCommonObjects saveContextWithReason:@"restoring podcast data"];
-                                    if (!saved) NSLog(@"error on story: %@", story);
                                 }
                                 _hasPodcastData = YES;
                             }
@@ -226,27 +199,6 @@
             [noReachabilityAlert show];
         }
     }];
-}
-
-// date converter for restoring podcast data
-static NSDateFormatter *pubDateInterpreter = nil;
--(NSDate *) pubDateToNSDate: (NSString *)pubDate {
-    
-    NSDate *date = nil;
-    if (pubDateInterpreter == nil) {
-        pubDateInterpreter = [[NSDateFormatter alloc] init]; // "2014-09-05 14:27:40 +0000",
-        [pubDateInterpreter setDateFormat:@"yyyy-MM-dd HH:mm:ss Z"];
-    }
-    
-    if ([pubDateInterpreter dateFromString:pubDate]) {
-        date = [pubDateInterpreter dateFromString:pubDate];
-    }
-    else {
-        NSLog(@"could not convert date: %@", pubDate);
-        date = [NSDate date];
-    }
-    return date;
-    
 }
 
 

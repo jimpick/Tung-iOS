@@ -10,7 +10,7 @@
 #import "TungCommonObjects.h"
 #import "TungPeople.h"
 #import "ProfileListCell.h"
-#import "ProfileTableViewController.h"
+//#import "ProfileViewController.h"
 
 @interface ProfileListTableViewController ()
 

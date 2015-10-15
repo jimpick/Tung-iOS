@@ -19,7 +19,7 @@
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
 
-#define MAX_RECORD_TIME 19
+#define MAX_RECORD_TIME 29
 #define MIN_RECORD_TIME 2
 #define MAX_COMMENT_CHARS 220
 
@@ -791,6 +791,9 @@ static CGRect buttonsScrollViewHomeRect;
             _recordButton.isRecording = YES;
             _recordStartTime = [NSDate date];
             _recordStartMarker = CMTimeGetSeconds(_tung.player.currentTime);
+            
+            // disable button scrolling
+            [_buttonsScrollView setScrollEnabled:NO];
         }
         // stop recording
         else {
@@ -802,6 +805,8 @@ static CGRect buttonsScrollViewHomeRect;
                 _recordButton.isRecording = NO;
                 [_recordButton setEnabled:NO];
                 [_tung playerPause];
+                
+                [_buttonsScrollView setScrollEnabled:YES];
                 [self trimAudioFrom:_recordStartMarker to:_recordEndMarker];
             } else {
                 // too short
@@ -993,46 +998,6 @@ static CGRect buttonsScrollViewHomeRect;
     _commentAndPostView.commentTextView.text = @"";
     [_commentAndPostView.postButton setEnabled:NO];
     [self toggleNewComment];
-}
-
-- (void) getTextForShareSheet {
-    
-    NSString *text;
-    // if there's a story to share, share it
-    if (_tung.npEpisodeEntity.storyShortlink) {
-        text = [NSString stringWithFormat:@"Listening to %@ on #Tung: %@s/%@", _tung.npEpisodeEntity.title, _tung.tungSiteRootUrl, _tung.npEpisodeEntity.storyShortlink];
-        [self openShareSheetForText:text];
-        
-    }
-    // otherise share episode
-    else if (_tung.npEpisodeEntity.shortlink) {
-        text = [NSString stringWithFormat:@"Listening to %@ on #Tung: %@e/%@", _tung.npEpisodeEntity.title, _tung.tungSiteRootUrl, _tung.npEpisodeEntity.shortlink];
-        [self openShareSheetForText:text];
-    }
-    // need to get episode shortlink
-    else {
-        [_tung getEpisodeInfoForEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *response) {
-            if (success) {
-                // save episode id, shortlink
-                NSString *episodeId = [[response objectForKey:@"success"] objectForKey:@"id"];
-                _tung.npEpisodeEntity.id = episodeId;
-                NSString *episodeShortlink = [[response objectForKey:@"success"] objectForKey:@"shortlink"];
-                _tung.npEpisodeEntity.shortlink = episodeShortlink;
-                [TungCommonObjects saveContextWithReason:@"got episode id and shortlink for sharing"];
-                NSString *text = [NSString stringWithFormat:@"Listening to %@ on #Tung: %@e/%@", _tung.npEpisodeEntity.title, _tung.tungSiteRootUrl, _tung.npEpisodeEntity.shortlink];
-                [self openShareSheetForText:text];
-            } else {
-                NSString *errorMsg = [response objectForKey:@"error"];
-                [self displayErrorAlertWithMessage:errorMsg];
-            }
-        }];
-    }
-}
-
-- (void) openShareSheetForText:(NSString *)text {
-    
-    UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[text] applicationActivities:nil];
-    [self presentViewController:shareSheet animated:YES completion:nil];
 }
 
 // show comment and post view with keyboard for sharing or new comment
@@ -1569,15 +1534,9 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
             if (success) {
                 _commentAndPostView.commentTextView.text = @"";
                 [self toggleNewComment];
-                // save episode id, shortlink and story shortlink
-                NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
-                _tung.npEpisodeEntity.id = episodeId;
-                NSString *episodeShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"episodeShortlink"];
-                _tung.npEpisodeEntity.shortlink = episodeShortlink;
-                NSString *storyShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"storyShortlink"];
-                _tung.npEpisodeEntity.storyShortlink = storyShortlink;
-                [TungCommonObjects saveContextWithReason:@"got episode shortlinks from new comment"];
-                NSString *link = [NSString stringWithFormat:@"%@s/%@", _tung.tungSiteRootUrl, storyShortlink];
+
+                NSString *username = [[_tung getLoggedInUserData] objectForKey:@"username"];
+                NSString *link = [NSString stringWithFormat:@"%@s/%@/%@", _tung.tungSiteRootUrl, _tung.npEpisodeEntity.shortlink, username];
                 // tweet?
                 if (_commentAndPostView.twitterButton.on) {
                     [_tung postTweetWithText:text andUrl:link];
@@ -1609,14 +1568,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                 [self resetRecording];
                 [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(toggleNewClipView) userInfo:nil repeats:NO];
                 
-                // save episode id, shortlink and story shortlink
-                NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
-                _tung.npEpisodeEntity.id = episodeId;
-                NSString *episodeShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"episodeShortlink"];
-                _tung.npEpisodeEntity.shortlink = episodeShortlink;
-                NSString *storyShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"storyShortlink"];
-                _tung.npEpisodeEntity.storyShortlink = storyShortlink;
-                [TungCommonObjects saveContextWithReason:@"got episode shortlinks from new clip"];
+
                 NSString *eventShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"eventShortlink"];
                 NSString *link = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, eventShortlink];
                 // caption
@@ -1657,16 +1609,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         
         if (_recommendButton.recommended) {
             [_tung recommendEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
-                if (success) {
-                    // save episode id, shortlink and story shortlink
-                    NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
-                    _tung.npEpisodeEntity.id = episodeId;
-                    NSString *episodeShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"episodeShortlink"];
-                    _tung.npEpisodeEntity.shortlink = episodeShortlink;
-                    NSString *storyShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"storyShortlink"];
-                    _tung.npEpisodeEntity.storyShortlink = storyShortlink;
-                }
-                else {
+                if (!success) {
                     // failed to recommend
                     _recommendButton.recommended = NO;
                     [_recommendButton setNeedsDisplay];
@@ -1686,6 +1629,32 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
     else {
         [_podcast showNoConnectionAlert];
     }
+}
+
+- (void) getTextForShareSheet {
+    
+    NSString *text;
+    // if there's a story to share, share it
+    if (_tung.npEpisodeEntity.shortlink) {
+        NSDictionary *userDict = [_tung getLoggedInUserData];
+        NSLog(@"user dict: %@", userDict);
+        NSString *username = [userDict objectForKey:@"username"];
+        text = [NSString stringWithFormat:@"Listening to %@ on #Tung: tung.fm/e/%@/%@", _tung.npEpisodeEntity.title, _tung.npEpisodeEntity.shortlink, username];
+        [self openShareSheetForText:text];
+    }
+    // need to get episode shortlink
+    else {
+        [_tung getEpisodeInfoForEpisode:_tung.npEpisodeEntity withCallback:^(void) {
+            NSString *text = [NSString stringWithFormat:@"Listening to %@ on #Tung: %@e/%@", _tung.npEpisodeEntity.title, _tung.tungSiteRootUrl, _tung.npEpisodeEntity.shortlink];
+            [self openShareSheetForText:text];
+        }];
+    }
+}
+
+- (void) openShareSheetForText:(NSString *)text {
+    
+    UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[text] applicationActivities:nil];
+    [self presentViewController:shareSheet animated:YES completion:nil];
 }
 
 - (void) displayErrorAlertWithMessage:(NSString *)message {

@@ -8,7 +8,7 @@
 
 #import "TungPeople.h"
 #import "ProfileListCell.h"
-#import "ProfileTableViewController.h"
+#import "ProfileViewController.h"
 
 @implementation TungPeople
 
@@ -299,7 +299,7 @@
     
     NSLog(@"push profile of user: %@", [userDict objectForKey:@"username"]);
     // push profile
-    ProfileTableViewController *profileView = [_viewController.storyboard instantiateViewControllerWithIdentifier:@"profileView"];
+    ProfileViewController *profileView = [_viewController.storyboard instantiateViewControllerWithIdentifier:@"profileView"];
     profileView.profiledUserId = [userDict objectForKey:@"id"];
     [_viewController.navigationController pushViewController:profileView animated:YES];
 }

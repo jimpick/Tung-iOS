@@ -217,7 +217,7 @@
                 NSLog(@"got results: %lu", (unsigned long)_podcastArray.count);
                 //NSLog(@"%@", _podcastArray);
                 [self preloadPodcastArtForArray:_podcastArray];
-                [self preloadFeedsWithLimit:5];
+                [self preloadFeedsWithLimit:1]; // preload feed of first result
                 [_searchTableViewController.tableView reloadData];
                 //});
             }
@@ -740,7 +740,7 @@ static NSString *rawFeedsDirName = @"rawFeeds";
     // only allow subscribing with network connection
     if (_tung.connectionAvailable) {
         
-        NSLog(@"subscribing to podcast with entity: %@", _podcastEntity);
+        //NSLog(@"subscribing to podcast with entity: %@", _podcastEntity);
         if (!_podcastEntity) {
             NSLog(@"ERROR! no podcast entity");
             return;

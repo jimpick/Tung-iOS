@@ -2,7 +2,7 @@
 //  EpisodeEntity.h
 //  Tung
 //
-//  Created by Jamie Perkins on 9/21/15.
+//  Created by Jamie Perkins on 10/8/15.
 //  Copyright © 2015 Jamie Perkins. All rights reserved.
 //
 

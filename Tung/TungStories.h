@@ -13,7 +13,7 @@
 
 @class TungCommonObjects;
 
-@interface TungStories : NSObject <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, AVAudioPlayerDelegate>
+@interface TungStories : NSObject <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, AVAudioPlayerDelegate, UIGestureRecognizerDelegate, UIActionSheetDelegate>
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 
@@ -37,6 +37,7 @@
 
 // references to host viewcontroller's properties
 @property (strong, nonatomic) UINavigationController *navController;
+@property (strong, nonatomic) UIViewController *viewController;
 @property ProfileHeaderView *profileHeader;
 @property NSLayoutConstraint *profileHeaderHeight;
 
