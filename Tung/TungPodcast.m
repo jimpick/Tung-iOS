@@ -555,7 +555,7 @@ static NSString *rawFeedsDirName = @"rawFeeds";
 
 // Feeds
 
-- (NSDictionary *) getFeedWithDict:(NSDictionary *)podcastDict forceNewest:(BOOL)forceNewest {
++ (NSDictionary *) getFeedWithDict:(NSDictionary *)podcastDict forceNewest:(BOOL)forceNewest {
     NSDictionary *dict;
     if (forceNewest) {
         NSLog(@"get feed (force newest)");
@@ -570,7 +570,7 @@ static NSString *rawFeedsDirName = @"rawFeeds";
  if there is cached data, the feed is retrieved from it. If it was cached, it was just cashed in the previous view controller
  else the feed is requested and converted.
  */
-- (NSDictionary *) retrieveAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict {
++ (NSDictionary *) retrieveAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict {
     
     NSString *rawFeedsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:rawFeedsDirName];
     NSError *error;
@@ -598,7 +598,7 @@ static NSString *rawFeedsDirName = @"rawFeeds";
 /*
  forces re-fetch of the feed, returns converted data.
  */
-- (NSDictionary *) requestAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict {
++ (NSDictionary *) requestAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict {
     
     NSString *rawFeedsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:rawFeedsDirName];
     NSError *error;
@@ -614,6 +614,16 @@ static NSString *rawFeedsDirName = @"rawFeeds";
         return [xmlToDict xmlDataToDictionary:feedData];
     }
     return nil;
+}
+
++ (NSArray *) extractFeedArrayFromFeedDict:(NSDictionary *)feedDict {
+    id item = [[feedDict objectForKey:@"channel"] objectForKey:@"item"];
+    if ([item isKindOfClass:[NSArray class]]) {
+        NSArray *array = item;
+        return array;
+    } else {
+        return @[item];
+    }
 }
 
 

@@ -57,9 +57,10 @@
 @property PodcastEntity *podcastEntity;
 
 // instance methods
-- (NSDictionary *) getFeedWithDict:(NSDictionary *)podcastDict forceNewest:(BOOL)forceNewest;
-- (NSDictionary *) retrieveAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict;
-- (NSDictionary *) requestAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict;
++ (NSDictionary *) getFeedWithDict:(NSDictionary *)podcastDict forceNewest:(BOOL)forceNewest;
++ (NSDictionary *) retrieveAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict;
++ (NSDictionary *) requestAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict;
++ (NSArray *) extractFeedArrayFromFeedDict:(NSDictionary *)feedDict;
 - (void) preloadPodcastArtForArray:(NSArray*)itemArray;
 - (void) preloadFeedsWithLimit:(NSUInteger)limit;
 

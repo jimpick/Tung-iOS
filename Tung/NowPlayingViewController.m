@@ -277,7 +277,7 @@ static NSArray *playbackRateStrings;
     
     NSDictionary *podcastDict = [TungCommonObjects podcastEntityToDict:_podcast.podcastEntity];
     
-    NSDictionary *dict = [_podcast getFeedWithDict:podcastDict forceNewest:forceNewest];
+    NSDictionary *dict = [TungPodcast getFeedWithDict:podcastDict forceNewest:forceNewest];
     
     if (dict) {
         //NSLog(@"podcast feed dict: %@", dict);
@@ -318,7 +318,7 @@ static NSArray *playbackRateStrings;
 
 #pragma mark - tungObjects/tungPodcasts delegate methods
 
-// ControlButtonDelegate required method
+
 - (void) initiateSearch {
     
     // in case sharing in progress, don't animate share view
@@ -338,7 +338,7 @@ static NSArray *playbackRateStrings;
     [_podcast.searchController.searchBar becomeFirstResponder];
     
 }
-// ControlButtonDelegate required method
+
 -(void) dismissPodcastSearch {
     
     CATransition *animation = [CATransition animation];

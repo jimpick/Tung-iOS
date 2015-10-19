@@ -78,18 +78,29 @@
 @property NSMutableDictionary *trackInfo;
 @property NSInteger playbackRateIndex;
 @property NSArray *playbackRates;
-
+@property NSString *playFromTimestamp;
 @property (strong, nonatomic) NSMutableArray *playQueue;
 @property (strong, nonatomic) UIActivityIndicatorView *btnActivityIndicator;
 @property BOOL npViewSetupForCurrentEpisode;
 @property BOOL fileIsLocal;
 @property BOOL fileIsStreaming; // file can be local and streaming at the same time
 @property BOOL shouldStayPaused;
+
+// clip player
+@property (nonatomic, strong) AVAudioPlayer *clipPlayer;
+- (void) stopClipPlayback;
+
 // twitter
 @property (nonatomic, strong) NSArray *arrayOfTwitterAccounts;
 @property (nonatomic, strong) ACAccount *twitterAccountToUse;
 @property (nonatomic, strong) NSString *twitterAccountStatus;
-// table
+- (void) establishTwitterAccount;
+- (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url;
+
+// facebook
+- (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity;
+
+// flags
 @property (strong, nonatomic) NSNumber *feedNeedsRefresh;
 
 // player
@@ -138,7 +149,7 @@
 - (void) establishCred;
 - (void) getSessionWithCallback:(void (^)(void))callback;
 - (void) killSessionForTesting;
-// stories requests
+// stories post requests
 - (void) addPodcast:(PodcastEntity *)podcastEntity orEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
 - (void) restorePodcastDataWithCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) getEpisodeInfoForEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
@@ -158,11 +169,7 @@
 - (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback;
 - (void) followAllUsersFromId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) signOut;
-// twittter
-- (void) establishTwitterAccount;
-- (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url;
-// facebook
-- (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity;
+
 // class methods
 + (id) establishTungObjects;
 + (void) clearTempDirectory;
@@ -183,7 +190,7 @@
 + (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString;
 + (NSString *)timeElapsed: (NSString *)secondsString;
 + (NSString*) convertSecondsToTimeString:(CGFloat)totalSeconds;
-+ (double) convertDurationStringToSeconds:(NSString *)duration;
++ (double) convertTimestampToSeconds:(NSString *)timestamp;
 + (NSURL *) getClipFileURL;
 + (NSString *) getAlbumArtFilenameFromUrlString:(NSString *)artURLString;
 

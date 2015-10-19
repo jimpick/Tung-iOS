@@ -8,6 +8,7 @@
 
 #import "TungStories.h"
 #import "TungCommonObjects.h"
+#import "TungPodcast.h"
 #import "StoryHeaderCell.h"
 #import "StoryEventCell.h"
 #import "StoryFooterCell.h"
@@ -16,8 +17,10 @@
 
 @interface TungStories()
 
+@property NSIndexPath *longPressIndexPath;
 @property NSString *shareLink;
 @property NSString *shareText;
+@property NSString *timestamp;
 
 @end
 
@@ -61,7 +64,7 @@ CGFloat headerViewHeight, headerScrollViewHeight, tableHeaderRow, animationDista
         _feedTableViewController.tableView.backgroundView = tableSpinner;
         // long press recognizer
         UILongPressGestureRecognizer *longPressRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(tableCellLongPress:)];
-        longPressRecognizer.minimumPressDuration = 1.0; //seconds
+        longPressRecognizer.minimumPressDuration = 0.75; //seconds
         longPressRecognizer.delegate = self;
         [_feedTableViewController.tableView addGestureRecognizer:longPressRecognizer];
         
@@ -173,7 +176,7 @@ static NSString *footerCellIdentifier = @"storyFooterCell";
 
 //- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
 UILabel *prototypeLabel;
-static CGFloat labelWidth = 0;
+CGFloat labelWidth = 0;
 
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
     
@@ -197,7 +200,7 @@ static CGFloat labelWidth = 0;
                 labelWidth = _screenWidth -63 - 60;
             }
             prototypeLabel.text = [eventDict objectForKey:@"comment"];
-            CGSize labelSize = [prototypeLabel sizeThatFits:CGSizeMake(labelWidth, 100)];
+            CGSize labelSize = [prototypeLabel sizeThatFits:CGSizeMake(labelWidth, 400)];
             CGFloat diff = labelSize.height - 18;
             return defaultEventCellHeight + diff;
         } else {
@@ -423,45 +426,35 @@ NSString static *podcastArtDir;
     
     if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
         CGPoint loc = [gestureRecognizer locationInView:_feedTableViewController.tableView];
-    	NSIndexPath *longPressIndexPath = [_feedTableViewController.tableView indexPathForRowAtPoint:loc];
+    	_longPressIndexPath = [_feedTableViewController.tableView indexPathForRowAtPoint:loc];
         
-        if (longPressIndexPath) {
+        if (_longPressIndexPath) {
             
-            NSUInteger footerIndex = [[_storiesArray objectAtIndex:longPressIndexPath.section] count] - 1;
-            NSDictionary *headerDict = [[_storiesArray objectAtIndex:longPressIndexPath.section] objectAtIndex:0];
+            NSUInteger footerIndex = [[_storiesArray objectAtIndex:_longPressIndexPath.section] count] - 1;
+            NSDictionary *headerDict = [[_storiesArray objectAtIndex:_longPressIndexPath.section] objectAtIndex:0];
             NSLog(@"header dict: %@", headerDict);
             
             NSArray *options;
-            if (longPressIndexPath.row == 0) {
-                // story header
+            if (_longPressIndexPath.row == 0 || _longPressIndexPath.row == footerIndex) {
+                // story header/footer
                 options = @[@"Share this episode", @"Copy link to episode"];
                 _shareLink = [headerDict objectForKey:@"episodeLink"];
                 _shareText = [NSString stringWithFormat:@"Check out this episode of %@ - %@: %@", [[headerDict objectForKey:@"podcast"] objectForKey:@"collectionName"], [[headerDict objectForKey:@"episode"] objectForKey:@"title"], _shareLink];
             }
-            else if (longPressIndexPath.row == footerIndex) {
-                // story footer
-                options = @[@"Share this interaction", @"Copy link to interaction"];
-                _shareLink = [headerDict objectForKey:@"storyLink"];
-                NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
-                NSLog(@"uid: %@", uid);
-                if ([uid isEqualToString:_tung.tungId]) {
-                    _shareText = [NSString stringWithFormat:@"I listened to %@ on #Tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], _shareLink];
-                } else {
-                    _shareText = [NSString stringWithFormat:@"%@ listened to %@ on #Tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"podcast"] objectForKey:@"collectionName"], _shareLink];
-                }
-            }
             else {
                 // story event
-                NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:longPressIndexPath.section] objectAtIndex:longPressIndexPath.row]];
+                NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_longPressIndexPath.section] objectAtIndex:_longPressIndexPath.row]];
+                _timestamp = [eventDict objectForKey:@"timestamp"];
+                NSString *playFromString = [NSString stringWithFormat:@"Play from %@", _timestamp];
                 //NSLog(@"event dict: %@", eventDict);
                 NSString *type = [eventDict objectForKey:@"type"];
                 if ([type isEqualToString:@"clip"]) {
-                    options = @[@"Share this clip", @"Copy link to clip"];
+                    options = @[@"Share this clip", @"Copy link to clip", playFromString];
                     NSString *clipShortlink = [eventDict objectForKey:@"shortlink"];
                     _shareLink = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, clipShortlink];
                     _shareText = [NSString stringWithFormat:@"Here's a clip from %@: %@", [[headerDict objectForKey:@"podcast"] objectForKey:@"collectionName"], _shareLink];
                 } else {
-                    options = @[@"Share this interaction", @"Copy link to interaction"];
+                    options = @[@"Share this interaction", @"Copy link to interaction", playFromString];
                     _shareLink = [headerDict objectForKey:@"storyLink"];
                     NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
                     if ([uid isEqualToString:_tung.tungId]) {
@@ -470,7 +463,7 @@ NSString static *podcastArtDir;
                         _shareText = [NSString stringWithFormat:@"%@ listened to %@ on #Tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"podcast"] objectForKey:@"collectionName"], _shareLink];
                     }
                 }
-                // TODO: add "flag for moderation" destructive option
+                // TODO: add "flag for moderation" or "delete clip/comment" destructive option
             }
             UIActionSheet *storyOptionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:nil otherButtonTitles:nil];
             for (NSString *option in options) {
@@ -495,6 +488,38 @@ NSString static *podcastArtDir;
         }
         else if (buttonIndex == 2) { // copy link
             [[UIPasteboard generalPasteboard] setString:_shareLink];
+        }
+        else if (buttonIndex == 3) { // play from timestamp
+            NSDictionary *headerDict = [[_storiesArray objectAtIndex:_longPressIndexPath.section] objectAtIndex:0];
+            NSDictionary *episodeDict = [headerDict objectForKey:@"episode"];
+            NSDictionary *podcastDict = [headerDict objectForKey:@"podcast"];
+
+            NSString *urlString = [episodeDict objectForKey:@"url"];
+            
+            if (urlString) {
+                NSURL *url = [NSURL URLWithString:urlString];
+                
+                if (_tung.playQueue.count > 0 && [[_tung.playQueue objectAtIndex:0] isEqual:url]) {
+                    // already listening
+                    float secs = [TungCommonObjects convertTimestampToSeconds:_timestamp];
+                    CMTime time = CMTimeMake((secs * 100), 100);
+                    [_tung.player seekToTime:time];
+                }
+                else {
+                    // different episode
+                    [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
+                    
+                    NSDictionary *feedDict = [TungPodcast getFeedWithDict:podcastDict forceNewest:YES];
+                    NSArray *feedArray = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
+                    // set now playing feed and podcast dict
+                    [_tung assignCurrentFeed:feedArray];
+                    _tung.npPodcastDict = [podcastDict mutableCopy];
+                    _tung.playFromTimestamp = _timestamp;
+                    
+                    // play
+                    [_tung queueAndPlaySelectedEpisode:urlString];
+                }
+            }
         }
     }
 }
@@ -523,7 +548,7 @@ NSString static *podcastArtDir;
 -(void) playPause {
     // toggle play/pause
     if (_selectedSectionIndex == _activeSectionIndex && _selectedRowIndex == _activeRowIndex) {
-        if ([_clipPlayer isPlaying]) {
+        if ([_tung.clipPlayer isPlaying]) {
             [self pauseClipPlayback];
         } else {
             [self playbackClip];
@@ -532,10 +557,10 @@ NSString static *podcastArtDir;
     // different clip selected than the one playing
     else {
         [self stopClipPlayback];
-        _clipPlayer = nil;
+        _tung.clipPlayer = nil;
     }
     // start playing new clip
-    if (_clipPlayer == nil) {
+    if (_tung.clipPlayer == nil) {
         
         // check for cached audio data and init player
         NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_selectedSectionIndex] objectAtIndex:_selectedRowIndex]];
@@ -550,11 +575,11 @@ NSString static *podcastArtDir;
             [clipData writeToFile:clipFilepath atomically:YES];
         }
         NSError *playbackError;
-        _clipPlayer = [[AVAudioPlayer alloc] initWithData:clipData error:&playbackError];
+        _tung.clipPlayer = [[AVAudioPlayer alloc] initWithData:clipData error:&playbackError];
         
         // play
-        if (_clipPlayer != nil) {
-            _clipPlayer.delegate = self;
+        if (_tung.clipPlayer != nil) {
+            _tung.clipPlayer.delegate = self;
             // PLAY
             [self playbackClip];
             
@@ -569,8 +594,8 @@ NSString static *podcastArtDir;
     
     [_tung playerPause];
     
-    [_clipPlayer prepareToPlay];
-    [_clipPlayer play]; // play on, player
+    [_tung.clipPlayer prepareToPlay];
+    [_tung.clipPlayer play]; // play on, player
     
     _activeSectionIndex = _selectedSectionIndex;
     _activeRowIndex = _selectedRowIndex;
@@ -583,15 +608,11 @@ NSString static *podcastArtDir;
 }
 
 - (void) stopClipPlayback {
-    NSLog(@"stop");
+    //NSLog(@"stop");
     // stop "onEnterFrame"
     [_onEnterFrame invalidate];
     //NSLog(@"%@",[NSThread callStackSymbols]);
-    if ([_clipPlayer isPlaying]) {
-        
-        [_clipPlayer stop];
-        [_clipPlayer setCurrentTime:0];
-    }
+    [_tung stopClipPlayback];
     
     // reset GUI
     NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_activeSectionIndex] objectAtIndex:_activeRowIndex]];
@@ -604,17 +625,17 @@ NSString static *podcastArtDir;
 
 - (void) pauseClipPlayback {
 
-    if ([_clipPlayer isPlaying]) [_clipPlayer pause];
+    if ([_tung.clipPlayer isPlaying]) [_tung.clipPlayer pause];
     // stop "onEnterFrame"
     [_onEnterFrame invalidate];
     
 }
 
 - (void) updateView {
-    float progress = _clipPlayer.currentTime / _clipPlayer.duration;
+    float progress = _tung.clipPlayer.currentTime / _tung.clipPlayer.duration;
     float arc = 360 - (360 * progress);
     _activeClipProgressView.arc = arc;
-    _activeClipProgressView.seconds = [NSString stringWithFormat:@":%02ld", lroundf(_clipPlayer.duration - _clipPlayer.currentTime)];
+    _activeClipProgressView.seconds = [NSString stringWithFormat:@":%02ld", lroundf(_tung.clipPlayer.duration - _tung.clipPlayer.currentTime)];
     [_activeClipProgressView setNeedsDisplay];
 }
 

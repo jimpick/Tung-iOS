@@ -44,7 +44,6 @@
 @property CGFloat screenWidth;
 
 // playing clips
-@property (nonatomic, strong) AVAudioPlayer *clipPlayer;
 @property (strong, nonatomic) CADisplayLink *onEnterFrame;
 @property (strong, nonatomic) ClipProgressView *activeClipProgressView;
 - (void) playPause;

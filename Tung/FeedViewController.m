@@ -96,7 +96,6 @@
 
 #pragma mark - tungObjects/tungPodcasts delegate methods
 
-// ControlButtonDelegate required method
 - (void) initiateSearch {
     [_podcast.searchController setActive:YES];
     
@@ -112,7 +111,7 @@
     [_podcast.searchController.searchBar becomeFirstResponder];
     
 }
-// ControlButtonDelegate required method
+
 -(void) dismissPodcastSearch {
     
     CATransition *animation = [CATransition animation];

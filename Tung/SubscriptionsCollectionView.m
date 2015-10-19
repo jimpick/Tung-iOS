@@ -108,7 +108,7 @@ static NSString * const reuseIdentifier = @"artCell";
 
 #pragma mark - tungObjects/tungPodcasts delegate methods
 
-// ControlButtonDelegate required method
+
 - (void) initiateSearch {
     if ([_findPodcastsHere isDescendantOfView:self.view]) {
         [UIView animateWithDuration:.35
@@ -135,7 +135,7 @@ static NSString * const reuseIdentifier = @"artCell";
     [_podcast.searchController.searchBar becomeFirstResponder];
     
 }
-// ControlButtonDelegate required method
+
 -(void) dismissPodcastSearch {
     if ([_findPodcastsHere isDescendantOfView:self.view]) {
         [UIView animateWithDuration:.35

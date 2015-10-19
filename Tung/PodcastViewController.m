@@ -107,7 +107,7 @@
 
 - (void) getFeed:(BOOL)forceNewest {
     
-    NSDictionary *dict = [_podcast getFeedWithDict:_podcastDict forceNewest:forceNewest];
+    NSDictionary *dict = [TungPodcast getFeedWithDict:_podcastDict forceNewest:forceNewest];
     
     if (dict) {
         //NSLog(@"podcast feed dict: %@", dict);
@@ -126,13 +126,7 @@
     // remove spinner
     _episodeView.tableView.backgroundView = nil;
     
-    id item = [[dict objectForKey:@"channel"] objectForKey:@"item"];
-    if ([item isKindOfClass:[NSArray class]]) {
-        NSArray *array = item;
-        _episodeView.episodeArray = [array mutableCopy];
-    } else {
-        _episodeView.episodeArray = [@[item] mutableCopy];
-    }
+    _episodeView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:dict];
     // cache the feed if we didn't pull it from cache
     if (!cached)
         [_tung cacheFeed:dict forEntity:_podcast.podcastEntity];

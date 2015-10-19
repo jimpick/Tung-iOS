@@ -183,6 +183,8 @@ CGFloat screenWidth;
     }
 }
 
+#pragma mark - specific to Profile View
+
 - (void) determineTableHeaderText {
     NSString *headerText;
     if ([_stories.requestStatus isEqualToString:@"finished"]) {

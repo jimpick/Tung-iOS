@@ -147,7 +147,7 @@
     return (_player && _player.rate > 0.0f);
 }
 - (void) playerPlay {
-    if (_playQueue.count > 0) {
+    if (_playQueue.count > 0) {        
         [_player play];
         _shouldStayPaused = NO;
         [self setControlButtonStateToPause];
@@ -177,6 +177,14 @@
     } else {
         CMTime time = CMTimeMake(0, 1);
         [self seekToTime:time];
+    }
+}
+
+- (void) stopClipPlayback {
+    if (_clipPlayer && [_clipPlayer isPlaying]) {
+        
+        [_clipPlayer stop];
+        [_clipPlayer setCurrentTime:0];
     }
 }
 
@@ -211,21 +219,25 @@
                 // check for track progress
                 float secs = 0;
                 CMTime time;
-                if (_npEpisodeEntity.trackProgress.floatValue > 0 && _npEpisodeEntity.trackPosition.floatValue < 1) {
+                if (_playFromTimestamp) {
+                    secs = [TungCommonObjects convertTimestampToSeconds:_playFromTimestamp];
+                    time = CMTimeMake((secs * 100), 100);
+                }
+                else if (_npEpisodeEntity.trackProgress.floatValue > 0 && _npEpisodeEntity.trackPosition.floatValue < 1) {
                     secs = _npEpisodeEntity.trackProgress.floatValue;
                     time = CMTimeMake((secs * 100), 100);
                 }
                 // play
                 if (secs > 0) {
                     
-                    NSLog(@"found track progress, seeking to time: %f", secs);
+                    NSLog(@"seeking to time: %f", secs);
                     [_trackInfo setObject:[NSNumber numberWithFloat:secs] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
                     [_player seekToTime:time completionHandler:^(BOOL finished) {
                         [self playerPlay];
                         
                     }];
                 } else {
-                    NSLog(@"No track progress, play from beginning");
+                    NSLog(@"play from beginning");
                     [_trackInfo setObject:[NSNumber numberWithFloat:0] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
                     //[self playerPlay];
                     
@@ -368,6 +380,8 @@
     if (_playQueue.count > 0) {
         NSLog(@"play url");
         
+        [self stopClipPlayback];
+        
         _npViewSetupForCurrentEpisode = NO;
         _shouldStayPaused = NO;
         _totalSeconds = 0;
@@ -494,6 +508,7 @@
         [self savePositionForNowPlaying];
         NSLog(@"ejected current episode");
         [_playQueue removeObjectAtIndex:0];
+        _playFromTimestamp = nil;
     }
 }
 
@@ -3232,9 +3247,9 @@ static NSDateFormatter *dayDateFormatter = nil;
     
 }
 
-+ (double) convertDurationStringToSeconds:(NSString *)duration {
++ (double) convertTimestampToSeconds:(NSString *)timestamp {
     
-    NSArray *components = [duration componentsSeparatedByString:@":"];
+    NSArray *components = [timestamp componentsSeparatedByString:@":"];
     double result = 0;
     if (components.count > 2) {
         NSInteger hours = [[components objectAtIndex:0] integerValue];
