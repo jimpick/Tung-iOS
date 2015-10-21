@@ -30,6 +30,7 @@
     self.tableView.contentInset = UIEdgeInsetsZero;// UIEdgeInsetsMake(0, 0, 0, 0);
     self.tableView.separatorColor = [UIColor whiteColor];
     
+    // table bkgd
     UIActivityIndicatorView *tableSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
     tableSpinner.alpha = 1;
     [tableSpinner startAnimating];
@@ -58,32 +59,70 @@
     }
 }
 
-static NSDateFormatter *airDateFormatter = nil;
-static NSString *cellIdentifier = @"CommentCell";
+static NSString *cellIdentifierTheirs = @"commentCellTheirs";
+static NSString *cellIdentifierMine = @"commentCellMine";
 
 - (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
-    CommentCell *commentCell = (CommentCell *)cell;
+    NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
+    NSString *idString = [[[commentDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
     
+    if ([idString isEqualToString:_tung.tungId]) {
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifierMine];
+        [self configureCommentMineCell:cell forIndexPath:indexPath];
+        return cell;
+    } else {
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifierTheirs];
+        [self configureCommentTheirsCell:cell forIndexPath:indexPath];
+        return cell;
+    }
+    
+}
+
+static CGFloat commentBubbleMargins = 27;
+
+- (void) configureCommentMineCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
+    
+    CommentCellMine *commentCell = (CommentCellMine *)cell;
     NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
     
     commentCell.commentLabel.text = [commentDict objectForKey:@"comment"];
+    commentCell.timestampLabel.text = [commentDict objectForKey:@"timestamp"];
     
-    NSString *idString = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
+    CGSize commentLabelSize = [self getCommentSizeForIndexPath:indexPath];
+    CGFloat bkgdWidth = commentLabelSize.width + commentBubbleMargins;
+    commentCell.commentBkgdWidthConstraint.constant = bkgdWidth;
+    [commentCell.contentView layoutIfNeeded];
     
-    if ([idString isEqualToString:_tung.tungId]) {
-    	// mine
-    	commentCell.usernameLabel.text = @"";
-        commentCell.accessoryType = UITableViewCellAccessoryNone;
-    }
-    else {
-        // theirs
-        commentCell.usernameLabel.text = [[commentDict objectForKey:@"user"] objectForKey:@"username"];
-        commentCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-    }
+    // mine
+    commentCell.accessoryType = UITableViewCellAccessoryNone;
+    commentCell.commentBkgd.type = kCommentBkgdTypeMine;
+
+    [commentCell.commentBkgd setNeedsDisplay];
     
-    return commentCell;
+}
+
+- (void) configureCommentTheirsCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
+    
+    CommentCell *commentCell = (CommentCell *)cell;
+    NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
+    
+    commentCell.commentLabel.text = [commentDict objectForKey:@"comment"];
+    commentCell.timestampLabel.text = [commentDict objectForKey:@"timestamp"];
+    
+    CGSize commentLabelSize = [self getCommentSizeForIndexPath:indexPath];
+    CGFloat bkgdWidth = commentLabelSize.width + commentBubbleMargins;
+    commentCell.commentBkgdWidthConstraint.constant = bkgdWidth;
+    [commentCell.contentView layoutIfNeeded];
+    
+    // theirs
+    commentCell.commentLabel.textColor = [UIColor darkTextColor];
+    commentCell.usernameLabel.text = [[commentDict objectForKey:@"user"] objectForKey:@"username"];
+    commentCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+    commentCell.commentBkgd.type = kCommentBkgdTypeTheirs;
+
+    [commentCell.commentBkgd setNeedsDisplay];
+    
 }
 
 #pragma mark - Table view delegate methods
@@ -119,9 +158,7 @@ UILabel *prototypeLabel;
 static CGFloat labelWidth;
 static double screenWidth;
 
--(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    
-    CGFloat defaultEventCellHeight = 40;
+-(CGSize) getCommentSizeForIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
     if (!prototypeLabel) {
         prototypeLabel = [[UILabel alloc] init];
@@ -129,12 +166,27 @@ static double screenWidth;
         prototypeLabel.numberOfLines = 0;
     }
     if (!screenWidth) screenWidth = [[UIScreen mainScreen]bounds].size.width;
-    if (!labelWidth) { labelWidth = screenWidth -110 - 4; }// right margin, left margin
-
+    if (!labelWidth) { labelWidth = screenWidth - 130 - 8; } // right margin, left margin
+    
     prototypeLabel.text = [commentDict objectForKey:@"comment"];
     CGSize labelSize = [prototypeLabel sizeThatFits:CGSizeMake(labelWidth, 400)];
-    CGFloat diff = labelSize.height - 18; // 18 = single-line label height
-    return defaultEventCellHeight + diff;
+    //NSLog(@"label size for row %ld: %@", (long)indexPath.row, NSStringFromCGSize(labelSize));
+    return labelSize;
+}
+
+-(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    CGSize labelSize = [self getCommentSizeForIndexPath:indexPath];
+    CGFloat totalHeight = labelSize.height;
+    
+    NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
+    NSString *idString = [[[commentDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+    // if theirs
+    if (![idString isEqualToString:_tung.tungId]) {
+        totalHeight += 16; // timestamp label height and space
+    }
+    totalHeight += 17; // comment bkgd top and bottom margins and extra point
+    return totalHeight;
 }
 
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
@@ -173,7 +225,6 @@ static double screenWidth;
                               NewerThan:(NSNumber *)afterTime
                             orOlderThan:(NSNumber *)beforeTime {
     
-    NSLog(@"request for comments newer than: %@, or older than: %@", afterTime, beforeTime);
     self.requestStatus = @"initiated";
     
     NSURL *commentsURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/comments.php", _tung.apiRootUrl]];
@@ -187,6 +238,8 @@ static double screenWidth;
                              @"newerThan": afterTime,
                              @"olderThan": beforeTime
                              };
+    
+    NSLog(@"request for comments with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [feedRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -219,7 +272,7 @@ static double screenWidth;
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
                         NSArray *newComments = jsonData;
-                        NSLog(@"new posts count: %lu", (unsigned long)newComments.count);
+                        NSLog(@"new comments count: %lu", (unsigned long)newComments.count);
                         
                         // end refreshing
                         self.tableView.backgroundView = nil;
@@ -250,7 +303,7 @@ static double screenWidth;
                             _loadMoreIndicator.alpha = 0;
                             
                             if (newComments.count == 0) {
-                                NSLog(@"no more posts to get");
+                                NSLog(@"no more comments to get");
                                 _reachedEndOfPosts = YES;
                                 // hide footer
                                 //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_commentsArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
@@ -277,9 +330,14 @@ static double screenWidth;
                         }
                         // initial request
                         else {
-                            _commentsArray = [newComments mutableCopy];
-                            NSLog(@"got posts. storiesArray count: %lu", (unsigned long)[_commentsArray count]);
-                            //NSLog(@"%@", _commentsArray);
+                            if (newComments.count > 0) {
+                                _noResults = NO;
+                                _commentsArray = [newComments mutableCopy];
+                                NSLog(@"got comments. commentsArray count: %lu", (unsigned long)[_commentsArray count]);
+                                //NSLog(@"%@", _commentsArray);
+                            } else {
+                                _noResults = YES;
+                            }
                             [self.tableView reloadData];
                         }
                         

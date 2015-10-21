@@ -31,6 +31,7 @@
 @property (strong, nonatomic) NSTimer *usernameCheckTimer;
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (nonatomic, assign) BOOL working;
+@property (strong, nonatomic) UserEntity *userEntity;
 
 @end
 
@@ -64,8 +65,7 @@ static UIImage *iconRedX;
         self.navigationItem.leftBarButtonItem.title = @"Cancel";
         _refreshAvatarBtn.hidden = NO;
         _profileData = [[_tung getLoggedInUserData] mutableCopy];
-        _field_username.enabled = NO;
-        _field_username.textColor = [UIColor colorWithRed:148.0/255 green:230.0/255 blue:255.0/255 alpha:1]; // disabled sayIt color
+        _userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
         [self setAvatarFromExistingAvatar];
     }
     // fields array
@@ -200,54 +200,6 @@ static UIImage *iconRedX;
     return YES;
 }
 
-#pragma mark - misc methods
-
-- (void) updateProfileData {
-    
-    NSLog(@"update profile data");
-    
-    // update profileData with user inputted values
-    [_profileData setValue:_field_name.text forKey:@"name"];
-    // [_profileData setValue:_field_username.text forKey:@"username"];
-    [_profileData setValue:_field_location.text forKey:@"location"];
-    [_profileData setValue:_field_bio.text forKey:@"bio"];
-    [_profileData setValue:_field_url.text forKey:@"url"];
-    [_profileData setValue:_field_email.text forKey:@"email"];
-    
-    [TungCommonObjects saveUserWithDict:_profileData];
-    
-    // make updates server-side
-    self.navigationItem.title = @"Saving...";
-    
-    NSDictionary *updates = @{ @"name": _field_name.text,
-                               @"email": _field_email.text,
-                               @"location": _field_location.text,
-                               @"bio": _field_bio.text,
-                               @"url": _field_url.text,
-                               @"phone": _field_phone.text };
-    
-    [_tung updateUserWithDictionary:updates withCallback:^(NSDictionary *jsonData) {
-        if ([[jsonData objectForKey:@"nModified"] intValue] > 0) {
-            NSLog(@"success updating user");
-            self.navigationItem.title = @"Saved";
-            [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(leftBarItem:) userInfo:nil repeats:NO];
-        }
-        else if ([jsonData objectForKey:@"error"]) {
-            NSLog(@"error updating user: %@", [jsonData objectForKey:@"error"]);
-            self.navigationItem.title = @"Edit Profile";
-            UIAlertView *updateProfileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[jsonData objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-            [updateProfileErrorAlert show];
-        } else {
-            NSLog(@"unknown error updating user: %@", jsonData);
-            self.navigationItem.title = @"Edit Profile";
-            UIAlertView *updateProfileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:@"An unknown error occurred." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-            [updateProfileErrorAlert show];
-        }
-    }];
-    
-    NSLog(@"save profile data: %@", _profileData);
-}
-
 - (IBAction)leftBarItem:(id)sender {
     
     if ([_purpose isEqualToString:@"signup"])
@@ -270,12 +222,64 @@ static UIImage *iconRedX;
         [errorsAlert show];
     } else {
         if ([_purpose isEqualToString:@"signup"]) {
-        	[self performSegueWithIdentifier:@"finishSignUp" sender:self];
+            [self performSegueWithIdentifier:@"finishSignUp" sender:self];
         } else {
             [self updateProfileData];
         }
     }
 }
+
+#pragma mark - Update request
+
+- (void) updateProfileData {
+    
+    NSLog(@"update profile data");
+    
+    // make updates server-side
+    self.navigationItem.title = @"Saving...";
+    
+    NSDictionary *updates = @{ @"name": _field_name.text,
+                               @"username": _field_username.text,
+                               @"email": _field_email.text,
+                               @"location": _field_location.text,
+                               @"bio": _field_bio.text,
+                               @"url": _field_url.text };
+    
+    [_tung updateUserWithDictionary:updates withCallback:^(NSDictionary *responseDict) {
+        if ([responseDict objectForKey:@"success"]) {
+            self.navigationItem.title = @"Saved";
+            // update profileData with user inputted values
+            [_profileData setValue:_field_name.text forKey:@"name"];
+            [_profileData setValue:_field_username.text forKey:@"username"];
+            [_profileData setValue:_field_location.text forKey:@"location"];
+            [_profileData setValue:_field_bio.text forKey:@"bio"];
+            [_profileData setValue:_field_url.text forKey:@"url"];
+            [_profileData setValue:_field_email.text forKey:@"email"];
+            
+            [TungCommonObjects saveUserWithDict:_profileData];
+            
+            _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES];
+            _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
+            
+            [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(leftBarItem:) userInfo:nil repeats:NO];
+        }
+        else if ([responseDict objectForKey:@"error"]) {
+            NSLog(@"error updating user: %@", [responseDict objectForKey:@"error"]);
+            self.navigationItem.title = @"Edit Profile";
+            UIAlertView *updateProfileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+            [updateProfileErrorAlert show];
+        } else {
+            NSLog(@"unknown error updating user: %@", responseDict);
+            self.navigationItem.title = @"Edit Profile";
+            UIAlertView *updateProfileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:@"An unknown error occurred." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+            [updateProfileErrorAlert show];
+        }
+    }];
+    
+    NSLog(@"save profile data: %@", _profileData);
+}
+
+#pragma mark - Avatar related
 
 - (void) setAvatarFromExistingAvatar {
     
@@ -371,12 +375,13 @@ static UIImage *iconRedX;
 
 - (IBAction)updateAvatarPrompt:(id)sender {
     
-    NSDictionary *userData = [_tung getLoggedInUserData];
     NSString *account;
-    if ([[userData objectForKey:@"facebook_id"] integerValue] > 0)
+    if (_userEntity.facebook_id) {
         account = @"Facebook";
-    else
+    }
+    else {
         account = @"Twitter";
+    }
     NSString *message = [NSString stringWithFormat:@"Your avatar will be changed to the one currently being used by your %@ account. Sound good?", account];
     UIAlertView *changeAvatarConfirm = [[UIAlertView alloc] initWithTitle:@"Update Avatar?" message:message delegate:self cancelButtonTitle:@"No" otherButtonTitles:@"Yes", nil];
     changeAvatarConfirm.tag = 79;
@@ -576,10 +581,12 @@ static UIImage *iconRedX;
     }];
 }
 
+#pragma mark - form fields
+
 - (void)navigateFormFields:(id)sender {
     NSUInteger tag = 0;
     if ([sender tag]) {
-    	tag = [sender tag];
+        tag = [sender tag];
     }
     // back
     if (tag == 1) {
@@ -587,7 +594,7 @@ static UIImage *iconRedX;
         NSLog(@"back. current active field: %lu", (unsigned long)_activeFieldIndex);
         if (_activeFieldIndex == 0) {
             if ([_purpose isEqualToString:@"signup"])
-            	[self leftBarItem:nil];
+                [self leftBarItem:nil];
         } else {
             _activeFieldIndex--;
         }
@@ -598,7 +605,7 @@ static UIImage *iconRedX;
         NSLog(@"next. current active field: %lu", (unsigned long)_activeFieldIndex);
         if (_activeFieldIndex == _fields.count - 1) {
             if ([_purpose isEqualToString:@"signup"])
-            	[self rightBarItem:nil];
+                [self rightBarItem:nil];
         } else {
             _activeFieldIndex++;
         }
@@ -616,40 +623,6 @@ static UIImage *iconRedX;
     [self.tableView scrollToRowAtIndexPath:activeFieldIndexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
 }
 
-#pragma mark - Table view delegate methods
-
-- (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    
-    //NSLog(@"selected cell at row %ld", (long)[indexPath row]);
-    [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    
-    if (indexPath.row <= _fields.count && indexPath.row > 0) {
-        _activeFieldIndex = indexPath.row - 1;
-        [self makeActiveFieldFirstResponder];
-    }
-}
-
-#pragma mark - text field delegate methods
-
-- (void) textFieldDidBeginEditing:(UITextField *)textField {
-    _activeFieldIndex = textField.tag;
-    [self performAppropriateValidationOnTextField:textField];
-    // [self changeFirstResponderAndUpdateGUI];
-}
-- (void) textFieldDidEndEditing:(UITextField *)textField {
-    // momentarily hide validation icon to indicate active field changing
-    [_keyboardToolbar setItems:@[_backBarItem, _fspace, _nextBarItem] animated:YES];
-}
-
-- (BOOL) textFieldShouldReturn:(UITextField *)textField {
-    [self navigateFormFields:nil];
-    return NO;
-}
-
-- (void)textFieldDidChange:(UITextField *)textField {
-    // validate every keystroke
-    [self performAppropriateValidationOnTextField:textField];
-}
 
 -(void) performAppropriateValidationOnTextField:(UITextField *)textField {
     // validation
@@ -712,6 +685,12 @@ static UIImage *iconRedX;
 
 -(void) checkUsernameAvailability {
     NSLog(@"username check");
+    // existing username is not invalid
+    if ([_profileData objectForKey:@"username"]) {
+        if ([[_profileData objectForKey:@"username"] isEqualToString:_field_username.text]) {
+            return;
+        }
+    }
     NSString *urlAsString = [NSString stringWithFormat:@"%@users/username_check.php?username=%@", _tung.apiRootUrl, _field_username.text];
     NSURL *checkUsernameURL = [NSURL URLWithString:urlAsString];
     NSMutableURLRequest *checkUsernameRequest = [NSMutableURLRequest requestWithURL:checkUsernameURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
@@ -816,6 +795,40 @@ static UIImage *iconRedX;
         [_keyboardToolbar setItems:@[_backBarItem, _fspace, _nextBarItem] animated:YES];
         [_fieldErrors removeObjectForKey:@"phone"];
     }
+}
+#pragma mark - Table view delegate methods
+
+- (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    //NSLog(@"selected cell at row %ld", (long)[indexPath row]);
+    [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    
+    if (indexPath.row <= _fields.count && indexPath.row > 0) {
+        _activeFieldIndex = indexPath.row - 1;
+        [self makeActiveFieldFirstResponder];
+    }
+}
+
+#pragma mark - text field delegate methods
+
+- (void) textFieldDidBeginEditing:(UITextField *)textField {
+    _activeFieldIndex = textField.tag;
+    [self performAppropriateValidationOnTextField:textField];
+    // [self changeFirstResponderAndUpdateGUI];
+}
+- (void) textFieldDidEndEditing:(UITextField *)textField {
+    // momentarily hide validation icon to indicate active field changing
+    [_keyboardToolbar setItems:@[_backBarItem, _fspace, _nextBarItem] animated:YES];
+}
+
+- (BOOL) textFieldShouldReturn:(UITextField *)textField {
+    [self navigateFormFields:nil];
+    return NO;
+}
+
+- (void)textFieldDidChange:(UITextField *)textField {
+    // validate every keystroke
+    [self performAppropriateValidationOnTextField:textField];
 }
 
 #pragma mark - text view delegate methods

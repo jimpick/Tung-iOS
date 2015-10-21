@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "TungCommonObjects.h"
 #import "CommentCell.h"
+#import "CommentCellMine.h"
 #import "EpisodeEntity.h"
 
 @interface CommentsTableViewController : UITableViewController

@@ -65,7 +65,7 @@ CGFloat screenWidth;
     _profileHeader = [[ProfileHeaderView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 228)];
 	[self.view addSubview:_profileHeader];
     _profileHeader.translatesAutoresizingMaskIntoConstraints = NO;
-    CGFloat topConstraint = 0;
+    CGFloat topConstraint = 64;
     CGFloat headerViewHeight = 223;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_profileHeader attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeTop multiplier:1 constant:topConstraint]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_profileHeader attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
@@ -109,7 +109,7 @@ CGFloat screenWidth;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
-    if ([self respondsToSelector:@selector(edgesForExtendedLayout)]) self.edgesForExtendedLayout = UIRectEdgeBottom;
+    //if ([self respondsToSelector:@selector(edgesForExtendedLayout)]) self.edgesForExtendedLayout = UIRectEdgeBottom;
     
     // table header toolbar
     UIToolbar *headerBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 44)];
@@ -126,24 +126,8 @@ CGFloat screenWidth;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:headerBar.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:headerBar.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
-    [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
-        if (reachable) {
-            if (_tung.sessionId && _tung.sessionId.length > 0) {
-                [self requestPageData];
-            }
-            else {
-                [_tung getSessionWithCallback:^{
-                    [self requestPageData];
-                }];
-            }
-        }
-        // unreachable
-        else {
-            UIAlertView *noReachabilityAlert = [[UIAlertView alloc] initWithTitle:@"No Connection" message:@"tung requires an internet connection" delegate:self cancelButtonTitle:@"Retry" otherButtonTitles:nil];
-            [noReachabilityAlert setTag:49];
-            [noReachabilityAlert show];
-        }
-    }];
+	// get data in viewDidAppear
+    _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES];
     
 }
 
@@ -160,6 +144,10 @@ CGFloat screenWidth;
     
     // watch request status so we can update table header
     [self addObserver:self forKeyPath:@"stories.requestStatus" options:NSKeyValueObservingOptionNew context:nil];
+    
+    if (_tung.feedNeedsRefresh.boolValue || _tung.profileNeedsRefresh) {
+        [self requestPageData];
+    }
 }
 
 - (void) viewWillDisappear:(BOOL)animated {
@@ -168,9 +156,7 @@ CGFloat screenWidth;
     @try {
     	[self removeObserver:self forKeyPath:@"stories.requestStatus"];
     }
-    @catch (id exception) {
-        
-    }
+    @catch (id exception) {}
     
 }
 
@@ -215,6 +201,7 @@ CGFloat screenWidth;
             [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
                 if (jsonData != nil) {
                     NSDictionary *responseDict = jsonData;
+                    _tung.profileNeedsRefresh = [NSNumber numberWithBool:NO];
                     if ([responseDict objectForKey:@"user"]) {
                         _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
                         [self updateUserFollowingData];
@@ -228,6 +215,7 @@ CGFloat screenWidth;
             [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
                 if (jsonData != nil) {
                     NSDictionary *responseDict = jsonData;
+                    _tung.profileNeedsRefresh = [NSNumber numberWithBool:NO];
                     if ([responseDict objectForKey:@"user"]) {
                         NSLog(@"got user: %@", [responseDict objectForKey:@"user"]);
                         [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
@@ -245,6 +233,7 @@ CGFloat screenWidth;
             if (jsonData != nil) {
                 NSDictionary *responseDict = jsonData;
                 if ([responseDict objectForKey:@"user"]) {
+                    _tung.profileNeedsRefresh = [NSNumber numberWithBool:NO];
                     _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
                     NSLog(@"profiled user data %@", _profiledUserData);
                     // navigation bar title
@@ -265,7 +254,7 @@ CGFloat screenWidth;
 - (void) setUpProfileHeaderViewForData {
     
     // basic info web view
-    NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:0; color:white; font: .9em/1.4em -apple-system, Helvetica; } a { color:rgba(255,255,255,.6); } .name { font-size:1.1em; } .location { color:rgba(0,0,0,.4) } table { width:100%%; height:100%%; border-spacing:0; border-collapse:collapse; border:none; } td { vertical-align:middle; }</style>\n"];
+    NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { text-align:center; margin:0; color:white; font: .9em/1.4em -apple-system, Helvetica; } a { color:rgba(255,255,255,.6); } .name { font-size:1.1em; } .location { color:rgba(0,0,0,.4) } table { width:100%%; height:100%%; border-spacing:0; border-collapse:collapse; border:none; } td { vertical-align:middle; }</style>\n"];
     NSString *basicInfoBody = [NSString stringWithFormat:@"<table><td><p><span class=\"name\">%@</span>", [_profiledUserData objectForKey:@"name"]];
     NSString *location = [_profiledUserData objectForKey:@"location"];
     if (location.length > 0) {

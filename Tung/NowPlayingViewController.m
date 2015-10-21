@@ -12,6 +12,7 @@
 #import "BrowserViewController.h"
 #import "DescriptionWebViewController.h"
 #import "EpisodeTableViewController.h"
+#import "CommentsTableViewController.h"
 #import "CommentAndPostView.h"
 
 #include <AudioToolbox/AudioToolbox.h>
@@ -52,6 +53,7 @@
 @property UISegmentedControl *switcher;
 @property DescriptionWebViewController *descriptionView;
 @property EpisodeTableViewController *episodeView;
+@property CommentsTableViewController *commentsView;
 @property AVAudioPlayer *audioPlayer;
 @property UILabel *nothingPlayingLabel;
 @property NSURL *urlToPass;
@@ -98,6 +100,9 @@ static NSArray *playbackRateStrings;
     // views
     _npControlsView.opacity = .4;
     _npControlsView.tintColor = [UIColor lightGrayColor];
+    _npControlsView.hidden = YES;
+    
+    _timeElapsedLabel.hidden = YES;
     
     if (!screenWidth) screenWidth = self.view.frame.size.width;
     if (!screenHeight) screenHeight = self.view.frame.size.height;
@@ -114,6 +119,7 @@ static NSArray *playbackRateStrings;
     _nothingPlayingLabel.text = @"Nothing is currently playing";
     _nothingPlayingLabel.textColor = [UIColor grayColor];
     _nothingPlayingLabel.textAlignment = NSTextAlignmentCenter;
+    _nothingPlayingLabel.hidden = YES;
     
     // header view
     _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 64, screenWidth, defaultHeaderHeight)];
@@ -126,8 +132,9 @@ static NSArray *playbackRateStrings;
     _switcherBar.opaque = YES;
     _switcherBar.translucent = NO;
     _switcherBar.backgroundColor = [UIColor whiteColor];
+    _switcherBar.hidden = YES;
     // set up segemented control
-    NSArray *switcherItems = @[@"Description", @"Episodes"];
+    NSArray *switcherItems = @[@"Description", @"Comments", @"Episodes"];
     _switcher = [[UISegmentedControl alloc] initWithItems:switcherItems];
     _switcher.tintColor = [UIColor lightGrayColor];
     _switcher.frame = CGRectMake(0, 0, self.view.bounds.size.width - 20, 28);
@@ -148,7 +155,6 @@ static NSArray *playbackRateStrings;
     _descriptionView.edgesForExtendedLayout = UIRectEdgeNone;
     [self addChildViewController:_descriptionView];
     [self.view addSubview:_descriptionView.view];
-    
     _descriptionView.webView.delegate = self;
     _descriptionView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
@@ -156,15 +162,28 @@ static NSArray *playbackRateStrings;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
+    // comments
+    _commentsView = [self.storyboard instantiateViewControllerWithIdentifier:@"commentsTableView"];
+    _commentsView.edgesForExtendedLayout = UIRectEdgeNone;
+    [self addChildViewController:_commentsView];
+    [self.view addSubview:_commentsView.view];
+    _commentsView.refreshControl = [UIRefreshControl new];
+    [_commentsView.refreshControl addTarget:self action:@selector(refreshComments:) forControlEvents:UIControlEventValueChanged];
+    _commentsView.view.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-84]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
+    // episode view starts out hidden
+    _commentsView.view.hidden = YES;
+    
     // episode view
     _episodeView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodeView"];
     _episodeView.edgesForExtendedLayout = UIRectEdgeNone;
     [self addChildViewController:_episodeView];
     [self.view addSubview:_episodeView.view];
-    
     _episodeView.refreshControl = [UIRefreshControl new];
     [_episodeView.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
-    
     _episodeView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodeView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodeView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_episodeView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-84]];
@@ -198,6 +217,7 @@ static NSArray *playbackRateStrings;
     // get keyboard height when keyboard is shown and will hide
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillAppear:) name:UIKeyboardWillShowNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillBeHidden:) name:UIKeyboardWillHideNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
     
 	playbackRateStrings = @[@".75x", @"1.0x", @"1.5x", @"2.0x"];
     
@@ -205,8 +225,6 @@ static NSArray *playbackRateStrings;
     _shareLabel.text = @"";
     _shareLabel.alpha = 0;
     _shareLabel.textColor = _tung.tungColor;
-    
-    //[self setUpViewForNothingPlaying];
 
 }
 
@@ -257,11 +275,18 @@ static NSArray *playbackRateStrings;
     UISegmentedControl *switcher = (UISegmentedControl *)sender;
     
     switch (switcher.selectedSegmentIndex) {
-        case 1: // show episode view
+        case 1: // show comments
+            _commentsView.view.hidden = NO;
+            _episodeView.view.hidden = YES;
+            _descriptionView.view.hidden = YES;
+            break;
+        case 2: // show episode view
+            _commentsView.view.hidden = YES;
             _episodeView.view.hidden = NO;
             _descriptionView.view.hidden = YES;
             break;
         default: // show description
+            _commentsView.view.hidden = YES;
             _descriptionView.view.hidden = NO;
             _episodeView.view.hidden = YES;
             break;
@@ -290,6 +315,23 @@ static NSArray *playbackRateStrings;
     }
     
 }
+
+- (void) refreshComments:(BOOL)fullRefresh {
+    
+    NSNumber *mostRecent;
+    if (fullRefresh) {
+        mostRecent = [NSNumber numberWithInt:0];
+    } else {
+        if (_commentsView.commentsArray.count > 0) {
+            [_commentsView.refreshControl beginRefreshing];
+            mostRecent = [[[_commentsView.commentsArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
+        } else { // if initial request timed out and they are trying again
+            mostRecent = [NSNumber numberWithInt:0];
+        }
+    }
+    [_commentsView requestCommentsForEpisodeEntity:_tung.npEpisodeEntity NewerThan:mostRecent orOlderThan:[NSNumber numberWithInt:0]];
+}
+
 - (void) setUpEpisodeViewForDict:(NSDictionary *)dict cached:(BOOL)cached {
     
     // remove spinner
@@ -369,6 +411,7 @@ static NSArray *playbackRateStrings;
     
     _descriptionView.view.hidden = YES;
     _episodeView.view.hidden = YES;
+    _commentsView.view.hidden = YES;
     
 }
 
@@ -397,15 +440,7 @@ static NSArray *playbackRateStrings;
         
         // switcher
         _switcherBar.hidden = NO;
-        if (_descriptionView.view.hidden && _episodeView.view.hidden) {
-            [_switcher setSelectedSegmentIndex:0];
-        }
-        else if (_descriptionView.view.hidden) {
-            [_switcher setSelectedSegmentIndex:1];
-        }
-        else {
-            [_switcher setSelectedSegmentIndex:0];
-        }
+        [_switcher setSelectedSegmentIndex:0];
         [self switchViews:_switcher];
         _switcher.tintColor = _tung.npEpisodeEntity.podcast.keyColor2;
         
@@ -424,6 +459,9 @@ static NSArray *playbackRateStrings;
         // description
         NSString *webViewString = [NSString stringWithFormat:@"%@%@%@%@", style, script, _tung.npEpisodeEntity.desc, tungEndOfFileImg];
         [_descriptionView.webView loadHTMLString:webViewString baseURL:[NSURL URLWithString:@"desc"]];
+        
+        // COMMENTS
+        [self refreshComments:YES];
         
         // episodes
         _episodeView.podcastDict = [[TungCommonObjects podcastEntityToDict:_tung.npEpisodeEntity.podcast] mutableCopy];
@@ -1379,6 +1417,18 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
     _keyboardActive = YES;
     
 }
+- (void) keyboardWillChangeFrame:(NSNotification*)notification {
+    
+    
+    if (_shareIntention && !_searchActive) {
+        
+        NSDictionary* keyboardInfo = [notification userInfo];
+        NSValue* keyboardFrameBegin = [keyboardInfo valueForKey:UIKeyboardFrameBeginUserInfoKey];
+        CGRect keyboardRect = [keyboardFrameBegin CGRectValue];
+        
+        NSLog(@"keyboard will change frame: %@", NSStringFromCGRect(keyboardRect));
+    }
+}
 
 - (void) keyboardWillBeHidden:(NSNotification*)notification {
     
@@ -1534,6 +1584,8 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
             if (success) {
                 _commentAndPostView.commentTextView.text = @"";
                 [self toggleNewComment];
+                
+                [self refreshComments:YES];
 
                 NSString *username = [[_tung getLoggedInUserData] objectForKey:@"username"];
                 NSString *link = [NSString stringWithFormat:@"%@s/%@/%@", _tung.tungSiteRootUrl, _tung.npEpisodeEntity.shortlink, username];

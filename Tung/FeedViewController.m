@@ -22,6 +22,7 @@
 @implementation FeedViewController
 
 - (void)viewDidLoad {
+    
     [super viewDidLoad];
     
     self.navigationItem.titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"tungNavBarLogo.png"]];

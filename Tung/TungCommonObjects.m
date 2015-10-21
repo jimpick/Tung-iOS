@@ -143,7 +143,7 @@
 #pragma mark - Player instance methods
 
 - (BOOL) isPlaying {
-    NSLog(@"is playing at rate: %f", _player.rate);
+    //NSLog(@"is playing at rate: %f", _player.rate);
     return (_player && _player.rate > 0.0f);
 }
 - (void) playerPlay {
@@ -516,7 +516,6 @@
 - (void) playerError:(NSNotification *)notification {
     NSLog(@"player error: %@", notification);
 }
-
 
 - (void) playNextEpisode {
     if (_playQueue.count > 1) {
@@ -1256,8 +1255,9 @@ static NSDateFormatter *ISODateInterpreter = nil;
 
 + (UserEntity *) saveUserWithDict:(NSDictionary *)userDict {
     
+    
     NSString *tungId = [userDict objectForKey:@"tung_id"];
-    NSLog(@"save user with id: %@", tungId);
+    NSLog(@"save user with dict: %@", userDict);
     UserEntity *userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:tungId];
     
     if (!userEntity) {
@@ -1362,6 +1362,21 @@ static NSDateFormatter *ISODateInterpreter = nil;
     }
 }
 
++ (void) removeAllUserData {
+    NSLog(@"remove all user data");
+    
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
+    NSError *error = nil;
+    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
+    if (result.count > 0) {
+        for (int i = 0; i < result.count; i++) {
+            [appDelegate.managedObjectContext deleteObject:[result objectAtIndex:i]];
+            NSLog(@"deleted user record at index: %d", i);
+        }
+    }
+}
+
 + (BOOL) checkForPodcastData {
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     
@@ -1430,21 +1445,6 @@ static NSDateFormatter *ISODateInterpreter = nil;
     }
     
     [self saveContextWithReason:@"removed podcast and episode data"];
-}
-
-+ (void) removeAllUserData {
-    NSLog(@"remove all user data");
-    
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
-    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
-    NSError *error = nil;
-    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
-    if (result.count > 0) {
-        for (int i = 0; i < result.count; i++) {
-            [appDelegate.managedObjectContext deleteObject:[result objectAtIndex:i]];
-            NSLog(@"deleted user record at index: %d", i);
-        }
-    }
 }
 
 #pragma mark - Key Colors
@@ -2221,7 +2221,6 @@ static NSArray *colors;
 }
 
 - (void) postComment:(NSString*)comment atTime:(NSString*)timestamp onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback  {
-    NSLog(@"post comment request");
     NSURL *postCommentRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/new-comment.php", _apiRootUrl]];
     NSMutableURLRequest *postCommentRequest = [NSMutableURLRequest requestWithURL:postCommentRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [postCommentRequest setHTTPMethod:@"POST"];
@@ -2239,6 +2238,8 @@ static NSArray *colors;
                              @"comment": comment,
                              @"timestamp": timestamp
                              };
+    
+    NSLog(@"post comment request w/ params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [postCommentRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -2498,7 +2499,7 @@ static NSArray *colors;
                     }
                 }
                 else {
-                    NSLog(@"user updated successfully");
+                    NSLog(@"user updated successfully: %@", responseDict);
                     callback(responseDict);
                 }
             }

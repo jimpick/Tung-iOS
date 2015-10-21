@@ -170,6 +170,7 @@
 		7DF9823C1BB42B6A00D76B9F /* PillButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DF9823B1BB42B6A00D76B9F /* PillButton.m */; settings = {ASSET_TAGS = (); }; };
 		7DF997A61BC6F645004FD994 /* EpisodeEntity+CoreDataProperties.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DF997A31BC6F645004FD994 /* EpisodeEntity+CoreDataProperties.m */; settings = {ASSET_TAGS = (); }; };
 		7DF997A71BC6F645004FD994 /* EpisodeEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DF997A51BC6F645004FD994 /* EpisodeEntity.m */; settings = {ASSET_TAGS = (); }; };
+		7DFDAC371BD7413E002D9F7A /* CommentCellMine.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DFDAC361BD7413E002D9F7A /* CommentCellMine.m */; settings = {ASSET_TAGS = (); }; };
 		7DFE85A1199AB143000379B6 /* btn-profile-plain-down@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DFE859F199AB143000379B6 /* btn-profile-plain-down@2x.png */; };
 		7DFE85A2199AB143000379B6 /* btn-profile-plain@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DFE85A0199AB143000379B6 /* btn-profile-plain@2x.png */; };
 /* End PBXBuildFile section */
@@ -412,6 +413,8 @@
 		7DF997A31BC6F645004FD994 /* EpisodeEntity+CoreDataProperties.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "EpisodeEntity+CoreDataProperties.m"; sourceTree = "<group>"; };
 		7DF997A41BC6F645004FD994 /* EpisodeEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodeEntity.h; sourceTree = "<group>"; };
 		7DF997A51BC6F645004FD994 /* EpisodeEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodeEntity.m; sourceTree = "<group>"; };
+		7DFDAC351BD7412C002D9F7A /* CommentCellMine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CommentCellMine.h; sourceTree = "<group>"; };
+		7DFDAC361BD7413E002D9F7A /* CommentCellMine.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CommentCellMine.m; sourceTree = "<group>"; };
 		7DFE859F199AB143000379B6 /* btn-profile-plain-down@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "btn-profile-plain-down@2x.png"; sourceTree = "<group>"; };
 		7DFE85A0199AB143000379B6 /* btn-profile-plain@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "btn-profile-plain@2x.png"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -576,6 +579,8 @@
 				7D4B25991A0AE6B20035FD35 /* ProfileListCell.m */,
 				7DCAC60019FEF81A004B6182 /* FollowersCell.h */,
 				7DCAC60119FEF81A004B6182 /* FollowersCell.m */,
+				7DFDAC351BD7412C002D9F7A /* CommentCellMine.h */,
+				7DFDAC361BD7413E002D9F7A /* CommentCellMine.m */,
 				7D1F0B641BD12CEF001C9A9D /* CommentCell.h */,
 				7D1F0B651BD12CEF001C9A9D /* CommentCell.m */,
 				7D12A4F71A01A08700A9A004 /* ProfileNavigationController.h */,
@@ -954,6 +959,7 @@
 				7D4F35361AB89DB40090EE81 /* CCColorCube.m in Sources */,
 				7D1F0B691BD14F0A001C9A9D /* CommentBkgdView.m in Sources */,
 				7DF2FAD11AF3BE3F004C66E6 /* SubscriptionViewCell.m in Sources */,
+				7DFDAC371BD7413E002D9F7A /* CommentCellMine.m in Sources */,
 				7D12D5C61B17429E00532FC0 /* NowPlayingControlView.m in Sources */,
 				7DE0949E1BC1C20F005B596D /* ProfileHeaderView.m in Sources */,
 				7DA2124C1AFA8A7F00C619F9 /* NowPlayingViewController.m in Sources */,
