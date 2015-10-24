@@ -8,6 +8,7 @@
 
 #import <UIKit/UIKit.h>
 #import "CircleButton.h"
+#import "AppDelegate.h"
 
 @interface HeaderView : UIView
 
@@ -17,7 +18,11 @@
 @property (strong, nonatomic) IBOutlet UILabel *subTitleLabel;
 @property (strong, nonatomic) IBOutlet CircleButton *subscribeButton;
 @property (strong, nonatomic) IBOutlet UILabel *descriptionLabel;
+@property (strong, nonatomic) IBOutlet CircleButton *largeButton;
 @property NSLayoutConstraint *heightConstraint;
 @property BOOL isConstrained;
+
+-(void) setUpHeaderViewForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity;
+-(void) sizeAndConstrainHeaderViewInViewController:(UIViewController *)vc;
 
 @end

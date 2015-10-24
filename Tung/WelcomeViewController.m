@@ -47,6 +47,9 @@
     _working = NO;
     _firstAppearance = YES;
     
+    _btn_signUpWithTwitter.type = kSignUpTypeTwitter;
+    _btn_signUpWithFacebook.type = kSignUpTypeFacebook;
+    
     _tung = [TungCommonObjects establishTungObjects];
     
     // check reachability

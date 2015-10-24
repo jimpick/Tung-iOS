@@ -15,7 +15,6 @@
 #import <Foundation/Foundation.h>
 #import "JPXMLtoDictionary.h"
 #import "HeaderView.h"
-#import "PodcastEntity.h"
 #import "EpisodeEntity.h"
 
 @class TungCommonObjects;
@@ -54,19 +53,18 @@
 @property (nonatomic, assign) NSInteger page;
 @property (strong, nonatomic) NSFetchedResultsController *resultsController;
 @property NSOperationQueue *feedPreloadQueue;
-@property PodcastEntity *podcastEntity;
 
-// instance methods
-+ (NSDictionary *) getFeedWithDict:(NSDictionary *)podcastDict forceNewest:(BOOL)forceNewest;
+// feeds
++ (void) cacheFeed:(NSDictionary *)feed forEntity:(PodcastEntity *)entity;
++ (NSDictionary *) retrieveAndCacheFeedForPodcastEntity:(PodcastEntity *)entity forceNewest:(BOOL)forceNewest;
 + (NSDictionary *) retrieveAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict;
-+ (NSDictionary *) requestAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict;
++ (NSDictionary *) requestAndConvertPodcastFeedDataWithCollectionId:(NSNumber *)collectionId andFeedUrl:(NSString *)feedUrl;
 + (NSArray *) extractFeedArrayFromFeedDict:(NSDictionary *)feedDict;
+
 - (void) preloadPodcastArtForArray:(NSArray*)itemArray;
 - (void) preloadFeedsWithLimit:(NSUInteger)limit;
 
-- (void) setUpHeaderView:(HeaderView *)headerView forEpisode:(EpisodeEntity *)episodeEntity orPodcast:(BOOL)forPodcast;
-- (void) sizeAndConstrainHeaderView:(HeaderView *)headerView inViewController:(UIViewController *)vc;
-- (void) subscribeToPodcastViaSender:(id)sender;
+
 - (void) configureEpisodeCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) showNoConnectionAlert;
 

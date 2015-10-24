@@ -25,6 +25,7 @@
 #import "TungCommonObjects.h"
 #import "ALDisk.h"
 #import "CCColorCube.h"
+#import "TungPodcast.h"
 
 #import <MobileCoreServices/MobileCoreServices.h> // for AVURLAsset resource loading
 
@@ -81,12 +82,6 @@
         _facebookColor = [UIColor colorWithRed:61.0/255 green:90.0/255 blue:152.0/255 alpha:1];
         _twitterColor = [UIColor colorWithRed:42.0/255 green:169.0/255 blue:224.0/255 alpha:1];
         
-        [self readPlayQueueFromDisk];
-        NSLog(@"play queue read from disk: %@", _playQueue);
-        if (_playQueue.count > 0) {
-            [self setControlButtonStateToPlay];
-        }
-        
         _connectionAvailable = [NSNumber numberWithInt:-1];
         
         _trackInfo = [[NSMutableDictionary alloc] init];
@@ -102,6 +97,9 @@
         if ([[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayback error: nil]) {
             [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
         }
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruption:) name:AVAudioSessionInterruptionNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleMediaServicesReset) name:AVAudioSessionMediaServicesWereResetNotification object:nil];        
+        
         // command center events
         MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
         [commandCenter.playCommand addTarget:self action:@selector(playerPlay)];
@@ -110,6 +108,7 @@
         [commandCenter.seekBackwardCommand addTarget:self action:@selector(seekBack)];
         [commandCenter.previousTrackCommand addTarget:self action:@selector(playPreviousEpisode)];
         [commandCenter.nextTrackCommand addTarget:self action:@selector(playNextEpisode)];
+        
         
 
         // show what's in documents dir
@@ -140,6 +139,69 @@
     }
     return self;
 }
+
+-(void) checkForNowPlaying {
+    // find playing episode
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSFetchRequest *npRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isNowPlaying == YES"];
+    [npRequest setPredicate:predicate];
+    NSError *error = nil;
+    NSArray *npResult = [appDelegate.managedObjectContext executeFetchRequest:npRequest error:&error];
+    if (npResult.count > 0) {
+        NSLog(@"Found now playing episode");
+        _npEpisodeEntity = [npResult lastObject];
+        NSURL *url = [NSURL URLWithString:_npEpisodeEntity.url];
+        _playQueue = [@[url] mutableCopy];
+        [self setControlButtonStateToPlay];
+    } else {
+        NSLog(@"no episode playing yet");
+        _playQueue = [NSMutableArray array];
+        [self setControlButtonStateToAdd];
+    }
+}
+
+#pragma mark - Audio session delegate methods
+
+- (void) handleAudioSessionInterruption:(NSNotification*)notification {
+    
+    NSNumber *interruptionType = [[notification userInfo] objectForKey:AVAudioSessionInterruptionTypeKey];
+    NSNumber *interruptionOption = [[notification userInfo] objectForKey:AVAudioSessionInterruptionOptionKey];
+    
+    switch (interruptionType.unsignedIntegerValue) {
+        case AVAudioSessionInterruptionTypeBegan:{
+            // • Audio has stopped, already inactive
+            // • Change state of UI, etc., to reflect non-playing state
+            [self playerPause];
+        } break;
+        case AVAudioSessionInterruptionTypeEnded:{
+            // • Make session active
+            // • Update user interface
+            // • AVAudioSessionInterruptionOptionShouldResume option
+            if (interruptionOption.unsignedIntegerValue == AVAudioSessionInterruptionOptionShouldResume) {
+                [self playerPlay];
+            }
+        } break;
+        default:
+            break;
+    }
+}
+- (void) handleMediaServicesReset {
+    // • No userInfo dictionary for this notification
+    // • Audio streaming objects are invalidated (zombies)
+    // • Handle this notification by fully reconfiguring audio
+    if (_player) {
+        [_player removeObserver:self forKeyPath:@"status"];
+        [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:_player.currentItem];
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemPlaybackStalledNotification object:_player.currentItem];
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemFailedToPlayToEndTimeNotification object:_player.currentItem];
+        [_player cancelPendingPrerolls];
+        _player = nil;
+    }
+    [self checkForNowPlaying];
+}
+
 #pragma mark - Player instance methods
 
 - (BOOL) isPlaying {
@@ -147,7 +209,7 @@
     return (_player && _player.rate > 0.0f);
 }
 - (void) playerPlay {
-    if (_playQueue.count > 0) {        
+    if (_player && _playQueue.count > 0) {
         [_player play];
         _shouldStayPaused = NO;
         [self setControlButtonStateToPause];
@@ -302,10 +364,14 @@
 - (void) controlButtonTapped {
     
     if (_playQueue.count > 0) {
-        if ([self isPlaying]) {
-            [self playerPause];
+        if (_player) {
+            if ([self isPlaying]) {
+                [self playerPause];
+            } else {
+                [self playerPlay]; // players gonna play
+            }
         } else {
-            [self playerPlay]; // players gonna play
+            [self playQueuedPodcast];
         }
     }
     else {
@@ -399,17 +465,6 @@
         
         NSString *urlString = [NSString stringWithFormat:@"%@", [_playQueue objectAtIndex:0]];
         
-        // find index of episode in current feed
-        if (!_currentFeed) [self readCurrentFeedFromDisk];
-        
-        for (int i = 0; i < _currentFeed.count; i++) {
-            NSString *url = [[[[_currentFeed objectAtIndex:i] objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
-            if ([url isEqualToString:urlString]) {
-                _currentFeedIndex = [NSNumber numberWithInt:i];
-                break;
-            }
-        }
-        
         // assign now playing entity
         AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
         NSError *error = nil;
@@ -422,12 +477,18 @@
             _npEpisodeEntity = [episodeResult lastObject];
         } else {
             /* create entity - case is next episode in feed is played. Episode entity may not have been
-             created yet, but podcast entity would. */
+             created yet, but podcast entity would, so we get it from np episode entity. */
             // look up podcast entity
             NSLog(@"creating new entity for now playing entity");
-            NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex.intValue];
-            _npEpisodeEntity = [TungCommonObjects getEntityForPodcast:_npPodcastDict andEpisode:episodeDict save:YES];
+            NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex];
+            NSDictionary *podcastDict = [TungCommonObjects entityToDict:_npEpisodeEntity.podcast];
+            _npEpisodeEntity = [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
         }
+        
+        _npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:YES];
+        // find index of episode in current feed for prev/next track fns
+        _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO]];
+        _currentFeedIndex = [TungCommonObjects getIndexOfEpisodeWithUrl:urlString inFeed:_currentFeed];
         
         // set now playing info center info
         NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:_npEpisodeEntity.podcast.artworkUrl600];
@@ -497,19 +558,34 @@
     // custom eject
     if (_playQueue.count > 0) {
         _npEpisodeEntity.trackPosition = [NSNumber numberWithFloat:1];
-        [TungCommonObjects saveContextWithReason:[NSString stringWithFormat:@"saving track progress: %d", 0]];
         [_playQueue removeObjectAtIndex:0];
     }
-    [self playNextEpisode];
+    [self playNextEpisode]; // ejects current episode
 }
 - (void) ejectCurrentEpisode {
     if (_playQueue.count > 0) {
         if ([self isPlaying]) [_player pause];
+        _npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:NO];
         [self savePositionForNowPlaying];
         NSLog(@"ejected current episode");
         [_playQueue removeObjectAtIndex:0];
         _playFromTimestamp = nil;
     }
+}
+
+- (void) removeNowPlayingStatusFromAllEpisodes {
+    NSLog(@"Remove now playing status from all episodes");
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSFetchRequest *eRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
+    NSError *eError = nil;
+    NSArray *eResult = [appDelegate.managedObjectContext executeFetchRequest:eRequest error:&eError];
+    if (eResult.count > 0) {
+        for (int i = 0; i < eResult.count; i++) {
+            EpisodeEntity *episodeEntity = [eResult objectAtIndex:i];
+            episodeEntity.isNowPlaying = [NSNumber numberWithBool:NO];
+        }
+    }
+    [TungCommonObjects saveContextWithReason:@"remove now playing status from all episodes"];
 }
 
 // TODO: handle this error before shipping
@@ -525,11 +601,14 @@
         [self playQueuedPodcast];
     }
     else {
+        if (!_currentFeed) {
+            _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO]];
+        }
         // play the next podcast in the feed if there is one
-        if (_currentFeedIndex.intValue + 1 < _currentFeed.count) {
+        if (_currentFeedIndex + 1 < _currentFeed.count) {
             NSLog(@"play next episode in feed");
             [self ejectCurrentEpisode];
-            NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex.intValue + 1];
+            NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex + 1];
             NSURL *url = [NSURL URLWithString:[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"]];
             [_playQueue insertObject:url atIndex:0];
             [self savePlayQueue];
@@ -541,11 +620,15 @@
 }
 
 - (void) playPreviousEpisode {
+    
+    if (!_currentFeed) {
+    	_currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO]];
+    }
 
     // play the previous podcast in the feed if there is one
-    if (_currentFeedIndex.intValue - 1 >= 0) {
+    if (_currentFeedIndex - 1 >= 0) {
         NSLog(@"play previous episode in feed");
-        NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex.intValue - 1];
+        NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex - 1];
         NSURL *url = [NSURL URLWithString:[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"]];
         [_playQueue insertObject:url atIndex:0];
         [self savePlayQueue];
@@ -654,6 +737,8 @@
 
 /*
  Play Queue saving and retrieving
+ Does not seem to be a reliable way to recall what was playing when app becomes active
+ NOT USED
  */
 
 - (NSString *) getPlayQueuePath {
@@ -1110,7 +1195,6 @@ static NSString *feedDictsDirName = @"feedDicts";
 
 + (EpisodeEntity *) getEntityForPodcast:(NSDictionary *)podcastDict andEpisode:(NSDictionary *)episodeDict save:(BOOL)save {
     
-    NSLog(@"save podcast and episode entity");
     PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
     
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
@@ -1145,7 +1229,11 @@ static NSString *feedDictsDirName = @"feedDicts";
             episodeEntity.isRecommended = [NSNumber numberWithBool:NO];
         }
         if ([episodeDict objectForKey:@"id"]) {
-            episodeEntity.id = [episodeDict objectForKey:@"id"];
+            if ([[episodeDict objectForKey:@"id"] objectForKey:@"$id"]) {
+                episodeEntity.id = [[episodeDict objectForKey:@"id"] objectForKey:@"$id"];
+            } else {
+            	episodeEntity.id = [episodeDict objectForKey:@"id"];
+            }
         }
         if ([episodeDict objectForKey:@"shortlink"]) {
             episodeEntity.shortlink = [episodeDict objectForKey:@"shortlink"];
@@ -1170,6 +1258,7 @@ static NSString *feedDictsDirName = @"feedDicts";
         if ([episodeDict objectForKey:@"enclosure"]) {
         	episodeEntity.dataLength = [NSNumber numberWithDouble:[[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"length"] doubleValue]];
         }
+        episodeEntity.isNowPlaying = [NSNumber numberWithBool:NO];
     }
     else {
         episodeEntity = [episodeResult lastObject];
@@ -1192,6 +1281,7 @@ static NSString *feedDictsDirName = @"feedDicts";
 
 // get episode description
 + (NSString *) findEpisodeDescriptionWithDict:(NSDictionary *)episodeDict {
+    
     id desc = [episodeDict objectForKey:@"itunes:summary"];
     if ([desc isKindOfClass:[NSString class]]) {
         //NSLog(@"- summary description");
@@ -1205,31 +1295,34 @@ static NSString *feedDictsDirName = @"feedDicts";
         }
         else {
             //NSLog(@"- no desc");
-            return @"This episode has no description.";
+            return @"";
         }
     }
 }
 
 + (NSString *) findPodcastDescriptionWithDict:(NSDictionary *)dict {
+    NSString *descrip;
     id desc = [[dict objectForKey:@"channel"] objectForKey:@"itunes:summary"];
     if ([desc isKindOfClass:[NSString class]]) {
-        return (NSString *)desc;
+        descrip = (NSString *)desc;
     } else {
         id descr = [[dict objectForKey:@"channel"] objectForKey:@"description"];
         if ([descr isKindOfClass:[NSString class]]) {
-            return (NSString *)descr;
+            descrip = (NSString *)descr;
         }
         else {
             return @"This podcast has no description.";
         }
     }
+    return [descrip stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
+    
 }
 
-+ (NSDictionary *) podcastEntityToDict:(PodcastEntity *)podcastEntity {
++ (NSDictionary *) entityToDict:(NSManagedObject *)entity {
     
-    NSArray *keys = [[[podcastEntity entity] attributesByName] allKeys];
-    NSDictionary *podcastDict = [[podcastEntity dictionaryWithValuesForKeys:keys] mutableCopy];
-    return podcastDict;
+    NSArray *keys = [[[entity entity] attributesByName] allKeys];
+    NSDictionary *dict = [[entity dictionaryWithValuesForKeys:keys] mutableCopy];
+    return dict;
 }
 
 // date converter for restoring podcast data
@@ -1310,18 +1403,11 @@ static NSDateFormatter *ISODateInterpreter = nil;
     }
 }
 
-+ (NSDictionary *) userEntityToDict:(UserEntity *)userEntity {
-   
-    NSArray *keys = [[[userEntity entity] attributesByName] allKeys];
-    NSDictionary *userDict = [[userEntity dictionaryWithValuesForKeys:keys] mutableCopy];
-    return userDict;
-}
-
 - (NSDictionary *) getLoggedInUserData {
     
     if (_tungId) {
         UserEntity *userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
-        return [TungCommonObjects userEntityToDict:userEntity];
+        return [TungCommonObjects entityToDict:userEntity];
     } else {
         return nil;
     }
@@ -1350,7 +1436,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
         
         for (int i = 0; i < result.count; i++) {
             UserEntity *userEntity = [result objectAtIndex:i];
-            NSDictionary *userDict = [TungCommonObjects userEntityToDict:userEntity];
+            NSDictionary *userDict = [TungCommonObjects entityToDict:userEntity];
             NSLog(@"user at index: %d", i);
             NSLog(@"%@", userDict);
         }
@@ -1359,21 +1445,6 @@ static NSDateFormatter *ISODateInterpreter = nil;
     } else {
         NSLog(@"no user entities found");
         return NO;
-    }
-}
-
-+ (void) removeAllUserData {
-    NSLog(@"remove all user data");
-    
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
-    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
-    NSError *error = nil;
-    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
-    if (result.count > 0) {
-        for (int i = 0; i < result.count; i++) {
-            [appDelegate.managedObjectContext deleteObject:[result objectAtIndex:i]];
-            NSLog(@"deleted user record at index: %d", i);
-        }
     }
 }
 
@@ -1445,6 +1516,21 @@ static NSDateFormatter *ISODateInterpreter = nil;
     }
     
     [self saveContextWithReason:@"removed podcast and episode data"];
+}
+
++ (void) removeAllUserData {
+    NSLog(@"remove all user data");
+    
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
+    NSError *error = nil;
+    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
+    if (result.count > 0) {
+        for (int i = 0; i < result.count; i++) {
+            [appDelegate.managedObjectContext deleteObject:[result objectAtIndex:i]];
+            NSLog(@"deleted user record at index: %d", i);
+        }
+    }
 }
 
 #pragma mark - Key Colors
@@ -2640,6 +2726,8 @@ static NSArray *colors;
     
     [self playerPause];
     
+    [self removeNowPlayingStatusFromAllEpisodes];
+    
     //[self deleteLoggedInUserData];
     [TungCommonObjects removeAllUserData];
     [TungCommonObjects removePodcastAndEpisodeData];
@@ -3278,6 +3366,18 @@ static NSDateFormatter *dayDateFormatter = nil;
 + (NSString *) getAlbumArtFilenameFromUrlString:(NSString *)artURLString {
     NSArray *components = [artURLString pathComponents];
     return [NSString stringWithFormat:@"%@%@", components[components.count-2], components[components.count-1]];
+}
+
++ (NSInteger) getIndexOfEpisodeWithUrl:(NSString *)urlString inFeed:(NSArray *)feed {
+    NSInteger feedIndex = -1;
+    for (int i = 0; i < feed.count; i++) {
+        NSString *url = [[[[feed objectAtIndex:i] objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
+        if ([url isEqualToString:urlString]) {
+            feedIndex = i;
+            break;
+        }
+    }
+    return feedIndex;
 }
 
 @end

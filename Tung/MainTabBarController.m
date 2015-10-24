@@ -88,6 +88,7 @@
     [self.view insertSubview:btn_player_shadow aboveSubview:self.view];
     
     // control button
+    NSLog(@"setup control btn");
     _tung.btn_player = [UIButton buttonWithType:UIButtonTypeCustom];
     int x = (screenBounds.size.width - 76) / 2 ;
     int y = screenBounds.size.height - 63;
@@ -106,6 +107,7 @@
     // add views
     [self.view insertSubview:_tung.btn_player aboveSubview:self.view];
     [self.view insertSubview:_tung.btnActivityIndicator aboveSubview:_tung.btn_player];
+    
     
     // initial view controller
     self.selectedIndex = 0;

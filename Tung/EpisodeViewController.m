@@ -1,17 +1,17 @@
 //
-//  NowPlayingViewController.m
+//  EpisodeViewController.m
 //  Tung
 //
 //  Created by Jamie Perkins on 5/6/15.
 //  Copyright (c) 2015 Jamie Perkins. All rights reserved.
 //
 
-#import "NowPlayingViewController.h"
+#import "EpisodeViewController.h"
 #import "HeaderView.h"
 #import "AppDelegate.h"
 #import "BrowserViewController.h"
 #import "DescriptionWebViewController.h"
-#import "EpisodeTableViewController.h"
+#import "EpisodesTableViewController.h"
 #import "CommentsTableViewController.h"
 #import "CommentAndPostView.h"
 
@@ -24,10 +24,11 @@
 #define MIN_RECORD_TIME 2
 #define MAX_COMMENT_CHARS 220
 
-@interface NowPlayingViewController ()
+@interface EpisodeViewController ()
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (strong, nonatomic) TungPodcast *podcast;
+@property (strong, nonatomic) PodcastEntity *podcastEntity;
 @property HeaderView *headerView;
 @property CADisplayLink *onEnterFrame;
 @property BOOL npControlsViewIsSetup;
@@ -51,8 +52,9 @@
 
 @property UIToolbar *switcherBar;
 @property UISegmentedControl *switcher;
+@property NSInteger switcherIndex;
 @property DescriptionWebViewController *descriptionView;
-@property EpisodeTableViewController *episodeView;
+@property EpisodesTableViewController *episodesView;
 @property CommentsTableViewController *commentsView;
 @property AVAudioPlayer *audioPlayer;
 @property UILabel *nothingPlayingLabel;
@@ -65,12 +67,13 @@
 @property CGFloat recordStartMarker;
 @property CGFloat recordEndMarker;
 @property BOOL totalTimeSet;
+@property BOOL viewIsForNowPlaying;
 
 - (void) switchViews:(id)sender;
 
 @end
 
-@implementation NowPlayingViewController
+@implementation EpisodeViewController
 
 CGFloat screenWidth;
 CGFloat screenHeight;
@@ -84,11 +87,25 @@ static NSArray *playbackRateStrings;
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    self.navigationItem.title = @"Now Playing";
-    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
-    
     _tung = [TungCommonObjects establishTungObjects];
     _podcast = [TungPodcast new];
+    
+    // is this for now playing?
+    CGFloat bottomConstraint = -44;
+    if (_episodeEntity) {
+        _podcastEntity = _episodeEntity.podcast;
+        self.navigationItem.title = @"Episode";
+    } else {
+        _viewIsForNowPlaying = YES;
+        _episodeEntity = _tung.npEpisodeEntity;
+        _podcastEntity = _tung.npEpisodeEntity.podcast;
+        bottomConstraint = -84;
+        self.navigationItem.title = @"Now Playing";
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
+    }
+//    NSDictionary *podcastDict = [TungCommonObjects entityToDict:_podcastEntity];
+//    NSLog(@"podcast dict: %@", podcastDict);
+    
     
     // for search controller
     self.definesPresentationContext = YES;
@@ -123,6 +140,7 @@ static NSArray *playbackRateStrings;
     
     // header view
     _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 64, screenWidth, defaultHeaderHeight)];
+    [_headerView setUpHeaderViewForEpisode:_episodeEntity orPodcast:nil];
     [self.view addSubview:_headerView];
     _headerView.hidden = YES;
     
@@ -148,6 +166,7 @@ static NSArray *playbackRateStrings;
     [_switcherBar addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:44]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_switcherBar.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_switcherBar.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
+    _switcherIndex = 0;
 
     
     // description
@@ -158,80 +177,98 @@ static NSArray *playbackRateStrings;
     _descriptionView.webView.delegate = self;
     _descriptionView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-84]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
     // comments
     _commentsView = [self.storyboard instantiateViewControllerWithIdentifier:@"commentsTableView"];
     _commentsView.edgesForExtendedLayout = UIRectEdgeNone;
+    _commentsView.navController = [self navigationController];
     [self addChildViewController:_commentsView];
     [self.view addSubview:_commentsView.view];
     _commentsView.refreshControl = [UIRefreshControl new];
     [_commentsView.refreshControl addTarget:self action:@selector(refreshComments:) forControlEvents:UIControlEventValueChanged];
     _commentsView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-84]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     // episode view starts out hidden
     _commentsView.view.hidden = YES;
     
     // episode view
-    _episodeView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodeView"];
-    _episodeView.edgesForExtendedLayout = UIRectEdgeNone;
-    [self addChildViewController:_episodeView];
-    [self.view addSubview:_episodeView.view];
-    _episodeView.refreshControl = [UIRefreshControl new];
-    [_episodeView.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
-    _episodeView.view.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodeView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodeView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_episodeView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-84]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodeView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_episodeView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodeView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_episodeView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
+    _episodesView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodesView"];
+    _episodesView.edgesForExtendedLayout = UIRectEdgeNone;
+    _episodesView.podcastEntity = _podcastEntity;
+    [self addChildViewController:_episodesView];
+    [self.view addSubview:_episodesView.view];
+    _episodesView.refreshControl = [UIRefreshControl new];
+    [_episodesView.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
+    _episodesView.view.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     // episode view starts out hidden
-    _episodeView.view.hidden = YES;
+    _episodesView.view.hidden = YES;
     
-    // show/hide button
-    _hideControlsButton.type = kShowHideButtonTypeHide;
-    _showControlsButton.type = kShowHideButtonTypeShow;
-    _showControlsButton.hidden = YES;
+    if (!_viewIsForNowPlaying && _eventId) {
+        _switcherIndex = 1;
+    }
     
-    // posbar
-    [_posbar setThumbImage:[UIImage imageNamed:@"posbar-thumb.png"] forState:UIControlStateNormal];
-    _posbar.minimumTrackTintColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0]; // .5
-    _posbar.maximumTrackTintColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0]; // .2
-    [_posbar addTarget:self action:@selector(posbarChanged:) forControlEvents:UIControlEventValueChanged];
-    [_posbar addTarget:self action:@selector(posbarTouched:) forControlEvents:UIControlEventTouchDown];
-    [_posbar addTarget:self action:@selector(posbarReleased:) forControlEvents:UIControlEventTouchUpInside | UIControlEventTouchUpOutside];
-    _posbar.value = 0;
     
-    // file download progress
-    _progressBar.trackTintColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:.15];
-    _progressBar.progressTintColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:.3];
-    /* make progress bar taller... doesn't round corners
-    CGAffineTransform transform = CGAffineTransformMakeScale(1.0f, 2.0f);
-    _progressBar.transform = transform;
-     */
+    if (_viewIsForNowPlaying) {
     
-    // get keyboard height when keyboard is shown and will hide
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillAppear:) name:UIKeyboardWillShowNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillBeHidden:) name:UIKeyboardWillHideNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
+        // show/hide button
+        _hideControlsButton.type = kShowHideButtonTypeHide;
+        _showControlsButton.type = kShowHideButtonTypeShow;
+        _showControlsButton.hidden = YES;
+        
+        // posbar
+        [_posbar setThumbImage:[UIImage imageNamed:@"posbar-thumb.png"] forState:UIControlStateNormal];
+        _posbar.minimumTrackTintColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0]; // .5
+        _posbar.maximumTrackTintColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0]; // .2
+        [_posbar addTarget:self action:@selector(posbarChanged:) forControlEvents:UIControlEventValueChanged];
+        [_posbar addTarget:self action:@selector(posbarTouched:) forControlEvents:UIControlEventTouchDown];
+        [_posbar addTarget:self action:@selector(posbarReleased:) forControlEvents:UIControlEventTouchUpInside | UIControlEventTouchUpOutside];
+        _posbar.value = 0;
+        
+        // file download progress
+        _progressBar.trackTintColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:.15];
+        _progressBar.progressTintColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:.3];
+        /* make progress bar taller... doesn't round corners
+        CGAffineTransform transform = CGAffineTransformMakeScale(1.0f, 2.0f);
+        _progressBar.transform = transform;
+         */
+        
+        // get keyboard height when keyboard is shown and will hide
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillAppear:) name:UIKeyboardWillShowNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillBeHidden:) name:UIKeyboardWillHideNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
     
-	playbackRateStrings = @[@".75x", @"1.0x", @"1.5x", @"2.0x"];
     
-    // share label
-    _shareLabel.text = @"";
-    _shareLabel.alpha = 0;
-    _shareLabel.textColor = _tung.tungColor;
+        playbackRateStrings = @[@".75x", @"1.0x", @"1.5x", @"2.0x"];
+        
+        // share label
+        _shareLabel.text = @"";
+        _shareLabel.alpha = 0;
+        _shareLabel.textColor = _tung.tungColor;
+        
+        
+        [self setUpViewForWhateversPlaying];
+    }
+    else {
+        
+        [self setUpViewForEpisode:_episodeEntity];
+    }
 
 }
 
 - (void) viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     
-    [self updateTimeElapsedAndPosbar];
+    if (_viewIsForNowPlaying) [self updateTimeElapsedAndPosbar];
 }
 
 - (void) viewDidAppear:(BOOL)animated {
@@ -240,13 +277,18 @@ static NSArray *playbackRateStrings;
     _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
     
-    // set up views, order below is important for entity assigning
-    if (!_npControlsViewIsSetup) [self setUpNowPlayingControlView];
-    if (!_tung.npViewSetupForCurrentEpisode) [self setUpViewForWhateversPlaying];
+    // set up views
     
-    [_onEnterFrame invalidate];
-    _onEnterFrame = [CADisplayLink displayLinkWithTarget:self selector:@selector(updateView)];
-    [_onEnterFrame addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+    if (_viewIsForNowPlaying) {
+        
+        if (!_npControlsViewIsSetup) [self setUpNowPlayingControlView];
+        
+        [_onEnterFrame invalidate];
+        _onEnterFrame = [CADisplayLink displayLinkWithTarget:self selector:@selector(updateView)];
+        [_onEnterFrame addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+        
+    }
+    
     //self.navigationController.navigationBar.translucent = NO;
 }
 
@@ -255,6 +297,7 @@ static NSArray *playbackRateStrings;
     [super viewWillDisappear:animated];
     [_onEnterFrame invalidate];
     //self.navigationController.navigationBar.translucent = YES;
+    
 }
 
 - (void)didReceiveMemoryWarning {
@@ -264,11 +307,23 @@ static NSArray *playbackRateStrings;
 
 // ControlButtonDelegate optional method
 -(void) nowPlayingDidChange {
-    NSLog(@"now playing did change");
-    [self setUpViewForWhateversPlaying];
-    [self resetRecording];
-    [self setPlaybackRateToOne];
+    NSLog(@"now playing did change (npView)");
+    if (_episodeEntity.isNowPlaying.boolValue) {
+        _headerView.largeButton.on = YES;
+        [_headerView.largeButton setEnabled:NO];
+    } else {
+        _headerView.largeButton.on = NO;
+        [_headerView.largeButton setEnabled:YES];
+    }
+    [_headerView.largeButton setNeedsDisplay];
     
+    if (_viewIsForNowPlaying) {
+        [self setUpViewForWhateversPlaying];
+        [self resetRecording];
+        [self setPlaybackRateToOne];
+    } else {
+        [_episodesView.tableView reloadData];
+    }
 }
 
 - (void) switchViews:(id)sender {
@@ -277,85 +332,21 @@ static NSArray *playbackRateStrings;
     switch (switcher.selectedSegmentIndex) {
         case 1: // show comments
             _commentsView.view.hidden = NO;
-            _episodeView.view.hidden = YES;
+            _episodesView.view.hidden = YES;
             _descriptionView.view.hidden = YES;
             break;
         case 2: // show episode view
             _commentsView.view.hidden = YES;
-            _episodeView.view.hidden = NO;
+            _episodesView.view.hidden = NO;
             _descriptionView.view.hidden = YES;
             break;
         default: // show description
             _commentsView.view.hidden = YES;
             _descriptionView.view.hidden = NO;
-            _episodeView.view.hidden = YES;
+            _episodesView.view.hidden = YES;
             break;
     }
-}
-
-// for refreshControl
-- (void) getNewestFeed {
-    [self getFeed:YES];
-}
-
-- (void) getFeed:(BOOL)forceNewest {
-    
-    NSDictionary *podcastDict = [TungCommonObjects podcastEntityToDict:_podcast.podcastEntity];
-    
-    NSDictionary *dict = [TungPodcast getFeedWithDict:podcastDict forceNewest:forceNewest];
-    
-    if (dict) {
-        //NSLog(@"podcast feed dict: %@", dict);
-        [self setUpEpisodeViewForDict:dict cached:NO];
-    }
-    else {
-        NSLog(@"no dict - empty feed");
-        _episodeView.noResults = YES;
-        [_episodeView.tableView reloadData];
-    }
-    
-}
-
-- (void) refreshComments:(BOOL)fullRefresh {
-    
-    NSNumber *mostRecent;
-    if (fullRefresh) {
-        mostRecent = [NSNumber numberWithInt:0];
-    } else {
-        if (_commentsView.commentsArray.count > 0) {
-            [_commentsView.refreshControl beginRefreshing];
-            mostRecent = [[[_commentsView.commentsArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
-        } else { // if initial request timed out and they are trying again
-            mostRecent = [NSNumber numberWithInt:0];
-        }
-    }
-    [_commentsView requestCommentsForEpisodeEntity:_tung.npEpisodeEntity NewerThan:mostRecent orOlderThan:[NSNumber numberWithInt:0]];
-}
-
-- (void) setUpEpisodeViewForDict:(NSDictionary *)dict cached:(BOOL)cached {
-    
-    // remove spinner
-    _episodeView.tableView.backgroundView = nil;
-    
-    id item = [[dict objectForKey:@"channel"] objectForKey:@"item"];
-    if ([item isKindOfClass:[NSArray class]]) {
-        NSArray *array = item;
-        _episodeView.episodeArray = [array mutableCopy];
-    } else {
-        _episodeView.episodeArray = [@[item] mutableCopy];
-    }
-    // cache the feed if we didn't pull it from cache
-    if (!cached)
-        [_tung cacheFeed:dict forEntity:_podcast.podcastEntity];
-    
-    [_episodeView.refreshControl endRefreshing];
-    
-    _episodeView.noResults = _podcast.noResults;
-    [_episodeView.tableView reloadData];
-    
-    NSIndexPath *activeRow = [NSIndexPath indexPathForItem:_tung.currentFeedIndex.integerValue inSection:0];
-    [_episodeView.tableView scrollToRowAtIndexPath:activeRow atScrollPosition:UITableViewScrollPositionTop animated:YES];
-    
+    _switcherIndex = switcher.selectedSegmentIndex;
 }
 
 #pragma mark - tungObjects/tungPodcasts delegate methods
@@ -410,7 +401,7 @@ static NSArray *playbackRateStrings;
     _switcher.tintColor = [UIColor lightGrayColor];
     
     _descriptionView.view.hidden = YES;
-    _episodeView.view.hidden = YES;
+    _episodesView.view.hidden = YES;
     _commentsView.view.hidden = YES;
     
 }
@@ -431,47 +422,8 @@ static NSArray *playbackRateStrings;
         _npControlsView.hidden = NO;
         _nothingPlayingLabel.hidden = YES;
         
-        //NSLog(@"now playing entity: %@", _tung.npEpisodeEntity);
-        _podcast.podcastEntity = _tung.npEpisodeEntity.podcast;
-        
-        // set up header view, as byproduct assign _podcasts.keyColor
-        [_podcast setUpHeaderView:_headerView forEpisode:_tung.npEpisodeEntity orPodcast:NO];
-        [_podcast sizeAndConstrainHeaderView:_headerView inViewController:self];
-        
-        // switcher
-        _switcherBar.hidden = NO;
-        [_switcher setSelectedSegmentIndex:0];
-        [self switchViews:_switcher];
-        _switcher.tintColor = _tung.npEpisodeEntity.podcast.keyColor2;
-        
-        // description
-        // description style
-        NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:_podcast.podcastEntity.keyColor1];
-        NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:4px 13px; color:#666; font: .9em/1.4em -apple-system, Helvetica; } a { color:%@; } img { max-width:100%%; height:auto; } .endOfFile { margin:40px auto 20px; clear:both; width:60px; height:auto; display:block }</style>\n", keyColor1HexString];
-        // description script:
-        NSString *scriptPath = [[NSBundle mainBundle] pathForResource:@"description" ofType:@"js"];
-        NSURL *scriptUrl = [NSURL fileURLWithPath:scriptPath];
-        NSString *script = [NSString stringWithFormat:@"<script type=\"text/javascript\" src=\"%@\"></script>\n", scriptUrl.path];
-        // end-of-file indicator image
-        NSString *tungEndOfFileLogoPath = [[NSBundle mainBundle] pathForResource:@"tung-end-of-file" ofType:@"png"];
-        NSURL *tungEndOfFileLogoUrl = [NSURL fileURLWithPath:tungEndOfFileLogoPath];
-        NSString *tungEndOfFileImg = [NSString stringWithFormat:@"<img class=\"endOfFile\" src=\"%@\">", tungEndOfFileLogoUrl];
-        // description
-        NSString *webViewString = [NSString stringWithFormat:@"%@%@%@%@", style, script, _tung.npEpisodeEntity.desc, tungEndOfFileImg];
-        [_descriptionView.webView loadHTMLString:webViewString baseURL:[NSURL URLWithString:@"desc"]];
-        
-        // COMMENTS
-        [self refreshComments:YES];
-        
-        // episodes
-        _episodeView.podcastDict = [[TungCommonObjects podcastEntityToDict:_tung.npEpisodeEntity.podcast] mutableCopy];
-        NSDictionary *cachedDict = [_tung retrieveCachedFeedForEntity:_tung.npEpisodeEntity.podcast];
-        if (cachedDict) {
-            [self setUpEpisodeViewForDict:cachedDict cached:YES];
-        }
-        else {
-            [self getFeed:NO];
-        }
+        [self setUpViewForEpisode:_tung.npEpisodeEntity];
+        _headerView.largeButton.hidden = YES;
         
         // time elapsed
         _timeElapsedLabel.hidden = NO;
@@ -497,6 +449,156 @@ static NSArray *playbackRateStrings;
 
 }
 
+- (void) setUpViewForEpisode:(EpisodeEntity *)episodeEntity {
+    
+    // set up header view
+    [_headerView setUpHeaderViewForEpisode:episodeEntity orPodcast:nil];
+    [_headerView sizeAndConstrainHeaderViewInViewController:self];
+    [_headerView.subscribeButton addTarget:self action:@selector(subscribeToPodcastViaSender:) forControlEvents:UIControlEventTouchUpInside];
+    
+    [_headerView.largeButton addTarget:self action:@selector(playEpisode) forControlEvents:UIControlEventTouchUpInside];
+    
+    // switcher
+    _switcherBar.hidden = NO;
+    [_switcher setSelectedSegmentIndex:_switcherIndex];
+    [self switchViews:_switcher];
+    _switcher.tintColor = episodeEntity.podcast.keyColor2;
+    
+    // COMMENTS
+    [self refreshComments:YES];
+    
+    // episodes and description
+    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:NO];
+    
+    _episodesView.tableView.backgroundView = nil;
+    _episodesView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
+    [_episodesView.tableView reloadData];
+    
+    if (episodeEntity.desc.length == 0) {
+        // refresh description web view with description from feed
+        NSInteger feedIndex = [TungCommonObjects getIndexOfEpisodeWithUrl:episodeEntity.url inFeed:_episodesView.episodeArray];
+        NSDictionary *epDict = [_episodesView.episodeArray objectAtIndex:feedIndex];
+        NSString *desc = [TungCommonObjects findEpisodeDescriptionWithDict:epDict];
+        
+        if (desc.length > 0) {
+            episodeEntity.desc = desc;
+        } else {
+            episodeEntity.desc = @"No description";
+        }
+        [self loadDescriptionWebViewStringForEntity:episodeEntity];
+    }
+    
+    // scroll to episode row if it's playing
+    if (_viewIsForNowPlaying) {
+        NSIndexPath *activeRow = [NSIndexPath indexPathForItem:_tung.currentFeedIndex inSection:0];
+        [_episodesView.tableView scrollToRowAtIndexPath:activeRow atScrollPosition:UITableViewScrollPositionTop animated:YES];
+    }
+}
+
+- (void) playEpisode {
+    [_tung queueAndPlaySelectedEpisode:_episodeEntity.url];
+    
+}
+
+#pragma mark Comments view
+
+- (void) refreshComments:(BOOL)fullRefresh {
+    
+    NSNumber *mostRecent = [NSNumber numberWithInt:0];
+    if (!fullRefresh) {
+        if (_commentsView.commentsArray.count > 0) {
+            [_commentsView.refreshControl beginRefreshing];
+            mostRecent = [[[_commentsView.commentsArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
+        } else { // if initial request timed out and they are trying again
+            mostRecent = [NSNumber numberWithInt:0];
+        }
+    }
+
+    [_commentsView requestCommentsForEpisodeEntity:_episodeEntity NewerThan:mostRecent orOlderThan:[NSNumber numberWithInt:0]];
+}
+
+#pragma mark - Episodes view
+
+// for refreshControl
+- (void) getNewestFeed {
+    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:YES];
+    _episodesView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
+    
+    [_episodesView.refreshControl endRefreshing];
+    
+    [_episodesView.tableView reloadData];
+    
+}
+
+
+#pragma mark Description web view
+
+- (void) loadDescriptionWebViewStringForEntity:(EpisodeEntity *)episodeEntity {
+    // description style
+    NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:episodeEntity.podcast.keyColor1];
+    NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:4px 13px; color:#666; font: .9em/1.4em -apple-system, Helvetica; } a { color:%@; } img { max-width:100%%; height:auto; } .endOfFile { margin:40px auto 20px; clear:both; width:60px; height:auto; display:block }</style>\n", keyColor1HexString];
+    // description script:
+    NSString *scriptPath = [[NSBundle mainBundle] pathForResource:@"description" ofType:@"js"];
+    NSURL *scriptUrl = [NSURL fileURLWithPath:scriptPath];
+    NSString *script = [NSString stringWithFormat:@"<script type=\"text/javascript\" src=\"%@\"></script>\n", scriptUrl.path];
+    // end-of-file indicator image
+    NSString *tungEndOfFileLogoPath = [[NSBundle mainBundle] pathForResource:@"tung-end-of-file" ofType:@"png"];
+    NSURL *tungEndOfFileLogoUrl = [NSURL fileURLWithPath:tungEndOfFileLogoPath];
+    NSString *tungEndOfFileImg = [NSString stringWithFormat:@"<img class=\"endOfFile\" src=\"%@\">", tungEndOfFileLogoUrl];
+    // description
+    NSString *webViewString = [NSString stringWithFormat:@"%@%@%@%@", style, script, episodeEntity.desc, tungEndOfFileImg];
+    [_descriptionView.webView loadHTMLString:webViewString baseURL:[NSURL URLWithString:@"desc"]];
+}
+
+#pragma mark Subscribing
+
+// toggle subscribe status
+- (void) subscribeToPodcastViaSender:(id)sender {
+    
+    // only allow subscribing with network connection
+    if (_tung.connectionAvailable) {
+        
+        if (!_podcastEntity) return;
+        
+        CircleButton *subscribeButton = (CircleButton *)sender;
+        
+        subscribeButton.subscribed = !subscribeButton.subscribed;
+        [subscribeButton setNeedsDisplay];
+        
+        // subscribe
+        if (subscribeButton.subscribed) {
+            NSLog(@"subscribed to podcast");
+            
+            NSDate *dateSubscribed = [NSDate date];
+            _podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
+            _podcastEntity.dateSubscribed = dateSubscribed;
+            
+            [_tung subscribeToPodcast:_podcastEntity withButton:subscribeButton];
+        }
+        // unsubscribe
+        else {
+            NSLog(@"unsubscribe from podcast ");
+            
+            _podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
+            NSLog(@"isSubscribted changed to %@", _podcastEntity.isSubscribed);
+            _podcastEntity.dateSubscribed = nil;
+            
+            [_tung unsubscribeFromPodcast:_podcastEntity withButton:subscribeButton];
+        }
+        [TungCommonObjects saveContextWithReason:@"(un)subscribed to podcast"];
+    }
+    else {
+        [self showNoConnectionAlert];
+    }
+}
+
+- (void) showNoConnectionAlert {
+    UIAlertView *noConnectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"No connection" message:@"Please try again when you're connected to the internet." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+    [noConnectionErrorAlert show];
+}
+
+#pragma mark Now Playing control view
+
 static float circleButtonDimension;
 static CGRect buttonsScrollViewHomeRect;
 
@@ -507,6 +609,9 @@ static CGRect buttonsScrollViewHomeRect;
     
     // buttons scroll view
     CGRect scrollViewRect = _buttonsScrollView.frame;
+    NSLog(@"scroll view rect: %@", NSStringFromCGRect(scrollViewRect));
+    scrollViewRect.size.width = screenWidth;
+    NSLog(@"scroll view rect: %@", NSStringFromCGRect(scrollViewRect));
     _buttonsScrollView.contentSize = CGSizeMake(scrollViewRect.size.width * 3, scrollViewRect.size.height);
     _buttonsScrollView.delegate = self;
     CGRect subViewRect = CGRectMake(0, 0, scrollViewRect.size.width, scrollViewRect.size.height);
@@ -747,7 +852,7 @@ static CGRect buttonsScrollViewHomeRect;
 
 - (void) openPodcastWebsite {
     // open web browsing modal
-    _urlToPass = [NSURL URLWithString:_podcast.podcastEntity.website];
+    _urlToPass = [NSURL URLWithString:_episodeEntity.podcast.website];
     [self performSegueWithIdentifier:@"presentWebView" sender:self];
 }
 

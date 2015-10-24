@@ -9,6 +9,7 @@
 #import "FinishSignUpController.h"
 #import "TungCommonObjects.h"
 #import <Security/Security.h>
+#import "AppDelegate.h"
 
 //#import <FBSDKCoreKit/FBSDKCoreKit.h>
 

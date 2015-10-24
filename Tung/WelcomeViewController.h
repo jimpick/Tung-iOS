@@ -7,13 +7,14 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "SignUpButton.h"
 
 @interface WelcomeViewController : UIViewController <UIAlertViewDelegate, UIActionSheetDelegate>
 
 @property (nonatomic, assign) BOOL working;
 @property (strong, nonatomic) IBOutlet UIImageView *logo;
-@property (strong, nonatomic) IBOutlet UIButton *btn_signUpWithTwitter;
-@property (strong, nonatomic) IBOutlet UIButton *btn_signUpWithFacebook;
+@property (strong, nonatomic) IBOutlet SignUpButton *btn_signUpWithTwitter;
+@property (strong, nonatomic) IBOutlet SignUpButton *btn_signUpWithFacebook;
 
 - (IBAction)signUpWithTwitter:(id)sender;
 - (IBAction)signUpWithFacebook:(id)sender;

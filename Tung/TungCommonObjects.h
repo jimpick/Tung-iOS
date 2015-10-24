@@ -68,13 +68,12 @@
 @property (nonatomic, retain) UIColor *twitterColor;
 // player
 @property EpisodeEntity *npEpisodeEntity;
-@property NSMutableDictionary *npPodcastDict;
 @property (strong, nonatomic) UIButton *btn_player;
 @property (nonatomic, retain) NSNumberFormatter *clipDurationFormatter;
 @property CGFloat totalSeconds;
 @property (nonatomic, strong) AVPlayer *player;
 @property (nonatomic, strong) NSMutableData *trackData; // data being downloaded
-@property NSNumber *currentFeedIndex;
+@property NSInteger currentFeedIndex;
 @property NSMutableDictionary *trackInfo;
 @property NSInteger playbackRateIndex;
 @property NSArray *playbackRates;
@@ -85,6 +84,8 @@
 @property BOOL fileIsLocal;
 @property BOOL fileIsStreaming; // file can be local and streaming at the same time
 @property BOOL shouldStayPaused;
+
+-(void) checkForNowPlaying;
 
 // clip player
 @property (nonatomic, strong) AVAudioPlayer *clipPlayer;
@@ -129,11 +130,10 @@
 + (EpisodeEntity *) getEntityForPodcast:(NSDictionary *)podcastDict andEpisode:(NSDictionary *)episodeDict save:(BOOL)save;
 + (NSString *) findEpisodeDescriptionWithDict:(NSDictionary *)episodeDict;
 + (NSString *) findPodcastDescriptionWithDict:(NSDictionary *)dict;
-+ (NSDictionary *) podcastEntityToDict:(PodcastEntity *)podcastEntity;
++ (NSDictionary *) entityToDict:(NSManagedObject *)entity;
 + (NSDate *) ISODateToNSDate: (NSString *)pubDate;
 + (UserEntity *) saveUserWithDict:(NSDictionary *)userDict;
 + (UserEntity *) retrieveUserEntityForUserWithId:(NSString *)userId;
-+ (NSDictionary *) userEntityToDict:(UserEntity *)userEntity;
 - (NSDictionary *) getLoggedInUserData;
 - (void) deleteLoggedInUserData;
 + (BOOL) checkForUserData;
@@ -194,5 +194,6 @@
 + (double) convertTimestampToSeconds:(NSString *)timestamp;
 + (NSURL *) getClipFileURL;
 + (NSString *) getAlbumArtFilenameFromUrlString:(NSString *)artURLString;
++ (NSInteger) getIndexOfEpisodeWithUrl:(NSString *)urlString inFeed:(NSArray *)feed;
 
 @end

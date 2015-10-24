@@ -2,7 +2,7 @@
 //  EpisodeEntity+CoreDataProperties.m
 //  Tung
 //
-//  Created by Jamie Perkins on 10/8/15.
+//  Created by Jamie Perkins on 10/23/15.
 //  Copyright © 2015 Jamie Perkins. All rights reserved.
 //
 //  Choose "Create NSManagedObject Subclass…" from the Core Data editor menu
@@ -27,6 +27,8 @@
 @dynamic trackPosition;
 @dynamic trackProgress;
 @dynamic url;
+@dynamic isNowPlaying;
+@dynamic isQueuedAtIndex;
 @dynamic podcast;
 
 @end

@@ -1,5 +1,5 @@
 //
-//  PodcastTableViewController.h
+//  EpisodesTableViewController.h
 //  Tung
 //
 //  Created by Jamie Perkins on 7/27/15.
@@ -10,10 +10,10 @@
 #import "TungCommonObjects.h"
 #import "EpisodeCell.h"
 
-@interface EpisodeTableViewController : UITableViewController
+@interface EpisodesTableViewController : UITableViewController
 
 @property (strong, nonatomic) NSArray *episodeArray;
-@property (strong, nonatomic) NSMutableDictionary *podcastDict;
+@property (strong, nonatomic) PodcastEntity *podcastEntity;
 @property (strong, nonatomic) NSIndexPath *focusedIndexPath;
 @property BOOL noResults;
 

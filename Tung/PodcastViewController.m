@@ -9,7 +9,7 @@
 #import "PodcastViewController.h"
 #import "TungPodcast.h"
 #import "AppDelegate.h"
-#import "EpisodeTableViewController.h"
+#import "EpisodesTableViewController.h"
 
 
 @class TungCommonObjects;
@@ -18,8 +18,9 @@
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (strong, nonatomic) TungPodcast *podcast;
+@property (strong, nonatomic) PodcastEntity *podcastEntity;
 @property HeaderView *headerView;
-@property EpisodeTableViewController *episodeView;
+@property EpisodesTableViewController *episodesView;
 @property BOOL needToRequestFeed;
 
 @end
@@ -38,43 +39,37 @@
     self.navigationItem.rightBarButtonItem = nil;
     
     _podcast = [TungPodcast new];
-    NSLog(@"podcast dict: %@", _podcastDict);
+    //NSLog(@"podcast dict: %@", _podcastDict);
     
     // get podcast entity
-    _podcast.podcastEntity = [TungCommonObjects getEntityForPodcast:_podcastDict save:NO];
-    NSLog(@"podcast entity: %@", [TungCommonObjects podcastEntityToDict:_podcast.podcastEntity]);
+    _podcastEntity = [TungCommonObjects getEntityForPodcast:_podcastDict save:NO];
     
     // header view
     _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 160)];
+    [_headerView setUpHeaderViewForEpisode:nil orPodcast:_podcastEntity];
     [self.view addSubview:_headerView];
-    [_podcast setUpHeaderView:_headerView forEpisode:nil orPodcast:YES];
-    [_podcast sizeAndConstrainHeaderView:_headerView inViewController:self];
     
     // add child table view controller
-    _episodeView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodeView"];
-    _episodeView.edgesForExtendedLayout = UIRectEdgeNone;
-    NSLog(@"focused GUID: %@", _focusedGUID);
-    [self addChildViewController:_episodeView];
-    [self.view addSubview:_episodeView.view];
+    _episodesView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodesView"];
+    _episodesView.edgesForExtendedLayout = UIRectEdgeNone;
+    _episodesView.podcastEntity = _podcastEntity;
     
-    _episodeView.refreshControl = [UIRefreshControl new];
-    [_episodeView.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
+    NSLog(@"focused GUID: %@", _focusedGUID);
+    [self addChildViewController:_episodesView];
+    [self.view addSubview:_episodesView.view];
+    
+    _episodesView.refreshControl = [UIRefreshControl new];
+    [_episodesView.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
 
     
-    _episodeView.view.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodeView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_headerView attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodeView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_episodeView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-44]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodeView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_episodeView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodeView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_episodeView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
+    _episodesView.view.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_headerView attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-44]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
-    
-    NSDictionary *cachedDict = [_tung retrieveCachedFeedForEntity:_podcast.podcastEntity];
-    if (cachedDict) {
-        [self setUpViewForDict:cachedDict cached:YES];
-    }
-    else {
-        _needToRequestFeed = YES;
-    }
+    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:NO];
+    [self setUpViewForDict:feedDict];
     
 }
 
@@ -82,9 +77,6 @@
     [super viewDidAppear:animated];
     
     self.navigationController.navigationBar.translucent = NO;
-    // requesting can take a few seconds bc some feeds have many items,
-    // request after view loads so spinner can be displayed
-    if (_needToRequestFeed) [self getFeed:NO];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -97,62 +89,42 @@
 }
 // ControlButtonDelegate optional method
 -(void) nowPlayingDidChange {
-    [_episodeView.tableView reloadData];
+    [_episodesView.tableView reloadData];
 }
 
 // for refreshControl
 - (void) getNewestFeed {
-    [self getFeed:YES];
+    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:YES];
+    _episodesView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
+    
+    [_episodesView.refreshControl endRefreshing];
+    
+    [_episodesView.tableView reloadData];
+    
 }
 
-- (void) getFeed:(BOOL)forceNewest {
-    
-    NSDictionary *dict = [TungPodcast getFeedWithDict:_podcastDict forceNewest:forceNewest];
-    
-    if (dict) {
-        //NSLog(@"podcast feed dict: %@", dict);
-        [self setUpViewForDict:dict cached:NO];
-        
-    }
-    else {
-        NSLog(@"no dict - empty feed");
-        _episodeView.noResults = YES;
-        [_episodeView.tableView reloadData];
-    }
-
-}
-
-- (void) setUpViewForDict:(NSDictionary *)dict cached:(BOOL)cached {
+- (void) setUpViewForDict:(NSDictionary *)dict {
     // remove spinner
-    _episodeView.tableView.backgroundView = nil;
+    _episodesView.tableView.backgroundView = nil;
     
-    _episodeView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:dict];
-    // cache the feed if we didn't pull it from cache
-    if (!cached)
-        [_tung cacheFeed:dict forEntity:_podcast.podcastEntity];
+    _episodesView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:dict];
     
     // find focused indexPath if focused GUID
     if (_focusedGUID) {
-        for (int i = 0; i < _episodeView.episodeArray.count; i++) {
-            if ([[[_episodeView.episodeArray objectAtIndex:i] objectForKey:@"guid"] isEqualToString:_focusedGUID]) {
-                _episodeView.focusedIndexPath = [NSIndexPath indexPathForRow:i inSection:0];
+        for (int i = 0; i < _episodesView.episodeArray.count; i++) {
+            if ([[[_episodesView.episodeArray objectAtIndex:i] objectForKey:@"guid"] isEqualToString:_focusedGUID]) {
+                _episodesView.focusedIndexPath = [NSIndexPath indexPathForRow:i inSection:0];
             }
         }
     }
-    [_episodeView.refreshControl endRefreshing];
-    
-    NSString *descText = [TungCommonObjects findPodcastDescriptionWithDict:dict];
-    _headerView.descriptionLabel.text = descText;
-    [_podcastDict setObject:descText forKey:@"desc"];
-    
-    [_podcast sizeAndConstrainHeaderView:_headerView inViewController:self];
+    [_episodesView.refreshControl endRefreshing];
     
     // update dict and entity with website and email
     if ([[dict objectForKey:@"channel"] objectForKey:@"link"]) {
         id website = [[dict objectForKey:@"channel"] objectForKey:@"link"];
         if ([website isKindOfClass:[NSString class]]) {
             [_podcastDict setObject:website forKey:@"website"];
-            if (_podcast.podcastEntity) _podcast.podcastEntity.website = website;
+            _podcastEntity.website = website;
         }
     }
     if ([[dict objectForKey:@"channel"] objectForKey:@"itunes:owner"] &&
@@ -160,22 +132,71 @@
         id email = [[[dict objectForKey:@"channel"] objectForKey:@"itunes:owner"] objectForKey:@"itunes:email"];
         if ([email isKindOfClass:[NSString class]]) {
             [_podcastDict setObject:email forKey:@"email"];
-            if (_podcast.podcastEntity) _podcast.podcastEntity.email = email;
+            _podcastEntity.email = email;
         }
     }
-    // description: prefer encoded content, fallback to description
-    if (_podcast.podcastEntity) _podcast.podcastEntity.desc = descText;
-    [TungCommonObjects saveContextWithReason:@"got podcast description"];
+    // description
+    NSString *descText = [TungCommonObjects findPodcastDescriptionWithDict:dict];
+    _headerView.descriptionLabel.text = descText;
+    _podcastEntity.desc = descText;
     
-    _episodeView.podcastDict = _podcastDict;
+    [_headerView sizeAndConstrainHeaderViewInViewController:self];
+    [_headerView.subscribeButton addTarget:self action:@selector(subscribeToPodcastViaSender:) forControlEvents:UIControlEventTouchUpInside];
     
-    _episodeView.noResults = _podcast.noResults;
-    [_episodeView.tableView reloadData];
+    [_episodesView.tableView reloadData];
     
     if (_focusedGUID) {
-        [_episodeView.tableView scrollToRowAtIndexPath:_episodeView.focusedIndexPath atScrollPosition:UITableViewScrollPositionMiddle animated:YES];
+        [_episodesView.tableView scrollToRowAtIndexPath:_episodesView.focusedIndexPath atScrollPosition:UITableViewScrollPositionMiddle animated:YES];
     }
 
 }
+
+#pragma mark Subscribing
+
+// toggle subscribe status
+- (void) subscribeToPodcastViaSender:(id)sender {
+    
+    // only allow subscribing with network connection
+    if (_tung.connectionAvailable) {
+        
+        if (!_podcastEntity) return;
+        
+        CircleButton *subscribeButton = (CircleButton *)sender;
+        
+        subscribeButton.subscribed = !subscribeButton.subscribed;
+        [subscribeButton setNeedsDisplay];
+        
+        // subscribe
+        if (subscribeButton.subscribed) {
+            NSLog(@"subscribed to podcast");
+            
+            NSDate *dateSubscribed = [NSDate date];
+            _podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
+            _podcastEntity.dateSubscribed = dateSubscribed;
+            
+            [_tung subscribeToPodcast:_podcastEntity withButton:subscribeButton];
+        }
+        // unsubscribe
+        else {
+            NSLog(@"unsubscribe from podcast ");
+            
+            _podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
+            NSLog(@"isSubscribted changed to %@", _podcastEntity.isSubscribed);
+            _podcastEntity.dateSubscribed = nil;
+            
+            [_tung unsubscribeFromPodcast:_podcastEntity withButton:subscribeButton];
+        }
+        [TungCommonObjects saveContextWithReason:@"(un)subscribed to podcast"];
+    }
+    else {
+        [self showNoConnectionAlert];
+    }
+}
+
+- (void) showNoConnectionAlert {
+    UIAlertView *noConnectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"No connection" message:@"Please try again when you're connected to the internet." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+    [noConnectionErrorAlert show];
+}
+
 
 @end

@@ -12,7 +12,7 @@
 #import "CCColorCube.h"
 #import "EpisodeCell.h"
 #import "PodcastViewController.h"
-#import "NowPlayingViewController.h"
+#import "EpisodeViewController.h"
 
 @interface TungPodcast()
 
@@ -508,6 +508,89 @@ static NSDateFormatter *airDateFormatter = nil;
     }
 }
 
+#pragma mark - preloading, caching and converting feeds
+
+
+/* ////////////////////////
+ FEED DICTS
+ /////////////////////////*/
+
+static NSString *feedDictsDirName = @"feedDicts";
+
++ (void) cacheFeed:(NSDictionary *)feed forEntity:(PodcastEntity *)entity {
+    
+    NSLog(@"cache feed for entity");
+    NSString *feedDir = [NSTemporaryDirectory() stringByAppendingPathComponent:feedDictsDirName];
+    NSError *error;
+    if ([[NSFileManager defaultManager] createDirectoryAtPath:feedDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+        
+        // cache feed
+        NSString *feedFileName = [NSString stringWithFormat:@"%@.txt", entity.collectionId];
+        NSString *feedFilePath = [feedDir stringByAppendingPathComponent:feedFileName];
+        // delete file if exists.
+        if ([[NSFileManager defaultManager] fileExistsAtPath:feedFilePath]) {
+            [[NSFileManager defaultManager] removeItemAtPath:feedFilePath error:nil];
+        }
+        if ([feed writeToFile:feedFilePath atomically:YES]) {
+            
+            entity.feedLastCached = [NSDate date];
+            
+            [TungCommonObjects saveContextWithReason:@"update feedLastCached"];
+        }
+    }
+    
+}
+
+/* 
+ Will retrieve a feed no older than a day, optionally force refetch. Caches feed if feed was not freshly cached.
+ */
++ (NSDictionary*) retrieveAndCacheFeedForPodcastEntity:(PodcastEntity *)entity forceNewest:(BOOL)forceNewest {
+    
+    NSDictionary *feedDict;
+    
+    if (forceNewest) {
+        NSLog(@"retrieve cached feed for entity :: force newest");
+        feedDict = [self requestAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
+                                                               andFeedUrl:entity.feedUrl];
+    }
+    else if (entity.feedLastCached) {
+        long timeSinceLastCached = fabs([entity.feedLastCached timeIntervalSinceNow]);
+        if (timeSinceLastCached > 60 * 60 * 24) {
+            NSLog(@"retrieve cached feed for entity :: cached feed dict was stale - refetch");
+            feedDict = [self requestAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
+                                                               andFeedUrl:entity.feedUrl];
+        } else {
+            NSString *feedDir = [NSTemporaryDirectory() stringByAppendingPathComponent:feedDictsDirName];
+            NSError *error;
+            [[NSFileManager defaultManager] createDirectoryAtPath:feedDir withIntermediateDirectories:YES attributes:nil error:&error];
+            NSString *feedFileName = [NSString stringWithFormat:@"%@.txt", entity.collectionId];
+            NSString *feedFilePath = [feedDir stringByAppendingPathComponent:feedFileName];
+            NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:feedFilePath];
+            if (dict) {
+                // return cached feed
+                NSLog(@"retrieve cached feed for entity :: found fresh cached feed dictionary");
+                return dict;
+            } else {
+                NSLog(@"retrieve cached feed for entity :: tmp dir must have been cleared, fetching feed");
+                feedDict = [self requestAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
+                                                                   andFeedUrl:entity.feedUrl];
+            }
+        }
+    } else {
+        NSLog(@"retrieve cached feed for entity :: feed dict not yet cached - fetch");
+        feedDict = [self requestAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
+                                                           andFeedUrl:entity.feedUrl];
+    }
+    [self cacheFeed:feedDict forEntity:entity];
+    return feedDict;
+    
+}
+
+
+/* ////////////////////////
+ RAW FEEDS
+ /////////////////////////*/
+
 static NSString *rawFeedsDirName = @"rawFeeds";
 
 // used for preloading feeds from search results
@@ -553,22 +636,8 @@ static NSString *rawFeedsDirName = @"rawFeeds";
     }
 }
 
-// Feeds
-
-+ (NSDictionary *) getFeedWithDict:(NSDictionary *)podcastDict forceNewest:(BOOL)forceNewest {
-    NSDictionary *dict;
-    if (forceNewest) {
-        NSLog(@"get feed (force newest)");
-        dict = [self requestAndConvertPodcastFeedDataFromDict:podcastDict];
-    } else {
-        NSLog(@"get feed");
-        dict = [self retrieveAndConvertPodcastFeedDataFromDict:podcastDict];
-    }
-    return dict;
-}
 /*
- if there is cached data, the feed is retrieved from it. If it was cached, it was just cashed in the previous view controller
- else the feed is requested and converted.
+ if there is cached data, the feed is retrieved from it. If not it is requested and converted.
  */
 + (NSDictionary *) retrieveAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict {
     
@@ -598,16 +667,15 @@ static NSString *rawFeedsDirName = @"rawFeeds";
 /*
  forces re-fetch of the feed, returns converted data.
  */
-+ (NSDictionary *) requestAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict {
++ (NSDictionary *) requestAndConvertPodcastFeedDataWithCollectionId:(NSNumber *)collectionId andFeedUrl:(NSString *)feedUrl {
     
     NSString *rawFeedsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:rawFeedsDirName];
     NSError *error;
     if ([[NSFileManager defaultManager] createDirectoryAtPath:rawFeedsDir withIntermediateDirectories:YES attributes:nil error:&error]) {
         
-        NSNumber *collectionId = [podcastDict objectForKey:@"collectionId"];
         NSString *feedDataFilename = [NSString stringWithFormat:@"%@", collectionId];
         NSString *feedDataFilepath = [rawFeedsDir stringByAppendingPathComponent:feedDataFilename];
-        NSData *feedData = [NSData dataWithContentsOfURL:[NSURL URLWithString: [podcastDict objectForKey:@"feedUrl"]]];
+        NSData *feedData = [NSData dataWithContentsOfURL:[NSURL URLWithString: feedUrl]];
         [feedData writeToFile:feedDataFilepath atomically:YES];
         
         JPXMLtoDictionary *xmlToDict = [[JPXMLtoDictionary alloc] init];
@@ -624,173 +692,6 @@ static NSString *rawFeedsDirName = @"rawFeeds";
     } else {
         return @[item];
     }
-}
-
-
-#pragma mark - Header View
-
--(void) sizeAndConstrainHeaderView:(HeaderView *)headerView inViewController:(UIViewController *)vc {
-    
-    //NSLog(@"size and constrain header view");
-    
-    // size labels
-    CGSize titleLabelSize = headerView.titleLabel.frame.size;
-    headerView.titleLabel.preferredMaxLayoutWidth = titleLabelSize.width;
-    [headerView.titleLabel sizeToFit];
-    
-    CGSize subTitleLabelSize = headerView.subTitleLabel.frame.size;
-    headerView.subTitleLabel.preferredMaxLayoutWidth = subTitleLabelSize.width;
-    [headerView.subTitleLabel sizeToFit];
-    
-    CGFloat margin = 12;
-    CGFloat maxDescWidth = vc.view.frame.size.width - margin - margin;
-    headerView.descriptionLabel.preferredMaxLayoutWidth = maxDescWidth;
-    [headerView.descriptionLabel sizeToFit];
-    
-    // header height
-    float height = margin + margin; // top and bottom margin
-    height += headerView.titleLabel.frame.size.height;
-    height += headerView.subTitleLabel.frame.size.height; // label heights
-    height += 16 + 62; // between label and sub btn, sub btn height
-    height += headerView.descriptionLabel.frame.size.height + 7; // top margin and desc label height
-    
-    if (!headerView.isConstrained) {
-        CGFloat topConstraint = 0;
-        if ([vc isKindOfClass:[NowPlayingViewController class]]) topConstraint = 64;
-        /* reason for using conditional top contstraint:
-         	- in NowPlayingViewController (NPVC), without edgesForExtendedLayout prop, headerView sits under nav bar
-         	- with edgesForExtendedLayout, when searching from NPVC then unwinding to it causes momentary gap at top
-         */
-        
-        headerView.translatesAutoresizingMaskIntoConstraints = NO;
-        [vc.view addConstraint:[NSLayoutConstraint constraintWithItem:headerView attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:vc.view attribute:NSLayoutAttributeTop multiplier:1 constant:topConstraint]];
-        [vc.view addConstraint:[NSLayoutConstraint constraintWithItem:headerView attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:vc.view attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
-        //[vc.view addConstraint:[NSLayoutConstraint constraintWithItem:headerView attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:vc.view attribute:NSLayoutAttributeTop multiplier:1 constant:0]];
-        headerView.heightConstraint = [NSLayoutConstraint constraintWithItem:headerView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:height];
-        [vc.view addConstraint:[NSLayoutConstraint constraintWithItem:headerView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:vc.view.frame.size.width]];
-        [headerView addConstraint:headerView.heightConstraint];
-        headerView.isConstrained = YES;
-    }
-    
-    headerView.heightConstraint.constant = height;
-    [vc.view layoutIfNeeded];
-}
-
-
--(void) setUpHeaderView:(HeaderView *)headerView forEpisode:(EpisodeEntity *)episodeEntity orPodcast:(BOOL)forPodcast {
-    //NSLog(@"set up header view");
-    headerView.hidden = NO;
-    headerView.clipsToBounds = YES;
-    
-    double headerViewHeight;
-    NSString *title;
-    NSString *subTitle;
-    NSString *desc;
-    NSString *artUrlString;
-    
-    if (forPodcast) {
-        headerViewHeight = 164;
-        title = _podcastEntity.collectionName;
-        subTitle = _podcastEntity.artistName;
-        desc = @"Loading feed...";
-        if (title.length > 60) {
-            headerView.titleLabel.font = [UIFont systemFontOfSize:15];
-        }
-        else if (title.length > 30) {
-            headerView.titleLabel.font = [UIFont systemFontOfSize:17];
-        }
-        else if (title.length > 17) {
-            headerView.titleLabel.font = [UIFont systemFontOfSize:19];
-        }
-        artUrlString = _podcastEntity.artworkUrl600;
-    }
-    else {
-        headerViewHeight = 144;
-        title = episodeEntity.title;
-        if (!airDateFormatter) {
-            airDateFormatter = [[NSDateFormatter alloc] init];
-            [airDateFormatter setDateFormat:@"MMMM d, yyyy"];
-        }
-        subTitle = [airDateFormatter stringFromDate:episodeEntity.pubDate];
-        desc = @"";
-        if (title.length > 60) {
-            headerView.titleLabel.font = [UIFont systemFontOfSize:15];
-        }
-        else {
-            headerView.titleLabel.font = [UIFont systemFontOfSize:17];
-        }
-        artUrlString = episodeEntity.podcast.artworkUrl600;
-    }
-    
-    headerView.titleLabel.text = title;
-    headerView.subTitleLabel.text = subTitle;
-    headerView.descriptionLabel.text = desc;
-    
-    // art image
-    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString];
-    UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
-    headerView.albumArt.image = artImage;
-    
-    // key colors
-    UIColor *lighterKeyColor = [_tung lightenKeyColor:_podcastEntity.keyColor1];
-    headerView.view.backgroundColor = lighterKeyColor;
-    
-    // subscribe button
-    headerView.subscribeButton.type = kCircleTypeSubscribe;
-    headerView.subscribeButton.color = _podcastEntity.keyColor2;
-    [headerView.subscribeButton addTarget:self action:@selector(subscribeToPodcastViaSender:) forControlEvents:UIControlEventTouchUpInside];
-    
-    headerView.subscribeButton.subscribed = _podcastEntity.isSubscribed.boolValue;
-    [headerView.subscribeButton setNeedsDisplay]; // re-display for color change or sub. status
-}
-
-// toggle subscribe status
-- (void) subscribeToPodcastViaSender:(id)sender {
-    
-    // only allow subscribing with network connection
-    if (_tung.connectionAvailable) {
-        
-        //NSLog(@"subscribing to podcast with entity: %@", _podcastEntity);
-        if (!_podcastEntity) {
-            NSLog(@"ERROR! no podcast entity");
-            return;
-        }
-        
-        CircleButton *subscribeButton = (CircleButton *)sender;
-    
-        subscribeButton.subscribed = !subscribeButton.subscribed;
-        [subscribeButton setNeedsDisplay];
-        
-        // subscribe
-        if (subscribeButton.subscribed) {
-            NSLog(@"subscribed to podcast");
-            
-            NSDate *dateSubscribed = [NSDate date];
-            _podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
-            _podcastEntity.dateSubscribed = dateSubscribed;
-            
-            [_tung subscribeToPodcast:_podcastEntity withButton:subscribeButton];
-        }
-        // unsubscribe
-        else {
-            NSLog(@"unsubscribe from podcast ");
-            
-            _podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
-            NSLog(@"isSubscribted changed to %@", _podcastEntity.isSubscribed);
-            _podcastEntity.dateSubscribed = nil;
-            
-            [_tung unsubscribeFromPodcast:_podcastEntity withButton:subscribeButton];
-        }
-        [TungCommonObjects saveContextWithReason:@"(un)subscribed to podcast"];
-    }
-    else {
-        [self showNoConnectionAlert];
-    }
-}
-
-- (void) showNoConnectionAlert {
-    UIAlertView *noConnectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"No connection" message:@"Please try again when you're connected to the internet." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-    [noConnectionErrorAlert show];
 }
 
 @end

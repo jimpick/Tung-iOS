@@ -7,6 +7,7 @@
 //
 
 #import "CommentsTableViewController.h"
+#import "ProfileViewController.h"
 
 @interface CommentsTableViewController ()
 
@@ -100,6 +101,13 @@ static CGFloat commentBubbleMargins = 27;
 
     [commentCell.commentBkgd setNeedsDisplay];
     
+    // background color
+    if (_focusedId && [_focusedId isEqualToString:[[commentDict objectForKey:@"id"] objectForKey:@"$id"]]) {
+        commentCell.backgroundColor = _tung.lightTungColor;
+    } else {
+        commentCell.backgroundColor = [UIColor whiteColor];
+    }
+    
 }
 
 - (void) configureCommentTheirsCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
@@ -123,6 +131,13 @@ static CGFloat commentBubbleMargins = 27;
 
     [commentCell.commentBkgd setNeedsDisplay];
     
+    // background color
+    if (_focusedId && [_focusedId isEqualToString:[[commentDict objectForKey:@"id"] objectForKey:@"$id"]]) {
+        commentCell.backgroundColor = _tung.lightTungColor;
+    } else {
+        commentCell.backgroundColor = [UIColor whiteColor];
+    }
+    
 }
 
 #pragma mark - Table view delegate methods
@@ -130,26 +145,20 @@ static CGFloat commentBubbleMargins = 27;
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     //NSLog(@"%@", [_commentsArray objectAtIndex:indexPath.row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    /*
-    // play episode selected
-    NSDictionary *episodeDict = [_commentsArray objectAtIndex:indexPath.row];
-    //NSLog(@"selected episode: %@", episodeDict);
-    //NSLog(@"podcast dict: %@", _podcastDict);
-    NSString *urlString = [[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
-    if (urlString) {
-        [TungCommonObjects getEntityForPodcast:_podcastDict andEpisode:episodeDict save:YES];
-        
-        // set now playing feed and podcast dict
-        [_tung assignCurrentFeed:_commentsArray];
-        _tung.npPodcastDict = _podcastDict;
-        
-        [_tung queueAndPlaySelectedEpisode:urlString];
+    
+    NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
+    NSString *idString = [[[commentDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+    
+    if ([idString isEqualToString:_tung.tungId]) {
+        // logged-in user's comment
+        // TODO: preset action sheet with option to delete comment
     } else {
-        
-        UIAlertView *badXmlAlert = [[UIAlertView alloc] initWithTitle:@"Can't Play - No URL" message:@"Unfortunately, this feed is missing links to its content." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-        [badXmlAlert show];
+        // other user's comment
+        // push profile view
+        ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
+        profileView.profiledUserId = idString;
+        [_navController pushViewController:profileView animated:YES];
     }
-    */
 }
 
 //- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
@@ -239,7 +248,7 @@ static double screenWidth;
                              @"olderThan": beforeTime
                              };
     
-    NSLog(@"request for comments with params: %@", params);
+    //NSLog(@"request for comments with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [feedRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -272,7 +281,7 @@ static double screenWidth;
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
                         NSArray *newComments = jsonData;
-                        NSLog(@"new comments count: %lu", (unsigned long)newComments.count);
+                        //NSLog(@"new comments count: %lu", (unsigned long)newComments.count);
                         
                         // end refreshing
                         self.tableView.backgroundView = nil;

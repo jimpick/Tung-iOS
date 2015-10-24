@@ -312,7 +312,7 @@ static NSString * const reuseIdentifier = @"artCell";
     
     PodcastEntity *podcastEntity = [_resultsController objectAtIndexPath:indexPath];
     // entity -> dict
-    NSDictionary *podcastDict = [TungCommonObjects podcastEntityToDict:podcastEntity];
+    NSDictionary *podcastDict = [TungCommonObjects entityToDict:podcastEntity];
     
     [self resignFirstResponder];
     PodcastViewController *podcastView = [self.storyboard instantiateViewControllerWithIdentifier:@"podcastView"];

@@ -12,7 +12,7 @@
 #import "StoryHeaderCell.h"
 #import "StoryEventCell.h"
 #import "StoryFooterCell.h"
-#import "PodcastViewController.h"
+#import "EpisodeViewController.h"
 #import "ProfileViewController.h"
 
 @interface TungStories()
@@ -98,6 +98,20 @@ CGFloat headerViewHeight, headerScrollViewHeight, tableHeaderRow, animationDista
                            fromUser:_profiledUserId];
 }
 
+- (void) pushEpisodeViewForIndexPath:(NSIndexPath *)indexPath withFocusedEventId:(NSString *)eventId {
+    // push episode view
+    NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
+    NSDictionary *podcastDict = [NSDictionary dictionaryWithDictionary:[storyDict objectForKey:@"podcast"]];
+    NSDictionary *episodeDict = [NSDictionary dictionaryWithDictionary:[storyDict objectForKey:@"episode"]];
+    EpisodeEntity *episodeEntity = [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
+    
+    EpisodeViewController *episodeView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"episodeView"];
+    episodeView.episodeEntity = episodeEntity;
+    episodeView.eventId = eventId;
+    
+    [_navController pushViewController:episodeView animated:YES];
+}
+
 #pragma mark - Table view data source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -148,31 +162,35 @@ static NSString *footerCellIdentifier = @"storyFooterCell";
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     if (indexPath.row == 0) {
-        // push podcast view
-        NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row];
-        NSDictionary *podcastDict = [NSDictionary dictionaryWithDictionary:[storyDict objectForKey:@"podcast"]];
-        //NSLog(@"selected %@", [podcastDict objectForKey:@"collectionName"]);
+        // header
+        [self pushEpisodeViewForIndexPath:indexPath withFocusedEventId:nil];
         
-        PodcastViewController *podcastView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"podcastView"];
-        podcastView.focusedGUID = [[storyDict objectForKey:@"episode"] objectForKey:@"guid"];
-
-        podcastView.podcastDict = [podcastDict mutableCopy];
-        [_navController pushViewController:podcastView animated:YES];
     }
     else if (indexPath.row == [[_storiesArray objectAtIndex:indexPath.section] count] - 1) {
-        // push story view
+        // footer
     }
     else {
+        // event
         // if clip, play
         NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
+        NSString *type = [eventDict objectForKey:@"type"];
         if ([eventDict objectForKey:@"clip_url"]) {
             _selectedSectionIndex = indexPath.section;
             _selectedRowIndex = indexPath.row;
             [self playPause];
         }
+        else if ([type isEqualToString:@"comment"]) {
+            NSString *commentId = [eventDict objectForKey:@"id"];
+            [self pushEpisodeViewForIndexPath:indexPath withFocusedEventId:commentId];
+        }
+        else {
+            [self pushEpisodeViewForIndexPath:indexPath withFocusedEventId:nil];
+        }
     }
-    
 }
+
+// Buhbie's comment:
+// ABCD
 
 //- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
 UILabel *prototypeLabel;
@@ -508,12 +526,6 @@ NSString static *podcastArtDir;
                 else {
                     // different episode
                     [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
-                    
-                    NSDictionary *feedDict = [TungPodcast getFeedWithDict:podcastDict forceNewest:YES];
-                    NSArray *feedArray = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
-                    // set now playing feed and podcast dict
-                    [_tung assignCurrentFeed:feedArray];
-                    _tung.npPodcastDict = [podcastDict mutableCopy];
                     _tung.playFromTimestamp = _timestamp;
                     
                     // play

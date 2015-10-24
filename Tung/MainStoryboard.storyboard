@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="8191" systemVersion="15A284" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="V9Q-yt-wDy">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="9059" systemVersion="15A284" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="V9Q-yt-wDy">
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="8154"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9049"/>
         <capability name="Alignment constraints with different attributes" minToolsVersion="5.1"/>
         <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
         <capability name="Constraints with non-1.0 multipliers" minToolsVersion="5.1"/>
@@ -20,24 +20,56 @@
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                         <subviews>
-                            <button opaque="NO" alpha="0.0" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="xbe-DW-nRy">
+                            <button opaque="NO" alpha="0.0" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="xbe-DW-nRy" customClass="SignUpButton">
                                 <rect key="frame" x="42" y="393" width="516" height="66"/>
                                 <animations/>
-                                <state key="normal" image="btn-signUp-twitter.png">
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="222" id="5Nl-bS-yHu"/>
+                                    <constraint firstAttribute="height" constant="72" id="qSC-mc-Nn4"/>
+                                </constraints>
+                                <state key="normal">
                                     <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
                                 </state>
                                 <state key="highlighted" image="btn-signUp-twitter-down.png"/>
+                                <variation key="default">
+                                    <mask key="constraints">
+                                        <exclude reference="5Nl-bS-yHu"/>
+                                        <exclude reference="qSC-mc-Nn4"/>
+                                    </mask>
+                                </variation>
+                                <variation key="widthClass=compact">
+                                    <mask key="constraints">
+                                        <include reference="5Nl-bS-yHu"/>
+                                        <include reference="qSC-mc-Nn4"/>
+                                    </mask>
+                                </variation>
                                 <connections>
                                     <action selector="signUpWithTwitter:" destination="rDO-iH-KVb" eventType="touchUpInside" id="0Jh-ER-aHZ"/>
                                 </connections>
                             </button>
-                            <button opaque="NO" alpha="0.0" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MjQ-0U-cFx">
+                            <button opaque="NO" alpha="0.0" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="MjQ-0U-cFx" customClass="SignUpButton">
                                 <rect key="frame" x="42" y="490" width="516" height="66"/>
                                 <animations/>
-                                <state key="normal" image="btn-signUp-facebook.png">
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="72" id="G91-gR-ME6"/>
+                                    <constraint firstAttribute="width" constant="222" id="sl0-iT-2Wy"/>
+                                </constraints>
+                                <state key="normal">
                                     <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
                                 </state>
                                 <state key="highlighted" image="btn-signUp-facebook-down.png"/>
+                                <variation key="default">
+                                    <mask key="constraints">
+                                        <exclude reference="G91-gR-ME6"/>
+                                        <exclude reference="sl0-iT-2Wy"/>
+                                    </mask>
+                                </variation>
+                                <variation key="widthClass=compact">
+                                    <mask key="constraints">
+                                        <include reference="G91-gR-ME6"/>
+                                        <include reference="sl0-iT-2Wy"/>
+                                    </mask>
+                                </variation>
                                 <connections>
                                     <action selector="signUpWithFacebook:" destination="rDO-iH-KVb" eventType="touchUpInside" id="8Ra-Gd-C6c"/>
                                 </connections>
@@ -74,11 +106,16 @@
                             <constraint firstAttribute="centerX" secondItem="wmK-iW-e3M" secondAttribute="centerX" id="GGR-hD-Ng2"/>
                             <constraint firstItem="MjQ-0U-cFx" firstAttribute="top" secondItem="xbe-DW-nRy" secondAttribute="bottom" constant="31" id="Mdw-m6-bvy"/>
                             <constraint firstAttribute="trailing" secondItem="cxP-JY-zJP" secondAttribute="trailing" constant="150" id="Pem-H1-JBN"/>
+                            <constraint firstItem="MjQ-0U-cFx" firstAttribute="centerX" secondItem="nFO-98-4ij" secondAttribute="centerX" id="PgD-Yi-gAi"/>
                             <constraint firstAttribute="trailing" secondItem="xbe-DW-nRy" secondAttribute="trailing" constant="42" id="Tjd-RV-Q2X"/>
                             <constraint firstAttribute="bottom" secondItem="MjQ-0U-cFx" secondAttribute="bottom" constant="44" id="UMN-rf-zJH"/>
                             <constraint firstAttribute="trailing" secondItem="MjQ-0U-cFx" secondAttribute="trailing" constant="42" id="UTI-Yu-GvZ"/>
+                            <constraint firstItem="xbe-DW-nRy" firstAttribute="centerX" secondItem="nFO-98-4ij" secondAttribute="centerX" id="dD7-ZL-GXA"/>
                             <constraint firstItem="wmK-iW-e3M" firstAttribute="top" secondItem="GHs-wp-IQ4" secondAttribute="bottom" constant="73" id="iOa-AG-Dqb"/>
-                            <constraint firstItem="xbe-DW-nRy" firstAttribute="top" secondItem="cxP-JY-zJP" secondAttribute="bottom" constant="49" id="j4g-ID-FBm"/>
+                            <constraint firstItem="cxP-JY-zJP" firstAttribute="centerX" secondItem="nFO-98-4ij" secondAttribute="centerX" id="ia0-FU-VFV"/>
+                            <constraint firstItem="xbe-DW-nRy" firstAttribute="top" secondItem="cxP-JY-zJP" secondAttribute="bottom" constant="49" id="j4g-ID-FBm">
+                                <variation key="widthClass=compact" constant="37"/>
+                            </constraint>
                             <constraint firstItem="xbe-DW-nRy" firstAttribute="leading" secondItem="nFO-98-4ij" secondAttribute="leading" constant="42" id="kAj-dY-0JC"/>
                             <constraint firstAttribute="centerX" secondItem="wmK-iW-e3M" secondAttribute="centerX" id="lDi-hL-Eh1"/>
                             <constraint firstItem="MjQ-0U-cFx" firstAttribute="leading" secondItem="nFO-98-4ij" secondAttribute="leading" constant="42" id="rGX-9Q-Ifm"/>
@@ -88,6 +125,9 @@
                                 <exclude reference="GGR-hD-Ng2"/>
                                 <exclude reference="iOa-AG-Dqb"/>
                                 <exclude reference="lDi-hL-Eh1"/>
+                                <exclude reference="ia0-FU-VFV"/>
+                                <exclude reference="dD7-ZL-GXA"/>
+                                <exclude reference="PgD-Yi-gAi"/>
                             </mask>
                         </variation>
                         <variation key="widthClass=compact">
@@ -95,6 +135,15 @@
                                 <include reference="GGR-hD-Ng2"/>
                                 <include reference="iOa-AG-Dqb"/>
                                 <exclude reference="lDi-hL-Eh1"/>
+                                <exclude reference="4iP-3l-coN"/>
+                                <exclude reference="Pem-H1-JBN"/>
+                                <include reference="ia0-FU-VFV"/>
+                                <exclude reference="Tjd-RV-Q2X"/>
+                                <include reference="dD7-ZL-GXA"/>
+                                <exclude reference="kAj-dY-0JC"/>
+                                <include reference="PgD-Yi-gAi"/>
+                                <exclude reference="UTI-Yu-GvZ"/>
+                                <exclude reference="rGX-9Q-Ifm"/>
                             </mask>
                         </variation>
                     </view>
@@ -1313,19 +1362,19 @@
                                             <exclude reference="hhR-mp-Sdq"/>
                                         </mask>
                                         <mask key="constraints">
-                                            <exclude reference="3Ol-RW-R49"/>
-                                            <exclude reference="iT1-UF-laj"/>
+                                            <exclude reference="VTX-E3-G7s"/>
+                                            <exclude reference="zsO-nE-CMc"/>
                                             <exclude reference="1BW-Hq-kRT"/>
                                             <exclude reference="8KU-n4-K1C"/>
                                             <exclude reference="EiW-q4-V6L"/>
                                             <exclude reference="iDX-TP-O2K"/>
-                                            <exclude reference="6MB-Ba-EfD"/>
-                                            <exclude reference="VTX-E3-G7s"/>
-                                            <exclude reference="zsO-nE-CMc"/>
                                             <exclude reference="6SX-AW-fiR"/>
                                             <exclude reference="alh-LO-ZDr"/>
                                             <exclude reference="k7k-Nh-Ern"/>
                                             <exclude reference="yXA-Ye-PTi"/>
+                                            <exclude reference="3Ol-RW-R49"/>
+                                            <exclude reference="iT1-UF-laj"/>
+                                            <exclude reference="6MB-Ba-EfD"/>
                                             <exclude reference="66l-9M-lF8"/>
                                             <exclude reference="YkU-kN-uEe"/>
                                             <exclude reference="aQr-Bz-d5J"/>
@@ -1346,22 +1395,22 @@
                                             <include reference="hhR-mp-Sdq"/>
                                         </mask>
                                         <mask key="constraints">
-                                            <include reference="3Ol-RW-R49"/>
-                                            <include reference="iT1-UF-laj"/>
+                                            <include reference="VTX-E3-G7s"/>
+                                            <include reference="zsO-nE-CMc"/>
                                             <include reference="1BW-Hq-kRT"/>
                                             <exclude reference="8KU-n4-K1C"/>
                                             <exclude reference="EiW-q4-V6L"/>
                                             <include reference="iDX-TP-O2K"/>
-                                            <include reference="6MB-Ba-EfD"/>
-                                            <include reference="VTX-E3-G7s"/>
-                                            <include reference="zsO-nE-CMc"/>
                                             <include reference="6SX-AW-fiR"/>
                                             <exclude reference="alh-LO-ZDr"/>
                                             <include reference="k7k-Nh-Ern"/>
                                             <exclude reference="yXA-Ye-PTi"/>
+                                            <include reference="3Ol-RW-R49"/>
+                                            <include reference="iT1-UF-laj"/>
+                                            <include reference="6MB-Ba-EfD"/>
                                             <include reference="66l-9M-lF8"/>
                                             <include reference="YkU-kN-uEe"/>
-                                            <include reference="aQr-Bz-d5J"/>
+                                            <exclude reference="aQr-Bz-d5J"/>
                                             <include reference="o3f-hx-fyp"/>
                                             <include reference="tEi-OG-H2m"/>
                                             <include reference="6qo-OX-lXf"/>
@@ -1679,10 +1728,10 @@
             </objects>
             <point key="canvasLocation" x="1809" y="108"/>
         </scene>
-        <!--Episode Table View Controller-->
+        <!--Episodes Table View Controller-->
         <scene sceneID="wGk-hX-jo6">
             <objects>
-                <tableViewController storyboardIdentifier="episodeView" id="FNJ-8P-4Xr" customClass="EpisodeTableViewController" sceneMemberID="viewController">
+                <tableViewController storyboardIdentifier="episodesView" id="FNJ-8P-4Xr" customClass="EpisodesTableViewController" sceneMemberID="viewController">
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="44" sectionHeaderHeight="22" sectionFooterHeight="22" id="G40-ZZ-jom">
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -2013,10 +2062,10 @@
             </objects>
             <point key="canvasLocation" x="1147.5" y="804"/>
         </scene>
-        <!--Now Playing View Controller-->
+        <!--Episode View Controller-->
         <scene sceneID="Aye-OL-5BL">
             <objects>
-                <viewController id="HYq-2V-aHS" customClass="NowPlayingViewController" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="episodeView" id="HYq-2V-aHS" customClass="EpisodeViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="yPy-qL-NDo"/>
                         <viewControllerLayoutGuide type="bottom" id="voR-Bw-ZMk"/>
@@ -2569,10 +2618,10 @@
                                 </connections>
                             </tableViewCell>
                             <tableViewCell clipsSubviews="YES" contentMode="scaleToFill" restorationIdentifier="commentCellMine" selectionStyle="default" indentationWidth="10" reuseIdentifier="commentCellMine" rowHeight="117" id="OKa-8w-uGI" customClass="CommentCellMine">
-                                <rect key="frame" x="0.0" y="28" width="600" height="117"/>
+                                <rect key="frame" x="0.0" y="145" width="600" height="117"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="OKa-8w-uGI" id="1sg-9M-adI">
-                                    <rect key="frame" x="0.0" y="0.0" width="567" height="116"/>
+                                    <rect key="frame" x="0.0" y="0.0" width="600" height="116"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="8Le-86-gcb">
@@ -3318,12 +3367,10 @@
         <image name="albumShawdow.png" width="112" height="187"/>
         <image name="albumShawdowCellSection.png" width="112" height="72"/>
         <image name="btn-signUp-facebook-down.png" width="236" height="66"/>
-        <image name="btn-signUp-facebook.png" width="236" height="66"/>
         <image name="btn-signUp-twitter-down.png" width="236" height="66"/>
-        <image name="btn-signUp-twitter.png" width="236" height="66"/>
         <image name="tungSignInLogo.png" width="194" height="124"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="sbA-US-dCS"/>
+        <segue reference="09H-aj-Zdd"/>
     </inferredMetricsTieBreakers>
 </document>

@@ -11,7 +11,7 @@
 #import <Fabric/Fabric.h>
 #import <Crashlytics/Crashlytics.h>
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
-
+#import "TungCommonObjects.h"
 
 @implementation AppDelegate
 
@@ -23,6 +23,9 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
+    
+    _tung = [TungCommonObjects establishTungObjects];
+    
     BOOL isLoggedIn = NO;
     
     NSString *key = @"tung credentials";
@@ -104,6 +107,9 @@
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
+    NSLog(@"Application did become active");
+    [_tung checkForNowPlaying];
+    
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
 }
 

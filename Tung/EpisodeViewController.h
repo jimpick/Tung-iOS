@@ -1,5 +1,5 @@
 //
-//  NowPlayingViewController.h
+//  EpisodeViewController.h
 //  Tung
 //
 //  Created by Jamie Perkins on 5/6/15.
@@ -15,7 +15,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <MediaPlayer/MediaPlayer.h>
 
-@interface NowPlayingViewController : UIViewController <TungPodcastsDelegate, UIActionSheetDelegate, AVAudioPlayerDelegate, ControlButtonDelegate, UIWebViewDelegate, UITextViewDelegate, UIScrollViewDelegate>
+@interface EpisodeViewController : UIViewController <TungPodcastsDelegate, UIActionSheetDelegate, AVAudioPlayerDelegate, ControlButtonDelegate, UIWebViewDelegate, UITextViewDelegate, UIScrollViewDelegate>
 
 @property (strong, nonatomic) IBOutlet FXBlurView *npControlsView;
 @property (strong, nonatomic) IBOutlet UISlider *posbar;
@@ -28,6 +28,9 @@
 @property (strong, nonatomic) IBOutlet UILabel *shareLabel;
 @property (strong, nonatomic) IBOutlet UIProgressView *progressBar;
 @property (strong, nonatomic) IBOutlet UIPageControl *pageControl;
+
+@property (strong, nonatomic) EpisodeEntity *episodeEntity;
+@property (strong, nonatomic) NSString *eventId;
 
 - (IBAction)toggleNpControlsView:(id)sender;
 - (IBAction)touchDownInShowHideControlsButton:(id)sender;

@@ -1,21 +1,21 @@
 //
-//  PodcastTableViewController.m
+//  EpisodesTableViewController.m
 //  Tung
 //
 //  Created by Jamie Perkins on 7/27/15.
 //  Copyright (c) 2015 Jamie Perkins. All rights reserved.
 //
 
-#import "EpisodeTableViewController.h"
+#import "EpisodesTableViewController.h"
 
-@interface EpisodeTableViewController ()
+@interface EpisodesTableViewController ()
 
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 
 @end
 
-@implementation EpisodeTableViewController
+@implementation EpisodesTableViewController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -74,11 +74,11 @@ static NSString *cellIdentifier = @"EpisodeCell";
     // title
     episodeCell.episodeTitle.text = [episodeDict objectForKey:@"title"];
     UIColor *keyColor;
-    if ([_podcastDict objectForKey:@"keyColor1"]) {
-        keyColor = [_podcastDict objectForKey:@"keyColor1"];
+    if (_podcastEntity.keyColor1) {
+        keyColor = _podcastEntity.keyColor1;
     }
-    else if ([_podcastDict objectForKey:@"keyColor1Hex"]) {
-        keyColor = [TungCommonObjects colorFromHexString:[_podcastDict objectForKey:@"keyColor1Hex"]];
+    else if (_podcastEntity.keyColor1Hex) {
+        keyColor = [TungCommonObjects colorFromHexString:_podcastEntity.keyColor1Hex];
     }
     episodeCell.episodeTitle.textColor = keyColor;
     // air date
@@ -129,15 +129,13 @@ static NSString *cellIdentifier = @"EpisodeCell";
     
     // play episode selected
     NSDictionary *episodeDict = [_episodeArray objectAtIndex:indexPath.row];
+    NSDictionary *podcastDict = [TungCommonObjects entityToDict:_podcastEntity];
     //NSLog(@"selected episode: %@", episodeDict);
-    //NSLog(@"podcast dict: %@", _podcastDict);
     NSString *urlString = [[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
     if (urlString) {
-        [TungCommonObjects getEntityForPodcast:_podcastDict andEpisode:episodeDict save:YES];
         
-        // set now playing feed and podcast dict
-        [_tung assignCurrentFeed:_episodeArray];
-        _tung.npPodcastDict = _podcastDict;
+        [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
+        [TungCommonObjects saveContextWithReason:@"about to play episode"];
         
         [_tung queueAndPlaySelectedEpisode:urlString];
     } else {
