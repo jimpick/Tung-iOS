@@ -110,9 +110,6 @@
 - (void) queueAndPlaySelectedEpisode:(NSString *)urlString;
 - (void) playNextEpisode;
 - (void) dismissSearch;
-- (void) cacheFeed:(NSDictionary *)feed forEntity:(PodcastEntity *)entity;
-- (NSDictionary*) retrieveCachedFeedForEntity:(PodcastEntity *)entity;
-- (void) assignCurrentFeed:(NSArray *)currentFeed;
 - (void) savePositionForNowPlaying;
 - (BOOL) isPlaying;
 - (void) playerPlay;

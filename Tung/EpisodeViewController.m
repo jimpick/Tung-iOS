@@ -67,7 +67,7 @@
 @property CGFloat recordStartMarker;
 @property CGFloat recordEndMarker;
 @property BOOL totalTimeSet;
-@property BOOL viewIsForNowPlaying;
+@property BOOL isNowPlayingView;
 
 - (void) switchViews:(id)sender;
 
@@ -96,7 +96,7 @@ static NSArray *playbackRateStrings;
         _podcastEntity = _episodeEntity.podcast;
         self.navigationItem.title = @"Episode";
     } else {
-        _viewIsForNowPlaying = YES;
+        _isNowPlayingView = YES;
         _episodeEntity = _tung.npEpisodeEntity;
         _podcastEntity = _tung.npEpisodeEntity.podcast;
         bottomConstraint = -84;
@@ -200,7 +200,6 @@ static NSArray *playbackRateStrings;
     // episode view
     _episodesView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodesView"];
     _episodesView.edgesForExtendedLayout = UIRectEdgeNone;
-    _episodesView.podcastEntity = _podcastEntity;
     [self addChildViewController:_episodesView];
     [self.view addSubview:_episodesView.view];
     _episodesView.refreshControl = [UIRefreshControl new];
@@ -213,12 +212,12 @@ static NSArray *playbackRateStrings;
     // episode view starts out hidden
     _episodesView.view.hidden = YES;
     
-    if (!_viewIsForNowPlaying && _eventId) {
+    if (!_isNowPlayingView && _eventId) {
         _switcherIndex = 1;
     }
     
     
-    if (_viewIsForNowPlaying) {
+    if (_isNowPlayingView) {
     
         // show/hide button
         _hideControlsButton.type = kShowHideButtonTypeHide;
@@ -268,27 +267,29 @@ static NSArray *playbackRateStrings;
 - (void) viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     
-    if (_viewIsForNowPlaying) [self updateTimeElapsedAndPosbar];
+    if (_isNowPlayingView) [self updateTimeElapsedAndPosbar];
 }
 
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
-    _tung.ctrlBtnDelegate = self;
-    _tung.viewController = self;
-    
     // set up views
-    
-    if (_viewIsForNowPlaying) {
+    if (_isNowPlayingView) {
+        
+        _episodeEntity = _tung.npEpisodeEntity;
+        _podcastEntity = _tung.npEpisodeEntity.podcast;
+        
+        _tung.ctrlBtnDelegate = self;
+        _tung.viewController = self;
         
         if (!_npControlsViewIsSetup) [self setUpNowPlayingControlView];
+        if (!_tung.npViewSetupForCurrentEpisode) [self setUpViewForWhateversPlaying];
         
         [_onEnterFrame invalidate];
         _onEnterFrame = [CADisplayLink displayLinkWithTarget:self selector:@selector(updateView)];
         [_onEnterFrame addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
         
     }
-    
     //self.navigationController.navigationBar.translucent = NO;
 }
 
@@ -303,27 +304,6 @@ static NSArray *playbackRateStrings;
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
-}
-
-// ControlButtonDelegate optional method
--(void) nowPlayingDidChange {
-    NSLog(@"now playing did change (npView)");
-    if (_episodeEntity.isNowPlaying.boolValue) {
-        _headerView.largeButton.on = YES;
-        [_headerView.largeButton setEnabled:NO];
-    } else {
-        _headerView.largeButton.on = NO;
-        [_headerView.largeButton setEnabled:YES];
-    }
-    [_headerView.largeButton setNeedsDisplay];
-    
-    if (_viewIsForNowPlaying) {
-        [self setUpViewForWhateversPlaying];
-        [self resetRecording];
-        [self setPlaybackRateToOne];
-    } else {
-        [_episodesView.tableView reloadData];
-    }
 }
 
 - (void) switchViews:(id)sender {
@@ -386,6 +366,19 @@ static NSArray *playbackRateStrings;
     
 }
 
+-(void) nowPlayingDidChange {
+    NSLog(@"now playing did change (npView)");
+    
+    if (_isNowPlayingView) {
+        _episodeEntity = _tung.npEpisodeEntity;
+        [self setUpViewForWhateversPlaying];
+        [self resetRecording];
+        [self setPlaybackRateToOne];
+    } else {
+        [_episodesView.tableView reloadData];
+    }
+}
+
 #pragma mark - Set up view
 
 // show "nothing playing" label, etc.
@@ -430,10 +423,7 @@ static NSArray *playbackRateStrings;
         _timeElapsedLabel.text = @"00:00:00";
         _totalTimeLabel.text = @"--:--:--";
         
-        // recommended status
-        _recommendButton.recommended = _tung.npEpisodeEntity.isRecommended.boolValue;
-        [_recommendButton setNeedsDisplay];
-        _recommendLabel.text = (_tung.npEpisodeEntity.isRecommended.boolValue) ? @"Recommended" : @"Recommend";
+        [self refreshRecommendStatus];
         
         // scroll to main buttons
         [_buttonsScrollView scrollRectToVisible:buttonsScrollViewHomeRect animated:YES];
@@ -446,6 +436,7 @@ static NSArray *playbackRateStrings;
         // nothing playing
         [self setUpViewForNothingPlaying];
     }
+    _tung.npViewSetupForCurrentEpisode = YES;
 
 }
 
@@ -472,7 +463,11 @@ static NSArray *playbackRateStrings;
     
     _episodesView.tableView.backgroundView = nil;
     _episodesView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
+    _episodesView.podcastEntity = _podcastEntity;
     [_episodesView.tableView reloadData];
+    
+    NSLog(@"set up view for episode");
+    NSLog(@"description: %@", episodeEntity.desc);
     
     if (episodeEntity.desc.length == 0) {
         // refresh description web view with description from feed
@@ -485,11 +480,11 @@ static NSArray *playbackRateStrings;
         } else {
             episodeEntity.desc = @"No description";
         }
-        [self loadDescriptionWebViewStringForEntity:episodeEntity];
     }
+    [self loadDescriptionWebViewStringForEntity:episodeEntity];
     
     // scroll to episode row if it's playing
-    if (_viewIsForNowPlaying) {
+    if (_isNowPlayingView) {
         NSIndexPath *activeRow = [NSIndexPath indexPathForItem:_tung.currentFeedIndex inSection:0];
         [_episodesView.tableView scrollToRowAtIndexPath:activeRow atScrollPosition:UITableViewScrollPositionTop animated:YES];
     }
@@ -497,6 +492,8 @@ static NSArray *playbackRateStrings;
 
 - (void) playEpisode {
     [_tung queueAndPlaySelectedEpisode:_episodeEntity.url];
+    _headerView.largeButton.on = YES;
+    [_headerView.largeButton setNeedsDisplay];
     
 }
 
@@ -598,6 +595,14 @@ static NSArray *playbackRateStrings;
 }
 
 #pragma mark Now Playing control view
+
+- (void) refreshRecommendStatus {
+    
+    // recommended status
+    _recommendButton.recommended = _episodeEntity.isRecommended.boolValue;
+    [_recommendButton setNeedsDisplay];
+    _recommendLabel.text = (_tung.npEpisodeEntity.isRecommended.boolValue) ? @"Recommended" : @"Recommend";
+}
 
 static float circleButtonDimension;
 static CGRect buttonsScrollViewHomeRect;
@@ -775,7 +780,7 @@ static CGRect buttonsScrollViewHomeRect;
     [_npControlsView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_npControlsView attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     [_commentAndPostView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:commentAndPostViewHeight]];
     
-    
+    [self refreshRecommendStatus];
     _npControlsViewIsSetup = YES;
 }
 
@@ -1188,6 +1193,7 @@ static CGRect buttonsScrollViewHomeRect;
     }
 }
 
+#pragma mark Posbar
 
 - (void) posbarTouched:(UISlider *)slider {
     _posbarIsBeingDragged = YES;

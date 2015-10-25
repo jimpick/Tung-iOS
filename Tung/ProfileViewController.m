@@ -254,7 +254,7 @@ CGFloat screenWidth;
 - (void) setUpProfileHeaderViewForData {
     
     // basic info web view
-    NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { text-align:center; margin:0; color:white; font: .9em/1.4em -apple-system, Helvetica; } a { color:rgba(255,255,255,.6); } .name { font-size:1.1em; } .location { color:rgba(0,0,0,.4) } table { width:100%%; height:100%%; border-spacing:0; border-collapse:collapse; border:none; } td { vertical-align:middle; }</style>\n"];
+    NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:0; color:white; font: .9em/1.4em -apple-system, Helvetica; } a { color:rgba(255,255,255,.6); } .name { font-size:1.1em; } .location { color:rgba(0,0,0,.4) } table { width:100%%; height:100%%; border-spacing:0; border-collapse:collapse; border:none; } td { text-align:center; vertical-align:middle; }</style>\n"];
     NSString *basicInfoBody = [NSString stringWithFormat:@"<table><td><p><span class=\"name\">%@</span>", [_profiledUserData objectForKey:@"name"]];
     NSString *location = [_profiledUserData objectForKey:@"location"];
     if (location.length > 0) {
