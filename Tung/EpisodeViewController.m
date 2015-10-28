@@ -397,10 +397,7 @@ static NSArray *playbackRateStrings;
     _npControlsView.hidden = YES;
     _headerView.hidden = YES;
     _timeElapsedLabel.hidden = YES;
-    
     _switcherBar.hidden = YES;
-    _switcher.tintColor = [UIColor lightGrayColor];
-    
     _descriptionView.view.hidden = YES;
     _episodesView.view.hidden = YES;
     _commentsView.view.hidden = YES;

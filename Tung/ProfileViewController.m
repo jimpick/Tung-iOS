@@ -29,7 +29,8 @@
 
 // search
 @property UISearchController *searchController;
-@property ProfileListTableViewController *profileListView;
+@property ProfileListTableViewController *profileSearchView;
+@property ProfileListTableViewController *notificationsView;
 @property UIBarButtonItem *profileSearchButton;
 @property NSTimer *searchTimer;
 @property (strong, nonatomic) NSURLConnection *profileSearchConnection;
@@ -78,14 +79,14 @@ CGFloat screenWidth;
         self.navigationItem.rightBarButtonItem = _profileSearchButton;
         
         // profile search
-        _profileListView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
-        _profileListView.tableView.backgroundColor = [UIColor clearColor];
-        _profileListView.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
-        _profileListView.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero];
-        _profileListView.tableView.backgroundView = nil;
-        _profileListView.navController = self.navigationController;
+        _profileSearchView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
+        _profileSearchView.tableView.backgroundColor = [UIColor clearColor];
+        _profileSearchView.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
+        _profileSearchView.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero];
+        _profileSearchView.tableView.backgroundView = nil;
+        _profileSearchView.navController = self.navigationController;
         
-        _searchController = [[UISearchController alloc] initWithSearchResultsController:_profileListView];
+        _searchController = [[UISearchController alloc] initWithSearchResultsController:_profileSearchView];
         _searchController.delegate = self;
         _searchController.hidesNavigationBarDuringPresentation = NO;
         
@@ -140,7 +141,6 @@ CGFloat screenWidth;
     
     [_profileHeader.followingCountBtn addTarget:self action:@selector(viewFollowing) forControlEvents:UIControlEventTouchUpInside];
     [_profileHeader.followerCountBtn addTarget:self action:@selector(viewFollowers) forControlEvents:UIControlEventTouchUpInside];
-    [self determineTableHeaderText];
     
     // switcher bar
     _switcherBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 44)];
@@ -149,19 +149,24 @@ CGFloat screenWidth;
 //    _switcherBar.translucent = NO;
     _switcherBar.backgroundColor = [UIColor whiteColor];
     // set up segemented control
-    NSArray *switcherItems;
-    if (_isLoggedInUser) {
-        switcherItems = @[@"My Activity", @"Most Recommended", @"Notifications"];
-    } else {
-        switcherItems = @[@"Activity", @"Most Recommended"];
-    }
+    NSArray *switcherItems = @[@"My Activity", @"Notifications"];
     _switcher = [[UISegmentedControl alloc] initWithItems:switcherItems];
+    _switcher.apportionsSegmentWidthsByContent = YES;
     _switcher.tintColor = _tung.tungColor;
     _switcher.frame = CGRectMake(0, 0, self.view.bounds.size.width - 20, 28);
     [_switcher addTarget:self action:@selector(switchViews:) forControlEvents:UIControlEventValueChanged];
     UIBarButtonItem *switcherBarItem = [[UIBarButtonItem alloc] initWithCustomView:(UIView *)_switcher];
     UIBarButtonItem *flexSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
-    [_switcherBar setItems:@[flexSpace, switcherBarItem, flexSpace] animated:NO];
+    
+    if (_isLoggedInUser) {
+    	[_switcherBar setItems:@[flexSpace, switcherBarItem, flexSpace] animated:NO];
+    } else {
+        _tableHeaderLabel = [[UIBarButtonItem alloc] initWithTitle:@"Activity" style:UIBarButtonItemStylePlain target:self action:nil];
+        _tableHeaderLabel.tintColor = _tung.tungColor;
+        UIBarButtonItem *fixedSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:self action:nil];
+        fixedSpace.width = 1;
+        [_switcherBar setItems:@[fixedSpace, _tableHeaderLabel] animated:NO];
+    }
     [self.view addSubview:_switcherBar];
     _switcherBar.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_profileHeader attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
@@ -170,7 +175,7 @@ CGFloat screenWidth;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_switcherBar.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     _switcherIndex = 0;
     
-    // for feed
+    // for activity feed
     _storiesView = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
     _storiesView.navController = [self navigationController];
     _storiesView.viewController = self;
@@ -180,7 +185,7 @@ CGFloat screenWidth;
     _storiesView.profileHeightConstraint = profileHeightConstraint;
     
     _storiesView.edgesForExtendedLayout = UIRectEdgeNone;
-    _storiesView.tableView.contentInset = UIEdgeInsetsMake(44, 0, -5, 0);
+    _storiesView.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
     [self addChildViewController:_storiesView];
     [self.view addSubview:_storiesView.view];
     
@@ -190,9 +195,26 @@ CGFloat screenWidth;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_storiesView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_storiesView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
-    //if ([self respondsToSelector:@selector(edgesForExtendedLayout)]) self.edgesForExtendedLayout = UIRectEdgeBottom;
+    // notifications view
+    _notificationsView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
+    _notificationsView.queryType = @"Notifications";
+    _notificationsView.target_id = _tung.tungId;
+    _notificationsView.navController = self.navigationController;
+    _notificationsView.edgesForExtendedLayout = UIRectEdgeNone;
+    _notificationsView.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
+    [self addChildViewController:_notificationsView];
+    [self.view addSubview:_notificationsView.view];
+    
+    _notificationsView.view.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-44]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
+    
+    _notificationsView.view.hidden = YES;
     
     // table header toolbar
+    /*
     UIToolbar *headerBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 44)];
     headerBar.clipsToBounds = YES;
     
@@ -206,6 +228,10 @@ CGFloat screenWidth;
     [headerBar addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:44]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:headerBar.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:headerBar.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
+    */
+    
+    [_switcher setSelectedSegmentIndex:_switcherIndex];
+    [self switchViews:_switcher];
     
 	// get data in viewDidAppear
     _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES];
@@ -215,21 +241,20 @@ CGFloat screenWidth;
 
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    _storiesView.screenWidth = self.view.bounds.size.width;
     
     // scroll view
     if (!_profileHeader.contentSizeSet) {
         CGSize contentSize = _profileHeader.scrollView.contentSize;
-        NSLog(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
+        //NSLog(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
         contentSize.width = contentSize.width * 2;
         _profileHeader.scrollView.contentSize = contentSize;
         _profileHeader.scrollView.contentInset = UIEdgeInsetsZero;
-        NSLog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
+        //NSLog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
         _profileHeader.contentSizeSet = YES;
     }
     
     // watch request status so we can update table header
-    [self addObserver:self forKeyPath:@"storiesView.requestStatus" options:NSKeyValueObservingOptionNew context:nil];
+    //[self addObserver:self forKeyPath:@"storiesView.requestStatus" options:NSKeyValueObservingOptionNew context:nil];
     
     if (_tung.feedNeedsRefresh.boolValue && _tung.profileNeedsRefresh.boolValue) {
         [self requestPageData];
@@ -247,40 +272,25 @@ CGFloat screenWidth;
 - (void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     
+    /*
     @try {
     	[self removeObserver:self forKeyPath:@"storiesView.requestStatus"];
     }
     @catch (id exception) {}
-    
-}
-
-- (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary<NSString *,id> *)change context:(void *)context {
-	
-    //if (object == _storiesView && [keyPath isEqualToString:@"requestStatus"]) {
-    if ([keyPath isEqualToString:@"storiesView.requestStatus"]) {
-        NSLog(@"stories request status changed: %@", _storiesView.requestStatus);
-        [self determineTableHeaderText];
-    }
+    */
 }
 
 - (void) switchViews:(id)sender {
     UISegmentedControl *switcher = (UISegmentedControl *)sender;
     
     switch (switcher.selectedSegmentIndex) {
-        case 1: // show comments
-//            _commentsView.view.hidden = NO;
-//            _episodesView.view.hidden = YES;
-//            _descriptionView.view.hidden = YES;
+        case 1: // show notifications view
+            _notificationsView.view.hidden = NO;
+            _storiesView.view.hidden = YES;
             break;
-        case 2: // show episode view
-//            _commentsView.view.hidden = YES;
-//            _episodesView.view.hidden = NO;
-//            _descriptionView.view.hidden = YES;
-            break;
-        default: // show description
-//            _commentsView.view.hidden = YES;
-//            _descriptionView.view.hidden = NO;
-//            _episodesView.view.hidden = YES;
+        default: // show activity
+            _storiesView.view.hidden = NO;
+            _notificationsView.view.hidden = YES;
             break;
     }
     _switcherIndex = switcher.selectedSegmentIndex;
@@ -335,8 +345,8 @@ CGFloat screenWidth;
         _searchTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(keyupSearch:) userInfo:searchText repeats:NO];
     }
     else {
-        [_profileListView.profileArray removeAllObjects];
-        [_profileListView.tableView reloadData];
+        [_profileSearchView.profileArray removeAllObjects];
+        [_profileSearchView.tableView reloadData];
     }
 }
 
@@ -370,7 +380,7 @@ CGFloat screenWidth;
     
     if (searchTerm.length > 0) {
         
-        _profileListView.noResults = NO;
+        _profileSearchView.noResults = NO;
         
         NSURL *profileSearchUrl = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/profile-search.php", _tung.apiRootUrl]];
         NSMutableURLRequest *profileSearchRequest = [NSMutableURLRequest requestWithURL:profileSearchUrl cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:6.0f];
@@ -426,22 +436,22 @@ CGFloat screenWidth;
         }
         else if ([jsonData isKindOfClass:[NSArray class]]) {
             
-            _profileListView.queryExecuted = YES;
+            _profileSearchView.queryExecuted = YES;
             
             NSArray *newUsers = jsonData;
             
             if (newUsers.count > 0) {
                 
-                _profileListView.profileArray = [newUsers mutableCopy];
+                _profileSearchView.profileArray = [newUsers mutableCopy];
                 
-                NSLog(@"got results: %lu", (unsigned long)_profileListView.profileArray.count);
+                NSLog(@"got results: %lu", (unsigned long)_profileSearchView.profileArray.count);
                 //NSLog(@"%@", _profileArray);
-                [_profileListView preloadAvatars];
-                [_profileListView.tableView reloadData];
+                [_profileSearchView preloadAvatars];
+                [_profileSearchView.tableView reloadData];
                 
             }
             else {
-                _profileListView.noResults = YES;
+                _profileSearchView.noResults = YES;
                 NSLog(@"NO RESULTS");
             }
         }
@@ -473,24 +483,6 @@ CGFloat screenWidth;
  */
 
 #pragma mark - specific to Profile View
-
-- (void) determineTableHeaderText {
-    NSString *headerText;
-    if ([_storiesView.requestStatus isEqualToString:@"finished"]) {
-        if (_storiesView.storiesArray.count > 0) {
-            if (_isLoggedInUser) {
-                headerText = @" My activity";
-            } else {
-                headerText = [NSString stringWithFormat:@" %@'s activity", [_profiledUserData objectForKey:@"username"]];
-            }
-        } else {
-            headerText = @" No activity yet.";
-        }
-    } else {
-        headerText = @" Getting activity...";
-    }
-    _tableHeaderLabel.title =  headerText;
-}
 
 NSTimer *sessionCheckTimer;
 

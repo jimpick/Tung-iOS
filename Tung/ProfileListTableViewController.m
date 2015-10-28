@@ -138,9 +138,9 @@
                     
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
-                        NSArray *newUsers = jsonData;
+                        NSArray *newItems = jsonData;
                         
-                        if (newUsers.count == 0) _noResults = YES;
+                        if (newItems.count == 0) _noResults = YES;
                         else _noResults = NO;
                         
                         _queryExecuted = YES;
@@ -150,13 +150,13 @@
                         // pull refresh
                         if ([afterTime intValue] > 0) {
                             //[self stopPlayback];
-                            NSArray *newUsersArray = [newUsers arrayByAddingObjectsFromArray:_profileArray];
-                            _profileArray = [newUsersArray mutableCopy];
+                            NSArray *newItemsArray = [newItems arrayByAddingObjectsFromArray:_profileArray];
+                            _profileArray = [newItemsArray mutableCopy];
                             NSMutableArray *indexPaths = [[NSMutableArray alloc] init];
-                            for (int i = 0; i < newUsers.count; i++) {
+                            for (int i = 0; i < newItems.count; i++) {
                                 [indexPaths addObject:[NSIndexPath indexPathForRow:i inSection:0]];
                             }
-                            if (newUsers.count > 0) {
+                            if (newItems.count > 0) {
                                 // if new posts were retrieved
                                 
                                 [UIView setAnimationsEnabled:NO];
@@ -172,7 +172,7 @@
                         else if ([beforeTime intValue] > 0) {
                             _requestingMore = NO;
                             _loadMoreIndicator.alpha = 0;
-                            if (newUsers.count == 0) {
+                            if (newItems.count == 0) {
                                 NSLog(@"no more items to get");
                                 _noMoreItemsToGet = YES;
                                 // hide footer
@@ -182,8 +182,8 @@
                                 NSLog(@"\tgot items older than: %@", beforeTime);
                                 int startingIndex = (int)_profileArray.count;
                                 // NSLog(@"\tstarting index: %d", startingIndex);
-                                NSArray *newUsersArray = [_profileArray arrayByAddingObjectsFromArray:newUsers];
-                                _profileArray = [newUsersArray mutableCopy];
+                                NSArray *newItemsArray = [_profileArray arrayByAddingObjectsFromArray:newItems];
+                                _profileArray = [newItemsArray mutableCopy];
                                 NSMutableArray *indexPaths = [[NSMutableArray alloc] init];
                                 for (int i = startingIndex; i < _profileArray.count; i++) {
                                     [indexPaths addObject:[NSIndexPath indexPathForRow:i inSection:0]];
@@ -198,7 +198,7 @@
                         }
                         // initial request
                         else {
-                            _profileArray = [newUsers mutableCopy];
+                            _profileArray = [newItems mutableCopy];
                             
                             [self.tableView reloadData];
                         }
@@ -355,9 +355,9 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     profileCell.avatarButton.tag = 100;
     
     // sub label
-    if ([_queryType isEqualToString:@"Activity"]) {
+    if ([_queryType isEqualToString:@"Notifications"]) {
         
-        profileCell.subLabelLeadingConstraint.constant = 30;
+        profileCell.subLabelLeadingConstraint.constant = 38;
         profileCell.iconView.hidden = NO;
         profileCell.iconView.backgroundColor = [UIColor clearColor];
         NSLog(@"action: %@", action);
@@ -371,6 +371,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
             eventString = @"Mentioned you in a comment";
         }
         profileCell.iconView.color = [UIColor grayColor];
+        [profileCell.iconView setNeedsDisplay];
         profileCell.subLabel.text = eventString;
     }
     else {
@@ -379,7 +380,6 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
         profileCell.subLabelLeadingConstraint.constant = 14;
         profileCell.iconView.hidden = YES;
     }
-    [profileCell.iconView setNeedsDisplay];
     
     // follow button
     if ([_tung.tungId isEqualToString:[profileCell.profileDict objectForKey:@"id"]]) {
@@ -434,7 +434,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
     if (_noMoreItemsToGet && section == 1) {
         UILabel *noMoreLabel = [[UILabel alloc] init];
-        NSString *thatsAll = ([_queryType isEqualToString:@"activity"]) ? @"That's everything" : @"That's everyone";
+        NSString *thatsAll = ([_queryType isEqualToString:@"Notifications"]) ? @"That's everything" : @"That's everyone";
         noMoreLabel.text = thatsAll;
         noMoreLabel.textColor = [UIColor grayColor];
         noMoreLabel.textAlignment = NSTextAlignmentCenter;

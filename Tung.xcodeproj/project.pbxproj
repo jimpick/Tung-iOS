@@ -49,6 +49,8 @@
 		7D4C79EA1BE021B30061816B /* tabBar-subscriptions@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4C79E01BE021B30061816B /* tabBar-subscriptions@2x.png */; };
 		7D4C79EB1BE021B30061816B /* tabBar-subscriptions@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4C79E11BE021B30061816B /* tabBar-subscriptions@3x.png */; };
 		7D4C79ED1BE0FC5A0061816B /* StoriesTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C79EC1BE0FC5A0061816B /* StoriesTableViewController.m */; };
+		7D4C79F31BE10EF50061816B /* UserEntity+CoreDataProperties.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C79F01BE10EF50061816B /* UserEntity+CoreDataProperties.m */; };
+		7D4C79F41BE10EF50061816B /* UserEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C79F21BE10EF50061816B /* UserEntity.m */; };
 		7D4F34F61AB778910090EE81 /* tabBar-feed-inactive@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F34F41AB778910090EE81 /* tabBar-feed-inactive@2x.png */; };
 		7D4F34F71AB778910090EE81 /* tabBar-feed@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F34F51AB778910090EE81 /* tabBar-feed@2x.png */; };
 		7D4F35291AB7849E0090EE81 /* btn-player-shadow@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F351B1AB7849E0090EE81 /* btn-player-shadow@2x.png */; };
@@ -59,7 +61,6 @@
 		7D4F35361AB89DB40090EE81 /* CCColorCube.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4F35351AB89DB40090EE81 /* CCColorCube.m */; };
 		7D4F35391AB89DDE0090EE81 /* CCLocalMaximum.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4F35381AB89DDE0090EE81 /* CCLocalMaximum.m */; };
 		7D56613318B9B46E0006269B /* MediaPlayer.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7D56613218B9B46E0006269B /* MediaPlayer.framework */; };
-		7D59CCDD1B6A7BFD0055D300 /* UserEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D59CCDC1B6A7BFD0055D300 /* UserEntity.m */; };
 		7D5A594D19D3D177005DCF01 /* icon-facebook-off@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D5A594919D3D177005DCF01 /* icon-facebook-off@3x.png */; };
 		7D5A594E19D3D177005DCF01 /* icon-facebook-on@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D5A594A19D3D177005DCF01 /* icon-facebook-on@3x.png */; };
 		7D5A594F19D3D177005DCF01 /* icon-twitter-off@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D5A594B19D3D177005DCF01 /* icon-twitter-off@3x.png */; };
@@ -156,7 +157,6 @@
 		7DE094A01BC1C238005B596D /* ProfileHeaderView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7DE0949F1BC1C238005B596D /* ProfileHeaderView.xib */; };
 		7DE094A31BC1D2F4005B596D /* ProfileViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DE094A21BC1D2F4005B596D /* ProfileViewController.m */; };
 		7DE225021BD01EBC00384F62 /* CommentsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DE225011BD01EBC00384F62 /* CommentsTableViewController.m */; };
-		7DE249A41B3917BB00128607 /* TungStories.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DE249A31B3917BB00128607 /* TungStories.m */; };
 		7DE4B1BE1B726D6C00C02BE2 /* CommentAndPostView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DE4B1BD1B726D6C00C02BE2 /* CommentAndPostView.m */; };
 		7DE4B1C01B726D9800C02BE2 /* CommentAndPostView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7DE4B1BF1B726D9800C02BE2 /* CommentAndPostView.xib */; };
 		7DE4B1C31B726F8600C02BE2 /* TextAreaBkgdView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DE4B1C21B726F8600C02BE2 /* TextAreaBkgdView.m */; };
@@ -248,6 +248,10 @@
 		7D4C79E11BE021B30061816B /* tabBar-subscriptions@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tabBar-subscriptions@3x.png"; sourceTree = "<group>"; };
 		7D4C79EC1BE0FC5A0061816B /* StoriesTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = StoriesTableViewController.m; sourceTree = "<group>"; };
 		7D4C79EE1BE0FC8A0061816B /* StoriesTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StoriesTableViewController.h; sourceTree = "<group>"; };
+		7D4C79EF1BE10EF50061816B /* UserEntity+CoreDataProperties.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UserEntity+CoreDataProperties.h"; sourceTree = "<group>"; };
+		7D4C79F01BE10EF50061816B /* UserEntity+CoreDataProperties.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UserEntity+CoreDataProperties.m"; sourceTree = "<group>"; };
+		7D4C79F11BE10EF50061816B /* UserEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UserEntity.h; sourceTree = "<group>"; };
+		7D4C79F21BE10EF50061816B /* UserEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UserEntity.m; sourceTree = "<group>"; };
 		7D4F34F41AB778910090EE81 /* tabBar-feed-inactive@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tabBar-feed-inactive@2x.png"; sourceTree = "<group>"; };
 		7D4F34F51AB778910090EE81 /* tabBar-feed@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tabBar-feed@2x.png"; sourceTree = "<group>"; };
 		7D4F351B1AB7849E0090EE81 /* btn-player-shadow@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "btn-player-shadow@2x.png"; sourceTree = "<group>"; };
@@ -263,8 +267,6 @@
 		7D4F35371AB89DDE0090EE81 /* CCLocalMaximum.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CCLocalMaximum.h; sourceTree = "<group>"; };
 		7D4F35381AB89DDE0090EE81 /* CCLocalMaximum.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CCLocalMaximum.m; sourceTree = "<group>"; };
 		7D56613218B9B46E0006269B /* MediaPlayer.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MediaPlayer.framework; path = System/Library/Frameworks/MediaPlayer.framework; sourceTree = SDKROOT; };
-		7D59CCDB1B6A7BFD0055D300 /* UserEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UserEntity.h; sourceTree = "<group>"; };
-		7D59CCDC1B6A7BFD0055D300 /* UserEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UserEntity.m; sourceTree = "<group>"; };
 		7D5A594919D3D177005DCF01 /* icon-facebook-off@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-facebook-off@3x.png"; sourceTree = "<group>"; };
 		7D5A594A19D3D177005DCF01 /* icon-facebook-on@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-facebook-on@3x.png"; sourceTree = "<group>"; };
 		7D5A594B19D3D177005DCF01 /* icon-twitter-off@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-twitter-off@3x.png"; sourceTree = "<group>"; };
@@ -391,8 +393,6 @@
 		7DE094A21BC1D2F4005B596D /* ProfileViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProfileViewController.m; sourceTree = "<group>"; };
 		7DE225011BD01EBC00384F62 /* CommentsTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CommentsTableViewController.m; sourceTree = "<group>"; };
 		7DE225031BD01ECB00384F62 /* CommentsTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CommentsTableViewController.h; sourceTree = "<group>"; };
-		7DE249A21B3917BB00128607 /* TungStories.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TungStories.h; sourceTree = "<group>"; };
-		7DE249A31B3917BB00128607 /* TungStories.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TungStories.m; sourceTree = "<group>"; };
 		7DE4B1BC1B726D6C00C02BE2 /* CommentAndPostView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CommentAndPostView.h; sourceTree = "<group>"; };
 		7DE4B1BD1B726D6C00C02BE2 /* CommentAndPostView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CommentAndPostView.m; sourceTree = "<group>"; };
 		7DE4B1BF1B726D9800C02BE2 /* CommentAndPostView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = CommentAndPostView.xib; sourceTree = "<group>"; };
@@ -528,14 +528,16 @@
 				7DF5664F199D4B56003176C1 /* BrowserViewController.m */,
 				7D61F93218A1EB2F00710CA7 /* Images.xcassets */,
 				7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */,
+				7D4C79EF1BE10EF50061816B /* UserEntity+CoreDataProperties.h */,
+				7D4C79F01BE10EF50061816B /* UserEntity+CoreDataProperties.m */,
+				7D4C79F11BE10EF50061816B /* UserEntity.h */,
+				7D4C79F21BE10EF50061816B /* UserEntity.m */,
 				7DF9F4AC1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.h */,
 				7DF9F4AD1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.m */,
 				7DF997A41BC6F645004FD994 /* EpisodeEntity.h */,
 				7DF997A51BC6F645004FD994 /* EpisodeEntity.m */,
 				7DA237C31BA08D7C00A9466B /* PodcastEntity.h */,
 				7DA237C41BA08D7C00A9466B /* PodcastEntity.m */,
-				7D59CCDB1B6A7BFD0055D300 /* UserEntity.h */,
-				7D59CCDC1B6A7BFD0055D300 /* UserEntity.m */,
 				7D5BC1A51A546A61008C008D /* MainTabBarController.h */,
 				7D5BC1A61A546A61008C008D /* MainTabBarController.m */,
 				7DAD37B718A202A5000C164D /* NavController.h */,
@@ -605,8 +607,6 @@
 				7D768C9F192EB20B000C8E3E /* TungCommonObjects.m */,
 				7D4F352E1AB7A2720090EE81 /* TungPodcast.h */,
 				7D4F352F1AB7A2720090EE81 /* TungPodcast.m */,
-				7DE249A21B3917BB00128607 /* TungStories.h */,
-				7DE249A31B3917BB00128607 /* TungStories.m */,
 				7DE780951AE950F20081E28E /* JPXMLtoDictionary.h */,
 				7DE780961AE950F20081E28E /* JPXMLtoDictionary.m */,
 				7DE4B1C11B726F8600C02BE2 /* TextAreaBkgdView.h */,
@@ -970,6 +970,7 @@
 				7DA5ED471B548181007BD424 /* BlurView.m in Sources */,
 				7DE99BD61ACE3F02007A154F /* EpisodeCell.m in Sources */,
 				7DA465E119AE2F2C00DA3EE7 /* HorizontalLine.m in Sources */,
+				7D4C79F41BE10EF50061816B /* UserEntity.m in Sources */,
 				7DA465E419AE312300DA3EE7 /* AvatarWithLineIntersect.m in Sources */,
 				7D4F35361AB89DB40090EE81 /* CCColorCube.m in Sources */,
 				7D1F0B691BD14F0A001C9A9D /* CommentBkgdView.m in Sources */,
@@ -988,14 +989,12 @@
 				7DF9F4AE1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.m in Sources */,
 				7D12A4ED1A01308700A9A004 /* IconButton.m in Sources */,
 				7D5BC1A71A546A61008C008D /* MainTabBarController.m in Sources */,
-				7DE249A41B3917BB00128607 /* TungStories.m in Sources */,
 				7DA5ED4A1B548882007BD424 /* FXBlurView.m in Sources */,
 				7DDF1B9F1987F87A008CB927 /* AvatarContainerView.m in Sources */,
 				7DC58A8E1AEFF125000DBAF8 /* PodcastViewController.m in Sources */,
 				7DE4B1BE1B726D6C00C02BE2 /* CommentAndPostView.m in Sources */,
 				7DAD37B918A202A5000C164D /* NavController.m in Sources */,
 				7D4F35331AB894560090EE81 /* PodcastResultCell.m in Sources */,
-				7D59CCDD1B6A7BFD0055D300 /* UserEntity.m in Sources */,
 				7D3B735A19227F92005413F1 /* WelcomeViewController.m in Sources */,
 				7DE4B1C31B726F8600C02BE2 /* TextAreaBkgdView.m in Sources */,
 				7DF2FACE1AF3ACCD004C66E6 /* SubscriptionsCollectionView.m in Sources */,
@@ -1023,6 +1022,7 @@
 				7D768CA0192EB20B000C8E3E /* TungCommonObjects.m in Sources */,
 				7DCAC60219FEF81A004B6182 /* FollowersCell.m in Sources */,
 				7D1341E9192530AC00B95C66 /* FinishSignUpController.m in Sources */,
+				7D4C79F31BE10EF50061816B /* UserEntity+CoreDataProperties.m in Sources */,
 				7D14077C1BBEB86D00BD4F89 /* StoryHeaderCell.m in Sources */,
 				7D670F301934EE7600239673 /* Reachability.m in Sources */,
 				7D63F8101AF6CBCC00765289 /* HeaderView.m in Sources */,

@@ -41,8 +41,6 @@
 @property ProfileHeaderView *profileHeader;
 @property NSLayoutConstraint *profileHeightConstraint;
 
-@property CGFloat screenWidth;
-
 // playing clips
 @property (strong, nonatomic) CADisplayLink *onEnterFrame;
 @property (strong, nonatomic) ClipProgressView *activeClipProgressView;

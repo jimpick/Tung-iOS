@@ -26,13 +26,15 @@
 
 @implementation StoriesTableViewController
 
-CGFloat headerViewHeight, headerScrollViewHeight, tableHeaderRow, animationDistance;
+CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, animationDistance;
 
 - (void)viewDidLoad {
     
     [super viewDidLoad];
         
     _tung = [TungCommonObjects establishTungObjects];
+    
+    if (!_profiledUserId) _profiledUserId = @"";
     
     _storiesArray = [NSMutableArray new];
     
@@ -70,6 +72,7 @@ CGFloat headerViewHeight, headerScrollViewHeight, tableHeaderRow, animationDista
     headerViewHeight = 223;
     headerScrollViewHeight = headerViewHeight - tableHeaderRow;
     animationDistance = headerScrollViewHeight - minHeaderHeight;
+    screenWidth = self.view.frame.size.width;
         
 }
 
@@ -209,7 +212,7 @@ CGFloat labelWidth = 0;
                 prototypeLabel.numberOfLines = 0;
             }
             if (labelWidth == 0) {
-                labelWidth = _screenWidth -63 - 60;
+                labelWidth = screenWidth -63 - 60;
             }
             prototypeLabel.text = [eventDict objectForKey:@"comment"];
             CGSize labelSize = [prototypeLabel sizeThatFits:CGSizeMake(labelWidth, 400)];
@@ -673,7 +676,6 @@ NSString static *podcastArtDir;
 -(void) requestPostsNewerThan:(NSNumber *)afterTime
                   orOlderThan:(NSNumber *)beforeTime
                      fromUser:(NSString *)user_id {
-    NSLog(@"feed request for posts newer than: %@, or older than: %@, from user: %@", afterTime, beforeTime, user_id);
     self.requestStatus = @"initiated";
 
     NSURL *feedURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/feed.php", _tung.apiRootUrl]];
@@ -685,6 +687,7 @@ NSString static *podcastArtDir;
                              @"olderThan": beforeTime,
                              @"profiled_user_id": user_id
                              };
+    NSLog(@"request for stories with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [feedRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -718,14 +721,14 @@ NSString static *podcastArtDir;
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
                         NSArray *newStories = jsonData;
-                        NSLog(@"new posts count: %lu", (unsigned long)newStories.count);
+                        NSLog(@"new stories count: %lu", (unsigned long)newStories.count);
                         
                         [self endRefreshing];
                             
                         // pull refresh
                         if ([afterTime intValue] > 0) {
                             if (newStories.count > 0) {
-                                NSLog(@"\tgot posts newer than: %@", afterTime);
+                                NSLog(@"\tgot stories newer than: %@", afterTime);
                                 [self stopClipPlayback];
                                 NSArray *newItems = [self processStories:newStories];
                                 NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
@@ -746,14 +749,14 @@ NSString static *podcastArtDir;
                         else if ([beforeTime intValue] > 0) {
                             
                             if (newStories.count == 0) {
-                                NSLog(@"no more posts to get");
+                                NSLog(@"no more stories to get");
                                 _reachedEndOfPosts = YES;
                                 // hide footer
                                 //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_storiesArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
                                 [self.tableView reloadData];
                                 
                             } else {
-                                NSLog(@"\tgot posts older than: %@", beforeTime);
+                                NSLog(@"\tgot stories older than: %@", beforeTime);
                                 int startingIndex = (int)_storiesArray.count;
                                 
                                 NSArray *newFeedArray = [_storiesArray arrayByAddingObjectsFromArray:[self processStories:newStories]];
@@ -774,7 +777,7 @@ NSString static *podcastArtDir;
                         // initial request
                         else {
                             _storiesArray = [self processStories:newStories];
-                            NSLog(@"got posts. storiesArray count: %lu", (unsigned long)[_storiesArray count]);
+                            NSLog(@"got stories. storiesArray count: %lu", (unsigned long)[_storiesArray count]);
                             //NSLog(@"%@", _storiesArray);
                             [self.tableView reloadData];
                         }
@@ -931,6 +934,7 @@ NSString static *podcastArtDir;
         if (scrollView.contentOffset.y >= bottomOffset) {
             // request more posts if they didn't reach the end
             if (!_requestingMore && !_reachedEndOfPosts && _storiesArray.count > 0) {
+                NSLog(@"requesting more stories");
                 _requestingMore = YES;
                 _loadMoreIndicator.alpha = 1;
                 [_loadMoreIndicator startAnimating];
@@ -938,7 +942,7 @@ NSString static *podcastArtDir;
                 
                 [self requestPostsNewerThan:[NSNumber numberWithInt:0]
                                     orOlderThan:oldest
-                                       fromUser:@""];
+                                       fromUser:_profiledUserId];
             }
         }
     }
@@ -962,7 +966,7 @@ NSString static *podcastArtDir;
     CGFloat scrollViewHeight = _profileHeightConstraint.constant - tableHeaderRow;
 //    NSLog(@"scroll view height: %f", scrollViewHeight);
 //    NSLog(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
-    CGSize contentSize = CGSizeMake(_screenWidth * 2, scrollViewHeight);
+    CGSize contentSize = CGSizeMake(screenWidth * 2, scrollViewHeight);
     _profileHeader.scrollView.contentSize = contentSize;
 //    NSLog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
 }
