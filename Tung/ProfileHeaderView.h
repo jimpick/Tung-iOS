@@ -26,4 +26,7 @@
 
 @property (strong, nonatomic) IBOutlet NSLayoutConstraint *scrollSubView1Height;
 @property (strong, nonatomic) IBOutlet NSLayoutConstraint *scrollSubView2Height;
+
+@property BOOL contentSizeSet;
+
 @end

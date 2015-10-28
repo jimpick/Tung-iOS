@@ -27,8 +27,10 @@
     //self.navigationBar.translucent = NO; // causes black gap at top - stackoverflow.com/q/31308766/591487
     self.navigationBar.titleTextAttributes = @{ NSForegroundColorAttributeName: _tung.tungColor };
     
-    [[UINavigationBar appearance] setBackgroundImage:[UIImage imageNamed:@"navBarBkgd.png"] forBarMetrics:UIBarMetricsDefault];
-    [[UINavigationBar appearance] setShadowImage:[UIImage imageNamed:@"navBarShadowWhite@2x.png"]];
+    [[UINavigationBar appearance] setBackgroundImage:[UIImage imageNamed:@"navBarBkgd.png"] forBarMetrics:UIBarMetricsDefault]; // makes status bar white
+    [[UINavigationBar appearance] setShadowImage:[[UIImage alloc] init]];// [UIImage imageNamed:@"navBarShadowWhite@2x.png"]
+    
+    //[self setNeedsStatusBarAppearanceUpdate];
     
 }
 
@@ -36,6 +38,12 @@
     [super didReceiveMemoryWarning];
     // Dispose of any resource`s that can be recreated.
 }
+
+//- (UIStatusBarStyle)preferredStatusBarStyle {
+//    NSLog(@"set preferred status bar style");
+//    //return UIStatusBarStyleLightContent;
+//    return UIStatusBarStyleDefault;
+//}
 
 /*
 #pragma mark - Navigation

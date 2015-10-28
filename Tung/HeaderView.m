@@ -92,10 +92,10 @@ static NSDateFormatter *airDateFormatter = nil;
     // play button
     if (podcastEntity) {
     //if (podcastEntity || (episodeEntity && episodeEntity.isNowPlaying.boolValue)) {
-        NSLog(@"set up header view for podcast");
+        //NSLog(@"set up header view for podcast");
         self.largeButton.hidden = YES;
     } else {
-        NSLog(@"set up header view for episode entity %@", [TungCommonObjects entityToDict:episodeEntity]);
+        //NSLog(@"set up header view for episode entity %@", [TungCommonObjects entityToDict:episodeEntity]);
         self.largeButton.hidden = NO;
         self.largeButton.type = kCircleTypePlay;
         if (episodeEntity.isNowPlaying.boolValue) {

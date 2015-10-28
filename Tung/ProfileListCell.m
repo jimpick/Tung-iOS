@@ -8,16 +8,58 @@
 
 #import "ProfileListCell.h"
 
+@class TungCommonObjects;
+
 @implementation ProfileListCell
 
 - (void)awakeFromNib {
     // Initialization code
+    _tung = [TungCommonObjects establishTungObjects];
 }
 
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated {
     [super setSelected:selected animated:animated];
 
     // Configure the view for the selected state
+}
+
+- (IBAction)followOrUnfollowUser:(id)sender {
+    
+    PillButton *btn = (PillButton *)sender;
+    ProfileListCell *cell = (ProfileListCell *)[[sender superview] superview];
+    NSString *userId = [[cell.profileDict objectForKey:@"user"] objectForKey:@"id"];
+    
+    if (btn.on) {
+        // unfollow
+        [_tung unfollowUserWithId:userId withCallback:^(BOOL success) {
+            if (!success) {// fail
+                NSLog(@"error unfollowing user");
+                btn.on = YES;
+                [btn setNeedsDisplay];
+            }
+            else {
+                NSLog(@"successfully unfollowed user");
+                _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
+            }
+        }];
+    }
+    else {
+        // follow
+        [_tung followUserWithId:userId withCallback:^(BOOL success) {
+            if (!success) {// fail
+                NSLog(@"error following user");
+                btn.on = NO;
+                [btn setNeedsDisplay];
+            }
+            else {
+                NSLog(@"success following user");
+                _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
+            }
+        }];
+    }
+    // GUI
+    btn.on = !btn.on;
+    [btn setNeedsDisplay];
 }
 
 @end

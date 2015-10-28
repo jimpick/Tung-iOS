@@ -168,13 +168,13 @@
 -(void) searchItunesPodcastDirectoryWithTerm:(NSString *)searchTerm {
     
     _noResults = NO;
-    NSString *itunesURL = @"https://itunes.apple.com/search";
     NSString *encodedTerm = [searchTerm stringByReplacingOccurrencesOfString:@" " withString:@"+"];
     NSDictionary *params = @{ @"media": @"podcast",
                               @"term": encodedTerm,
                               @"limit": @"25",
                               @"explicit": @"Yes" };
-
+    
+    NSString *itunesURL = @"https://itunes.apple.com/search";
     NSURL *URL = [NSURL URLWithString:[NSString stringWithFormat:@"%@%@", itunesURL, [TungCommonObjects serializeParamsForGetRequest:params]]];
     NSMutableURLRequest *podcastSearchRequest = [NSMutableURLRequest requestWithURL:URL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:6.0f];
     [podcastSearchRequest setHTTPMethod:@"GET"];
@@ -195,7 +195,7 @@
 
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-    NSLog(@"did receive data");
+    //NSLog(@"did receive data");
     [_podcastSearchResultData appendData:data];
 }
 
@@ -211,7 +211,6 @@
             
             if ([responseDict objectForKey:@"resultCount"] && [[responseDict objectForKey:@"resultCount"] integerValue] > 0) {
                 
-                //dispatch_async(dispatch_get_main_queue(), ^{
                 _podcastArray = [[responseDict objectForKey:@"results"] mutableCopy];
                 
                 NSLog(@"got results: %lu", (unsigned long)_podcastArray.count);
@@ -219,7 +218,7 @@
                 [self preloadPodcastArtForArray:_podcastArray];
                 [self preloadFeedsWithLimit:1]; // preload feed of first result
                 [_searchTableViewController.tableView reloadData];
-                //});
+                
             }
             else {
                 _noResults = YES;
@@ -256,6 +255,11 @@
  }
  
  */
+
+- (void) showNoConnectionAlert {
+    UIAlertView *noConnectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"No connection" message:@"Please try again when you're connected to the internet." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+    [noConnectionErrorAlert show];
+}
 
 #pragma mark - Podcast Search table
 

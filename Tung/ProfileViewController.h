@@ -8,11 +8,12 @@
 
 #import <UIKit/UIKit.h>
 #import "TungCommonObjects.h"
-#import "TungStories.h"
 
-@interface ProfileViewController : UIViewController <ControlButtonDelegate, UIScrollViewDelegate, UIWebViewDelegate>
+@interface ProfileViewController : UIViewController <ControlButtonDelegate, UIScrollViewDelegate, UIWebViewDelegate, UISearchBarDelegate, UISearchControllerDelegate>
 
 @property (strong, nonatomic) NSString *profiledUserId;
 @property (strong, nonatomic) NSMutableDictionary *profiledUserData;
+
+
 
 @end

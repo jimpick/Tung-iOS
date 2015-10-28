@@ -63,8 +63,6 @@
 
 - (void) preloadPodcastArtForArray:(NSArray*)itemArray;
 - (void) preloadFeedsWithLimit:(NSUInteger)limit;
-
-
 - (void) configureEpisodeCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) showNoConnectionAlert;
 

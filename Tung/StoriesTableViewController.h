@@ -13,7 +13,7 @@
 
 @class TungCommonObjects;
 
-@interface TungStories : NSObject <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, AVAudioPlayerDelegate, UIGestureRecognizerDelegate, UIActionSheetDelegate>
+@interface StoriesTableViewController : UITableViewController <UIScrollViewDelegate, AVAudioPlayerDelegate, UIGestureRecognizerDelegate, UIActionSheetDelegate>
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 

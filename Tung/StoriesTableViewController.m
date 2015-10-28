@@ -6,7 +6,7 @@
 //  Copyright (c) 2015 Jamie Perkins. All rights reserved.
 //
 
-#import "TungStories.h"
+#import "StoriesTableViewController.h"
 #import "TungCommonObjects.h"
 #import "TungPodcast.h"
 #import "StoryHeaderCell.h"
@@ -15,7 +15,7 @@
 #import "EpisodeViewController.h"
 #import "ProfileViewController.h"
 
-@interface TungStories()
+@interface StoriesTableViewController()
 
 @property NSIndexPath *longPressIndexPath;
 @property NSString *shareLink;
@@ -24,59 +24,53 @@
 
 @end
 
-@implementation TungStories
+@implementation StoriesTableViewController
 
 CGFloat headerViewHeight, headerScrollViewHeight, tableHeaderRow, animationDistance;
 
-- (id)init {
+- (void)viewDidLoad {
     
-    self = [super init];
-    if (self) {
+    [super viewDidLoad];
         
-        _tung = [TungCommonObjects establishTungObjects];
+    _tung = [TungCommonObjects establishTungObjects];
+    
+    _storiesArray = [NSMutableArray new];
+    
+    _activeRowIndex = 0;
+    _activeSectionIndex = 0;
+    _selectedRowIndex = -1;
+    _selectedSectionIndex = -1;
+    
+    self.requestStatus = @"";
+    
+    // table
+    self.tableView.backgroundColor = _tung.bkgdGrayColor;
+    self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
+    self.tableView.scrollsToTop = YES;
+    self.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
+    self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
+    self.tableView.separatorColor = [UIColor colorWithWhite:1 alpha:.7];
+    // refresh control
+    self.refreshControl = [[UIRefreshControl alloc] init];
+    [self.refreshControl addTarget:self action:@selector(refreshFeed:) forControlEvents:UIControlEventValueChanged];
+    // table bkgd
+    UIActivityIndicatorView *tableSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+    tableSpinner.alpha = 1;
+    [tableSpinner startAnimating];
+    self.tableView.backgroundView = tableSpinner;
+    // long press recognizer
+    UILongPressGestureRecognizer *longPressRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(tableCellLongPress:)];
+    longPressRecognizer.minimumPressDuration = 0.75; //seconds
+    longPressRecognizer.delegate = self;
+    [self.tableView addGestureRecognizer:longPressRecognizer];
+    
+    // for animating header height
+    CGFloat minHeaderHeight = 80;
+    tableHeaderRow = 61;
+    headerViewHeight = 223;
+    headerScrollViewHeight = headerViewHeight - tableHeaderRow;
+    animationDistance = headerScrollViewHeight - minHeaderHeight;
         
-        _storiesArray = [NSMutableArray new];
-        
-        _activeRowIndex = 0;
-        _activeSectionIndex = 0;
-        _selectedRowIndex = -1;
-        _selectedSectionIndex = -1;
-        
-        self.requestStatus = @"";
-        
-        // feed table
-        _feedTableViewController = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"feedTableViewController"];
-        _feedTableViewController.tableView.delegate = self;
-        _feedTableViewController.tableView.dataSource = self;
-        _feedTableViewController.tableView.backgroundColor = _tung.bkgdGrayColor;
-        _feedTableViewController.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
-        _feedTableViewController.tableView.scrollsToTop = YES;
-        _feedTableViewController.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
-        _feedTableViewController.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
-        _feedTableViewController.tableView.separatorColor = [UIColor colorWithWhite:1 alpha:.7];
-        // refresh control
-        _feedTableViewController.refreshControl = [[UIRefreshControl alloc] init];
-        [_feedTableViewController.refreshControl addTarget:self action:@selector(refreshFeed:) forControlEvents:UIControlEventValueChanged];
-        // table bkgd
-        UIActivityIndicatorView *tableSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-        tableSpinner.alpha = 1;
-        [tableSpinner startAnimating];
-        _feedTableViewController.tableView.backgroundView = tableSpinner;
-        // long press recognizer
-        UILongPressGestureRecognizer *longPressRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(tableCellLongPress:)];
-        longPressRecognizer.minimumPressDuration = 0.75; //seconds
-        longPressRecognizer.delegate = self;
-        [_feedTableViewController.tableView addGestureRecognizer:longPressRecognizer];
-        
-        // for animating header height
-        CGFloat minHeaderHeight = 80;
-        tableHeaderRow = 61;
-        headerViewHeight = 223;
-        headerScrollViewHeight = headerViewHeight - tableHeaderRow;
-        animationDistance = headerScrollViewHeight - minHeaderHeight;
-        
-    }
-    return self;
 }
 
 - (void) refreshFeed:(BOOL)fullRefresh {
@@ -87,7 +81,7 @@ CGFloat headerViewHeight, headerScrollViewHeight, tableHeaderRow, animationDista
         mostRecent = [NSNumber numberWithInt:0];
     } else {
         if (_storiesArray.count > 0) {
-            [_feedTableViewController.refreshControl beginRefreshing];
+            [self.refreshControl beginRefreshing];
             mostRecent = [[[_storiesArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
         } else { // if initial request timed out and they are trying again
             mostRecent = [NSNumber numberWithInt:0];
@@ -193,8 +187,8 @@ static NSString *footerCellIdentifier = @"storyFooterCell";
 // ABCD
 
 //- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
-UILabel *prototype_label;
-CGFloat label_width = 0;
+UILabel *prototypeLabel;
+CGFloat labelWidth = 0;
 
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
     
@@ -209,16 +203,16 @@ CGFloat label_width = 0;
         CGFloat defaultEventCellHeight = 57;
         NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
         if ([[eventDict objectForKey:@"comment"] length] > 0) {
-            if (!prototype_label) {
-                prototype_label = [[UILabel alloc] init];
-                prototype_label.font = [UIFont systemFontOfSize:15];
-                prototype_label.numberOfLines = 0;
+            if (!prototypeLabel) {
+                prototypeLabel = [[UILabel alloc] init];
+                prototypeLabel.font = [UIFont systemFontOfSize:15];
+                prototypeLabel.numberOfLines = 0;
             }
-            if (label_width == 0) {
-                label_width = _screenWidth -63 - 60;
+            if (labelWidth == 0) {
+                labelWidth = _screenWidth -63 - 60;
             }
-            prototype_label.text = [eventDict objectForKey:@"comment"];
-            CGSize labelSize = [prototype_label sizeThatFits:CGSizeMake(label_width, 400)];
+            prototypeLabel.text = [eventDict objectForKey:@"comment"];
+            CGSize labelSize = [prototypeLabel sizeThatFits:CGSizeMake(labelWidth, 400)];
             CGFloat diff = labelSize.height - 18;
             return defaultEventCellHeight + diff;
         } else {
@@ -443,8 +437,8 @@ NSString static *podcastArtDir;
     //NSLog(@"long press detected with state: %ld", (long)gestureRecognizer.state);
     
     if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
-        CGPoint loc = [gestureRecognizer locationInView:_feedTableViewController.tableView];
-    	_longPressIndexPath = [_feedTableViewController.tableView indexPathForRowAtPoint:loc];
+        CGPoint loc = [gestureRecognizer locationInView:self.tableView];
+    	_longPressIndexPath = [self.tableView indexPathForRowAtPoint:loc];
         
         if (_longPressIndexPath) {
             
@@ -543,7 +537,7 @@ NSString static *podcastArtDir;
     
     if (tag == 101) {
         StoryHeaderCell *cell = (StoryHeaderCell *)[[sender superview] superview];
-        NSIndexPath *indexPath = [_feedTableViewController.tableView indexPathForCell:cell];
+        NSIndexPath *indexPath = [self.tableView indexPathForCell:cell];
         NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
         NSString *userId = [[[storyDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
         // push profile
@@ -654,7 +648,7 @@ NSString static *podcastArtDir;
 - (void) setActiveClipCellReference {
 
     NSIndexPath *indexPath = [NSIndexPath indexPathForRow:_activeRowIndex inSection:_activeSectionIndex];
-    UITableViewCell *cell = [_feedTableViewController.tableView cellForRowAtIndexPath:indexPath];
+    UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
     StoryEventCell *activeCell = (StoryEventCell *)cell;
     _activeClipProgressView = activeCell.clipProgress;
 
@@ -738,14 +732,14 @@ NSString static *podcastArtDir;
                                 _storiesArray = [newFeedArray mutableCopy];
                                 
                                 [UIView setAnimationsEnabled:NO];
-                                [_feedTableViewController.tableView beginUpdates];
+                                [self.tableView beginUpdates];
                                 for (NSInteger i = 0; i < newStories.count; i++) {
-                                    [_feedTableViewController.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
                                 }
-                                [_feedTableViewController.tableView endUpdates];
+                                [self.tableView endUpdates];
                                 [UIView setAnimationsEnabled:YES];
                                 
-                                [_feedTableViewController.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
+                                [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
                             }
                         }
                         // auto-loaded posts as user scrolls down
@@ -755,8 +749,8 @@ NSString static *podcastArtDir;
                                 NSLog(@"no more posts to get");
                                 _reachedEndOfPosts = YES;
                                 // hide footer
-                                //[_feedTableViewController.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_storiesArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
-                                [_feedTableViewController.tableView reloadData];
+                                //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_storiesArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
+                                [self.tableView reloadData];
                                 
                             } else {
                                 NSLog(@"\tgot posts older than: %@", beforeTime);
@@ -767,11 +761,11 @@ NSString static *podcastArtDir;
                                 newFeedArray = nil;
                                 
                                 [UIView setAnimationsEnabled:NO];
-                                [_feedTableViewController.tableView beginUpdates];
+                                [self.tableView beginUpdates];
                                 for (int i = startingIndex-1; i < _storiesArray.count-1; i++) {
-                                    [_feedTableViewController.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
                                 }
-                                [_feedTableViewController.tableView endUpdates];
+                                [self.tableView endUpdates];
                                 [UIView setAnimationsEnabled:YES];
                                 
                                 
@@ -782,7 +776,7 @@ NSString static *podcastArtDir;
                             _storiesArray = [self processStories:newStories];
                             NSLog(@"got posts. storiesArray count: %lu", (unsigned long)[_storiesArray count]);
                             //NSLog(@"%@", _storiesArray);
-                            [_feedTableViewController.tableView reloadData];
+                            [self.tableView reloadData];
                         }
                         
                         // feed is now refreshed
@@ -814,7 +808,7 @@ NSString static *podcastArtDir;
                 [self endRefreshing];
                 
                 UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                _feedTableViewController.tableView.backgroundView = nil;
+                self.tableView.backgroundView = nil;
                 [connectionErrorAlert show];
             });
         }
@@ -825,8 +819,8 @@ NSString static *podcastArtDir;
     _requestingMore = NO;
     self.requestStatus = @"finished";
     _loadMoreIndicator.alpha = 0;
-    [_feedTableViewController.refreshControl endRefreshing];
-    _feedTableViewController.tableView.backgroundView = nil;
+    [self.refreshControl endRefreshing];
+    self.tableView.backgroundView = nil;
 }
 
 // break events apart from story and into their own array items in _storiesArray,
@@ -922,7 +916,7 @@ NSString static *podcastArtDir;
 #pragma mark - scroll view delegate methods
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    if (scrollView == _feedTableViewController.tableView) {
+    if (scrollView == self.tableView) {
         // shrink header
         if (_profiledUserId.length > 0 && scrollView.contentOffset.y > 0 && scrollView.contentOffset.y <= animationDistance) {
             //NSLog(@"table offset: %f", scrollView.contentOffset.y);

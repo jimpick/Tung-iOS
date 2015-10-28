@@ -7,12 +7,13 @@
 //
 
 #import "FeedViewController.h"
+#import "StoriesTableViewController.h"
 
 @interface FeedViewController ()
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (strong, nonatomic) TungPodcast *podcast;
-@property (strong, nonatomic) TungStories *stories;
+@property (strong, nonatomic) StoriesTableViewController *storiesView;
 
 @property BOOL hasPodcastData;
 @property BOOL hasUserData;
@@ -38,23 +39,23 @@
     _podcast.delegate = self;
     
     // FEED
-    _stories = [TungStories new];
-    _stories.navController = [self navigationController];
-    _stories.viewController = self;
-    _stories.profiledUserId = @"";
+    _storiesView = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
+    _storiesView.navController = [self navigationController];
+    _storiesView.viewController = self;
+    _storiesView.profiledUserId = @"";
     
-    _stories.feedTableViewController.edgesForExtendedLayout = UIRectEdgeNone;
-    [self addChildViewController:_stories.feedTableViewController];
-    [self.view addSubview:_stories.feedTableViewController.view];
+    _storiesView.edgesForExtendedLayout = UIRectEdgeNone;
+    [self addChildViewController:_storiesView];
+    [self.view addSubview:_storiesView.view];
     
     
     CGFloat topConstraint = 0;
     
-    _stories.feedTableViewController.view.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeTop multiplier:1 constant:topConstraint]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_stories.feedTableViewController.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_stories.feedTableViewController.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
+    _storiesView.view.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeTop multiplier:1 constant:topConstraint]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_storiesView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_storiesView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_storiesView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
     //[TungCommonObjects clearTempDirectory]; // DEV only
     
@@ -88,7 +89,7 @@
     
     _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
-    _stories.screenWidth = self.view.bounds.size.width;
+    _storiesView.screenWidth = self.view.bounds.size.width;
     
     // let's get retarded in here
     if (_tung.feedNeedsRefresh.boolValue) {
@@ -124,7 +125,7 @@
     animation.type = kCATransitionFade;
     [self.navigationController.navigationBar.layer addAnimation: animation forKey: @"hideSearch"];
     
-    self.navigationItem.titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"tungNavBarLogo.png"]];;
+    self.navigationItem.titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"tungNavBarLogo.png"]];
     UIBarButtonItem *searchBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
     [self.navigationItem setRightBarButtonItem:searchBtn animated:YES];
     
@@ -138,7 +139,7 @@
         if (reachable) {
             // refresh feed
             if (_tung.sessionId && _tung.sessionId.length > 0) {
-                [_stories refreshFeed:YES];
+                [_storiesView refreshFeed:YES];
             }
             // get session then feed
             else {
@@ -146,7 +147,7 @@
                 [_tung getSessionWithCallback:^{
                     // since this is the first call the app makes and we now have session
                     // check to see if user has no podcast data or no user data so it can be restored.
-                    // does not yet sync track progress
+                    // does not YET sync track progress
                     NSLog(@"has USER data: %@", (_hasUserData) ? @"Yes" : @"No");
                     if (!_hasUserData) {
                         [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
@@ -183,13 +184,13 @@
                                 _hasPodcastData = YES;
                             }
                             // get feed
-                            [_stories refreshFeed:YES];
+                            [_storiesView refreshFeed:YES];
                         }];
                     }
                     // if _hasPodcastData
                     else {
                         // get feed
-                        [_stories refreshFeed:YES];
+                        [_storiesView refreshFeed:YES];
                     }
                 }];
             }

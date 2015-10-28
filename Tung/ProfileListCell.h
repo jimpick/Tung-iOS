@@ -9,8 +9,12 @@
 #import <UIKit/UIKit.h>
 #import "AvatarContainerView.h"
 #import "IconView.h"
+#import "PillButton.h"
+#import "TungCommonObjects.h"
 
 @interface ProfileListCell : UITableViewCell
+
+@property (nonatomic, retain) TungCommonObjects *tung;
 
 @property (strong, nonatomic) IBOutlet AvatarContainerView *avatarContainerView;
 @property (strong, nonatomic) IBOutlet UIButton *avatarButton;
@@ -18,5 +22,9 @@
 @property (strong, nonatomic) IBOutlet UILabel *subLabel;
 @property (strong, nonatomic) IBOutlet NSLayoutConstraint *subLabelLeadingConstraint;
 @property (strong, nonatomic) IBOutlet IconView *iconView;
+@property (strong, nonatomic) IBOutlet PillButton *followBtn;
+@property (strong, nonatomic) NSDictionary *profileDict;
+
+- (IBAction)followOrUnfollowUser:(id)sender;
 
 @end

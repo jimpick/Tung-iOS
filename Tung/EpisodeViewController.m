@@ -101,6 +101,14 @@ static NSArray *playbackRateStrings;
         _podcastEntity = _tung.npEpisodeEntity.podcast;
         bottomConstraint = -84;
         self.navigationItem.title = @"Now Playing";
+        
+        
+//        [self.navigationController.navigationBar setTintColor:[UIColor whiteColor]];
+//        [self.navigationController.navigationBar setBarTintColor:_podcastEntity.keyColor1];
+//        [self.navigationController.navigationBar setBackgroundColor:_podcastEntity.keyColor1];
+//        [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[UIColor whiteColor] }];
+
+//        self.navigationItem.
         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
     }
 //    NSDictionary *podcastDict = [TungCommonObjects entityToDict:_podcastEntity];
@@ -467,7 +475,6 @@ static NSArray *playbackRateStrings;
     [_episodesView.tableView reloadData];
     
     NSLog(@"set up view for episode");
-    NSLog(@"description: %@", episodeEntity.desc);
     
     if (episodeEntity.desc.length == 0) {
         // refresh description web view with description from feed
@@ -585,13 +592,8 @@ static NSArray *playbackRateStrings;
         [TungCommonObjects saveContextWithReason:@"(un)subscribed to podcast"];
     }
     else {
-        [self showNoConnectionAlert];
+        [_podcast showNoConnectionAlert];
     }
-}
-
-- (void) showNoConnectionAlert {
-    UIAlertView *noConnectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"No connection" message:@"Please try again when you're connected to the internet." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-    [noConnectionErrorAlert show];
 }
 
 #pragma mark Now Playing control view

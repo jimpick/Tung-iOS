@@ -29,9 +29,5 @@
     }
     return self;
 }
-- (IBAction)viewFollowing:(id)sender {
-}
 
-- (IBAction)viewFollowers:(id)sender {
-}
 @end

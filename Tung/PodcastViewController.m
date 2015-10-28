@@ -61,7 +61,6 @@
     _episodesView.refreshControl = [UIRefreshControl new];
     [_episodesView.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
 
-    
     _episodesView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_headerView attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-44]];
@@ -189,13 +188,8 @@
         [TungCommonObjects saveContextWithReason:@"(un)subscribed to podcast"];
     }
     else {
-        [self showNoConnectionAlert];
+        [_podcast showNoConnectionAlert];
     }
-}
-
-- (void) showNoConnectionAlert {
-    UIAlertView *noConnectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"No connection" message:@"Please try again when you're connected to the internet." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-    [noConnectionErrorAlert show];
 }
 
 

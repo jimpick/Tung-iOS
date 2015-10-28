@@ -1100,6 +1100,7 @@ static NSString *outputFileName = @"output";
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
 
     // get episode entity
+    NSLog(@"get episode entity for episode dict: %@", episodeDict);
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
     NSPredicate *predicate = [NSPredicate predicateWithFormat: @"guid == %@", [episodeDict objectForKey:@"guid"]];
     [request setPredicate:predicate];
@@ -1129,11 +1130,7 @@ static NSString *outputFileName = @"output";
             episodeEntity.isRecommended = [NSNumber numberWithBool:NO];
         }
         if ([episodeDict objectForKey:@"id"]) {
-            if ([[episodeDict objectForKey:@"id"] objectForKey:@"$id"]) {
-                episodeEntity.id = [[episodeDict objectForKey:@"id"] objectForKey:@"$id"];
-            } else {
-            	episodeEntity.id = [episodeDict objectForKey:@"id"];
-            }
+            episodeEntity.id = [episodeDict objectForKey:@"id"];
         }
         if ([episodeDict objectForKey:@"shortlink"]) {
             episodeEntity.shortlink = [episodeDict objectForKey:@"shortlink"];
@@ -1333,13 +1330,13 @@ static NSDateFormatter *ISODateInterpreter = nil;
     NSFetchRequest *findUsers = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
     NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findUsers error:&error];
     if (result.count > 0) {
-        
+        /*
         for (int i = 0; i < result.count; i++) {
             UserEntity *userEntity = [result objectAtIndex:i];
             NSDictionary *userDict = [TungCommonObjects entityToDict:userEntity];
             NSLog(@"user at index: %d", i);
             NSLog(@"%@", userDict);
-        }
+        }*/
         
         return YES;
     } else {

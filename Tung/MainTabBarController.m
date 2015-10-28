@@ -9,6 +9,7 @@
 #import "MainTabBarController.h"
 #import "NavController.h"
 #import "TungCommonObjects.h"
+#import "IconButton.h"
 
 @interface MainTabBarController ()
 
@@ -55,8 +56,8 @@
     toolbar.frame = CGRectMake(0, screenHeight - 44, screenWidth, 44);
     //NSLog(@"toolbar frame: %@", NSStringFromCGRect(toolbar.frame));
     toolbar.clipsToBounds = YES;
-    _activeButtonImages = @[@"tabBar-feed.png", @"tabBar-nowPlaying.png", @"tabBar-activity.png", @"tabBar-profile.png"];
-    _inactiveButtonImages = @[@"tabBar-feed-inactive.png", @"tabBar-nowPlaying-inactive.png", @"tabBar-activity-inactive.png", @"tabBar-profile-inactive.png"];
+    _activeButtonImages = @[@"tabBar-feed.png", @"tabBar-nowPlaying.png", @"tabBar-subscriptions.png", @"tabBar-profile.png"];
+    _inactiveButtonImages = @[@"tabBar-feed-inactive.png", @"tabBar-nowPlaying-inactive.png", @"tabBar-subscriptions-inactive.png", @"tabBar-profile-inactive.png"];
     
     _feedInnerBtn = [self generateTabBarInnerButtonWithIndex:0];
     UIBarButtonItem *feedBarBtn = [[UIBarButtonItem alloc] initWithCustomView:_feedInnerBtn];
@@ -116,6 +117,7 @@
 }
 
 -(UIButton *) generateTabBarInnerButtonWithIndex:(NSUInteger)index {
+    
     //NSLog(@"generate button w index: %lu and image: %@", (unsigned long)index, [_inactiveButtonImages objectAtIndex:index]);
     UIButton *btn = [UIButton buttonWithType:UIButtonTypeCustom];
     btn.frame = CGRectMake(0, 0, 38, 44);

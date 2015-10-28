@@ -27,7 +27,9 @@
         case kIconButtonTypeSignOut:
             [TungPodcastStyleKit drawExitIconWithFrame:rect color:_color];
             break;
-            
+        case kIconButtonTypeProfileSearch:
+            [TungPodcastStyleKit drawProfileSearchIconWithFrame:rect color:_color];
+            break;
         default:
             [TungPodcastStyleKit drawOptionsIconWithFrame:rect color:_color];
             break;
