@@ -30,7 +30,6 @@
                                 <state key="normal">
                                     <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
                                 </state>
-                                <state key="highlighted" image="btn-signUp-twitter-down.png"/>
                                 <variation key="default">
                                     <mask key="constraints">
                                         <exclude reference="5Nl-bS-yHu"/>
@@ -39,7 +38,7 @@
                                 </variation>
                                 <variation key="widthClass=compact">
                                     <mask key="constraints">
-                                        <include reference="5Nl-bS-yHu"/>
+                                        <exclude reference="5Nl-bS-yHu"/>
                                         <include reference="qSC-mc-Nn4"/>
                                     </mask>
                                 </variation>
@@ -54,10 +53,6 @@
                                     <constraint firstAttribute="height" constant="72" id="G91-gR-ME6"/>
                                     <constraint firstAttribute="width" constant="222" id="sl0-iT-2Wy"/>
                                 </constraints>
-                                <state key="normal">
-                                    <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
-                                </state>
-                                <state key="highlighted" image="btn-signUp-facebook-down.png"/>
                                 <variation key="default">
                                     <mask key="constraints">
                                         <exclude reference="G91-gR-ME6"/>
@@ -67,7 +62,7 @@
                                 <variation key="widthClass=compact">
                                     <mask key="constraints">
                                         <include reference="G91-gR-ME6"/>
-                                        <include reference="sl0-iT-2Wy"/>
+                                        <exclude reference="sl0-iT-2Wy"/>
                                     </mask>
                                 </variation>
                                 <connections>
@@ -102,11 +97,20 @@
                         <animations/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
                         <constraints>
+                            <constraint firstItem="xbe-DW-nRy" firstAttribute="leading" secondItem="nFO-98-4ij" secondAttribute="leadingMargin" constant="60" id="1iT-SO-d40">
+                                <variation key="widthClass=compact" constant="50"/>
+                            </constraint>
                             <constraint firstItem="cxP-JY-zJP" firstAttribute="leading" secondItem="nFO-98-4ij" secondAttribute="leading" constant="150" id="4iP-3l-coN"/>
+                            <constraint firstItem="MjQ-0U-cFx" firstAttribute="leading" secondItem="nFO-98-4ij" secondAttribute="leadingMargin" constant="60" id="6Zi-4J-4Lx">
+                                <variation key="widthClass=compact" constant="50"/>
+                            </constraint>
                             <constraint firstAttribute="centerX" secondItem="wmK-iW-e3M" secondAttribute="centerX" id="GGR-hD-Ng2"/>
                             <constraint firstItem="MjQ-0U-cFx" firstAttribute="top" secondItem="xbe-DW-nRy" secondAttribute="bottom" constant="31" id="Mdw-m6-bvy"/>
                             <constraint firstAttribute="trailing" secondItem="cxP-JY-zJP" secondAttribute="trailing" constant="150" id="Pem-H1-JBN"/>
                             <constraint firstItem="MjQ-0U-cFx" firstAttribute="centerX" secondItem="nFO-98-4ij" secondAttribute="centerX" id="PgD-Yi-gAi"/>
+                            <constraint firstAttribute="trailingMargin" secondItem="MjQ-0U-cFx" secondAttribute="trailing" constant="60" id="TJW-eq-kky">
+                                <variation key="widthClass=compact" constant="50"/>
+                            </constraint>
                             <constraint firstAttribute="trailing" secondItem="xbe-DW-nRy" secondAttribute="trailing" constant="42" id="Tjd-RV-Q2X"/>
                             <constraint firstAttribute="bottom" secondItem="MjQ-0U-cFx" secondAttribute="bottom" constant="44" id="UMN-rf-zJH"/>
                             <constraint firstAttribute="trailing" secondItem="MjQ-0U-cFx" secondAttribute="trailing" constant="42" id="UTI-Yu-GvZ"/>
@@ -119,6 +123,9 @@
                             <constraint firstItem="xbe-DW-nRy" firstAttribute="leading" secondItem="nFO-98-4ij" secondAttribute="leading" constant="42" id="kAj-dY-0JC"/>
                             <constraint firstAttribute="centerX" secondItem="wmK-iW-e3M" secondAttribute="centerX" id="lDi-hL-Eh1"/>
                             <constraint firstItem="MjQ-0U-cFx" firstAttribute="leading" secondItem="nFO-98-4ij" secondAttribute="leading" constant="42" id="rGX-9Q-Ifm"/>
+                            <constraint firstAttribute="trailingMargin" secondItem="xbe-DW-nRy" secondAttribute="trailing" constant="60" id="zDP-za-9J3">
+                                <variation key="widthClass=compact" constant="50"/>
+                            </constraint>
                         </constraints>
                         <variation key="default">
                             <mask key="constraints">
@@ -126,8 +133,12 @@
                                 <exclude reference="iOa-AG-Dqb"/>
                                 <exclude reference="lDi-hL-Eh1"/>
                                 <exclude reference="ia0-FU-VFV"/>
+                                <exclude reference="1iT-SO-d40"/>
                                 <exclude reference="dD7-ZL-GXA"/>
+                                <exclude reference="zDP-za-9J3"/>
+                                <exclude reference="6Zi-4J-4Lx"/>
                                 <exclude reference="PgD-Yi-gAi"/>
+                                <exclude reference="TJW-eq-kky"/>
                             </mask>
                         </variation>
                         <variation key="widthClass=compact">
@@ -138,10 +149,14 @@
                                 <exclude reference="4iP-3l-coN"/>
                                 <exclude reference="Pem-H1-JBN"/>
                                 <include reference="ia0-FU-VFV"/>
+                                <include reference="1iT-SO-d40"/>
                                 <exclude reference="Tjd-RV-Q2X"/>
                                 <include reference="dD7-ZL-GXA"/>
                                 <exclude reference="kAj-dY-0JC"/>
+                                <include reference="zDP-za-9J3"/>
+                                <include reference="6Zi-4J-4Lx"/>
                                 <include reference="PgD-Yi-gAi"/>
+                                <include reference="TJW-eq-kky"/>
                                 <exclude reference="UTI-Yu-GvZ"/>
                                 <exclude reference="rGX-9Q-Ifm"/>
                             </mask>
@@ -3210,8 +3225,6 @@
     <resources>
         <image name="albumShawdow.png" width="112" height="187"/>
         <image name="albumShawdowCellSection.png" width="112" height="72"/>
-        <image name="btn-signUp-facebook-down.png" width="236" height="66"/>
-        <image name="btn-signUp-twitter-down.png" width="236" height="66"/>
         <image name="tungSignInLogo.png" width="194" height="124"/>
     </resources>
     <inferredMetricsTieBreakers>

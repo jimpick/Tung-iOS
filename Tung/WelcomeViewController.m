@@ -64,7 +64,7 @@
 
 -(void)viewWillAppear:(BOOL)animated {
     
-    _activityIndicator.alpha = 0;
+    if (!_working) _activityIndicator.alpha = 0;
     
 }
 
@@ -122,8 +122,6 @@
         ];
     }
     
-    //_btn_signUpWithFacebook.hidden = YES; // for now
-    
     [UIView animateWithDuration:.5
                           delay:0.7
                         options:UIViewAnimationOptionCurveLinear
@@ -146,7 +144,7 @@
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
 }
-
+/* not used
 - (void)animationDidStop:(NSString *)animationID finished:(NSNumber *)finished context:(void *)context {
     
     if ([animationID isEqualToString:@"animate logo"]) {
@@ -154,7 +152,8 @@
             CGRect newLogoFrame = _logo.frame;
             NSLog(@"new logo frame %@", NSStringFromCGRect(newLogoFrame));
         }
-    }}
+    }
+}*/
 
 #pragma mark - Signing in
 
@@ -165,10 +164,11 @@
 }
 
 - (void) loginRequestEnded {
-    
+    NSLog(@"login request ended");
     _activityIndicator.alpha = 0;
     _working = NO;
 }
+
 
 - (IBAction)signUpWithTwitter:(id)sender {
     NSLog(@"sign up with twitter");
@@ -177,12 +177,11 @@
         
         if (!_tung.twitterAccountToUse) {
             // watch for account to get set or fail
-            NSLog(@"add observer for tung.twitterAccountStatus");
             //NSKeyValueObservingOptions
             [self addObserver:self forKeyPath:@"tung.twitterAccountStatus" options:NSKeyValueObservingOptionNew context:nil];
             [_tung establishTwitterAccount];
         } else {
-            NSLog(@"twitter account to use is already set");
+            //NSLog(@"twitter account to use is already set");
             [self continueTwitterSignUpWithAccount:_tung.twitterAccountToUse];
         }
     }
@@ -190,7 +189,7 @@
 
 -(void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
 {
-    NSLog(@"----- value changed for key: %@, change: %@", keyPath, change);
+    //NSLog(@"----- value changed for key: %@, change: %@", keyPath, change);
     
     if ([keyPath isEqualToString:@"tung.twitterAccountStatus"]) {
         if ([_tung.twitterAccountStatus isEqualToString:@"failed"]) {

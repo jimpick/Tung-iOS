@@ -243,7 +243,15 @@ CGFloat labelWidth = 0;
             noMoreLabel.textColor = [UIColor grayColor];
             noMoreLabel.textAlignment = NSTextAlignmentCenter;
             return noMoreLabel;
-        } else {
+        }
+        else if (_noResults) {
+            UILabel *noResultsLabel = [[UILabel alloc] init];
+            noResultsLabel.text = @"No activity yet.";
+            noResultsLabel.textColor = [UIColor grayColor];
+            noResultsLabel.textAlignment = NSTextAlignmentCenter;
+            return noResultsLabel;
+        }
+        else {
             _loadMoreIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
             return _loadMoreIndicator;
         }
@@ -312,21 +320,30 @@ NSString static *podcastArtDir;
 	// title
     NSString *title = [episodeDict objectForKey:@"title"];
     headerCell.title.text = title;
-    if (screenWidth >= 320) {
+    if (screenWidth >= 414) { // iPhone 6+/6s+
         headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
-        if (title.length > 32) {
+        if (title.length > 52) {
             headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
         }
-        if (title.length > 52) {
+        if (title.length > 72) {
             headerCell.title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
         }
     }
-    else if (screenWidth >= 375) {
+    else if (screenWidth >= 375) { // iPhone 6/6s
         headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
         if (title.length > 42) {
             headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
         }
         if (title.length > 62) {
+            headerCell.title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
+        }
+    }
+    else { // iPhone 5/5s
+        headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
+        if (title.length > 32) {
+            headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
+        }
+        if (title.length > 52) {
             headerCell.title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
         }
     }
@@ -787,7 +804,11 @@ NSString static *podcastArtDir;
                         }
                         // initial request
                         else {
-                            _storiesArray = [self processStories:newStories];
+                            if (newStories.count > 0) {
+                            	_storiesArray = [self processStories:newStories];
+                            } else {
+                                _noResults = YES;
+                            }
                             NSLog(@"got stories. storiesArray count: %lu", (unsigned long)[_storiesArray count]);
                             //NSLog(@"%@", _storiesArray);
                             [self.tableView reloadData];

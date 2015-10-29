@@ -1082,7 +1082,7 @@ static NSString *outputFileName = @"output";
             episodeEntity.isRecommended = [NSNumber numberWithBool:NO];
         }
         if ([episodeDict objectForKey:@"id"]) {
-            episodeEntity.id = [episodeDict objectForKey:@"id"];
+            episodeEntity.id = [[episodeDict objectForKey:@"id"] objectForKey:@"$id"];
         }
         if ([episodeDict objectForKey:@"shortlink"]) {
             episodeEntity.shortlink = [episodeDict objectForKey:@"shortlink"];

@@ -507,16 +507,15 @@ static NSArray *playbackRateStrings;
 - (void) refreshComments:(BOOL)fullRefresh {
     
     NSNumber *mostRecent = [NSNumber numberWithInt:0];
-    if (!fullRefresh) {
+    
+    /*if (!fullRefresh) {
         if (_commentsView.commentsArray.count > 0) {
             [_commentsView.refreshControl beginRefreshing];
             mostRecent = [[_commentsView.commentsArray objectAtIndex:0] objectForKey:@"time_secs"];
         } else { // if initial request timed out and they are trying again
             mostRecent = [NSNumber numberWithInt:0];
         }
-    }
-    NSLog(@"request comments newer than: %@", mostRecent);
-
+    }*/
     [_commentsView requestCommentsForEpisodeEntity:_episodeEntity NewerThan:mostRecent orOlderThan:[NSNumber numberWithInt:0]];
 }
 
@@ -1490,23 +1489,17 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         CGRect keyboardRectBegin = [keyboardFrameBegin CGRectValue];
         NSValue *keyboardFrameEnd = [keyboardInfo valueForKey:UIKeyboardFrameEndUserInfoKey];
         CGRect keyboardRectEnd = [keyboardFrameEnd CGRectValue];
-        NSLog(@"keyboard will appear. rect begin: %@, rect end: %@", NSStringFromCGRect(keyboardRectBegin),NSStringFromCGRect(keyboardRectEnd));
+        //NSLog(@"keyboard will appear. %@", keyboardInfo);
+        //NSLog(@"keyboard will appear. rect begin: %@, rect end: %@", NSStringFromCGRect(keyboardRectBegin),NSStringFromCGRect(keyboardRectEnd));
         
         // keyboard changes height (switch to emoji, open auto complete
         if (_keyboardActive) {
             
             CGFloat diff = keyboardRectEnd.size.height - keyboardRectBegin.size.height;
             
-            [UIView beginAnimations:@"keyboard up" context:NULL];
-            [UIView setAnimationDuration:[notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
-            [UIView setAnimationCurve:[notification.userInfo[UIKeyboardAnimationCurveUserInfoKey] integerValue]];
-            [UIView setAnimationBeginsFromCurrentState:YES];
-            [UIView setAnimationDelegate:self];
-            
             _npControlsBottomLayoutConstraint.constant += diff;
             [self.view layoutIfNeeded];
             
-            [UIView commitAnimations];
         }
         // keyboard appears
         else {
@@ -1560,7 +1553,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         _hideControlsButton.hidden = NO;
         _buttonsScrollView.hidden = NO;
         _posbar.hidden = NO;
-        NSLog(@"keyboard will be hidden");
+        //NSLog(@"keyboard will be hidden");
         
         [UIView beginAnimations:@"keyboard down" context:NULL];
         [UIView setAnimationDuration:[notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
@@ -1599,7 +1592,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
             _buttonsScrollView.hidden = YES;
         }
     }
-    else {
+    else if ([animationId isEqualToString:@"keyboard down"]) {
         _shareIntention = nil;
         _shareTimestamp = nil;
         _commentAndPostView.hidden = YES;

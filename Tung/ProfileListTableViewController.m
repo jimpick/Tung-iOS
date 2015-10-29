@@ -367,7 +367,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
         }
         else if ([action isEqualToString:@"mentioned"]) {
             profileCell.iconView.type = kIconTypeComment;
-            eventString = @"Mentioned you in a comment";
+            eventString = @"Mentioned you";
         }
         profileCell.iconView.color = [UIColor grayColor];
         [profileCell.iconView setNeedsDisplay];
@@ -439,15 +439,14 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
         noMoreLabel.textAlignment = NSTextAlignmentCenter;
         return noMoreLabel;
     }
-    /* only used if search was in title bar (not currently)
-     else if (_tungStereo.noResults && section == 1) {
-     UILabel *noResultsLabel = [[UILabel alloc] init];
-     noResultsLabel.text = @"No clips for that query.";
-     noResultsLabel.textColor = [UIColor grayColor];
-     noResultsLabel.textAlignment = NSTextAlignmentCenter;
-     return noResultsLabel;
+    
+     else if (_noResults && section == 1) {
+         UILabel *noResultsLabel = [[UILabel alloc] init];
+         noResultsLabel.text = @"No results.";
+         noResultsLabel.textColor = [UIColor grayColor];
+         noResultsLabel.textAlignment = NSTextAlignmentCenter;
+         return noResultsLabel;
      }
-     */
     else {
         _loadMoreIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
         return _loadMoreIndicator;
