@@ -252,7 +252,7 @@ static NSArray *playbackRateStrings;
         // get keyboard height when keyboard is shown and will hide
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillAppear:) name:UIKeyboardWillShowNotification object:nil];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillBeHidden:) name:UIKeyboardWillHideNotification object:nil];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
+        //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
     
     
         playbackRateStrings = @[@".75x", @"1.0x", @"1.5x", @"2.0x"];
@@ -379,6 +379,7 @@ static NSArray *playbackRateStrings;
     
     if (_isNowPlayingView) {
         _episodeEntity = _tung.npEpisodeEntity;
+        _podcastEntity = _tung.npEpisodeEntity.podcast;
         [self setUpViewForWhateversPlaying];
         [self resetRecording];
         [self setPlaybackRateToOne];
@@ -509,11 +510,12 @@ static NSArray *playbackRateStrings;
     if (!fullRefresh) {
         if (_commentsView.commentsArray.count > 0) {
             [_commentsView.refreshControl beginRefreshing];
-            mostRecent = [[[_commentsView.commentsArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
+            mostRecent = [[_commentsView.commentsArray objectAtIndex:0] objectForKey:@"time_secs"];
         } else { // if initial request timed out and they are trying again
             mostRecent = [NSNumber numberWithInt:0];
         }
     }
+    NSLog(@"request comments newer than: %@", mostRecent);
 
     [_commentsView requestCommentsForEpisodeEntity:_episodeEntity NewerThan:mostRecent orOlderThan:[NSNumber numberWithInt:0]];
 }
@@ -613,9 +615,9 @@ static CGRect buttonsScrollViewHomeRect;
     
     // buttons scroll view
     CGRect scrollViewRect = _buttonsScrollView.frame;
-    NSLog(@"scroll view rect: %@", NSStringFromCGRect(scrollViewRect));
+    //NSLog(@"scroll view rect: %@", NSStringFromCGRect(scrollViewRect));
     scrollViewRect.size.width = screenWidth;
-    NSLog(@"scroll view rect: %@", NSStringFromCGRect(scrollViewRect));
+    //NSLog(@"scroll view rect: %@", NSStringFromCGRect(scrollViewRect));
     _buttonsScrollView.contentSize = CGSizeMake(scrollViewRect.size.width * 3, scrollViewRect.size.height);
     _buttonsScrollView.delegate = self;
     CGRect subViewRect = CGRectMake(0, 0, scrollViewRect.size.width, scrollViewRect.size.height);
@@ -1481,64 +1483,76 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
 }
 
 - (void) keyboardWillAppear:(NSNotification*)notification {
-    
     if (_shareIntention && !_searchActive) {
         
-        // disable search
-        [self.navigationItem.rightBarButtonItem setEnabled:NO];
+        NSDictionary *keyboardInfo = [notification userInfo];
+        NSValue *keyboardFrameBegin = [keyboardInfo valueForKey:UIKeyboardFrameBeginUserInfoKey];
+        CGRect keyboardRectBegin = [keyboardFrameBegin CGRectValue];
+        NSValue *keyboardFrameEnd = [keyboardInfo valueForKey:UIKeyboardFrameEndUserInfoKey];
+        CGRect keyboardRectEnd = [keyboardFrameEnd CGRectValue];
+        NSLog(@"keyboard will appear. rect begin: %@, rect end: %@", NSStringFromCGRect(keyboardRectBegin),NSStringFromCGRect(keyboardRectEnd));
         
-        _commentAndPostView.hidden = NO;
-        _buttonsScrollView.scrollEnabled = NO;
-        
-        NSDictionary* keyboardInfo = [notification userInfo];
-        NSValue* keyboardFrameBegin = [keyboardInfo valueForKey:UIKeyboardFrameBeginUserInfoKey];
-        CGRect keyboardRect = [keyboardFrameBegin CGRectValue];
-        
-        [UIView beginAnimations:@"keyboard up" context:NULL];
-        [UIView setAnimationDuration:[notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
-        [UIView setAnimationCurve:[notification.userInfo[UIKeyboardAnimationCurveUserInfoKey] integerValue]];
-        [UIView setAnimationBeginsFromCurrentState:YES];
-        [UIView setAnimationDelegate:self];
-        [UIView setAnimationDidStopSelector:@selector(keyboardAnimationStopped:finished:context:)];
-        // properties to animate
-        _commentAndPostView.tapToCommentLabel.alpha = 0;
-        _hideControlsButton.alpha = 0;
-        _shareLabel.alpha = 1;
-        // for new clip
-        if ([_shareIntention isEqualToString:kNewClipIntention]) {
-            _npControlsBottomLayoutConstraint.constant = clipConfirmConstraint + keyboardRect.size.height - 44;
+        // keyboard changes height (switch to emoji, open auto complete
+        if (_keyboardActive) {
+            
+            CGFloat diff = keyboardRectEnd.size.height - keyboardRectBegin.size.height;
+            
+            [UIView beginAnimations:@"keyboard up" context:NULL];
+            [UIView setAnimationDuration:[notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
+            [UIView setAnimationCurve:[notification.userInfo[UIKeyboardAnimationCurveUserInfoKey] integerValue]];
+            [UIView setAnimationBeginsFromCurrentState:YES];
+            [UIView setAnimationDelegate:self];
+            
+            _npControlsBottomLayoutConstraint.constant += diff;
+            [self.view layoutIfNeeded];
+            
+            [UIView commitAnimations];
         }
-        // for new comment
-        else if ([_shareIntention isEqualToString:kNewCommentIntention]) {
-            _npControlsBottomLayoutConstraint.constant = openConstraint + keyboardRect.size.height - 44;
-            _buttonsScrollView.alpha = 0;
-            _posbar.alpha = 0;
-            _progressBar.alpha = 0;
-            _timeElapsedLabel.alpha = 0;
-            _totalTimeLabel.alpha = 0;
-            _pageControl.alpha = 0;
-            _commentAndPostView.alpha = 1;
+        // keyboard appears
+        else {
+        
+            // disable search
+            [self.navigationItem.rightBarButtonItem setEnabled:NO];
+            
+            _commentAndPostView.hidden = NO;
+            _buttonsScrollView.scrollEnabled = NO;
+            
+            [UIView beginAnimations:@"keyboard up" context:NULL];
+            [UIView setAnimationDuration:[notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
+            [UIView setAnimationCurve:[notification.userInfo[UIKeyboardAnimationCurveUserInfoKey] integerValue]];
+            [UIView setAnimationBeginsFromCurrentState:YES];
+            [UIView setAnimationDelegate:self];
+            [UIView setAnimationDidStopSelector:@selector(keyboardAnimationStopped:finished:context:)];
+            // properties to animate
+            _commentAndPostView.tapToCommentLabel.alpha = 0;
+            _hideControlsButton.alpha = 0;
+            _shareLabel.alpha = 1;
+            // for new clip
+            if ([_shareIntention isEqualToString:kNewClipIntention]) {
+                _npControlsBottomLayoutConstraint.constant = clipConfirmConstraint + keyboardRectBegin.size.height - 44;
+            }
+            // for new comment
+            else if ([_shareIntention isEqualToString:kNewCommentIntention]) {
+                _npControlsBottomLayoutConstraint.constant = openConstraint + keyboardRectBegin.size.height - 44;
+                _buttonsScrollView.alpha = 0;
+                _posbar.alpha = 0;
+                _progressBar.alpha = 0;
+                _timeElapsedLabel.alpha = 0;
+                _totalTimeLabel.alpha = 0;
+                _pageControl.alpha = 0;
+                _commentAndPostView.alpha = 1;
+            }
+            [self.view layoutIfNeeded];
+            
+            [UIView commitAnimations];
+            
+            _keyboardActive = YES;
         }
-        [self.view layoutIfNeeded];
-        
-        [UIView commitAnimations];
-    }
-    
-    _keyboardActive = YES;
-    
-}
-- (void) keyboardWillChangeFrame:(NSNotification*)notification {
-    
-    
-    if (_shareIntention && !_searchActive) {
-        
-        NSDictionary* keyboardInfo = [notification userInfo];
-        NSValue* keyboardFrameBegin = [keyboardInfo valueForKey:UIKeyboardFrameBeginUserInfoKey];
-        CGRect keyboardRect = [keyboardFrameBegin CGRectValue];
-        
-        NSLog(@"keyboard will change frame: %@", NSStringFromCGRect(keyboardRect));
     }
 }
+
+//- (void) keyboardWillChangeFrame:(NSNotification*)notification {
+//}
 
 - (void) keyboardWillBeHidden:(NSNotification*)notification {
     
@@ -1546,6 +1560,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         _hideControlsButton.hidden = NO;
         _buttonsScrollView.hidden = NO;
         _posbar.hidden = NO;
+        NSLog(@"keyboard will be hidden");
         
         [UIView beginAnimations:@"keyboard down" context:NULL];
         [UIView setAnimationDuration:[notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
@@ -1692,10 +1707,10 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
             [_commentAndPostView.postButton setEnabled:YES];
             [TungCommonObjects fadeInView:_commentAndPostView.cancelButton];
             if (success) {
+                [self refreshComments:YES];
                 _commentAndPostView.commentTextView.text = @"";
                 [self toggleNewComment];
                 
-                [self refreshComments:YES];
 
                 NSString *username = [[_tung getLoggedInUserData] objectForKey:@"username"];
                 NSString *link = [NSString stringWithFormat:@"%@s/%@/%@", _tung.tungSiteRootUrl, _tung.npEpisodeEntity.shortlink, username];
@@ -1725,12 +1740,13 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
             [_commentAndPostView.postActivityIndicator stopAnimating];
             [_commentAndPostView.postButton setEnabled:YES];
             if (success) {
+                [self refreshComments:YES];
                 [self toggleNewClipView];
                 _commentAndPostView.commentTextView.text = @"";
                 [self resetRecording];
-                [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(toggleNewClipView) userInfo:nil repeats:NO];
                 
-
+                [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(toggleNewClipView) userInfo:nil repeats:NO];
+	
                 NSString *eventShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"eventShortlink"];
                 NSString *link = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, eventShortlink];
                 // caption

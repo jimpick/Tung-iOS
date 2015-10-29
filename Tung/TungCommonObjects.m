@@ -329,7 +329,12 @@
             if (_totalSeconds == 0) [self determineTotalSeconds];
 
             float currentSecs = CMTimeGetSeconds(_player.currentTime);
-            NSLog(@"current secs: %f, total secs: %f", currentSecs, _totalSeconds);
+            //NSLog(@"current secs: %f, total secs: %f", currentSecs, _totalSeconds);
+            if (_totalSeconds > 0 && currentSecs >= _totalSeconds) {
+                [self completedPlayback];
+                return;
+            }
+            
             if ([self isPlaying]) {
                 [self setControlButtonStateToPause];
             }
@@ -946,60 +951,7 @@ static NSString *outputFileName = @"output";
     [self.pendingRequests removeObject:loadingRequest];
 }
 
-/*
- NOT USED
- Methods for recording by intercepting PCM samples. Had to abandon because recorded
- audio was latent - a few seconds off from when you actually started/stopped recording.
 
-- (void) initializeClipRecording {
-    
-    // ExtAudioFileRef method
-    
-    // output file
-    NSString *pathToRecordingFile = [NSTemporaryDirectory() stringByAppendingPathComponent:@"newClip.lpcm"];
-    // delete recording file if exists.
-    if ([[NSFileManager defaultManager] fileExistsAtPath:pathToRecordingFile]) {
-        [[NSFileManager defaultManager] removeItemAtPath:pathToRecordingFile error:nil];
-    }
-    NSURL *audioRecordingURLRaw = [NSURL fileURLWithPath:pathToRecordingFile];
-    
-    AudioStreamBasicDescription dstFormat;
-    dstFormat.mSampleRate = (UInt32)[AVAudioSession sharedInstance].sampleRate;
-    //NSLog(@"- sample rate: %f", dstFormat.mSampleRate);
-//    size = sizeof(dstFormat.mChannelsPerFrame);
-//    AudioSessionGetProperty(kAudioSessionProperty_CurrentHardwareInputNumberChannels,
-//                            &size,
-//                            &dstFormat.mChannelsPerFrame);
-    dstFormat.mFormatID = kAudioFormatLinearPCM;
-    dstFormat.mFormatFlags = kLinearPCMFormatFlagIsSignedInteger | kAudioFormatFlagsNativeEndian | kAudioFormatFlagIsPacked;
-    dstFormat.mBytesPerPacket = 4;
-    dstFormat.mFramesPerPacket = 1;
-    dstFormat.mBytesPerFrame = 4;
-    dstFormat.mChannelsPerFrame = 2;
-    dstFormat.mBitsPerChannel = 16;
-
-    _destinationFile = 0;
-    
-    OSStatus result = ExtAudioFileCreateWithURL((__bridge CFURLRef)audioRecordingURLRaw, kAudioFileCAFType, &dstFormat, NULL, kAudioFileFlags_EraseFile, &_destinationFile);
-    
-    NSLog(@"create new audio recording file: %@", [self OSStatusToStr:result]);
-    
-    //_clipData = [NSMutableData dataWithContentsOfURL:_audioRecordingURL];
-//    NSLog(@"new audio file data length: %lu", (unsigned long)_clipData.length);
- 
-}
-
-// intercept PCM audio samples
-- (void)audioStream:(FSAudioStream *)audioStream audioBufferList:(AudioBufferList)bufferList count:(NSUInteger)count {
-
-    if (_isRecording) {
-        NSLog(@"receiving audio: %lu", (unsigned long)count);
-        UInt32 nFrames = (UInt32)count/ 2;
-        
-        ExtAudioFileWriteAsync(_destinationFile, nFrames, &bufferList);
-    }
-}
- */
 
 #pragma mark - core data related
 

@@ -312,12 +312,23 @@ NSString static *podcastArtDir;
 	// title
     NSString *title = [episodeDict objectForKey:@"title"];
     headerCell.title.text = title;
-    headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
-    if (title.length > 42) {
-        headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
+    if (screenWidth >= 320) {
+        headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
+        if (title.length > 32) {
+            headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
+        }
+        if (title.length > 52) {
+            headerCell.title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
+        }
     }
-    if (title.length > 62) {
-        headerCell.title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
+    else if (screenWidth >= 375) {
+        headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
+        if (title.length > 42) {
+            headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
+        }
+        if (title.length > 62) {
+            headerCell.title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
+        }
     }
     
     // post date

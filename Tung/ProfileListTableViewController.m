@@ -171,7 +171,6 @@
                         // auto-loaded posts as user scrolls down
                         else if ([beforeTime intValue] > 0) {
                             _requestingMore = NO;
-                            _loadMoreIndicator.alpha = 0;
                             if (newItems.count == 0) {
                                 NSLog(@"no more items to get");
                                 _noMoreItemsToGet = YES;

@@ -246,9 +246,8 @@ static double screenWidth;
                              @"episodeId": episodeId,
                              @"newerThan": afterTime,
                              @"olderThan": beforeTime
-                             };
-    
-    //NSLog(@"request for comments with params: %@", params);
+                             };    
+    NSLog(@"request for comments with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [feedRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -281,24 +280,29 @@ static double screenWidth;
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
                         NSArray *newComments = jsonData;
-                        //NSLog(@"new comments count: %lu", (unsigned long)newComments.count);
+                        NSLog(@"new comments count: %lu", (unsigned long)newComments.count);
                         
                         // end refreshing
                         self.tableView.backgroundView = nil;
                         [self.refreshControl endRefreshing];
                         
+                        // comments are sorted by timestamp, so we can't get newest/oldest by time_secs.
+                        // commenting out for now until I can spend time on a better solution.
+                        /*
                         // pull refresh
                         if ([afterTime intValue] > 0) {
                             if (newComments.count > 0) {
                                 NSLog(@"\tgot comments newer than: %@", afterTime);
                                 NSArray *newCommentsArray = [newComments arrayByAddingObjectsFromArray:_commentsArray];
                                 _commentsArray = [newCommentsArray mutableCopy];
-                                
+                                NSMutableArray *indexPaths = [[NSMutableArray alloc] init];
+                                for (int i = 0; i < newComments.count; i++) {
+                                    [indexPaths addObject:[NSIndexPath indexPathForRow:i inSection:0]];
+                                }
+                                    
                                 [UIView setAnimationsEnabled:NO];
                                 [self.tableView beginUpdates];
-                                for (NSInteger i = 0; i < newComments.count; i++) {
-                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
-                                }
+                                [self.tableView insertRowsAtIndexPaths:indexPaths withRowAnimation:UITableViewRowAnimationLeft];
                                 [self.tableView endUpdates];
                                 [UIView setAnimationsEnabled:YES];
                                 
@@ -325,16 +329,15 @@ static double screenWidth;
                                 NSArray *newCommentsArray = [_commentsArray arrayByAddingObjectsFromArray:newComments];
                                 _commentsArray = [newCommentsArray mutableCopy];
                                 newCommentsArray = nil;
-                                
+                                NSMutableArray *indexPaths = [[NSMutableArray alloc] init];
+                                for (int i = startingIndex; i < _commentsArray.count; i++) {
+                                    [indexPaths addObject:[NSIndexPath indexPathForRow:i inSection:0]];
+                                }
                                 [UIView setAnimationsEnabled:NO];
                                 [self.tableView beginUpdates];
-                                for (int i = startingIndex-1; i < _commentsArray.count-1; i++) {
-                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
-                                }
+                                [self.tableView insertRowsAtIndexPaths:indexPaths withRowAnimation:UITableViewRowAnimationLeft];
                                 [self.tableView endUpdates];
                                 [UIView setAnimationsEnabled:YES];
-                                
-                                
                             }
                         }
                         // initial request
@@ -348,7 +351,17 @@ static double screenWidth;
                                 _noResults = YES;
                             }
                             [self.tableView reloadData];
+                        }*/
+                        
+                        if (newComments.count > 0) {
+                            _noResults = NO;
+                            _commentsArray = [newComments mutableCopy];
+                            NSLog(@"got comments. commentsArray count: %lu", (unsigned long)[_commentsArray count]);
+                            //NSLog(@"%@", _commentsArray);
+                        } else {
+                            _noResults = YES;
                         }
+                        [self.tableView reloadData];
                         
                         // feed is now refreshed
                         self.requestStatus = @"finished";
