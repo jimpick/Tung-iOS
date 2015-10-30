@@ -42,7 +42,7 @@
         _searchTableViewController.tableView.scrollsToTop = YES;
         _searchTableViewController.tableView.bounces = NO;
         _searchTableViewController.tableView.separatorInset = UIEdgeInsetsMake(0, 9, 0, 9);
-        _searchTableViewController.tableView.contentInset = UIEdgeInsetsMake(1, 0, 10, 0);
+        _searchTableViewController.tableView.contentInset = UIEdgeInsetsMake(0, 0, 10, 0);
         _searchTableViewController.tableView.backgroundColor = [UIColor clearColor];
         _searchTableViewController.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
         _searchTableViewController.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero];

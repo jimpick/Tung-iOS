@@ -24,7 +24,7 @@
     self.navigationBar.barTintColor = [UIColor whiteColor];
     self.navigationBar.backgroundColor = [UIColor whiteColor];
     self.navigationBar.tintColor = _tung.tungColor;
-    //self.navigationBar.translucent = NO; // causes black gap at top - stackoverflow.com/q/31308766/591487
+    self.navigationBar.translucent = NO; // causes black gap at top - stackoverflow.com/q/31308766/591487
     self.navigationBar.titleTextAttributes = @{ NSForegroundColorAttributeName: _tung.tungColor };
     
     [[UINavigationBar appearance] setBackgroundImage:[UIImage imageNamed:@"navBarBkgd.png"] forBarMetrics:UIBarMetricsDefault]; // makes status bar white

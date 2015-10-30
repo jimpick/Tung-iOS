@@ -87,14 +87,10 @@ static NSArray *playbackRateStrings;
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    
-    self.edgesForExtendedLayout = UIRectEdgeBottom;
-    
     _tung = [TungCommonObjects establishTungObjects];
     _podcast = [TungPodcast new];
     
     // is this for now playing?
-    CGFloat bottomConstraint = -44;
     if (_episodeEntity) {
         _podcastEntity = _episodeEntity.podcast;
         self.navigationItem.title = @"Episode";
@@ -102,7 +98,6 @@ static NSArray *playbackRateStrings;
         _isNowPlayingView = YES;
         _episodeEntity = _tung.npEpisodeEntity;
         _podcastEntity = _tung.npEpisodeEntity.podcast;
-        bottomConstraint = -84;
         self.navigationItem.title = @"Now Playing";
         
         
@@ -134,12 +129,6 @@ static NSArray *playbackRateStrings;
     
     if (!screenWidth) screenWidth = self.view.frame.size.width;
     if (!screenHeight) screenHeight = self.view.frame.size.height;
-    
-    // background spinner
-    UIActivityIndicatorView *bkgdSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-    bkgdSpinner.alpha = 1;
-    [bkgdSpinner startAnimating];
-    [self.view addSubview:bkgdSpinner];
     
     // nothing playing?
     CGRect labelFrame = CGRectMake((screenWidth - 320)/2, (screenHeight - 64)/2, 320, 20);
@@ -179,6 +168,8 @@ static NSArray *playbackRateStrings;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_switcherBar.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     _switcherIndex = 0;
 
+    
+    CGFloat bottomConstraint = -44;
     
     // description
     _descriptionView = [self.storyboard instantiateViewControllerWithIdentifier:@"descWebView"];
@@ -277,7 +268,7 @@ static NSArray *playbackRateStrings;
 
 - (void) viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
-    
+    self.navigationController.navigationBar.translucent = NO;
     if (_isNowPlayingView) [self updateTimeElapsedAndPosbar];
 }
 
@@ -301,14 +292,12 @@ static NSArray *playbackRateStrings;
         [_onEnterFrame addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
         
     }
-    //self.navigationController.navigationBar.translucent = NO;
 }
 
 - (void) viewWillDisappear:(BOOL)animated {
     NSLog(@"view will disappear");
     [super viewWillDisappear:animated];
     [_onEnterFrame invalidate];
-    //self.navigationController.navigationBar.translucent = YES;
     
 }
 

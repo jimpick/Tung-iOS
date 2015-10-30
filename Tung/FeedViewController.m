@@ -44,16 +44,17 @@
     _storiesView.viewController = self;
     _storiesView.profiledUserId = @"";
     
-    //_storiesView.edgesForExtendedLayout = UIRectEdgeNone;
+    //_storiesView.edgesForExtendedLayout = UIRectEdgeNone; // seems to not do anything
     [self addChildViewController:_storiesView];
     [self.view addSubview:_storiesView.view];
     
     
     CGFloat topConstraint = 0;
-    /* Apple had some kind of bug in 9.0 that caused edgesForExtendedLayout to not behave properly.
-     ONLY in 9.0 the top constraint needs to be 64 so stories feed isn't positioned behind nav bar. 
-     I tried every combination imaginable for UIRectEdge values, automaticallyAdjustsScrollViewInsets,
-     and without the top constraint the status bar will be transparent or feed will positioned wrong.*/
+    /* There's some kind of bug in 9.0 that caused edgesForExtendedLayout to not behave properly.
+     ONLY in 9.0 (not 8.4 or 9.1) the top constraint needs to be 64 so stories feed isn't positioned behind nav bar.
+     I tried every combination imaginable for edgesForExtendedLayout, automaticallyAdjustsScrollViewInsets, and extendedLayoutIncludesOpaqueBars.
+     and without the top constraint the status bar will be transparent or feed will positioned wrong.
+     The translucence of the nav bar also affects the layout. */
     NSInteger majorVersion = [[NSProcessInfo processInfo] operatingSystemVersion].majorVersion;
     NSInteger minorVersion = [[NSProcessInfo processInfo] operatingSystemVersion].minorVersion;
     NSString *version = [NSString stringWithFormat:@"%ld.%ld", (long)majorVersion, (long)minorVersion];
@@ -91,7 +92,9 @@
     NSLog(@"cancel feed preloading");
     [_podcast.feedPreloadQueue cancelAllOperations];
 }
-
+-(void) viewWillAppear:(BOOL)animated {
+    self.navigationController.navigationBar.translucent = NO;
+}
 -(void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
@@ -103,7 +106,7 @@
     	[self refreshFeed];
     }
     
-    //self.navigationController.navigationBar.translucent = NO;
+    self.navigationController.navigationBar.translucent = NO;
 }
 
 #pragma mark - tungObjects/tungPodcasts delegate methods

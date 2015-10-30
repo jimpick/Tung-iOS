@@ -155,14 +155,16 @@ static NSString *cellIdentifier = @"EpisodeCell";
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
     if (_episodeArray.count > 0 && section == 1) {
         UILabel *noMoreLabel = [[UILabel alloc] init];
-        noMoreLabel.text = @"That's everything.";
+        noMoreLabel.text = @"That's everything.\n ";
+        noMoreLabel.numberOfLines = 0;
         noMoreLabel.textColor = [UIColor grayColor];
         noMoreLabel.textAlignment = NSTextAlignmentCenter;
         return noMoreLabel;
     }
     else if (_noResults && section == 1) {
         UILabel *noEpisodesLabel = [[UILabel alloc] init];
-        noEpisodesLabel.text = @"Podcast feed is empty.";
+        noEpisodesLabel.text = @"Podcast feed is empty.\n ";
+        noEpisodesLabel.numberOfLines = 0;
         noEpisodesLabel.textColor = [UIColor grayColor];
         noEpisodesLabel.textAlignment = NSTextAlignmentCenter;
         return noEpisodesLabel;
@@ -174,7 +176,7 @@ static NSString *cellIdentifier = @"EpisodeCell";
 
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
     if (section == 1) {
-        return 92.0;
+        return 60.0;
     }
     else {
         return 0;

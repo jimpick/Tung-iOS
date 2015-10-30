@@ -45,6 +45,7 @@
     self.tableView.separatorColor = [UIColor grayColor];
     self.tableView.scrollsToTop = YES;
     self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 0, 0);
+    self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
     
     // refresh control
     self.refreshControl = [[UIRefreshControl alloc] init];
@@ -436,8 +437,9 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     NSLog(@"view for footer in profile list view");
     if (_noMoreItemsToGet && section == 1) {
         UILabel *noMoreLabel = [[UILabel alloc] init];
-        NSString *thatsAll = ([_queryType isEqualToString:@"Notifications"]) ? @"That's everything" : @"That's everyone";
+        NSString *thatsAll = ([_queryType isEqualToString:@"Notifications"]) ? @"That's everything.\n " : @"That's everyone.\n ";
         noMoreLabel.text = thatsAll;
+        noMoreLabel.numberOfLines = 0;
         noMoreLabel.textColor = [UIColor grayColor];
         noMoreLabel.textAlignment = NSTextAlignmentCenter;
         return noMoreLabel;
@@ -445,7 +447,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     else if (_noResults && section == 1) {
          UILabel *noResultsLabel = [[UILabel alloc] init];
          noResultsLabel.text = @"No results.";
-         noResultsLabel.textColor = [UIColor whiteColor];
+         noResultsLabel.textColor = [UIColor grayColor];
          noResultsLabel.textAlignment = NSTextAlignmentCenter;
          return noResultsLabel;
     }
@@ -458,7 +460,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     if (!_noMoreItemsToGet && section == 0)
         return 60.0;
     else if ((_noResults || _noMoreItemsToGet) && section == 1)
-        return 30.0;
+        return 60.0;
     else
         return 0;
 }

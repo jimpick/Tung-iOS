@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="9059" systemVersion="15A284" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="V9Q-yt-wDy">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="9059" systemVersion="15B42" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" initialViewController="V9Q-yt-wDy">
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9049"/>
@@ -1174,7 +1174,7 @@
         <!--Feed View Controller-->
         <scene sceneID="jrC-mx-Evb">
             <objects>
-                <viewController id="dUu-U3-8XC" customClass="FeedViewController" sceneMemberID="viewController">
+                <viewController extendedLayoutIncludesOpaqueBars="YES" id="dUu-U3-8XC" customClass="FeedViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="Wf3-8t-fGs"/>
                         <viewControllerLayoutGuide type="bottom" id="Lsd-H1-snW"/>
@@ -1194,7 +1194,7 @@
         <!--Stories Table View Controller-->
         <scene sceneID="xJb-hs-Dd0">
             <objects>
-                <tableViewController storyboardIdentifier="storiesTableView" id="Pt5-ZW-7Df" customClass="StoriesTableViewController" sceneMemberID="viewController">
+                <tableViewController storyboardIdentifier="storiesTableView" extendedLayoutIncludesOpaqueBars="YES" id="Pt5-ZW-7Df" customClass="StoriesTableViewController" sceneMemberID="viewController">
                     <tableView key="view" opaque="NO" clipsSubviews="YES" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="44" sectionHeaderHeight="28" sectionFooterHeight="28" id="KpU-MH-FPr">
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -1729,7 +1729,7 @@
         <!--Tung Nav Controller-->
         <scene sceneID="UG4-En-PYC">
             <objects>
-                <navigationController storyboardIdentifier="npNavController" id="Kz1-Wi-1SU" customClass="TungNavController" sceneMemberID="viewController">
+                <navigationController storyboardIdentifier="npNavController" extendedLayoutIncludesOpaqueBars="YES" providesPresentationContextTransitionStyle="YES" id="Kz1-Wi-1SU" customClass="TungNavController" sceneMemberID="viewController">
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="JJG-Rn-Ltf">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -1741,7 +1741,7 @@
                 </navigationController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="2Kv-hI-j05" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1809" y="108"/>
+            <point key="canvasLocation" x="2250" y="102"/>
         </scene>
         <!--Episodes Table View Controller-->
         <scene sceneID="wGk-hX-jo6">
@@ -1873,7 +1873,7 @@
         <!--Description Web View Controller-->
         <scene sceneID="jJ3-K5-Q8J">
             <objects>
-                <viewController storyboardIdentifier="descWebView" id="Ed5-1A-CAv" customClass="DescriptionWebViewController" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="descWebView" automaticallyAdjustsScrollViewInsets="NO" id="Ed5-1A-CAv" customClass="DescriptionWebViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="HrI-j0-DDt"/>
                         <viewControllerLayoutGuide type="bottom" id="UlX-T5-4hQ"/>
@@ -1919,6 +1919,7 @@
                             </mask>
                         </variation>
                     </view>
+                    <extendedEdge key="edgesForExtendedLayout"/>
                     <connections>
                         <outlet property="webView" destination="4vv-VJ-ozp" id="oKn-da-Das"/>
                     </connections>
@@ -1930,7 +1931,7 @@
         <!--Table View Controller-->
         <scene sceneID="5e7-Wc-JQf">
             <objects>
-                <tableViewController storyboardIdentifier="searchTableViewController" id="n5t-Us-mrw" sceneMemberID="viewController">
+                <tableViewController storyboardIdentifier="searchTableViewController" extendedLayoutIncludesOpaqueBars="YES" providesPresentationContextTransitionStyle="YES" id="n5t-Us-mrw" sceneMemberID="viewController">
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="44" sectionHeaderHeight="22" sectionFooterHeight="22" id="2pk-vO-Ryg">
                         <rect key="frame" x="0.0" y="0.0" width="600" height="600"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -2055,7 +2056,7 @@
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="xYW-mB-8lN" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="3537" y="804"/>
+            <point key="canvasLocation" x="1270.5" y="107"/>
         </scene>
         <!--Podcast View Controller-->
         <scene sceneID="Cyv-n0-P7M">
@@ -2080,7 +2081,7 @@
         <!--Episode View Controller-->
         <scene sceneID="Aye-OL-5BL">
             <objects>
-                <viewController storyboardIdentifier="episodeView" id="HYq-2V-aHS" customClass="EpisodeViewController" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="episodeView" extendedLayoutIncludesOpaqueBars="YES" id="HYq-2V-aHS" customClass="EpisodeViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="yPy-qL-NDo"/>
                         <viewControllerLayoutGuide type="bottom" id="voR-Bw-ZMk"/>
@@ -2251,7 +2252,7 @@
                                         <variation key="widthClass=compact" constant="0.0"/>
                                     </constraint>
                                     <constraint firstAttribute="height" constant="215" id="8MG-fv-7ox">
-                                        <variation key="widthClass=compact" constant="300"/>
+                                        <variation key="widthClass=compact" constant="292"/>
                                     </constraint>
                                     <constraint firstItem="Eec-U5-Ymg" firstAttribute="top" secondItem="iFL-30-I6w" secondAttribute="top" constant="113" id="BXc-b2-IUj">
                                         <variation key="widthClass=compact" constant="110"/>
@@ -2288,7 +2289,7 @@
                                     <constraint firstAttribute="centerX" secondItem="Erp-eo-HzV" secondAttribute="centerX" id="kg7-VU-OMY"/>
                                     <constraint firstAttribute="centerX" secondItem="qbb-m2-RZS" secondAttribute="centerX" id="nem-XL-SOE"/>
                                     <constraint firstAttribute="bottom" secondItem="SzR-2f-Vva" secondAttribute="bottom" constant="60" id="phi-pI-BEC">
-                                        <variation key="widthClass=compact" constant="160"/>
+                                        <variation key="widthClass=compact" constant="155"/>
                                     </constraint>
                                     <constraint firstAttribute="trailing" secondItem="IA2-qs-aia" secondAttribute="trailing" id="prK-Se-BHz"/>
                                     <constraint firstItem="3CZ-kK-RkQ" firstAttribute="top" secondItem="iFL-30-I6w" secondAttribute="top" constant="93" id="wEW-Kx-WCx">
@@ -2337,7 +2338,8 @@
                                         <exclude reference="fpg-cp-JKv"/>
                                     </mask>
                                 </variation>
-                                <variation key="widthClass=compact">
+                                <variation key="widthClass=compact" misplaced="YES">
+                                    <rect key="frame" x="0.0" y="302" width="400" height="292"/>
                                     <mask key="subviews">
                                         <include reference="IA2-qs-aia"/>
                                         <include reference="Eec-U5-Ymg"/>
@@ -2393,7 +2395,8 @@
                                         <exclude reference="8bc-4l-0lI"/>
                                     </mask>
                                 </variation>
-                                <variation key="widthClass=compact">
+                                <variation key="widthClass=compact" misplaced="YES">
+                                    <rect key="frame" x="16" y="424" width="75" height="15"/>
                                     <mask key="constraints">
                                         <include reference="8bc-4l-0lI"/>
                                     </mask>
@@ -2404,7 +2407,9 @@
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
                             <constraint firstItem="iFL-30-I6w" firstAttribute="leading" secondItem="szV-s8-ETY" secondAttribute="leading" id="I4c-ob-KuZ"/>
-                            <constraint firstItem="voR-Bw-ZMk" firstAttribute="top" secondItem="Zst-Gi-PtM" secondAttribute="bottom" constant="58" id="Kvu-Gk-M0h"/>
+                            <constraint firstItem="voR-Bw-ZMk" firstAttribute="top" secondItem="Zst-Gi-PtM" secondAttribute="bottom" constant="58" id="Kvu-Gk-M0h">
+                                <variation key="widthClass=compact" constant="53"/>
+                            </constraint>
                             <constraint firstAttribute="trailing" secondItem="iFL-30-I6w" secondAttribute="trailing" id="RAH-pt-9QW"/>
                             <constraint firstItem="voR-Bw-ZMk" firstAttribute="top" secondItem="iFL-30-I6w" secondAttribute="bottom" id="h23-8e-TiD">
                                 <variation key="widthClass=compact" constant="-102"/>
@@ -2439,7 +2444,7 @@
                         </variation>
                     </view>
                     <navigationItem key="navigationItem" id="nKC-Mq-Coh"/>
-                    <simulatedTabBarMetrics key="simulatedBottomBarMetrics" translucent="NO"/>
+                    <simulatedToolbarMetrics key="simulatedBottomBarMetrics" translucent="NO"/>
                     <connections>
                         <outlet property="buttonsScrollView" destination="UEf-bs-Whp" id="TFy-mv-3yf"/>
                         <outlet property="hideControlsButton" destination="RD4-Eq-fE3" id="aq6-19-k6B"/>
@@ -2457,7 +2462,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="kTc-YS-2t8" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2838" y="108"/>
+            <point key="canvasLocation" x="2988" y="102"/>
         </scene>
         <!--Comments Table View Controller-->
         <scene sceneID="R26-az-JWi">
@@ -2795,7 +2800,7 @@
         <!--Tung Nav Controller-->
         <scene sceneID="uOO-Rc-MsV">
             <objects>
-                <navigationController storyboardIdentifier="profileNavController" automaticallyAdjustsScrollViewInsets="NO" providesPresentationContextTransitionStyle="YES" id="oyd-Ez-KSa" customClass="TungNavController" sceneMemberID="viewController">
+                <navigationController storyboardIdentifier="profileNavController" extendedLayoutIncludesOpaqueBars="YES" providesPresentationContextTransitionStyle="YES" id="oyd-Ez-KSa" customClass="TungNavController" sceneMemberID="viewController">
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="dHb-9G-9Ta">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -2816,7 +2821,7 @@
         <!--Profile View Controller-->
         <scene sceneID="KlI-vi-3W0">
             <objects>
-                <viewController storyboardIdentifier="profileView" id="YYG-jM-Y9B" customClass="ProfileViewController" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="profileView" extendedLayoutIncludesOpaqueBars="YES" automaticallyAdjustsScrollViewInsets="NO" id="YYG-jM-Y9B" customClass="ProfileViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="NI0-cZ-l9f"/>
                         <viewControllerLayoutGuide type="bottom" id="aQB-JF-ZWO"/>
@@ -2840,7 +2845,7 @@
         <!--Profile Navigation Controller-->
         <scene sceneID="mKt-ky-dkf">
             <objects>
-                <navigationController id="Utn-JV-HZh" customClass="ProfileNavigationController" sceneMemberID="viewController">
+                <navigationController extendedLayoutIncludesOpaqueBars="YES" id="Utn-JV-HZh" customClass="ProfileNavigationController" sceneMemberID="viewController">
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="ySW-5J-hVg">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>
@@ -3126,7 +3131,7 @@
                                     </variation>
                                 </tableViewCellContentView>
                                 <animations/>
-                                <color key="backgroundColor" red="0.96078431369999995" green="0.96078431369999995" blue="0.96078431369999995" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
                                 <connections>
                                     <outlet property="avatarButton" destination="vYB-P1-iEw" id="Va9-gh-f6o"/>
                                     <outlet property="avatarContainerView" destination="6rG-cY-dBT" id="1by-oD-V7k"/>
@@ -3152,7 +3157,7 @@
         <!--Tung Nav Controller-->
         <scene sceneID="ajy-vc-ATn">
             <objects>
-                <navigationController storyboardIdentifier="feedNavController" automaticallyAdjustsScrollViewInsets="NO" providesPresentationContextTransitionStyle="YES" id="WCA-22-Lae" customClass="TungNavController" sceneMemberID="viewController">
+                <navigationController storyboardIdentifier="feedNavController" extendedLayoutIncludesOpaqueBars="YES" providesPresentationContextTransitionStyle="YES" id="WCA-22-Lae" customClass="TungNavController" sceneMemberID="viewController">
                     <toolbarItems/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="Rfa-0y-bDm">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>

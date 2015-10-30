@@ -175,6 +175,8 @@ CGFloat screenWidth;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_switcherBar.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     _switcherIndex = 0;
     
+    CGFloat bottomConstraint = -44;
+    
     // for activity feed
     _storiesView = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
     _storiesView.navController = [self navigationController];
@@ -191,7 +193,7 @@ CGFloat screenWidth;
     
     _storiesView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_storiesView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-44]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_storiesView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_storiesView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_storiesView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
@@ -207,28 +209,11 @@ CGFloat screenWidth;
     
     _notificationsView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:-44]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
     _notificationsView.view.hidden = YES;
-    
-    // table header toolbar
-    /*
-    UIToolbar *headerBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 44)];
-    headerBar.clipsToBounds = YES;
-    
-    _tableHeaderLabel = [[UIBarButtonItem alloc] initWithTitle:@"" style:UIBarButtonItemStylePlain target:self action:nil];
-    _tableHeaderLabel.tintColor = _tung.tungColor;
-    //UIBarButtonItem *flexSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
-    [headerBar setItems:@[_tableHeaderLabel] animated:NO];
-    [self.view addSubview:headerBar];
-    headerBar.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_profileHeader attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    [headerBar addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:44]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:headerBar.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:headerBar attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:headerBar.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
-    */
     
     [_switcher setSelectedSegmentIndex:_switcherIndex];
     [self switchViews:_switcher];

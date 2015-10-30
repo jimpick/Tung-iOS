@@ -239,7 +239,8 @@ CGFloat labelWidth = 0;
     if (section == _storiesArray.count) {
         if (_reachedEndOfPosts) {
             UILabel *noMoreLabel = [[UILabel alloc] init];
-            noMoreLabel.text = @"That's everything.";
+            noMoreLabel.text = @"That's everything.\n ";
+            noMoreLabel.numberOfLines = 0;
             noMoreLabel.textColor = [UIColor grayColor];
             noMoreLabel.textAlignment = NSTextAlignmentCenter;
             return noMoreLabel;
