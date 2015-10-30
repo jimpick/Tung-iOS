@@ -157,7 +157,7 @@ static NSDateFormatter *airDateFormatter = nil;
     
     if (!self.isConstrained) {
         CGFloat topConstraint = 0;
-        if ([vc isKindOfClass:[EpisodeViewController class]]) topConstraint = 64;
+        //if ([vc isKindOfClass:[EpisodeViewController class]]) topConstraint = 64;
         /* reason for using conditional top contstraint:
          - in EpisodeViewController, without edgesForExtendedLayout prop, headerView sits under nav bar
          - with edgesForExtendedLayout, when searching from EVC then unwinding to it causes momentary gap at top

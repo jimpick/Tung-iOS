@@ -33,7 +33,7 @@
     _tung = [TungCommonObjects establishTungObjects];
     _tung.ctrlBtnDelegate = self;
     
-    if ([self respondsToSelector:@selector(edgesForExtendedLayout)]) self.edgesForExtendedLayout = UIRectEdgeBottom;
+    self.edgesForExtendedLayout = UIRectEdgeBottom;
     
     self.navigationItem.title = @"Podcast";
     self.navigationItem.rightBarButtonItem = nil;

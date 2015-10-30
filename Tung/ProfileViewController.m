@@ -453,6 +453,7 @@ CGFloat screenWidth;
             else {
                 _profileSearchView.noResults = YES;
                 NSLog(@"NO RESULTS");
+                [_profileSearchView.tableView reloadData];
             }
         }
     }
@@ -720,6 +721,7 @@ NSTimer *sessionCheckTimer;
             else {
                 NSLog(@"successfully unfollowed user");
                 _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
+                _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
             }
         }];
         [_profiledUserData setValue:[NSNumber numberWithInt:0] forKey:@"userFollows"];
@@ -737,6 +739,7 @@ NSTimer *sessionCheckTimer;
             else {
                 NSLog(@"success following user");
                 _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
+                _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
             }
         }];
         [_profiledUserData setValue:[NSNumber numberWithInt:1] forKey:@"userFollows"];

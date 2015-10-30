@@ -27,7 +27,7 @@
     
     PillButton *btn = (PillButton *)sender;
     ProfileListCell *cell = (ProfileListCell *)[[sender superview] superview];
-    NSString *userId = [[cell.profileDict objectForKey:@"user"] objectForKey:@"id"];
+    NSString *userId = [cell.profileDict objectForKey:@"id"];
     
     if (btn.on) {
         // unfollow

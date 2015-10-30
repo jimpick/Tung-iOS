@@ -324,6 +324,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     
     // cell data
     profileCell.profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
+    NSLog(@"%@", profileCell.profileDict);
     NSString *action = [profileCell.profileDict objectForKey:@"action"];
     
     // avatar
@@ -391,7 +392,8 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
         profileCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         
         profileCell.followBtn.hidden = NO;
-        if ([profileCell.profileDict objectForKey:@"userFollows"]) {
+        NSNumber *userFollows = [profileCell.profileDict objectForKey:@"userFollows"];
+        if (userFollows.boolValue) {
             profileCell.followBtn.on = YES;
         } else {
             profileCell.followBtn.on = NO;
@@ -431,6 +433,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
 }
 
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
+    NSLog(@"view for footer in profile list view");
     if (_noMoreItemsToGet && section == 1) {
         UILabel *noMoreLabel = [[UILabel alloc] init];
         NSString *thatsAll = ([_queryType isEqualToString:@"Notifications"]) ? @"That's everything" : @"That's everyone";
@@ -439,14 +442,13 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
         noMoreLabel.textAlignment = NSTextAlignmentCenter;
         return noMoreLabel;
     }
-    
-     else if (_noResults && section == 1) {
+    else if (_noResults && section == 1) {
          UILabel *noResultsLabel = [[UILabel alloc] init];
          noResultsLabel.text = @"No results.";
-         noResultsLabel.textColor = [UIColor grayColor];
+         noResultsLabel.textColor = [UIColor whiteColor];
          noResultsLabel.textAlignment = NSTextAlignmentCenter;
          return noResultsLabel;
-     }
+    }
     else {
         _loadMoreIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
         return _loadMoreIndicator;
@@ -455,8 +457,8 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
     if (!_noMoreItemsToGet && section == 0)
         return 60.0;
-    else if (_noMoreItemsToGet && section == 1)
-        return 60.0;
+    else if ((_noResults || _noMoreItemsToGet) && section == 1)
+        return 30.0;
     else
         return 0;
 }

@@ -44,12 +44,20 @@
     _storiesView.viewController = self;
     _storiesView.profiledUserId = @"";
     
-    _storiesView.edgesForExtendedLayout = UIRectEdgeNone;
+    //_storiesView.edgesForExtendedLayout = UIRectEdgeNone;
     [self addChildViewController:_storiesView];
     [self.view addSubview:_storiesView.view];
     
     
     CGFloat topConstraint = 0;
+    /* Apple had some kind of bug in 9.0 that caused edgesForExtendedLayout to not behave properly.
+     ONLY in 9.0 the top constraint needs to be 64 so stories feed isn't positioned behind nav bar. 
+     I tried every combination imaginable for UIRectEdge values, automaticallyAdjustsScrollViewInsets,
+     and without the top constraint the status bar will be transparent or feed will positioned wrong.*/
+    NSInteger majorVersion = [[NSProcessInfo processInfo] operatingSystemVersion].majorVersion;
+    NSInteger minorVersion = [[NSProcessInfo processInfo] operatingSystemVersion].minorVersion;
+    NSString *version = [NSString stringWithFormat:@"%ld.%ld", (long)majorVersion, (long)minorVersion];
+    if ([version isEqualToString:@"9.0"]) topConstraint = 64;
     
     _storiesView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeTop multiplier:1 constant:topConstraint]];

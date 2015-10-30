@@ -426,7 +426,6 @@
             if (![[_playQueue objectAtIndex:0] isEqual:url]) {
                 [self ejectCurrentEpisode];
                 [_playQueue insertObject:url atIndex:0];
-                [self savePlayQueue];
                 [self playQueuedPodcast];
             }
             // trying to queue playing episode
@@ -438,7 +437,6 @@
             }
         } else {
             [_playQueue insertObject:url atIndex:0];
-            [self savePlayQueue];
             [self playQueuedPodcast];
         }
     }
@@ -489,6 +487,7 @@
         }
         
         _npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:YES];
+        [TungCommonObjects saveContextWithReason:@"now playing changed"];
         // find index of episode in current feed for prev/next track fns
         _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO]];
         _currentFeedIndex = [TungCommonObjects getIndexOfEpisodeWithUrl:urlString inFeed:_currentFeed];
@@ -611,10 +610,11 @@
         if (_currentFeedIndex + 1 < _currentFeed.count) {
             NSLog(@"play next episode in feed");
             [self ejectCurrentEpisode];
-            NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex + 1];
+            _currentFeedIndex++;
+            NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex];
             NSURL *url = [NSURL URLWithString:[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"]];
             [_playQueue insertObject:url atIndex:0];
-            [self savePlayQueue];
+
             [self playQueuedPodcast];
         } else {
             [self setControlButtonStateToAdd];
@@ -634,7 +634,7 @@
         NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex - 1];
         NSURL *url = [NSURL URLWithString:[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"]];
         [_playQueue insertObject:url atIndex:0];
-        [self savePlayQueue];
+ 
         [self playQueuedPodcast];
     } else {
         [self setControlButtonStateToAdd];

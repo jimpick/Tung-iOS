@@ -87,6 +87,9 @@ static NSArray *playbackRateStrings;
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    
+    self.edgesForExtendedLayout = UIRectEdgeBottom;
+    
     _tung = [TungCommonObjects establishTungObjects];
     _podcast = [TungPodcast new];
     
@@ -284,11 +287,11 @@ static NSArray *playbackRateStrings;
     // set up views
     if (_isNowPlayingView) {
         
-        _episodeEntity = _tung.npEpisodeEntity;
-        _podcastEntity = _tung.npEpisodeEntity.podcast;
-        
         _tung.ctrlBtnDelegate = self;
         _tung.viewController = self;
+        
+        _episodeEntity = _tung.npEpisodeEntity;
+        _podcastEntity = _tung.npEpisodeEntity.podcast;
         
         if (!_npControlsViewIsSetup) [self setUpNowPlayingControlView];
         if (!_tung.npViewSetupForCurrentEpisode) [self setUpViewForWhateversPlaying];
@@ -417,7 +420,7 @@ static NSArray *playbackRateStrings;
     if (_tung.npEpisodeEntity) {
         
         // initialize views
-        NSLog(@"setup view for now playing");
+        NSLog(@"setup view for now playing: %@", _tung.npEpisodeEntity.title);
         _npControlsView.hidden = NO;
         _nothingPlayingLabel.hidden = YES;
         
@@ -472,7 +475,7 @@ static NSArray *playbackRateStrings;
     _episodesView.podcastEntity = _podcastEntity;
     [_episodesView.tableView reloadData];
     
-    NSLog(@"set up view for episode");
+    NSLog(@"set up view for episode: %@", episodeEntity.title);
     
     if (episodeEntity.desc.length == 0) {
         // refresh description web view with description from feed
