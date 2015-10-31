@@ -385,6 +385,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     // follow button
     if ([_tung.tungId isEqualToString:[profileCell.profileDict objectForKey:@"id"]]) {
         profileCell.followBtn.hidden = YES;
+        profileCell.youLabel.hidden = NO;
         profileCell.accessoryType = UITableViewCellAccessoryNone;
     }
     else {
@@ -393,6 +394,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
         profileCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         
         profileCell.followBtn.hidden = NO;
+        profileCell.youLabel.hidden = YES;
         NSNumber *userFollows = [profileCell.profileDict objectForKey:@"userFollows"];
         if (userFollows.boolValue) {
             profileCell.followBtn.on = YES;

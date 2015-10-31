@@ -18,10 +18,10 @@
 @property (nonatomic, retain) TungCommonObjects *tung;
 
 @property (strong, nonatomic) NSMutableArray *storiesArray;
-@property UITableViewController *feedTableViewController;
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
 
 @property (strong, nonatomic) NSString *profiledUserId;
+@property (strong, nonatomic) NSString *storyId;
 
 // request flags
 @property (nonatomic, assign) BOOL requestingMore;

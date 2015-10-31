@@ -24,6 +24,7 @@
 @property (strong, nonatomic) IBOutlet IconView *iconView;
 @property (strong, nonatomic) IBOutlet PillButton *followBtn;
 @property (strong, nonatomic) NSDictionary *profileDict;
+@property (strong, nonatomic) IBOutlet UILabel *youLabel;
 
 - (IBAction)followOrUnfollowUser:(id)sender;
 

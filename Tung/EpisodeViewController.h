@@ -30,7 +30,7 @@
 @property (strong, nonatomic) IBOutlet UIPageControl *pageControl;
 
 @property (strong, nonatomic) EpisodeEntity *episodeEntity;
-@property (strong, nonatomic) NSString *eventId;
+@property (strong, nonatomic) NSString *focusedEventId;
 
 - (IBAction)toggleNpControlsView:(id)sender;
 - (IBAction)touchDownInShowHideControlsButton:(id)sender;

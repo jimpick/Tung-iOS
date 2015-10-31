@@ -1896,7 +1896,6 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     [button setEnabled:YES];
-                    //_feedNeedsRefresh = [NSNumber numberWithBool:YES];
                     NSLog(@"%@", [responseDict objectForKey:@"success"]);
                     // important: do not assign shortlink from subscribe story to episode entity
                 }
@@ -1952,7 +1951,6 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     [button setEnabled:YES];
-                    //_feedNeedsRefresh = [NSNumber numberWithBool:YES];
                     NSLog(@"%@", responseDict);
                 }
             }
@@ -2016,6 +2014,7 @@ static NSArray *colors;
                 else if ([responseDict objectForKey:@"success"]) {
                     NSLog(@"%@", responseDict);
                     _feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                    _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
                     if (!episodeEntity.id) {
                         // save episode id and shortlink
                         NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
@@ -2077,6 +2076,7 @@ static NSArray *colors;
                 else if ([responseDict objectForKey:@"success"]) {
                     NSLog(@"%@", responseDict);
                     _feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                    _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
                 }
             }
             else {
@@ -2217,6 +2217,7 @@ static NSArray *colors;
                         [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
                     }
                     _feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                    _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
                     callback(YES, responseDict);
                 }
             }
@@ -2315,6 +2316,7 @@ static NSArray *colors;
                         [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
                     }
                     _feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                    _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
                     callback(YES, responseDict);
                 }
             }

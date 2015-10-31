@@ -198,6 +198,11 @@ static NSArray *playbackRateStrings;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     // episode view starts out hidden
     _commentsView.view.hidden = YES;
+    // focused comment
+    if (!_isNowPlayingView && _focusedEventId) {
+        _switcherIndex = 1;
+        _commentsView.focusedId = _focusedEventId;
+    }
     
     // episode view
     _episodesView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodesView"];
@@ -214,9 +219,7 @@ static NSArray *playbackRateStrings;
     // episode view starts out hidden
     _episodesView.view.hidden = YES;
     
-    if (!_isNowPlayingView && _eventId) {
-        _switcherIndex = 1;
-    }
+
     
     
     if (_isNowPlayingView) {
@@ -405,6 +408,7 @@ static NSArray *playbackRateStrings;
     _posbar.value = 0;
     _progressBar.progress = 0;
     _totalTimeSet = NO;
+    _commentsView.commentsArray = [NSMutableArray new];
         
     if (_tung.npEpisodeEntity) {
         

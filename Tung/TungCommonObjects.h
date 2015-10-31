@@ -103,6 +103,7 @@
 
 // flags
 @property (strong, nonatomic) NSNumber *feedNeedsRefresh;
+@property (strong, nonatomic) NSNumber *profileFeedNeedsRefresh;
 @property (strong, nonatomic) NSNumber *profileNeedsRefresh;
 
 // player

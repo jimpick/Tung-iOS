@@ -13,6 +13,7 @@
 
 
 @property (nonatomic, retain) TungCommonObjects *tung;
+@property NSIndexPath *focusedIndexPath;
 
 @end
 
@@ -22,6 +23,8 @@
     [super viewDidLoad];
     
     _tung = [TungCommonObjects establishTungObjects];
+    
+    _commentsArray = [NSMutableArray new];
     
     // set up table
     self.tableView.backgroundColor = [UIColor whiteColor];
@@ -98,11 +101,12 @@ static CGFloat commentBubbleMargins = 27;
     // mine
     commentCell.accessoryType = UITableViewCellAccessoryNone;
     commentCell.commentBkgd.type = kCommentBkgdTypeMine;
-
+    commentCell.commentBkgd.backgroundColor = [UIColor clearColor];
     [commentCell.commentBkgd setNeedsDisplay];
     
     // background color
-    if (_focusedId && [_focusedId isEqualToString:[[commentDict objectForKey:@"id"] objectForKey:@"$id"]]) {
+    if (_focusedId && [_focusedId isEqualToString:[[commentDict objectForKey:@"_id"] objectForKey:@"$id"]]) {
+        _focusedIndexPath = indexPath;
         commentCell.backgroundColor = _tung.lightTungColor;
     } else {
         commentCell.backgroundColor = [UIColor whiteColor];
@@ -128,11 +132,12 @@ static CGFloat commentBubbleMargins = 27;
     commentCell.usernameLabel.text = [[commentDict objectForKey:@"user"] objectForKey:@"username"];
     commentCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     commentCell.commentBkgd.type = kCommentBkgdTypeTheirs;
-
+    commentCell.commentBkgd.backgroundColor = [UIColor clearColor];
     [commentCell.commentBkgd setNeedsDisplay];
     
     // background color
-    if (_focusedId && [_focusedId isEqualToString:[[commentDict objectForKey:@"id"] objectForKey:@"$id"]]) {
+    if (_focusedId && [_focusedId isEqualToString:[[commentDict objectForKey:@"_id"] objectForKey:@"$id"]]) {
+        _focusedIndexPath = indexPath;
         commentCell.backgroundColor = _tung.lightTungColor;
     } else {
         commentCell.backgroundColor = [UIColor whiteColor];
@@ -201,7 +206,8 @@ static double screenWidth;
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
     if (_commentsArray.count > 0 && section == 1) {
         UILabel *noMoreLabel = [[UILabel alloc] init];
-        noMoreLabel.text = @"That's everything.";
+        noMoreLabel.text = @"That's everything.\n ";
+        noMoreLabel.numberOfLines = 0;
         noMoreLabel.textColor = [UIColor grayColor];
         noMoreLabel.textAlignment = NSTextAlignmentCenter;
         return noMoreLabel;
@@ -220,7 +226,7 @@ static double screenWidth;
 
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
     if (section == 1) {
-        return 92.0;
+        return 60.0;
     }
     else {
         return 0;
@@ -366,6 +372,12 @@ static double screenWidth;
                         // feed is now refreshed
                         self.requestStatus = @"finished";
                         //_tung.commentsNeedRefresh = [NSNumber numberWithBool:NO];
+                        
+                        // focused comment
+                        if (_focusedId && _focusedIndexPath) {
+                            NSLog(@"scroll to focused index path");
+                        	[self.tableView scrollToRowAtIndexPath:_focusedIndexPath atScrollPosition:UITableViewScrollPositionMiddle animated:YES];
+                    	}
                         
                     });
                 }

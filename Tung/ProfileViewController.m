@@ -218,15 +218,17 @@ CGFloat screenWidth;
     [_switcher setSelectedSegmentIndex:_switcherIndex];
     [self switchViews:_switcher];
     
+    
+    
 	// get data in viewDidAppear
     _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES];
-    _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
+    _tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
     
 }
 
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    
+    NSLog(@"profile view did appear");
     // scroll view
     if (!_profileHeader.contentSizeSet) {
         CGSize contentSize = _profileHeader.scrollView.contentSize;
@@ -240,18 +242,22 @@ CGFloat screenWidth;
     
     // watch request status so we can update table header
     //[self addObserver:self forKeyPath:@"storiesView.requestStatus" options:NSKeyValueObservingOptionNew context:nil];
-    
-    if (_tung.feedNeedsRefresh.boolValue && _tung.profileNeedsRefresh.boolValue) {
+    if (_isLoggedInUser) {
+        if (_tung.profileFeedNeedsRefresh.boolValue && _tung.profileNeedsRefresh.boolValue) {
+            NSLog(@"profile feed and data need refresh");
+            [self requestPageData];
+        }
+        else if (_tung.profileFeedNeedsRefresh.boolValue) {
+            NSLog(@"profile feed needs refresh");
+            [_storiesView refreshFeed:YES];
+        }
+        else if (_tung.profileNeedsRefresh.boolValue) {
+            NSLog(@"profile data needs refresh");
+            [self refreshProfile];
+        }
+    } else {
         [self requestPageData];
     }
-    else if (_tung.feedNeedsRefresh.boolValue) {
-        [_storiesView refreshFeed:YES];
-        _tung.feedNeedsRefresh = [NSNumber numberWithBool:NO];
-    }
-    else if (_tung.profileNeedsRefresh.boolValue) {
-        [self refreshProfile];
-    }
-    
 }
 
 - (void) viewWillDisappear:(BOOL)animated {
@@ -494,9 +500,8 @@ NSTimer *sessionCheckTimer;
                     if ([responseDict objectForKey:@"user"]) {
                         _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
                         [self updateUserFollowingData];
-                        if (_tung.feedNeedsRefresh.boolValue) {
+                        if (_tung.profileFeedNeedsRefresh.boolValue) {
                         	[_storiesView refreshFeed:YES];
-                            _tung.feedNeedsRefresh = [NSNumber numberWithBool:NO];
                         }
                     }
                 }
@@ -512,9 +517,8 @@ NSTimer *sessionCheckTimer;
                         [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
                         _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
                         [self setUpProfileHeaderViewForData];
-                        if (_tung.feedNeedsRefresh.boolValue) {
+                        if (_tung.profileFeedNeedsRefresh.boolValue) {
                             [_storiesView refreshFeed:YES];
-                            _tung.feedNeedsRefresh = [NSNumber numberWithBool:NO];
                         }
                     }
                 }
@@ -530,9 +534,8 @@ NSTimer *sessionCheckTimer;
                     _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
                     NSLog(@"profiled user data %@", _profiledUserData);
                     [self setUpProfileHeaderViewForData];
-                    if (_tung.feedNeedsRefresh.boolValue) {
+                    if (_tung.profileFeedNeedsRefresh.boolValue) {
                         [_storiesView refreshFeed:YES];
-                        _tung.feedNeedsRefresh = [NSNumber numberWithBool:NO];
                     }
                 }
                 else if ([responseDict objectForKey:@"error"]) {
