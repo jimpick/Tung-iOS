@@ -53,7 +53,6 @@
     
     // get feed
     if (_queryType) {
-        _navController = self.navigationController;
         [self refreshFeed];
     }
 }
@@ -293,7 +292,8 @@ NSString static *avatarsDir;
     
     NSLog(@"push profile of user: %@", [profileDict objectForKey:@"username"]);
     // push profile
-    ProfileViewController *profileView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileView"];
+    
+    ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
     profileView.profiledUserId = [profileDict objectForKey:@"id"];
     [_navController pushViewController:profileView animated:YES];
 }

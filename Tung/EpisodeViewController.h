@@ -31,6 +31,8 @@
 
 @property (strong, nonatomic) EpisodeEntity *episodeEntity;
 @property (strong, nonatomic) NSString *focusedEventId;
+@property (strong, nonatomic) NSString *episodeId;
+@property (strong, nonatomic) NSString *collectionId;
 
 - (IBAction)toggleNpControlsView:(id)sender;
 - (IBAction)touchDownInShowHideControlsButton:(id)sender;

@@ -23,6 +23,7 @@
 @property (nonatomic, assign) BOOL requestingMore;
 @property (nonatomic, assign) BOOL reachedEndOfPosts;
 @property (nonatomic, assign) BOOL noResults;
+@property (nonatomic, assign) BOOL queryExecuted;
 @property (strong, nonatomic) NSString *requestStatus;
 
 // references to host viewcontroller's properties
@@ -31,5 +32,6 @@
 -(void) requestCommentsForEpisodeEntity:(EpisodeEntity *)episodeEntity
                               NewerThan:(NSNumber *)afterTime
                             orOlderThan:(NSNumber *)beforeTime;
+-(void) endRefreshing;
 
 @end

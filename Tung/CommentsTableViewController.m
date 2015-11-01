@@ -235,7 +235,7 @@ static double screenWidth;
 
 #pragma mark - Requests
 
-// feed request
+// comments request
 -(void) requestCommentsForEpisodeEntity:(EpisodeEntity *)episodeEntity
                               NewerThan:(NSNumber *)afterTime
                             orOlderThan:(NSNumber *)beforeTime {
@@ -254,6 +254,7 @@ static double screenWidth;
                              @"olderThan": beforeTime
                              };    
     NSLog(@"request for comments with params: %@", params);
+    _queryExecuted = YES;
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [feedRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -273,7 +274,7 @@ static double screenWidth;
                                     [self requestCommentsForEpisodeEntity:episodeEntity NewerThan:afterTime orOlderThan:beforeTime];
                                 }];
                             } else {
-                                self.requestStatus = @"finished";
+                                [self endRefreshing];
                                 // other error - alert user
                                 UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
                                 [errorAlert show];
@@ -289,8 +290,7 @@ static double screenWidth;
                         NSLog(@"new comments count: %lu", (unsigned long)newComments.count);
                         
                         // end refreshing
-                        self.tableView.backgroundView = nil;
-                        [self.refreshControl endRefreshing];
+                        [self endRefreshing];
                         
                         // comments are sorted by timestamp, so we can't get newest/oldest by time_secs.
                         // commenting out for now until I can spend time on a better solution.
@@ -369,10 +369,6 @@ static double screenWidth;
                         }
                         [self.tableView reloadData];
                         
-                        // feed is now refreshed
-                        self.requestStatus = @"finished";
-                        //_tung.commentsNeedRefresh = [NSNumber numberWithBool:NO];
-                        
                         // focused comment
                         if (_focusedId && _focusedIndexPath) {
                             NSLog(@"scroll to focused index path");
@@ -382,22 +378,9 @@ static double screenWidth;
                     });
                 }
             }
-            // errors
-            else if ([data length] == 0 && error == nil) {
-                NSLog(@"no response");
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    _requestingMore = NO;
-                    self.requestStatus = @"finished";
-                    _loadMoreIndicator.alpha = 0;
-                    [self.refreshControl endRefreshing];
-                });
-            }
             else if (error != nil) {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    _requestingMore = NO;
-                    self.requestStatus = @"finished";
-                    _loadMoreIndicator.alpha = 0;
-                    [self.refreshControl endRefreshing];
+                    [self endRefreshing];
                 });
                 NSLog(@"Error: %@", error);
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
@@ -407,19 +390,21 @@ static double screenWidth;
         // connection error
         else {
             dispatch_async(dispatch_get_main_queue(), ^{
-                _requestingMore = NO;
-                [self.refreshControl endRefreshing];
-                _loadMoreIndicator.alpha = 0;
-                // end refreshing
-                self.requestStatus = @"finished";
-                self.tableView.backgroundView = nil;
+                [self endRefreshing];
                 
                 UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                self.tableView.backgroundView = nil;
                 [connectionErrorAlert show];
             });
         }
     }];
+}
+
+- (void) endRefreshing {
+    _requestingMore = NO;
+    self.requestStatus = @"finished";
+    _loadMoreIndicator.alpha = 0;
+    [self.refreshControl endRefreshing];
+    self.tableView.backgroundView = nil;
 }
 
 

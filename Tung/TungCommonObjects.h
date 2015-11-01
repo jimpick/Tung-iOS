@@ -151,7 +151,7 @@
 // stories post requests
 - (void) addPodcast:(PodcastEntity *)podcastEntity orEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
 - (void) restorePodcastDataWithCallback:(void (^)(BOOL success, NSDictionary *response))callback;
-- (void) getEpisodeInfoForEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
+- (void) addEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
 - (void) subscribeToPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button;
 - (void) unsubscribeFromPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button;
 - (void) recommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;

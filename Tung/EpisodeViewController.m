@@ -91,7 +91,7 @@ static NSArray *playbackRateStrings;
     _podcast = [TungPodcast new];
     
     // is this for now playing?
-    if (_episodeEntity) {
+    if (_episodeEntity || _episodeId) {
         _podcastEntity = _episodeEntity.podcast;
         self.navigationItem.title = @"Episode";
     } else {
@@ -100,17 +100,13 @@ static NSArray *playbackRateStrings;
         _podcastEntity = _tung.npEpisodeEntity.podcast;
         self.navigationItem.title = @"Now Playing";
         
+        //[self.navigationController.navigationBar setTintColor:[UIColor whiteColor]];
+        //[self.navigationController.navigationBar setBarTintColor:_podcastEntity.keyColor1];
+        //[self.navigationController.navigationBar setBackgroundColor:_podcastEntity.keyColor1];
         
-//        [self.navigationController.navigationBar setTintColor:[UIColor whiteColor]];
-//        [self.navigationController.navigationBar setBarTintColor:_podcastEntity.keyColor1];
-//        [self.navigationController.navigationBar setBackgroundColor:_podcastEntity.keyColor1];
-//        [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[UIColor whiteColor] }];
-
-//        self.navigationItem.
+        //[self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:_podcastEntity.keyColor1 }];
         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
     }
-//    NSDictionary *podcastDict = [TungCommonObjects entityToDict:_podcastEntity];
-//    NSLog(@"podcast dict: %@", podcastDict);
     
     
     // for search controller
@@ -263,8 +259,12 @@ static NSArray *playbackRateStrings;
         [self setUpViewForWhateversPlaying];
     }
     else {
-        
-        [self setUpViewForEpisode:_episodeEntity];
+        if (_episodeEntity) {
+        	[self setUpViewForEpisode:_episodeEntity];
+        }
+        else {
+            [self requestEpisodeInfoForId:_episodeId andCollectionId:_collectionId];
+        }
     }
 
 }
@@ -418,6 +418,7 @@ static NSArray *playbackRateStrings;
         _nothingPlayingLabel.hidden = YES;
         
         [self setUpViewForEpisode:_tung.npEpisodeEntity];
+        
         _headerView.largeButton.hidden = YES;
         
         // time elapsed
@@ -458,7 +459,9 @@ static NSArray *playbackRateStrings;
     _switcher.tintColor = episodeEntity.podcast.keyColor2;
     
     // COMMENTS
-    [self refreshComments:YES];
+    if (!_commentsView.queryExecuted) {
+    	[self refreshComments:YES];
+    }
     
     // episodes and description
     NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:NO];
@@ -588,6 +591,89 @@ static NSArray *playbackRateStrings;
     else {
         [_podcast showNoConnectionAlert];
     }
+}
+
+#pragma mark Request page data
+
+-(void) requestEpisodeInfoForId:(NSString *)episodeId andCollectionId:(NSString *)collectionId {
+    NSLog(@"requesting episode info");
+    NSURL *episodeInfoURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/episode-info.php", _tung.apiRootUrl]];
+    NSMutableURLRequest *feedRequest = [NSMutableURLRequest requestWithURL:episodeInfoURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [feedRequest setHTTPMethod:@"POST"];
+    NSDictionary *params = @{
+                             @"sessionId": _tung.sessionId,
+                             @"episodeId": episodeId,
+                             @"collectionId": collectionId
+                             };
+    NSLog(@"request for episodeInfo with params: %@", params);
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [feedRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:feedRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            //NSLog(@"got response: %@", jsonData);
+            if (jsonData != nil && error == nil) {
+                if ([jsonData isKindOfClass:[NSDictionary class]]) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                                // get new session and re-request
+                                NSLog(@"SESSION EXPIRED");
+                                [_tung getSessionWithCallback:^{
+                                    [self requestEpisodeInfoForId:episodeId andCollectionId:collectionId];
+                                }];
+                            } else {
+                                
+                                [_commentsView endRefreshing];
+                                // other error - alert user
+                                UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                                [errorAlert show];
+                            }
+                        });
+                    }
+                    else if ([responseDict objectForKey:@"success"]) {
+                        NSLog(@"successfully retrieved episode info");
+                        // episode info
+                        NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
+                        NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
+                        _episodeEntity = [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
+                        
+                        [self setUpViewForEpisode:_episodeEntity];
+                        
+                        // comments
+                        _commentsView.queryExecuted = YES;
+                        NSArray *comments = [responseDict objectForKey:@"comments"];
+                        if (comments.count > 0) {
+                            _commentsView.commentsArray = [comments mutableCopy];
+                            _commentsView.noResults = NO;
+                        } else {
+                            _commentsView.noResults = YES;
+                        }
+                        [_commentsView.tableView reloadData];
+                    }
+                }                
+            }
+            else if (error != nil) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [_commentsView endRefreshing];
+                });
+                NSLog(@"Error: %@", error);
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                NSLog(@"HTML: %@", html);
+            }
+        }
+        // connection error
+        else {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [_commentsView endRefreshing];
+                
+                UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                [connectionErrorAlert show];
+            });
+        }
+    }];
 }
 
 #pragma mark Now Playing control view
@@ -1811,9 +1897,10 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
     }
     // need to get episode shortlink
     else {
-        [_tung getEpisodeInfoForEpisode:_tung.npEpisodeEntity withCallback:^(void) {
-            NSString *text = [NSString stringWithFormat:@"Listening to %@ on #Tung: %@e/%@", _tung.npEpisodeEntity.title, _tung.tungSiteRootUrl, _tung.npEpisodeEntity.shortlink];
-            [self openShareSheetForText:text];
+        __unsafe_unretained typeof(self) weakSelf = self;
+        NSString *text = [NSString stringWithFormat:@"Listening to %@ on #Tung: %@e/%@", _tung.npEpisodeEntity.title, _tung.tungSiteRootUrl, _tung.npEpisodeEntity.shortlink];
+        [_tung addEpisode:_tung.npEpisodeEntity withCallback:^(void) {
+            [weakSelf openShareSheetForText:text];
         }];
     }
 }

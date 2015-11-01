@@ -45,6 +45,7 @@
 @property (nonatomic, strong) NSURLConnection *connection;
 @property (nonatomic, strong) NSHTTPURLResponse *response;
 @property (nonatomic, strong) NSMutableArray *pendingRequests;
+@property (nonatomic, strong) NSDateFormatter *ISODateFormatter;
 
 @end
 
@@ -107,7 +108,8 @@
         [commandCenter.previousTrackCommand addTarget:self action:@selector(playPreviousEpisode)];
         [commandCenter.nextTrackCommand addTarget:self action:@selector(playNextEpisode)];
         
-        
+        _ISODateFormatter = [[NSDateFormatter alloc] init];
+        [_ISODateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
 
         // show what's in documents dir
         /*
@@ -1081,8 +1083,8 @@ static NSString *outputFileName = @"output";
         } else {
             episodeEntity.isRecommended = [NSNumber numberWithBool:NO];
         }
-        if ([episodeDict objectForKey:@"id"]) {
-            episodeEntity.id = [[episodeDict objectForKey:@"id"] objectForKey:@"$id"];
+        if ([episodeDict objectForKey:@"_id"]) {
+            episodeEntity.id = [[episodeDict objectForKey:@"_id"] objectForKey:@"$id"];
         }
         if ([episodeDict objectForKey:@"shortlink"]) {
             episodeEntity.shortlink = [episodeDict objectForKey:@"shortlink"];
@@ -1181,7 +1183,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
     NSDate *date = nil;
     if (ISODateInterpreter == nil) {
         ISODateInterpreter = [[NSDateFormatter alloc] init]; // "2014-09-05 14:27:40 +0000",
-        [ISODateInterpreter setDateFormat:@"yyyy-MM-dd HH:mm:ss Z"];
+        [ISODateInterpreter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
     }
     
     if ([ISODateInterpreter dateFromString:pubDate]) {
@@ -1686,7 +1688,7 @@ static NSArray *colors;
     if (episodeEntity) {
         NSDictionary *episodeParams = @{@"GUID": episodeEntity.guid,
                                         @"episodeUrl": episodeEntity.url,
-                                        @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
+                                        @"episodePubDate": [_ISODateFormatter stringFromDate:episodeEntity.pubDate],
                                         @"episodeTitle": episodeEntity.title
                                         };
         [params addEntriesFromDictionary:episodeParams];
@@ -1801,17 +1803,17 @@ static NSArray *colors;
     }];
 }
 
-// get shortlink and id for episode
-- (void) getEpisodeInfoForEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback {
+// get shortlink and id for episode, make new record in none exists.
+- (void) addEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback {
     NSLog(@"get episode info for episode");
-    NSURL *getEpisodeInfoRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/get-episode-info.php", _apiRootUrl]];
+    NSURL *getEpisodeInfoRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/add-episode.php", _apiRootUrl]];
     NSMutableURLRequest *getEpisodeInfoRequest = [NSMutableURLRequest requestWithURL:getEpisodeInfoRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [getEpisodeInfoRequest setHTTPMethod:@"POST"];
     NSDictionary *params = @{@"sessionId":_sessionId,
                              @"collectionId": episodeEntity.collectionId,
                              @"GUID": episodeEntity.guid,
                              @"episodeUrl": episodeEntity.url,
-                             @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
+                             @"episodePubDate": [_ISODateFormatter stringFromDate:episodeEntity.pubDate],
                              @"episodeTitle": episodeEntity.title
                              };
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
@@ -1829,7 +1831,7 @@ static NSArray *colors;
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
                         __unsafe_unretained typeof(self) weakSelf = self;
                         [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
-                            [weakSelf getEpisodeInfoForEpisode:episodeEntity withCallback:callback];
+                            [weakSelf addEpisode:episodeEntity withCallback:callback];
                         }];
                     }
                     else {
@@ -1975,12 +1977,12 @@ static NSArray *colors;
                              @"collectionId": episodeEntity.collectionId,
                              @"GUID": episodeEntity.guid,
                              @"episodeUrl": episodeEntity.url,
-                             @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
+                             @"episodePubDate": [_ISODateFormatter stringFromDate:episodeEntity.pubDate],
                              @"episodeTitle": episodeEntity.title,
                              @"episodeId": episodeId,
                              @"shortlink": shortlink
                              };
-    NSLog(@"recommend episode");
+    NSLog(@"recommend episode with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [recommendPodcastRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -2065,8 +2067,9 @@ static NSArray *colors;
                         }];
                     }
                     else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need episode info"]) {
-                        [self getEpisodeInfoForEpisode:episodeEntity withCallback:^{
-                            [self unRecommendEpisode:episodeEntity];
+                        __unsafe_unretained typeof(self) weakSelf = self;
+                        [self addEpisode:episodeEntity withCallback:^{
+                            [weakSelf unRecommendEpisode:episodeEntity];
                         }];
                     }
                     else {
@@ -2098,7 +2101,7 @@ static NSArray *colors;
     NSDictionary *params = @{@"collectionId": episodeEntity.collectionId,
                              @"GUID": episodeEntity.guid,
                              @"episodeUrl": episodeEntity.url,
-                             @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
+                             @"episodePubDate": [_ISODateFormatter stringFromDate:episodeEntity.pubDate],
                              @"episodeTitle": episodeEntity.title,
                              @"episodeId": episodeId,
                              @"shortlink": shortlink
@@ -2166,7 +2169,7 @@ static NSArray *colors;
                              @"collectionId": episodeEntity.collectionId,
                              @"GUID": episodeEntity.guid,
                              @"episodeUrl": episodeEntity.url,
-                             @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
+                             @"episodePubDate": [_ISODateFormatter stringFromDate:episodeEntity.pubDate],
                              @"episodeTitle": episodeEntity.title,
                              @"episodeId": episodeId,
                              @"shortlink": shortlink,
@@ -2242,7 +2245,7 @@ static NSArray *colors;
                              @"collectionId": episodeEntity.collectionId,
                              @"GUID": episodeEntity.guid,
                              @"episodeUrl": episodeEntity.url,
-                             @"episodePubDate": [NSString stringWithFormat:@"%@", episodeEntity.pubDate],
+                             @"episodePubDate": [_ISODateFormatter stringFromDate:episodeEntity.pubDate],
                              @"episodeTitle": episodeEntity.title,
                              @"episodeId": episodeId,
                              @"shortlink": shortlink,

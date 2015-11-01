@@ -201,7 +201,7 @@ CGFloat screenWidth;
     _notificationsView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
     _notificationsView.queryType = @"Notifications";
     _notificationsView.target_id = _tung.tungId;
-    _notificationsView.navController = self.navigationController;
+    _notificationsView.navController = [self navigationController];
     _notificationsView.edgesForExtendedLayout = UIRectEdgeNone;
     _notificationsView.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
     [self addChildViewController:_notificationsView];
@@ -738,6 +738,7 @@ NSTimer *sessionCheckTimer;
 }
 
 - (void) pushProfileListForTargetId:(NSString *)target_id andQuery:(NSString *)query {
+    
     ProfileListTableViewController *profileListView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
     profileListView.target_id = target_id;
     profileListView.queryType = query;

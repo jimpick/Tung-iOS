@@ -50,11 +50,11 @@
     
     
     CGFloat topConstraint = 0;
-    /* There's some kind of bug in 9.0 that caused edgesForExtendedLayout to not behave properly.
+    /* There's some kind of bug in 9.0 that causes edgesForExtendedLayout to not behave properly.
      ONLY in 9.0 (not 8.4 or 9.1) the top constraint needs to be 64 so stories feed isn't positioned behind nav bar.
-     I tried every combination imaginable for edgesForExtendedLayout, automaticallyAdjustsScrollViewInsets, and extendedLayoutIncludesOpaqueBars.
-     and without the top constraint the status bar will be transparent or feed will positioned wrong.
-     The translucence of the nav bar also affects the layout. */
+     I tried every combination imaginable for edgesForExtendedLayout, automaticallyAdjustsScrollViewInsets, 
+     and extendedLayoutIncludesOpaqueBars. Without the top constraint the status bar will be transparent or 
+     feed will positioned wrong. The translucence of the nav bar also affects the layout. */
     NSInteger majorVersion = [[NSProcessInfo processInfo] operatingSystemVersion].majorVersion;
     NSInteger minorVersion = [[NSProcessInfo processInfo] operatingSystemVersion].minorVersion;
     NSString *version = [NSString stringWithFormat:@"%ld.%ld", (long)majorVersion, (long)minorVersion];

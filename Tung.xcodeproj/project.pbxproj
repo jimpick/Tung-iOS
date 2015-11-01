@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		7D07B6E81BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D07B6E51BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m */; };
+		7D07B6E91BE4F657008F4CC7 /* SettingsEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D07B6E71BE4F657008F4CC7 /* SettingsEntity.m */; };
 		7D0964541AB0EE9800DBF295 /* prototype-screens-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D0964511AB0EE9800DBF295 /* prototype-screens-01.png */; };
 		7D0964551AB0EE9800DBF295 /* prototype-screens-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D0964521AB0EE9800DBF295 /* prototype-screens-02.png */; };
 		7D0964561AB0EE9800DBF295 /* prototype-screens-03.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D0964531AB0EE9800DBF295 /* prototype-screens-03.png */; };
@@ -190,6 +192,10 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		7D07B6E41BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SettingsEntity+CoreDataProperties.h"; sourceTree = "<group>"; };
+		7D07B6E51BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "SettingsEntity+CoreDataProperties.m"; sourceTree = "<group>"; };
+		7D07B6E61BE4F657008F4CC7 /* SettingsEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SettingsEntity.h; sourceTree = "<group>"; };
+		7D07B6E71BE4F657008F4CC7 /* SettingsEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SettingsEntity.m; sourceTree = "<group>"; };
 		7D0964511AB0EE9800DBF295 /* prototype-screens-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "prototype-screens-01.png"; sourceTree = "<group>"; };
 		7D0964521AB0EE9800DBF295 /* prototype-screens-02.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "prototype-screens-02.png"; sourceTree = "<group>"; };
 		7D0964531AB0EE9800DBF295 /* prototype-screens-03.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "prototype-screens-03.png"; sourceTree = "<group>"; };
@@ -528,6 +534,10 @@
 				7DF5664F199D4B56003176C1 /* BrowserViewController.m */,
 				7D61F93218A1EB2F00710CA7 /* Images.xcassets */,
 				7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */,
+				7D07B6E41BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.h */,
+				7D07B6E51BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m */,
+				7D07B6E61BE4F657008F4CC7 /* SettingsEntity.h */,
+				7D07B6E71BE4F657008F4CC7 /* SettingsEntity.m */,
 				7D4C79EF1BE10EF50061816B /* UserEntity+CoreDataProperties.h */,
 				7D4C79F01BE10EF50061816B /* UserEntity+CoreDataProperties.m */,
 				7D4C79F11BE10EF50061816B /* UserEntity.h */,
@@ -992,6 +1002,7 @@
 				7DA5ED4A1B548882007BD424 /* FXBlurView.m in Sources */,
 				7DDF1B9F1987F87A008CB927 /* AvatarContainerView.m in Sources */,
 				7DC58A8E1AEFF125000DBAF8 /* PodcastViewController.m in Sources */,
+				7D07B6E81BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m in Sources */,
 				7DE4B1BE1B726D6C00C02BE2 /* CommentAndPostView.m in Sources */,
 				7DAD37B918A202A5000C164D /* NavController.m in Sources */,
 				7D4F35331AB894560090EE81 /* PodcastResultCell.m in Sources */,
@@ -1013,6 +1024,7 @@
 				7D282C7C1AF29D3400495E74 /* TungPodcastStyleKit.m in Sources */,
 				7DA76A531B4F401500F1A9F4 /* TungNavController.m in Sources */,
 				7D4F35391AB89DDE0090EE81 /* CCLocalMaximum.m in Sources */,
+				7D07B6E91BE4F657008F4CC7 /* SettingsEntity.m in Sources */,
 				7D4B259A1A0AE6B20035FD35 /* ProfileListCell.m in Sources */,
 				7DE780971AE950F20081E28E /* JPXMLtoDictionary.m in Sources */,
 				7D4F35301AB7A2720090EE81 /* TungPodcast.m in Sources */,
