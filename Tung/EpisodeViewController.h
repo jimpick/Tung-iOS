@@ -30,9 +30,9 @@
 @property (strong, nonatomic) IBOutlet UIPageControl *pageControl;
 
 @property (strong, nonatomic) EpisodeEntity *episodeEntity;
+@property (strong, nonatomic) PodcastEntity *podcastEntity;
 @property (strong, nonatomic) NSString *focusedEventId;
-@property (strong, nonatomic) NSString *episodeId;
-@property (strong, nonatomic) NSString *collectionId;
+@property (strong, nonatomic) NSDictionary *episodeMiniDict;
 
 - (IBAction)toggleNpControlsView:(id)sender;
 - (IBAction)touchDownInShowHideControlsButton:(id)sender;

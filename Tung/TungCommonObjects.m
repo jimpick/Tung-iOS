@@ -72,14 +72,6 @@
         _twitterApiRootUrl = @"https://api.twitter.com/1.1/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
-        // colors
-        _tungColor = [UIColor colorWithRed:87.0/255 green:90.0/255 blue:215.0/255 alpha:1];
-        _lightTungColor = [UIColor colorWithRed:238.0/255 green:239.0/255 blue:251.0/255 alpha:1];
-        _mediumTungColor = [UIColor colorWithRed:115.0/255 green:126.0/255 blue:231.0/255 alpha:1];
-        _darkTungColor = [UIColor colorWithRed:58.0/255 green:65.0/255 blue:175.0/255 alpha:1];
-        _bkgdGrayColor = [UIColor colorWithRed:230.0/255.0 green:230.0/255.0 blue:230.0/255.0 alpha:1];
-        _facebookColor = [UIColor colorWithRed:61.0/255 green:90.0/255 blue:152.0/255 alpha:1];
-        _twitterColor = [UIColor colorWithRed:42.0/255 green:169.0/255 blue:224.0/255 alpha:1];
         
         _connectionAvailable = [NSNumber numberWithInt:-1];
         
@@ -633,7 +625,9 @@
     // play the previous podcast in the feed if there is one
     if (_currentFeedIndex - 1 >= 0) {
         NSLog(@"play previous episode in feed");
-        NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex - 1];
+        [self ejectCurrentEpisode];
+        _currentFeedIndex--;
+        NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex];
         NSURL *url = [NSURL URLWithString:[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"]];
         [_playQueue insertObject:url atIndex:0];
  
@@ -1054,7 +1048,7 @@ static NSString *outputFileName = @"output";
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
 
     // get episode entity
-    NSLog(@"get episode entity for episode dict: %@", episodeDict);
+    //NSLog(@"get episode entity for episode dict: %@", episodeDict);
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
     NSPredicate *predicate = [NSPredicate predicateWithFormat: @"guid == %@", [episodeDict objectForKey:@"guid"]];
     [request setPredicate:predicate];
@@ -1384,12 +1378,12 @@ static NSDateFormatter *ISODateInterpreter = nil;
     }
 }
 
-#pragma mark - Key Colors
+#pragma mark - Colors
 
 static CCColorCube *colorCube = nil;
 static NSArray *colors;
 
-- (NSString *) determineDominantColorFromRGB:(NSArray *)rbg {
++ (NSString *) determineDominantColorFromRGB:(NSArray *)rbg {
     if (!colors) colors = [NSArray arrayWithObjects:@"R", @"G", @"B", nil];
     float highest = 0;
     int highestIndex;
@@ -1403,12 +1397,12 @@ static NSArray *colors;
     return [colors objectAtIndex:highestIndex];
 }
 
-- (NSArray *) determineKeyColorsFromImage:(UIImage *)image {
++ (NSArray *) determineKeyColorsFromImage:(UIImage *)image {
     
     if (!colorCube) colorCube = [[CCColorCube alloc] init];
     NSArray *colors = [colorCube extractColorsFromImage:image flags:CCAvoidWhite+CCAvoidBlack count:6];
     UIColor *keyColor1 = [UIColor colorWithRed:0.45 green:0.45 blue:0.45 alpha:1];// default
-    UIColor *keyColor2 = _tungColor;// default
+    UIColor *keyColor2 = [self tungColor];// default
     if (colors.count > 0) {
         //NSLog(@"determine key colors ---------");
         //int x = 120;
@@ -1504,7 +1498,7 @@ static NSArray *colors;
     
 }
 
-- (UIColor *) lightenKeyColor:(UIColor *)keyColor {
++ (UIColor *) lightenKeyColor:(UIColor *)keyColor {
     CGFloat red, green, blue, alpha;
     [keyColor getRed:&red green:&green blue:&blue alpha:&alpha];
     red = red *1.05;
@@ -1515,7 +1509,7 @@ static NSArray *colors;
     blue = MIN(1, blue);
     return [UIColor colorWithRed:red green:green blue:blue alpha:1];
 }
-- (UIColor *) darkenKeyColor:(UIColor *)keyColor {
++ (UIColor *) darkenKeyColor:(UIColor *)keyColor {
     CGFloat red, green, blue, alpha;
     [keyColor getRed:&red green:&green blue:&blue alpha:&alpha];
     red = red *.95;
@@ -1558,6 +1552,28 @@ static NSArray *colors;
     return [UIColor colorWithRed:red green:green blue:blue alpha:alpha];
 }
 
++ (UIColor *) tungColor {
+	return [UIColor colorWithRed:87.0/255 green:90.0/255 blue:215.0/255 alpha:1];
+}
++ (UIColor *) lightTungColor {
+    return [UIColor colorWithRed:238.0/255 green:239.0/255 blue:251.0/255 alpha:1];
+}
++ (UIColor *) mediumTungColor { // not used
+    return [UIColor colorWithRed:115.0/255 green:126.0/255 blue:231.0/255 alpha:1];
+}
++ (UIColor *) darkTungColor { // not used
+    return [UIColor colorWithRed:58.0/255 green:65.0/255 blue:175.0/255 alpha:1];
+}
++ (UIColor *) bkgdGrayColor {
+    return [UIColor colorWithRed:230.0/255.0 green:230.0/255.0 blue:230.0/255.0 alpha:1];
+}
++ (UIColor *) facebookColor {
+    return [UIColor colorWithRed:61.0/255 green:90.0/255 blue:152.0/255 alpha:1];
+}
++ (UIColor *) twitterColor {
+    return [UIColor colorWithRed:42.0/255 green:169.0/255 blue:224.0/255 alpha:1];
+}
+
 #pragma mark - Session instance methods
 
 - (void) establishCred {
@@ -1593,11 +1609,10 @@ static NSArray *colors;
                 NSDictionary *responseDict = jsonData;
                 if ([responseDict objectForKey:@"sessionId"]) {
                     
-                    _sessionId = [responseDict objectForKey:@"sessionId"];
-                    NSLog(@"	got new session: %@", _sessionId);
-                    _connectionAvailable = [NSNumber numberWithInt:1];
-                    
                     dispatch_async(dispatch_get_main_queue(), ^{
+                        _sessionId = [responseDict objectForKey:@"sessionId"];
+                        NSLog(@"	got new session: %@", _sessionId);
+                        _connectionAvailable = [NSNumber numberWithInt:1];
                         // callback
                         callback();
                     });
@@ -1965,6 +1980,11 @@ static NSArray *colors;
     }];
 }
 
+/* STORY REQUESTS
+ story requests send all episode info (episode entity) so that record can be created
+ if one doesn't exist yet.
+ */
+
 // RECOMMENDING
 - (void) recommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
 
@@ -2324,6 +2344,56 @@ static NSArray *colors;
                 }
             }
             else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                NSLog(@"Error. HTML: %@", html);
+                callback(NO, @{@"error": @"Unspecified error"});
+            }
+        });
+    }];
+}
+
+// for getting episode and podcast entities
+-(void) requestEpisodeInfoForId:(NSString *)episodeId andCollectionId:(NSString *)collectionId withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+    NSLog(@"requesting episode info");
+    NSDate *requestStart = [NSDate date];
+    NSURL *episodeInfoURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/episode-info.php", _apiRootUrl]];
+    NSMutableURLRequest *feedRequest = [NSMutableURLRequest requestWithURL:episodeInfoURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [feedRequest setHTTPMethod:@"POST"];
+    NSDictionary *params = @{
+                             @"sessionId": _sessionId,
+                             @"episodeId": episodeId,
+                             @"collectionId": collectionId
+                             };
+    NSLog(@"request for episodeInfo with params: %@", params);
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [feedRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:feedRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                if ([responseDict objectForKey:@"error"]) {
+                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                        // get new session and re-request
+                        NSLog(@"SESSION EXPIRED");
+                        [self getSessionWithCallback:^{
+                            [self requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:callback];
+                        }];
+                    }
+                    else {
+                        NSLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        callback(NO, responseDict);
+                    }
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    NSTimeInterval requestDuration = [requestStart timeIntervalSinceNow];
+                    NSLog(@"successfully retrieved episode info in %f seconds", fabs(requestDuration));
+                    callback(YES, responseDict);
+                }
+            }
+            else if (error != nil) {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
                 NSLog(@"Error. HTML: %@", html);
                 callback(NO, @{@"error": @"Unspecified error"});
@@ -2802,6 +2872,121 @@ static NSArray *colors;
     }
 }
 
+#pragma mark - Caching
+
++ (NSData*) retrieveLargeAvatarDataWithUrlString:(NSString *)urlString {
+    
+    NSString *largeAvatarsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"largeAvatars"];
+    NSError *error;
+    if ([[NSFileManager defaultManager] createDirectoryAtPath:largeAvatarsDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+        // large avatars use the user's Mongo ID as the filename in a pseudo "large" directory
+        NSString *filename = [urlString lastPathComponent];
+        NSString *filepath = [largeAvatarsDir stringByAppendingPathComponent:filename];
+        NSData *imageData;
+        if ([[NSFileManager defaultManager] fileExistsAtPath:filepath]) {
+            imageData = [NSData dataWithContentsOfFile:filepath];
+        } else {
+            imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
+            [imageData writeToFile:filepath atomically:YES];
+        }
+        return imageData;
+    }
+    return nil;
+}
+
++ (NSData*) retrieveSmallAvatarDataWithUrlString:(NSString *)urlString {
+    
+    NSString *smallAvatarsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"smallAvatars"];
+    NSError *error;
+    if ([[NSFileManager defaultManager] createDirectoryAtPath:smallAvatarsDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+        // small avatars use the user's Mongo ID as the filename in a pseudo "small" directory
+        NSString *filename = [urlString lastPathComponent];
+        NSString *filepath = [smallAvatarsDir stringByAppendingPathComponent:filename];
+        NSData *imageData;
+        if ([[NSFileManager defaultManager] fileExistsAtPath:filepath]) {
+            imageData = [NSData dataWithContentsOfFile:filepath];
+        } else {
+            imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
+            [imageData writeToFile:filepath atomically:YES];
+        }
+        return imageData;
+    }
+    return nil;
+}
+
++ (NSData*) retrieveAudioClipDataWithUrlString:(NSString *)urlString {
+    
+    NSString *audioClipsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"audioClips"];
+    NSError *error;
+    if ([[NSFileManager defaultManager] createDirectoryAtPath:audioClipsDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+        // clips use the Mongo clip ID as the filename
+        NSString *filename = [urlString lastPathComponent];
+        NSString *filepath = [audioClipsDir stringByAppendingPathComponent:filename];
+        NSData *audioData;
+        if ([[NSFileManager defaultManager] fileExistsAtPath:filepath]) {
+            audioData = [NSData dataWithContentsOfFile:filepath];
+        } else {
+            audioData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
+            [audioData writeToFile:filepath atomically:YES];
+        }
+        return audioData;
+    }
+    return nil;
+}
+
+// for podcast art that is saved in tung CDN
++ (NSData*) retrieveSSLPodcastArtDataWithUrlString:(NSString *)urlString {
+    
+    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"SSLPodcastArt"];
+    NSError *error;
+    if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+        // SSL podcast art uses the collection ID as the filename
+        NSString *artFilename = [urlString lastPathComponent];
+        NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
+        NSData *artImageData;
+        if ([[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
+            artImageData = [NSData dataWithContentsOfFile:artFilepath];
+        } else {
+            artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
+            [artImageData writeToFile:artFilepath atomically:YES];
+        }
+        return artImageData;
+    }
+    return nil;
+}
+
+// for podcast art url from feed
++ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString {
+    
+    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
+    NSError *error;
+    if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+        
+        NSString *artFilename = [self getAlbumArtFilenameFromUrlString:urlString];
+        NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
+        NSData *artImageData;
+        if ([[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
+            artImageData = [NSData dataWithContentsOfFile:artFilepath];
+        } else {
+            artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
+            [artImageData writeToFile:artFilepath atomically:YES];
+        }
+        return artImageData;
+    }
+    return nil;
+}
+
++ (NSURL *) getClipFileURL {
+    
+    NSString *clipFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"recording.m4a"];
+    return [NSURL fileURLWithPath:clipFilePath];
+}
+
++ (NSString *) getAlbumArtFilenameFromUrlString:(NSString *)artURLString {
+    NSArray *components = [artURLString pathComponents];
+    return [NSString stringWithFormat:@"%@%@", components[components.count-2], components[components.count-1]];
+}
+
 #pragma mark - class methods
 
 + (void)clearTempDirectory {
@@ -3121,28 +3306,6 @@ static NSNumberFormatter *stringToNum = nil;
     }];
 }
 
-+ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString {
-    
-    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
-    NSError *error;
-    if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
-        
-        NSArray *components = [urlString pathComponents];
-        NSString *artFilename = [NSString stringWithFormat:@"%@%@", components[components.count-2], components[components.count-1]];
-        NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
-        NSData *artImageData;
-        // make sure it is cached, even though we preloaded it
-        if ([[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
-            artImageData = [NSData dataWithContentsOfFile:artFilepath];
-        } else {
-            artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
-            [artImageData writeToFile:artFilepath atomically:YES];
-        }
-        return artImageData;
-    }
-    return nil;
-}
-
 static NSDateFormatter *shortFormatDateFormatter = nil;
 static NSDateFormatter *dayDateFormatter = nil;
 
@@ -3211,16 +3374,6 @@ static NSDateFormatter *dayDateFormatter = nil;
     return result;
 }
 
-+ (NSURL *) getClipFileURL {
-    
-    NSString *clipFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"recording.m4a"];
-    return [NSURL fileURLWithPath:clipFilePath];
-}
-
-+ (NSString *) getAlbumArtFilenameFromUrlString:(NSString *)artURLString {
-    NSArray *components = [artURLString pathComponents];
-    return [NSString stringWithFormat:@"%@%@", components[components.count-2], components[components.count-1]];
-}
 
 + (NSInteger) getIndexOfEpisodeWithUrl:(NSString *)urlString inFeed:(NSArray *)feed {
     NSInteger feedIndex = -1;

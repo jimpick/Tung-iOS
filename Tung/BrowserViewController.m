@@ -59,22 +59,22 @@
     [backBtnInner addTarget:self.webView action:@selector(goBack) forControlEvents:UIControlEventTouchUpInside];
     [backBtnInner setContentMode:UIViewContentModeCenter];
     [backBtnInner setImage:[UIImage imageNamed:@"UIButtonBarArrowLeft.png"] forState:UIControlStateNormal];
-    backBtnInner.tintColor = _tung.tungColor;
+    backBtnInner.tintColor = [TungCommonObjects tungColor];
     _backBtn = [[UIBarButtonItem alloc] initWithCustomView:backBtnInner];
-    _backBtn.tintColor = _tung.tungColor;
+    _backBtn.tintColor = [TungCommonObjects tungColor];
     UIButton *forwardBtnInner = [UIButton buttonWithType:UIButtonTypeCustom];
     forwardBtnInner.frame = CGRectMake(0, 0, 42, 42);
     [forwardBtnInner addTarget:self.webView action:@selector(goForward) forControlEvents:UIControlEventTouchUpInside];
     [forwardBtnInner setContentMode:UIViewContentModeCenter];
     [forwardBtnInner setImage:[UIImage imageNamed:@"UIButtonBarArrowRight.png"] forState:UIControlStateNormal];
-    _forwardBtn.tintColor = _tung.tungColor;
+    _forwardBtn.tintColor = [TungCommonObjects tungColor];
     _forwardBtn = [[UIBarButtonItem alloc] initWithCustomView:forwardBtnInner];
-    _forwardBtn.tintColor = _tung.tungColor;
+    _forwardBtn.tintColor = [TungCommonObjects tungColor];
     UIBarButtonItem *openInBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(openUrlInSafari)];
     UIBarButtonItem *doneBtn = [[UIBarButtonItem alloc] initWithTitle:@"Done" style:UIBarButtonItemStyleDone target:self action:@selector(dismissWebView)];
     UIBarButtonItem *flexSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
     
-    _toolbar.tintColor = _tung.tungColor;
+    _toolbar.tintColor = [TungCommonObjects tungColor];
     _toolbar.items = @[_backBtn, flexSpace, _forwardBtn, flexSpace, openInBtn, flexSpace, doneBtn];
     
 }

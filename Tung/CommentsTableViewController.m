@@ -107,7 +107,7 @@ static CGFloat commentBubbleMargins = 27;
     // background color
     if (_focusedId && [_focusedId isEqualToString:[[commentDict objectForKey:@"_id"] objectForKey:@"$id"]]) {
         _focusedIndexPath = indexPath;
-        commentCell.backgroundColor = _tung.lightTungColor;
+        commentCell.backgroundColor = [TungCommonObjects lightTungColor];
     } else {
         commentCell.backgroundColor = [UIColor whiteColor];
     }
@@ -138,7 +138,7 @@ static CGFloat commentBubbleMargins = 27;
     // background color
     if (_focusedId && [_focusedId isEqualToString:[[commentDict objectForKey:@"_id"] objectForKey:@"$id"]]) {
         _focusedIndexPath = indexPath;
-        commentCell.backgroundColor = _tung.lightTungColor;
+        commentCell.backgroundColor = [TungCommonObjects lightTungColor];
     } else {
         commentCell.backgroundColor = [UIColor whiteColor];
     }

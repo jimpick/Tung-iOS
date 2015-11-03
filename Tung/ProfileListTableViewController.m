@@ -10,6 +10,7 @@
 #import "TungCommonObjects.h"
 #import "ProfileListCell.h"
 #import "ProfileViewController.h"
+#import "EpisodeViewController.h"
 
 @interface ProfileListTableViewController ()
 
@@ -40,7 +41,7 @@
     behindTable.alpha = 1;
     [behindTable startAnimating];
     self.tableView.backgroundView = behindTable;
-    self.tableView.backgroundColor = _tung.bkgdGrayColor;
+    self.tableView.backgroundColor = [TungCommonObjects bkgdGrayColor];
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
     self.tableView.separatorColor = [UIColor grayColor];
     self.tableView.scrollsToTop = YES;
@@ -243,15 +244,8 @@
 }
 
 
-NSString static *avatarsDir;
-
 -(void) preloadAvatars {
-    
-    if (!avatarsDir) {
-        avatarsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"avatars"];
-    }
-    NSError *error;
-    [[NSFileManager defaultManager] createDirectoryAtPath:avatarsDir withIntermediateDirectories:YES attributes:nil error:&error];
+
     
     NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
     preloadQueue.maxConcurrentOperationCount = 3;
@@ -262,12 +256,7 @@ NSString static *avatarsDir;
         [preloadQueue addOperationWithBlock:^{
             // avatar
             NSString *avatarURLString = [[[_profileArray objectAtIndex:i] objectForKey:@"user"] objectForKey:@"small_av_url"];
-            NSString *avatarFilename = [avatarURLString lastPathComponent];
-            NSString *avatarFilepath = [avatarsDir stringByAppendingPathComponent:avatarFilename];
-            if (![[NSFileManager defaultManager] fileExistsAtPath:avatarFilepath]) {
-                NSData *avatarImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:avatarURLString]];
-                [avatarImageData writeToFile:avatarFilepath atomically:YES];
-            }
+            [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avatarURLString];
         }];
     }
 }
@@ -279,7 +268,7 @@ NSString static *avatarsDir;
 
     NSIndexPath* indexPath = [self.tableView indexPathForCell:cell];
     switch (tag) {
-            // profile of user
+        // profile of user
         case 100: {
             [self pushProfileForUserAtIndexPath:indexPath];
             break;
@@ -297,6 +286,20 @@ NSString static *avatarsDir;
     profileView.profiledUserId = [profileDict objectForKey:@"id"];
     [_navController pushViewController:profileView animated:YES];
 }
+
+- (void) pushEpisodeViewForIndexPath:(NSIndexPath *)indexPath withFocusedEventId:(NSString *)eventId {
+    
+    NSDictionary *profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
+    NSDictionary *episodeMiniDict = [profileDict objectForKey:@"episode"];
+    
+    EpisodeViewController *episodeView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"episodeView"];
+    episodeView.episodeMiniDict = episodeMiniDict;
+    episodeView.focusedEventId = eventId;
+    
+    
+    [_navController pushViewController:episodeView animated:YES];
+}
+
 
 #pragma mark - Table view data source
 
@@ -329,19 +332,8 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     NSString *action = [profileCell.profileDict objectForKey:@"action"];
     
     // avatar
-    if (!avatarsDir) {
-        avatarsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"avatars"];
-    }
-    NSString *avatarFilename = [[profileCell.profileDict objectForKey:@"small_av_url"] lastPathComponent];
-    NSString *avatarFilepath = [avatarsDir stringByAppendingPathComponent:avatarFilename];
-    NSData *avatarImageData;
-    // make sure it is cached, even though we preloaded it
-    if ([[NSFileManager defaultManager] fileExistsAtPath:avatarFilepath]) {
-        avatarImageData = [NSData dataWithContentsOfFile:avatarFilepath];
-    } else {
-        avatarImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: [profileCell.profileDict objectForKey:@"small_av_url"]]];
-        [avatarImageData writeToFile:avatarFilepath atomically:YES];
-    }
+    NSString *avatarUrlString = [profileCell.profileDict objectForKey:@"small_av_url"];
+    NSData *avatarImageData = [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avatarUrlString];
     profileCell.avatarContainerView.backgroundColor = [UIColor clearColor];
     profileCell.avatarContainerView.avatar = nil;
     profileCell.avatarContainerView.avatar = [[UIImage alloc] initWithData:avatarImageData];
@@ -349,9 +341,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     [profileCell.avatarContainerView setNeedsDisplay];
     
     // username
-    [profileCell.usernameButton setTitle:[profileCell.profileDict objectForKey:@"username"] forState:UIControlStateNormal];
-    [profileCell.usernameButton addTarget:self action:@selector(tableCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
-    profileCell.usernameButton.tag = 100;
+    profileCell.usernameLabel.text = [profileCell.profileDict objectForKey:@"username"];
     [profileCell.avatarButton addTarget:self action:@selector(tableCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     profileCell.avatarButton.tag = 100;
     
@@ -422,10 +412,11 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
-    
     NSDictionary *profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
-    if ([profileDict objectForKey:@"eventId"]) {
-        
+    NSLog(@"selected %@", profileDict);
+    
+    if ([profileDict objectForKey:@"event_id"]) {
+        [self pushEpisodeViewForIndexPath:indexPath withFocusedEventId:[profileDict objectForKey:@"event_id"]];
     }
     else {
         if (![_tung.tungId isEqualToString:[profileDict objectForKey:@"id"]]) {

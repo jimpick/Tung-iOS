@@ -9,12 +9,6 @@
 #import "NavController.h"
 #import "TungCommonObjects.h"
 
-@interface NavController ()
-
-@property (nonatomic, retain) TungCommonObjects *tungObjects;
-
-@end
-
 @implementation NavController
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
@@ -29,11 +23,10 @@
 - (void)viewDidLoad
 {
     
-    _tungObjects = [TungCommonObjects establishTungObjects];
     self.navigationBar.barTintColor = [UIColor whiteColor];
-	self.navigationBar.tintColor = _tungObjects.tungColor;
+	self.navigationBar.tintColor = [TungCommonObjects tungColor];
     self.navigationBar.translucent = NO;
-    self.navigationBar.titleTextAttributes = @{ NSForegroundColorAttributeName: _tungObjects.tungColor };
+    self.navigationBar.titleTextAttributes = @{ NSForegroundColorAttributeName: [TungCommonObjects tungColor] };
     
     [[UINavigationBar appearance] setBackgroundImage:[UIImage imageNamed:@"navBarBkgd.png"] forBarMetrics:UIBarMetricsDefault];
     [[UINavigationBar appearance] setShadowImage:[UIImage imageNamed:@"navBarShadowWhite@2x.png"]];

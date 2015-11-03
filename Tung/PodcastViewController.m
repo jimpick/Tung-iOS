@@ -54,7 +54,6 @@
     _episodesView.edgesForExtendedLayout = UIRectEdgeNone;
     _episodesView.podcastEntity = _podcastEntity;
     
-    NSLog(@"focused GUID: %@", _focusedGUID);
     [self addChildViewController:_episodesView];
     [self.view addSubview:_episodesView.view];
     

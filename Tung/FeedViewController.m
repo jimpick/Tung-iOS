@@ -86,15 +86,12 @@
     // Dispose of any resources that can be recreated.
 }
 
-- (void) viewWillDisappear:(BOOL)animated {
-    [super viewWillDisappear:animated];
-    //self.navigationController.navigationBar.translucent = YES;
-    NSLog(@"cancel feed preloading");
-    [_podcast.feedPreloadQueue cancelAllOperations];
-}
 -(void) viewWillAppear:(BOOL)animated {
     self.navigationController.navigationBar.translucent = NO;
+    
+
 }
+
 -(void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
@@ -107,6 +104,23 @@
     }
     
     self.navigationController.navigationBar.translucent = NO;
+}
+
+- (void) viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    //self.navigationController.navigationBar.translucent = YES;
+    NSLog(@"cancel feed preloading");
+    [_podcast.feedPreloadQueue cancelAllOperations];
+
+}
+
+- (void) viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    if (_podcast.searchController.active) {
+        NSLog(@"search was active, dismissed!");
+        [_podcast.searchController setActive:NO];
+        [self dismissPodcastSearch];
+    }
 }
 
 #pragma mark - tungObjects/tungPodcasts delegate methods
@@ -151,58 +165,57 @@
             if (_tung.sessionId && _tung.sessionId.length > 0) {
                 [_storiesView refreshFeed:YES];
             }
-            // get session then feed
+            // get missing data or get session and feed
             else {
-                NSLog(@"get feed");
-                [_tung getSessionWithCallback:^{
-                    // since this is the first call the app makes and we now have session
-                    // check to see if user has no podcast data or no user data so it can be restored.
-                    // does not YET sync track progress
-                    NSLog(@"has USER data: %@", (_hasUserData) ? @"Yes" : @"No");
-                    if (!_hasUserData) {
-                        [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
-                            if (jsonData != nil) {
-                                NSDictionary *responseDict = jsonData;
-                                if ([responseDict objectForKey:@"user"]) {
-                                    NSLog(@"got user: %@", [responseDict objectForKey:@"user"]);
-                                    [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
-                                    _hasUserData = YES;
-                                }
-                            }
-                        }];
-                    }
-                    NSLog(@"has PODCAST data: %@", (_hasPodcastData) ? @"Yes" : @"No");
-                    if (!_hasPodcastData) {
-                        [_tung restorePodcastDataWithCallback:^(BOOL success, NSDictionary *response) {
-                            if (success) {
-                                if ([response objectForKey:@"podcasts"]) {
-                                    // restore subscribes
-                                    NSArray *podcasts = [response objectForKey:@"podcasts"];
-                                    for (NSDictionary *podcastDict in podcasts) {
-                                        [TungCommonObjects getEntityForPodcast:podcastDict save:YES];
+                if (!_hasUserData || !_hasPodcastData) {
+                    // since this is the first call the app makes, check to see if user has no podcast
+                    // data or no user data so it can be restored. Does not YET sync track progress
+                    [_tung getSessionWithCallback:^{
+                        NSLog(@"has USER data: %@", (_hasUserData) ? @"Yes" : @"No");
+                        if (!_hasUserData) {
+                            [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
+                                if (jsonData != nil) {
+                                    NSDictionary *responseDict = jsonData;
+                                    if ([responseDict objectForKey:@"user"]) {
+                                        NSLog(@"got user: %@", [responseDict objectForKey:@"user"]);
+                                        [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
+                                        _hasUserData = YES;
                                     }
                                 }
-                                if ([response objectForKey:@"episodes"]) {
-                                    // restore recommends
-                                    NSArray *episodes = [response objectForKey:@"episodes"];
-                                    for (NSDictionary *episodeDict in episodes) {
-                                        NSDictionary *eDict = [episodeDict objectForKey:@"episode"];
-                                        NSDictionary *pDict = [episodeDict objectForKey:@"podcast"];
-                                        [TungCommonObjects getEntityForPodcast:pDict andEpisode:eDict save:YES];
+                            }];
+                        }
+                        NSLog(@"has PODCAST data: %@", (_hasPodcastData) ? @"Yes" : @"No");
+                        if (!_hasPodcastData) {
+                            [_tung restorePodcastDataWithCallback:^(BOOL success, NSDictionary *response) {
+                                if (success) {
+                                    if ([response objectForKey:@"podcasts"]) {
+                                        // restore subscribes
+                                        NSArray *podcasts = [response objectForKey:@"podcasts"];
+                                        for (NSDictionary *podcastDict in podcasts) {
+                                            [TungCommonObjects getEntityForPodcast:podcastDict save:YES];
+                                        }
                                     }
+                                    if ([response objectForKey:@"episodes"]) {
+                                        // restore recommends
+                                        NSArray *episodes = [response objectForKey:@"episodes"];
+                                        for (NSDictionary *episodeDict in episodes) {
+                                            NSDictionary *eDict = [episodeDict objectForKey:@"episode"];
+                                            NSDictionary *pDict = [episodeDict objectForKey:@"podcast"];
+                                            [TungCommonObjects getEntityForPodcast:pDict andEpisode:eDict save:YES];
+                                        }
+                                    }
+                                    _hasPodcastData = YES;
                                 }
-                                _hasPodcastData = YES;
-                            }
-                            // get feed
-                            [_storiesView refreshFeed:YES];
-                        }];
-                    }
-                    // if _hasPodcastData
-                    else {
-                        // get feed
-                        [_storiesView refreshFeed:YES];
-                    }
-                }];
+                                // get feed
+                                [_storiesView refreshFeed:YES];
+                            }];
+                        }
+                    }];
+                }
+                // if has data
+                else {
+                    [_storiesView getSessionAndFeed];
+                }
             }
         }
         // unreachable

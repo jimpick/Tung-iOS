@@ -23,7 +23,7 @@
     _tung = [TungCommonObjects establishTungObjects];
     
     // set up table
-    self.tableView.backgroundColor = _tung.bkgdGrayColor;
+    self.tableView.backgroundColor = [TungCommonObjects bkgdGrayColor];
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
     self.tableView.scrollsToTop = YES;
     self.tableView.separatorInset = UIEdgeInsetsMake(0, 9, 0, 9);
@@ -96,7 +96,7 @@ static NSString *cellIdentifier = @"EpisodeCell";
         
         if ([urlString isEqualToString:playingUrl.absoluteString]) {
             episodeCell.iconView.type = kIconTypeNowPlaying;
-            episodeCell.iconView.color = _tung.tungColor;
+            episodeCell.iconView.color = [TungCommonObjects tungColor];
             episodeCell.leadingTitleConstraint.constant = 36;
         } else {
             episodeCell.iconView.type = kIconTypeNone;
@@ -107,7 +107,7 @@ static NSString *cellIdentifier = @"EpisodeCell";
     
     // background color
     if (_focusedIndexPath && _focusedIndexPath.row == indexPath.row) {
-        episodeCell.backgroundColor = _tung.lightTungColor;
+        episodeCell.backgroundColor = [TungCommonObjects lightTungColor];
     } else {
         episodeCell.backgroundColor = [UIColor whiteColor];
     }

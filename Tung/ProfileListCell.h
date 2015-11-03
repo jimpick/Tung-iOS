@@ -18,7 +18,7 @@
 
 @property (strong, nonatomic) IBOutlet AvatarContainerView *avatarContainerView;
 @property (strong, nonatomic) IBOutlet UIButton *avatarButton;
-@property (strong, nonatomic) IBOutlet UIButton *usernameButton;
+@property (strong, nonatomic) IBOutlet UILabel *usernameLabel;
 @property (strong, nonatomic) IBOutlet UILabel *subLabel;
 @property (strong, nonatomic) IBOutlet NSLayoutConstraint *subLabelLeadingConstraint;
 @property (strong, nonatomic) IBOutlet IconView *iconView;

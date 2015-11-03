@@ -17,8 +17,6 @@
 #import "HeaderView.h"
 #import "EpisodeEntity.h"
 
-@class TungCommonObjects;
-
 @protocol TungPodcastsDelegate <NSObject>
 
 @required
@@ -35,7 +33,6 @@
 @interface TungPodcast : NSObject <UISearchBarDelegate, UISearchControllerDelegate, UITableViewDataSource, UITableViewDelegate>
 
 @property id <TungPodcastsDelegate> delegate;
-@property (nonatomic, retain) TungCommonObjects *tung;
 
 // search
 @property (strong, nonatomic) NSMutableArray *podcastArray;
@@ -63,7 +60,6 @@
 
 - (void) preloadPodcastArtForArray:(NSArray*)itemArray;
 - (void) preloadFeedsWithLimit:(NSUInteger)limit;
-- (void) configureEpisodeCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) showNoConnectionAlert;
 
 

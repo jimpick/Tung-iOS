@@ -77,10 +77,10 @@ static UIImage *iconRedX;
     
     // table view
     self.tableView.backgroundView = nil;
-    self.tableView.backgroundColor = _tung.bkgdGrayColor;
+    self.tableView.backgroundColor = [TungCommonObjects bkgdGrayColor];
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
     self.tableView.scrollsToTop = YES;
-    self.tableView.separatorColor = _tung.tungColor;
+    self.tableView.separatorColor = [TungCommonObjects tungColor];
     self.tableView.separatorInset = UIEdgeInsetsMake(0, 16, 0, 16);
     self.tableView.bounces = NO;
     
@@ -90,7 +90,7 @@ static UIImage *iconRedX;
     CGFloat screenWidth = self.view.bounds.size.width;
     // input view toolbar
     _keyboardToolbar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 44)];
-    _keyboardToolbar.tintColor = _tung.tungColor;
+    _keyboardToolbar.tintColor = [TungCommonObjects tungColor];
     // bar button items
     _keyboardLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 0, 100, 44)];
     _keyboardLabel.textColor = [UIColor lightGrayColor];
@@ -283,26 +283,11 @@ static UIImage *iconRedX;
 
 - (void) setAvatarFromExistingAvatar {
     
-    NSString *largeAvatarFilename = [[_profileData objectForKey:@"large_av_url"] lastPathComponent];
-    [[NSFileManager defaultManager] createDirectoryAtPath:[NSTemporaryDirectory() stringByAppendingPathComponent:@"/large/"] withIntermediateDirectories:YES attributes:nil error:nil];
-    NSLog(@"large av filename: %@", largeAvatarFilename);
-    
-    NSString *largeAvatarFilepath = [NSTemporaryDirectory() stringByAppendingPathComponent:[NSString stringWithFormat:@"/large/%@", largeAvatarFilename]];
-    NSLog(@"large av file path: %@", largeAvatarFilepath);
-    
-    NSData *largeAvatarImageData;
-    if ([[NSFileManager defaultManager] fileExistsAtPath:largeAvatarFilepath]) {
-        largeAvatarImageData = [NSData dataWithContentsOfFile:largeAvatarFilepath];
-        NSLog(@"	file was cached in temp dir. data size: %lu", (unsigned long)largeAvatarImageData.length);
-    } else {
-        largeAvatarImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: [_profileData objectForKey:@"large_av_url"]]];
-        NSLog(@"	file will be downloaded: %@", [_profileData objectForKey:@"large_av_url"]);
-        NSLog(@"	data size: %lu", (unsigned long)largeAvatarImageData.length);
-        [largeAvatarImageData writeToFile:largeAvatarFilepath atomically:YES];
-    }
+    NSString *avatarUrlString = [_profileData objectForKey:@"large_av_url"];
+    NSData *largeAvatarImageData = [TungCommonObjects retrieveLargeAvatarDataWithUrlString:avatarUrlString];
     _largeAvatar.avatar = [[UIImage alloc] initWithData:largeAvatarImageData];
     _largeAvatar.useFilter = 0;
-    _largeAvatar.borderColor = _tung.tungColor;
+    _largeAvatar.borderColor = [TungCommonObjects tungColor];
     _largeAvatar.backgroundColor = [UIColor clearColor];
 }
 
@@ -345,7 +330,7 @@ static UIImage *iconRedX;
     NSLog(@"got Image Data");
     _largeAvatar.avatar = [[UIImage alloc] initWithData:largeAvatarImageData];
     _largeAvatar.useFilter = 0;
-    _largeAvatar.borderColor = _tung.tungColor;
+    _largeAvatar.borderColor = [TungCommonObjects tungColor];
     _largeAvatar.backgroundColor = [UIColor clearColor];
     [_largeAvatar setNeedsDisplay];
 }

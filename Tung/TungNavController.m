@@ -9,23 +9,16 @@
 #import "TungNavController.h"
 #import "TungCommonObjects.h"
 
-@interface TungNavController ()
-
-@property TungCommonObjects *tung;
-
-@end
-
 @implementation TungNavController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    _tung = [TungCommonObjects establishTungObjects];
     self.navigationBar.barTintColor = [UIColor whiteColor];
     self.navigationBar.backgroundColor = [UIColor whiteColor];
-    self.navigationBar.tintColor = _tung.tungColor;
+    self.navigationBar.tintColor = [TungCommonObjects tungColor];
     self.navigationBar.translucent = NO; // causes black gap at top - stackoverflow.com/q/31308766/591487
-    self.navigationBar.titleTextAttributes = @{ NSForegroundColorAttributeName: _tung.tungColor };
+    self.navigationBar.titleTextAttributes = @{ NSForegroundColorAttributeName: [TungCommonObjects tungColor] };
     
     [[UINavigationBar appearance] setBackgroundImage:[UIImage imageNamed:@"navBarBkgd.png"] forBarMetrics:UIBarMetricsDefault]; // makes status bar white
     [[UINavigationBar appearance] setShadowImage:[[UIImage alloc] init]];// [UIImage imageNamed:@"navBarShadowWhite@2x.png"]

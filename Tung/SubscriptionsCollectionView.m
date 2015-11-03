@@ -79,7 +79,7 @@ static NSString * const reuseIdentifier = @"artCell";
     
     self.collectionView.collectionViewLayout = flowLayout;
     self.collectionView.scrollEnabled = YES;
-    self.collectionView.backgroundColor = [_tung bkgdGrayColor];
+    self.collectionView.backgroundColor = [TungCommonObjects bkgdGrayColor];
     
     // preload feeds, check for no subs
     NSError *error;
@@ -105,6 +105,16 @@ static NSString * const reuseIdentifier = @"artCell";
     _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
 }
+
+- (void) viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    if (_podcast.searchController.active) {
+        NSLog(@"search was active, dismissed!");
+        [_podcast.searchController setActive:NO];
+        [self dismissPodcastSearch];
+    }
+}
+
 
 #pragma mark - tungObjects/tungPodcasts delegate methods
 

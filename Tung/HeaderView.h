@@ -22,6 +22,7 @@
 @property NSLayoutConstraint *heightConstraint;
 @property BOOL isConstrained;
 
+-(void) setUpHeaderViewForEpisodeMiniDict:(NSDictionary *)miniDict;
 -(void) setUpHeaderViewForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity;
 -(void) sizeAndConstrainHeaderViewInViewController:(UIViewController *)vc;
 

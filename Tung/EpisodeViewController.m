@@ -28,7 +28,6 @@
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (strong, nonatomic) TungPodcast *podcast;
-@property (strong, nonatomic) PodcastEntity *podcastEntity;
 @property HeaderView *headerView;
 @property CADisplayLink *onEnterFrame;
 @property BOOL npControlsViewIsSetup;
@@ -91,8 +90,7 @@ static NSArray *playbackRateStrings;
     _podcast = [TungPodcast new];
     
     // is this for now playing?
-    if (_episodeEntity || _episodeId) {
-        _podcastEntity = _episodeEntity.podcast;
+    if (_episodeMiniDict) {
         self.navigationItem.title = @"Episode";
     } else {
         _isNowPlayingView = YES;
@@ -114,7 +112,7 @@ static NSArray *playbackRateStrings;
     _podcast.navController = [self navigationController];
     _podcast.delegate = self;
     
-    self.view.backgroundColor = _tung.bkgdGrayColor;
+    self.view.backgroundColor = [UIColor whiteColor];
     
     // views
     _npControlsView.opacity = .4;
@@ -217,7 +215,6 @@ static NSArray *playbackRateStrings;
     
 
     
-    
     if (_isNowPlayingView) {
     
         // show/hide button
@@ -247,24 +244,35 @@ static NSArray *playbackRateStrings;
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillBeHidden:) name:UIKeyboardWillHideNotification object:nil];
         //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
     
-    
         playbackRateStrings = @[@".75x", @"1.0x", @"1.5x", @"2.0x"];
         
         // share label
         _shareLabel.text = @"";
         _shareLabel.alpha = 0;
-        _shareLabel.textColor = _tung.tungColor;
+        _shareLabel.textColor = [TungCommonObjects tungColor];
         
         
         [self setUpViewForWhateversPlaying];
     }
     else {
-        if (_episodeEntity) {
-        	[self setUpViewForEpisode:_episodeEntity];
-        }
-        else {
-            [self requestEpisodeInfoForId:_episodeId andCollectionId:_collectionId];
-        }
+        // is there a case where episode entity would be passed to episode view controller?
+        // assuming not and only handling mini dict...
+        
+        [_headerView setUpHeaderViewForEpisodeMiniDict:_episodeMiniDict];
+        [_headerView sizeAndConstrainHeaderViewInViewController:self];
+        
+        NSString *episodeId = [[_episodeMiniDict objectForKey:@"id"] objectForKey:@"$id"];
+        NSString *collectionId = [_episodeMiniDict objectForKey:@"collectionId"];
+        
+        [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
+            NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
+            NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
+            _episodeEntity = [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
+            _podcastEntity = _episodeEntity.podcast;
+            
+            [self setUpViewForEpisode:_episodeEntity];
+        }];
+
     }
 
 }
@@ -303,6 +311,16 @@ static NSArray *playbackRateStrings;
     [_onEnterFrame invalidate];
     
 }
+
+- (void) viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    if (_isNowPlayingView && _podcast.searchController.active) {
+        NSLog(@"search was active, dismissed!");
+        [_podcast.searchController setActive:NO];
+        [self dismissPodcastSearch];
+    }
+}
+
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
@@ -459,9 +477,7 @@ static NSArray *playbackRateStrings;
     _switcher.tintColor = episodeEntity.podcast.keyColor2;
     
     // COMMENTS
-    if (!_commentsView.queryExecuted) {
-    	[self refreshComments:YES];
-    }
+    [self refreshComments:YES];
     
     // episodes and description
     NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:NO];
@@ -595,86 +611,7 @@ static NSArray *playbackRateStrings;
 
 #pragma mark Request page data
 
--(void) requestEpisodeInfoForId:(NSString *)episodeId andCollectionId:(NSString *)collectionId {
-    NSLog(@"requesting episode info");
-    NSURL *episodeInfoURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/episode-info.php", _tung.apiRootUrl]];
-    NSMutableURLRequest *feedRequest = [NSMutableURLRequest requestWithURL:episodeInfoURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
-    [feedRequest setHTTPMethod:@"POST"];
-    NSDictionary *params = @{
-                             @"sessionId": _tung.sessionId,
-                             @"episodeId": episodeId,
-                             @"collectionId": collectionId
-                             };
-    NSLog(@"request for episodeInfo with params: %@", params);
-    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
-    [feedRequest setHTTPBody:serializedParams];
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    [NSURLConnection sendAsynchronousRequest:feedRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        if (error == nil) {
-            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-            //NSLog(@"got response: %@", jsonData);
-            if (jsonData != nil && error == nil) {
-                if ([jsonData isKindOfClass:[NSDictionary class]]) {
-                    NSDictionary *responseDict = jsonData;
-                    if ([responseDict objectForKey:@"error"]) {
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                                // get new session and re-request
-                                NSLog(@"SESSION EXPIRED");
-                                [_tung getSessionWithCallback:^{
-                                    [self requestEpisodeInfoForId:episodeId andCollectionId:collectionId];
-                                }];
-                            } else {
-                                
-                                [_commentsView endRefreshing];
-                                // other error - alert user
-                                UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                                [errorAlert show];
-                            }
-                        });
-                    }
-                    else if ([responseDict objectForKey:@"success"]) {
-                        NSLog(@"successfully retrieved episode info");
-                        // episode info
-                        NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
-                        NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
-                        _episodeEntity = [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
-                        
-                        [self setUpViewForEpisode:_episodeEntity];
-                        
-                        // comments
-                        _commentsView.queryExecuted = YES;
-                        NSArray *comments = [responseDict objectForKey:@"comments"];
-                        if (comments.count > 0) {
-                            _commentsView.commentsArray = [comments mutableCopy];
-                            _commentsView.noResults = NO;
-                        } else {
-                            _commentsView.noResults = YES;
-                        }
-                        [_commentsView.tableView reloadData];
-                    }
-                }                
-            }
-            else if (error != nil) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [_commentsView endRefreshing];
-                });
-                NSLog(@"Error: %@", error);
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                NSLog(@"HTML: %@", html);
-            }
-        }
-        // connection error
-        else {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                [_commentsView endRefreshing];
-                
-                UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                [connectionErrorAlert show];
-            });
-        }
-    }];
-}
+
 
 #pragma mark Now Playing control view
 
@@ -803,7 +740,7 @@ static CGRect buttonsScrollViewHomeRect;
     UIFont *durationFont = [UIFont fontWithDescriptor: durationDescriptor size:0.0];
     _recordingDurationLabel.font = durationFont;
     _recordingDurationLabel.text = @":00";
-    _recordingDurationLabel.textColor = _tung.tungColor;
+    _recordingDurationLabel.textColor = [TungCommonObjects tungColor];
     [recordSubView addSubview:_recordingDurationLabel];
     [recordSubView addConstraint:[NSLayoutConstraint constraintWithItem:_recordingDurationLabel attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:recordSubView attribute:NSLayoutAttributeTop multiplier:1 constant:1]];
     
@@ -845,7 +782,7 @@ static CGRect buttonsScrollViewHomeRect;
     _commentAndPostView.hidden = YES;
     _commentAndPostView.alpha = 0;
     _commentAndPostView.commentTextView.delegate = self;
-    _commentAndPostView.commentTextView.tintColor = _tung.tungColor;
+    _commentAndPostView.commentTextView.tintColor = [TungCommonObjects tungColor];
     [_commentAndPostView.postActivityIndicator stopAnimating];
     
     // button actions
@@ -882,7 +819,7 @@ static CGRect buttonsScrollViewHomeRect;
     
     label.translatesAutoresizingMaskIntoConstraints = NO;
     [superview addSubview:label];
-    label.textColor = _tung.tungColor;
+    label.textColor = [TungCommonObjects tungColor];
     label.font = [UIFont systemFontOfSize:11];
     label.textAlignment = NSTextAlignmentCenter;
     // button constraint: 10 pts from top
@@ -1815,7 +1752,9 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
             [_commentAndPostView.postActivityIndicator stopAnimating];
             [_commentAndPostView.postButton setEnabled:YES];
             if (success) {
-                [self refreshComments:YES];
+                if (text.length > 0) {
+                	[self refreshComments:YES];
+                }
                 [self toggleNewClipView];
                 _commentAndPostView.commentTextView.text = @"";
                 [self resetRecording];

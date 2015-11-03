@@ -66,14 +66,14 @@ CGFloat screenWidth;
         // sign out button
         IconButton *signOutInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
         signOutInner.type = kIconButtonTypeSignOut;
-        signOutInner.color = _tung.tungColor;
+        signOutInner.color = [TungCommonObjects tungColor];
         [signOutInner addTarget:self action:@selector(confirmSignOut) forControlEvents:UIControlEventTouchUpInside];
         UIBarButtonItem *signOutButton = [[UIBarButtonItem alloc] initWithCustomView:signOutInner];
         self.navigationItem.leftBarButtonItem = signOutButton;
         // profile search button
         IconButton *profileSearchInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
         profileSearchInner.type = kIconButtonTypeProfileSearch;
-        profileSearchInner.color = _tung.tungColor;
+        profileSearchInner.color = [TungCommonObjects tungColor];
         [profileSearchInner addTarget:self action:@selector(initiateProfileSearch) forControlEvents:UIControlEventTouchUpInside];
         _profileSearchButton = [[UIBarButtonItem alloc] initWithCustomView:profileSearchInner];
         self.navigationItem.rightBarButtonItem = _profileSearchButton;
@@ -92,7 +92,7 @@ CGFloat screenWidth;
         
         _searchController.searchBar.delegate = self;
         _searchController.searchBar.searchBarStyle = UISearchBarStyleMinimal;
-        _searchController.searchBar.tintColor = _tung.tungColor;
+        _searchController.searchBar.tintColor = [TungCommonObjects tungColor];
         _searchController.searchBar.showsCancelButton = YES;
         _searchController.searchBar.autocapitalizationType = UITextAutocapitalizationTypeNone;
         _searchController.searchBar.autocorrectionType = UITextAutocorrectionTypeNo;
@@ -152,7 +152,7 @@ CGFloat screenWidth;
     NSArray *switcherItems = @[@"My Activity", @"Notifications"];
     _switcher = [[UISegmentedControl alloc] initWithItems:switcherItems];
     _switcher.apportionsSegmentWidthsByContent = YES;
-    _switcher.tintColor = _tung.tungColor;
+    _switcher.tintColor = [TungCommonObjects tungColor];
     _switcher.frame = CGRectMake(0, 0, self.view.bounds.size.width - 20, 28);
     [_switcher addTarget:self action:@selector(switchViews:) forControlEvents:UIControlEventValueChanged];
     UIBarButtonItem *switcherBarItem = [[UIBarButtonItem alloc] initWithCustomView:(UIView *)_switcher];
@@ -162,7 +162,7 @@ CGFloat screenWidth;
     	[_switcherBar setItems:@[flexSpace, switcherBarItem, flexSpace] animated:NO];
     } else {
         _tableHeaderLabel = [[UIBarButtonItem alloc] initWithTitle:@"Activity" style:UIBarButtonItemStylePlain target:self action:nil];
-        _tableHeaderLabel.tintColor = _tung.tungColor;
+        _tableHeaderLabel.tintColor = [TungCommonObjects tungColor];
         UIBarButtonItem *fixedSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:self action:nil];
         fixedSpace.width = 1;
         [_switcherBar setItems:@[fixedSpace, _tableHeaderLabel] animated:NO];
@@ -270,6 +270,16 @@ CGFloat screenWidth;
     @catch (id exception) {}
     */
 }
+
+- (void) viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    if (_isLoggedInUser && _searchController.active) {
+        NSLog(@"search was active, dismissed!");
+        [_searchController setActive:YES];
+        [self dismissProfileSearch];
+    }
+}
+
 
 - (void) switchViews:(id)sender {
     UISegmentedControl *switcher = (UISegmentedControl *)sender;
@@ -603,18 +613,8 @@ NSTimer *sessionCheckTimer;
     }
     
     // avatar
-    NSString *largeAvatarsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"largeAvatars"];
-    [[NSFileManager defaultManager] createDirectoryAtPath:largeAvatarsDir withIntermediateDirectories:YES attributes:nil error:nil];
-    NSString *largeAvatarFilename = [[_profiledUserData objectForKey:@"large_av_url"] lastPathComponent];
-    NSString *largeAvatarFilepath = [largeAvatarsDir stringByAppendingPathComponent:largeAvatarFilename];
-    NSData *largeAvatarImageData;
-    if ([[NSFileManager defaultManager] fileExistsAtPath:largeAvatarFilepath]) {
-        largeAvatarImageData = [NSData dataWithContentsOfFile:largeAvatarFilepath];
-    } else {
-        largeAvatarImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: [_profiledUserData objectForKey:@"large_av_url"]]];
-        [largeAvatarImageData writeToFile:largeAvatarFilepath atomically:YES];
-    }
-    NSLog(@"large av image data size: %lu", (unsigned long)largeAvatarFilename.length);
+    NSString *avatarUrlString = [_profiledUserData objectForKey:@"large_av_url"];
+    NSData *largeAvatarImageData = [TungCommonObjects retrieveLargeAvatarDataWithUrlString:avatarUrlString];
     UIImage *largeAvImage = [[UIImage alloc] initWithData:largeAvatarImageData];
     _profileHeader.largeAvatarView.hidden = NO;
     _profileHeader.largeAvatarView.avatar = largeAvImage;

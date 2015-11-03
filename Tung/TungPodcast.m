@@ -31,8 +31,6 @@
         
         //NSLog(@"init tung podcasts class");
         
-        _tung = [TungCommonObjects establishTungObjects];
-        
         _podcastArray = [NSMutableArray array];
         
         // podcasts search
@@ -55,7 +53,7 @@
         
         _searchController.searchBar.delegate = self;
         _searchController.searchBar.searchBarStyle = UISearchBarStyleMinimal;
-        _searchController.searchBar.tintColor = _tung.tungColor;
+        _searchController.searchBar.tintColor = [TungCommonObjects tungColor];
         _searchController.searchBar.showsCancelButton = YES;
         _searchController.searchBar.autocapitalizationType = UITextAutocapitalizationTypeNone;
         _searchController.searchBar.autocorrectionType = UITextAutocorrectionTypeNo;
@@ -281,6 +279,7 @@ static NSDateFormatter *releaseDateFormatter = nil;
     return _podcastArray.count;
 }
 
+// podcast search result cell
 - (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
     static NSString *cellIdentifier = @"PodcastResultCell";
@@ -360,7 +359,7 @@ static NSDateFormatter *releaseDateFormatter = nil;
     if (![podcastCell.podcastArtist isDescendantOfView:podcastCell]) [podcastCell addSubview:podcastCell.podcastArtist];
     
     // find key color
-    NSArray *keyColors = [_tung determineKeyColorsFromImage:artImage];
+    NSArray *keyColors = [TungCommonObjects determineKeyColorsFromImage:artImage];
     UIColor *keyColor1 = [keyColors objectAtIndex:0];
     UIColor *keyColor2 = [keyColors objectAtIndex:1];
     podcastCell.podcastTitle.textColor = keyColor1;
@@ -448,67 +447,22 @@ static NSDateFormatter *releaseDateFormatter = nil;
 }
 
 
-#pragma mark - Podcast Episode table
-
-static NSDateFormatter *airDateFormatter = nil;
-
--(void) configureEpisodeCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
-    
-    //NSLog(@"---- configure podcast episode cell for row %ld", (long)indexPath.row);
-    EpisodeCell *episodeCell = (EpisodeCell *)cell;
-    
-    // cell data
-    NSDictionary *episodeDict = [NSDictionary dictionaryWithDictionary:[_podcastArray objectAtIndex:indexPath.row]];
-    
-    // title
-    episodeCell.episodeTitle.text = [episodeDict objectForKey:@"title"];
-    episodeCell.episodeTitle.textColor = _keyColor;
-    // air date
-    if (!airDateFormatter) {
-        airDateFormatter = [[NSDateFormatter alloc] init];
-        [airDateFormatter setDateFormat:@"MMM d, yyyy"];
-    }
-    episodeCell.airDate.text = [airDateFormatter stringFromDate:[episodeDict objectForKey:@"pubDate"]];
-    
-    // kill insets for iOS 8
-    if ([[UIDevice currentDevice].systemVersion floatValue] >= 8) {
-        episodeCell.preservesSuperviewLayoutMargins = NO;
-        [episodeCell setLayoutMargins:UIEdgeInsetsZero];
-    }
-    // iOS 7
-    //    if ([episodeCell respondsToSelector:@selector(setSeparatorInset:)])
-    //        [episodeCell setSeparatorInset:UIEdgeInsetsZero];
-    
-}
-
-
-
 #pragma mark - Preloading
 
 -(void) preloadPodcastArtForArray:(NSArray*)itemArray {
+        
+    NSArray *itemArrayCopy = [itemArray copy];
     
-    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
-    NSError *error;
-    if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+    NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
+    preloadQueue.maxConcurrentOperationCount = 3;
+    // download and save podcast art to temp directory if it doesn't exist
+    
+    for (int i = 0; i < itemArrayCopy.count; i++) {
         
-        NSArray *itemArrayCopy = [itemArray copy];
-        
-        NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
-        preloadQueue.maxConcurrentOperationCount = 3;
-        // download and save podcast art to temp directory if it doesn't exist
-        
-        for (int i = 0; i < itemArrayCopy.count; i++) {
-            
-            [preloadQueue addOperationWithBlock:^{
-                NSString *artURLString = [[itemArrayCopy objectAtIndex:i] objectForKey:@"artworkUrl600"];
-                NSString *artFilename = [TungCommonObjects getAlbumArtFilenameFromUrlString:artURLString];
-                NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
-                if (![[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
-                    NSData *artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:artURLString]];
-                    [artImageData writeToFile:artFilepath atomically:YES];
-                }
-            }];
-        }
+        [preloadQueue addOperationWithBlock:^{
+            NSString *artURLString = [[itemArrayCopy objectAtIndex:i] objectForKey:@"artworkUrl600"];
+            [TungCommonObjects retrievePodcastArtDataWithUrlString:artURLString];
+        }];
     }
 }
 

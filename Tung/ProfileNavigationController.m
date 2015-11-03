@@ -9,25 +9,17 @@
 #import "ProfileNavigationController.h"
 #import "TungCommonObjects.h"
 
-@interface ProfileNavigationController ()
-
-@property (nonatomic, retain) TungCommonObjects *tungObjects;
-
-@end
-
 @implementation ProfileNavigationController
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     
-    _tungObjects = [TungCommonObjects establishTungObjects];
-    
     // Navigation bar
     [[UINavigationBar appearance] setBarTintColor:[UIColor whiteColor]];
-    [[UINavigationBar appearance] setTintColor:_tungObjects.tungColor];
+    [[UINavigationBar appearance] setTintColor:[TungCommonObjects tungColor]];
     self.navigationController.navigationBar.translucent = NO;
     
-    [[UINavigationBar appearance] setTitleTextAttributes: [NSDictionary dictionaryWithObjectsAndKeys:_tungObjects.tungColor, NSForegroundColorAttributeName, nil]];
+    [[UINavigationBar appearance] setTitleTextAttributes: [NSDictionary dictionaryWithObjectsAndKeys:[TungCommonObjects tungColor], NSForegroundColorAttributeName, nil]];
     [[UINavigationBar appearance] setBackgroundImage:[UIImage alloc] forBarMetrics:UIBarMetricsDefault];
     [[UINavigationBar appearance] setShadowImage:[UIImage imageNamed:@"navBarShadowWhite@2x.png"]];
     [super viewDidLoad];

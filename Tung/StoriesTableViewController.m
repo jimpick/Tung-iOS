@@ -47,7 +47,7 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     self.requestStatus = @"";
     
     // table
-    self.tableView.backgroundColor = _tung.bkgdGrayColor;
+    self.tableView.backgroundColor = [TungCommonObjects bkgdGrayColor];
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
     self.tableView.scrollsToTop = YES;
     self.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
@@ -99,12 +99,21 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
         }
     }
     [self requestPostsNewerThan:mostRecent
-                        orOlderThan:[NSNumber numberWithInt:0]
-                           fromUser:_profiledUserId];
+                    orOlderThan:[NSNumber numberWithInt:0]
+                       fromUser:_profiledUserId
+                       withCred:NO];
+}
+
+-(void) getSessionAndFeed {
+    [self requestPostsNewerThan:[NSNumber numberWithInt:0]
+                    orOlderThan:[NSNumber numberWithInt:0]
+                       fromUser:_profiledUserId
+                       withCred:YES];
 }
 
 - (void) pushEpisodeViewForIndexPath:(NSIndexPath *)indexPath withFocusedEventId:(NSString *)eventId {
-    // push episode view
+    
+    /* entity method
     NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
     NSDictionary *podcastDict = [NSDictionary dictionaryWithDictionary:[storyDict objectForKey:@"podcast"]];
     NSDictionary *episodeDict = [NSDictionary dictionaryWithDictionary:[storyDict objectForKey:@"episode"]];
@@ -113,6 +122,16 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     EpisodeViewController *episodeView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"episodeView"];
     episodeView.episodeEntity = episodeEntity;
     episodeView.focusedEventId = eventId;
+     */
+    
+    // id method
+    NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
+    NSDictionary *episodeMiniDict = [storyDict objectForKey:@"episode"];
+    
+    EpisodeViewController *episodeView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"episodeView"];
+    episodeView.episodeMiniDict = episodeMiniDict;
+    episodeView.focusedEventId = eventId;
+
     
     [_navController pushViewController:episodeView animated:YES];
 }
@@ -287,12 +306,6 @@ CGFloat labelWidth = 0;
     }
 }
 
-
-
-NSString static *avatarsDir;
-NSString static *audioClipsDir;
-NSString static *podcastArtDir;
-
 - (void) configureHeaderCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
     
     StoryHeaderCell *headerCell = (StoryHeaderCell *)cell;
@@ -301,17 +314,17 @@ NSString static *podcastArtDir;
     
     // cell data
     NSDictionary *storyDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
-    NSDictionary *podcastDict = [storyDict objectForKey:@"podcast"];
-    NSDictionary *episodeDict = [storyDict objectForKey:@"episode"];
+    NSDictionary *episodeMiniDict = [storyDict objectForKey:@"episode"];
     NSDictionary *userDict = [storyDict objectForKey:@"user"];
     
     if (_storyId) NSLog(@"story dict for header cell: %@", storyDict);
     
     // color
-    UIColor *keyColor = [TungCommonObjects colorFromHexString:[podcastDict objectForKey:@"keyColor1Hex"]];
+    
+    UIColor *keyColor = (UIColor *)[storyDict objectForKey:@"keyColor"];
     headerCell.backgroundColor = keyColor;
     UIView *bgColorView = [[UIView alloc] init];
-    bgColorView.backgroundColor = [_tung darkenKeyColor:keyColor];
+    bgColorView.backgroundColor = [TungCommonObjects darkenKeyColor:keyColor];
     [headerCell setSelectedBackgroundView:bgColorView];
     
     // user
@@ -322,16 +335,8 @@ NSString static *podcastArtDir;
     [headerCell.avatarButton addTarget:self action:@selector(headerCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     
     // avatar
-    NSString *avatarFilename = [[userDict objectForKey:@"small_av_url"] lastPathComponent];
-    NSString *avatarFilepath = [avatarsDir stringByAppendingPathComponent:avatarFilename];
-    NSData *avatarImageData;
-    // make sure it is cached, even though we preloaded it
-    if ([[NSFileManager defaultManager] fileExistsAtPath:avatarFilepath]) {
-        avatarImageData = [NSData dataWithContentsOfFile:avatarFilepath];
-    } else {
-        avatarImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: [userDict objectForKey:@"small_av_url"]]];
-        [avatarImageData writeToFile:avatarFilepath atomically:YES];
-    }
+    NSString *avatarUrlString = [userDict objectForKey:@"small_av_url"];
+    NSData *avatarImageData = [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avatarUrlString];
     headerCell.avatarContainerView.backgroundColor = [UIColor clearColor];
     headerCell.avatarContainerView.avatar = nil;
     headerCell.avatarContainerView.avatar = [[UIImage alloc] initWithData:avatarImageData];
@@ -339,13 +344,13 @@ NSString static *podcastArtDir;
     [headerCell.avatarContainerView setNeedsDisplay];
     
     // album art
-    NSString *artUrlString = [podcastDict objectForKey:@"artworkUrl600"];
-    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString];
+    NSString *artUrlString = [episodeMiniDict objectForKey:@"artworkUrlSSL"];
+    NSData *artImageData = [TungCommonObjects retrieveSSLPodcastArtDataWithUrlString:artUrlString];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     headerCell.albumArt.image = artImage;
     
 	// title
-    NSString *title = [episodeDict objectForKey:@"title"];
+    NSString *title = [episodeMiniDict objectForKey:@"title"];
     headerCell.title.text = title;
     if (screenWidth >= 414) { // iPhone 6+/6s+
         headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
@@ -393,7 +398,7 @@ NSString static *podcastArtDir;
     UIColor *keyColor = (UIColor *)[eventDict objectForKey:@"keyColor"];
     eventCell.backgroundColor = keyColor;
     UIView *bgColorView = [[UIView alloc] init];
-    bgColorView.backgroundColor = [_tung darkenKeyColor:keyColor];
+    bgColorView.backgroundColor = [TungCommonObjects darkenKeyColor:keyColor];
     [eventCell setSelectedBackgroundView:bgColorView];
     
     // event
@@ -481,7 +486,7 @@ NSString static *podcastArtDir;
     UIColor *keyColor = (UIColor *)[footerDict objectForKey:@"keyColor"];
     footerCell.backgroundColor = keyColor;
     UIView *bgColorView = [[UIView alloc] init];
-    bgColorView.backgroundColor = [_tung darkenKeyColor:keyColor];
+    bgColorView.backgroundColor = [TungCommonObjects darkenKeyColor:keyColor];
     [footerCell setSelectedBackgroundView:bgColorView];
     
     // separator
@@ -518,12 +523,14 @@ NSString static *podcastArtDir;
             NSString *playFromString = [NSString stringWithFormat:@"Play from %@", _timestamp];
             //NSLog(@"event dict: %@", eventDict);
             NSString *type = [eventDict objectForKey:@"type"];
+            
             if ([type isEqualToString:@"clip"]) {
                 options = @[@"Share this clip", @"Copy link to clip", playFromString];
                 NSString *clipShortlink = [eventDict objectForKey:@"shortlink"];
                 _shareLink = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, clipShortlink];
                 _shareText = [NSString stringWithFormat:@"Here's a clip from %@: %@", [[headerDict objectForKey:@"podcast"] objectForKey:@"collectionName"], _shareLink];
-            } else if ([type isEqualToString:@"comment"]) {
+            }
+            else if ([type isEqualToString:@"comment"]) {
                 options = @[@"Share this interaction", @"Copy link to interaction", playFromString];
                 _shareLink = [headerDict objectForKey:@"storyLink"];
                 NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
@@ -564,6 +571,8 @@ NSString static *podcastArtDir;
 - (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
     
     NSLog(@"dismissed action sheet with button: %ld", (long)buttonIndex);
+    
+    // long press table cell
     if (actionSheet.tag == 1) {
         if (buttonIndex == 1) { // share this
             
@@ -574,33 +583,42 @@ NSString static *podcastArtDir;
             [[UIPasteboard generalPasteboard] setString:_shareLink];
         }
         else if (buttonIndex == 3) { // play from timestamp
-            NSDictionary *headerDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
-            NSDictionary *episodeDict = [headerDict objectForKey:@"episode"];
-            NSDictionary *podcastDict = [headerDict objectForKey:@"podcast"];
-
-            NSString *urlString = [episodeDict objectForKey:@"url"];
             
-            if (urlString) {
-                NSURL *url = [NSURL URLWithString:urlString];
+            NSDictionary *storyDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
+            NSString *episodeId = [[[storyDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
+            NSString *collectionId = [[storyDict objectForKey:@"episode"] objectForKey:@"collectionId"];
+            
+            [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
+                NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
+                NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
+                [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
                 
-                if (_tung.playQueue.count > 0 && [[_tung.playQueue objectAtIndex:0] isEqual:url]) {
-                    // already listening
-                    float secs = [TungCommonObjects convertTimestampToSeconds:_timestamp];
-                    CMTime time = CMTimeMake((secs * 100), 100);
-                    [_tung.player seekToTime:time];
-                }
-                else {
-                    // different episode
-                    [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
-                    _tung.playFromTimestamp = _timestamp;
+                NSString *urlString = [episodeDict objectForKey:@"url"];
+                
+                if (urlString) {
+                    NSURL *url = [NSURL URLWithString:urlString];
                     
-                    // play
-                    [_tung queueAndPlaySelectedEpisode:urlString];
+                    if (_tung.playQueue.count > 0 && [[_tung.playQueue objectAtIndex:0] isEqual:url]) {
+                        // already listening
+                        float secs = [TungCommonObjects convertTimestampToSeconds:_timestamp];
+                        CMTime time = CMTimeMake((secs * 100), 100);
+                        [_tung.player seekToTime:time];
+                    }
+                    else {
+                        // different episode
+                        [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
+                        _tung.playFromTimestamp = _timestamp;
+                        
+                        // play
+                        [_tung queueAndPlaySelectedEpisode:urlString];
+                    }
                 }
-            }
+            }];
+
         }
     }
-    else if (actionSheet.tag == 2) { // options button
+    // options button
+    else if (actionSheet.tag == 2) {
         //@"Share episode", @"Copy link to episode", @"Share this interaction", @"Copy link to interaction"
         
         NSDictionary *headerDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
@@ -678,15 +696,7 @@ NSString static *podcastArtDir;
         // check for cached audio data and init player
         NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_selectedSectionIndex] objectAtIndex:_selectedRowIndex]];
         NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
-        NSString *clipFilename = [clipURLString lastPathComponent];
-        NSString *clipFilepath = [audioClipsDir stringByAppendingPathComponent:clipFilename];
-        NSData *clipData;
-        if ([[NSFileManager defaultManager] fileExistsAtPath:clipFilepath]) {
-            clipData = [[NSData alloc] initWithContentsOfFile:clipFilepath];
-        } else {
-            clipData = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString:clipURLString]];
-            [clipData writeToFile:clipFilepath atomically:YES];
-        }
+        NSData *clipData = [TungCommonObjects retrieveAudioClipDataWithUrlString:clipURLString];
         NSError *playbackError;
         _tung.clipPlayer = [[AVAudioPlayer alloc] initWithData:clipData error:&playbackError];
         
@@ -870,19 +880,26 @@ NSInteger requestTries = 0;
 // feed request
 -(void) requestPostsNewerThan:(NSNumber *)afterTime
                   orOlderThan:(NSNumber *)beforeTime
-                     fromUser:(NSString *)user_id {
+                     fromUser:(NSString *)user_id
+                     withCred:(BOOL)withCred {
     requestTries++;
     self.requestStatus = @"initiated";
+    NSDate *requestStarted = [NSDate date];
 
     NSURL *feedURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/feed.php", _tung.apiRootUrl]];
     NSMutableURLRequest *feedRequest = [NSMutableURLRequest requestWithURL:feedURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [feedRequest setHTTPMethod:@"POST"];
-    NSDictionary *params = @{
-                             @"sessionId": _tung.sessionId,
-                             @"newerThan": afterTime,
-                             @"olderThan": beforeTime,
-                             @"profiled_user_id": user_id
-                             };
+    NSMutableDictionary *params = [@{@"sessionId": _tung.sessionId,
+                                     @"newerThan": afterTime,
+                                     @"olderThan": beforeTime,
+                                     @"profiled_user_id": user_id
+                                     } mutableCopy];
+    if (withCred) {
+        NSDictionary *credParams = @{@"tung_id": _tung.tungId,
+                                     @"token": _tung.tungToken
+                                     };
+        [params addEntriesFromDictionary:credParams];
+    }
     NSLog(@"request for stories with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [feedRequest setHTTPBody:serializedParams];
@@ -890,34 +907,37 @@ NSInteger requestTries = 0;
     [NSURLConnection sendAsynchronousRequest:feedRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
         if (error == nil) {
             id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-            //NSLog(@"got response: %@", jsonData);
-            if (jsonData != nil && error == nil) {
-                if ([jsonData isKindOfClass:[NSDictionary class]]) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
                     if ([responseDict objectForKey:@"error"]) {
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                                // get new session and re-request
-                                NSLog(@"SESSION EXPIRED");
-                                [_tung getSessionWithCallback:^{
-                                    [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id];
-                                }];
-                            } else {
-                                [self endRefreshing];
-                                self.requestStatus = @"finished";
-                                // other error - alert user
-                                UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                                [errorAlert show];
-                            }
-                        });
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            NSLog(@"SESSION EXPIRED");
+                            [_tung getSessionWithCallback:^{
+                                [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:withCred];
+                            }];
+                        } else {
+                            [self endRefreshing];
+                            self.requestStatus = @"finished";
+                            // other error - alert user
+                            UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                            [errorAlert show];
+                        }
                     }
-                }
-                else if ([jsonData isKindOfClass:[NSArray class]]) {
-                    
-                    dispatch_async(dispatch_get_main_queue(), ^{
+                    else if ([responseDict objectForKey:@"success"]) {
                         
-                        NSArray *newStories = jsonData;
-                        NSLog(@"new stories count: %lu", (unsigned long)newStories.count);
+                        NSTimeInterval requestDuration = [requestStarted timeIntervalSinceNow];
+                        NSArray *newStories = [responseDict objectForKey:@"stories"];
+                        
+                        if (withCred) {
+                            NSLog(@"got stories AND session in %f seconds.", fabs(requestDuration));
+                            _tung.sessionId = [responseDict objectForKey:@"sessionId"];
+                            _tung.connectionAvailable = [NSNumber numberWithInt:1];
+                        }
+                        else {
+                            NSLog(@"got stories in %f seconds.", fabs(requestDuration));
+                        }
                         
                         [self endRefreshing];
                             
@@ -972,14 +992,14 @@ NSInteger requestTries = 0;
                         }
                         // initial request
                         else {
+                            //NSLog(@"%@", newStories);
                             if (newStories.count > 0) {
                             	_storiesArray = [self processStories:newStories];
                                 _noResults = NO;
                             } else {
                                 _noResults = YES;
                             }
-                            NSLog(@"got stories. storiesArray count: %lu", (unsigned long)[_storiesArray count]);
-                            //NSLog(@"%@", _storiesArray);
+                            
                             [self.tableView reloadData];
                         }
                         
@@ -991,32 +1011,32 @@ NSInteger requestTries = 0;
                         if ([_viewController isKindOfClass:[ProfileViewController class]]) {
                             _tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:NO];
                         }
-                        
+                    }
+                }
+                // errors
+                else if ([data length] == 0 && error == nil) {
+                    NSLog(@"no response");
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self endRefreshing];
                     });
                 }
-            }
-            // errors
-            else if ([data length] == 0 && error == nil) {
-                NSLog(@"no response");
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self endRefreshing];
-                });
-            }
-            else if (error != nil) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self endRefreshing];
-                });
-                NSLog(@"Error: %@", error);
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                NSLog(@"HTML: %@", html);
-            }
+                else if (error != nil) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self endRefreshing];
+                    });
+                    NSLog(@"Error: %@", error);
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    NSLog(@"HTML: %@", html);
+                }
+                
+            });
         }
         // connection error
         else {
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (requestTries < 3) {
                     NSLog(@"request %ld failed, trying again", (long)requestTries);
-                    [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id];
+                    [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:withCred];
                 }
                 else {
                     [self endRefreshing];
@@ -1042,17 +1062,6 @@ NSInteger requestTries = 0;
 // while we're at it, preload avatars, album art and clips.
 - (NSMutableArray *) processStories:(NSArray *)stories {
     
-    // for preloading
-    if (!audioClipsDir) {
-        audioClipsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"audioClips"];
-        avatarsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"avatars"];
-        podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
-    }
-    NSError *error;
-    [[NSFileManager defaultManager] createDirectoryAtPath:audioClipsDir withIntermediateDirectories:YES attributes:nil error:&error];
-    [[NSFileManager defaultManager] createDirectoryAtPath:avatarsDir withIntermediateDirectories:YES attributes:nil error:&error];
-    [[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error];
-    
     NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
     preloadQueue.maxConcurrentOperationCount = 3;
     
@@ -1062,7 +1071,8 @@ NSInteger requestTries = 0;
 
         NSMutableArray *storyArray = [NSMutableArray new];
         NSMutableDictionary *dict = [[stories objectAtIndex:i] mutableCopy];
-        UIColor *keyColor = [TungCommonObjects colorFromHexString:[[dict objectForKey:@"podcast"] objectForKey:@"keyColor1Hex"]];
+        UIColor *keyColor = [TungCommonObjects colorFromHexString:[[dict objectForKey:@"episode"] objectForKey:@"keyColor1Hex"]];
+        [dict setObject:keyColor forKey:@"keyColor"];
         NSArray *events = [dict objectForKey:@"events"];
         NSString *username = [[dict objectForKey:@"user"] objectForKey:@"username"];
         NSString *episodeShortlink = [[dict objectForKey:@"episode"] objectForKey:@"shortlink"];
@@ -1076,20 +1086,10 @@ NSInteger requestTries = 0;
         [preloadQueue addOperationWithBlock:^{
             // avatar
             NSString *avatarURLString = [[dict objectForKey:@"user"] objectForKey:@"small_av_url"];
-            NSString *avatarFilename = [avatarURLString lastPathComponent];
-            NSString *avatarFilepath = [avatarsDir stringByAppendingPathComponent:avatarFilename];
-            if (![[NSFileManager defaultManager] fileExistsAtPath:avatarFilepath]) {
-                NSData *avatarImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:avatarURLString]];
-                [avatarImageData writeToFile:avatarFilepath atomically:YES];
-            }
+            [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avatarURLString];
             // album art
-            NSString *artURLString = [[dict objectForKey:@"podcast"] objectForKey:@"artworkUrl600"];
-            NSString *artFilename = [TungCommonObjects getAlbumArtFilenameFromUrlString:artURLString];
-            NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
-            if (![[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
-                NSData *artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:artURLString]];
-                [artImageData writeToFile:artFilepath atomically:YES];
-            }
+            NSString *artURLString = [[dict objectForKey:@"episode"] objectForKey:@"artworkUrlSSL"];
+            [TungCommonObjects retrieveSSLPodcastArtDataWithUrlString:artURLString];
         }];
         
         int eventLimit = 5;
@@ -1104,12 +1104,7 @@ NSInteger requestTries = 0;
             if ([type isEqualToString:@"clip"]) {
                 [preloadQueue addOperationWithBlock:^{
                     NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
-                    NSString *clipFilename = [clipURLString lastPathComponent];
-                    NSString *clipFilepath = [audioClipsDir stringByAppendingPathComponent:clipFilename];
-                    if (![[NSFileManager defaultManager] fileExistsAtPath:clipFilepath]) {
-                        NSData *clipData = [NSData dataWithContentsOfURL:[NSURL URLWithString:clipURLString]];
-                        [clipData writeToFile:clipFilepath atomically:YES];
-                    }
+                    [TungCommonObjects retrieveAudioClipDataWithUrlString:clipURLString];
                 }];
             }
             if (e < eventLimit) {
@@ -1157,8 +1152,9 @@ NSInteger requestTries = 0;
                     NSNumber *oldest = [[[_storiesArray objectAtIndex:_storiesArray.count-1] objectAtIndex:0] objectForKey:@"time_secs"];
                     
                     [self requestPostsNewerThan:[NSNumber numberWithInt:0]
-                                        orOlderThan:oldest
-                                           fromUser:_profiledUserId];
+                                    orOlderThan:oldest
+                                       fromUser:_profiledUserId
+                                       withCred:NO];
                 }
             }
         }

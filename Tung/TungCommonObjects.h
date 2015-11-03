@@ -58,14 +58,6 @@
 @property (nonatomic, retain) NSString *tungSiteRootUrl;
 @property (nonatomic, retain) NSString *apiRootUrl;
 @property (nonatomic, retain) NSString *twitterApiRootUrl;
-// colors
-@property (nonatomic, retain) UIColor *tungColor;
-@property (nonatomic, retain) UIColor *lightTungColor;
-@property (nonatomic, retain) UIColor *mediumTungColor;
-@property (nonatomic, retain) UIColor *darkTungColor;
-@property (nonatomic, retain) UIColor *bkgdGrayColor;
-@property (nonatomic, retain) UIColor *facebookColor;
-@property (nonatomic, retain) UIColor *twitterColor;
 // player
 @property EpisodeEntity *npEpisodeEntity;
 @property (strong, nonatomic) UIButton *btn_player;
@@ -137,12 +129,19 @@
 + (BOOL) checkForUserData;
 + (BOOL) checkForPodcastData;
 
-// key colors
-- (NSArray *) determineKeyColorsFromImage:(UIImage *)image;
-- (UIColor *) lightenKeyColor:(UIColor *)keyColor;
-- (UIColor *) darkenKeyColor:(UIColor *)keyColor;
+// colors
++ (NSArray *) determineKeyColorsFromImage:(UIImage *)image;
++ (UIColor *) lightenKeyColor:(UIColor *)keyColor;
++ (UIColor *) darkenKeyColor:(UIColor *)keyColor;
 + (NSString *) UIColorToHexString:(UIColor *)color;
 + (UIColor *) colorFromHexString:(NSString *)hexString;
++ (UIColor *) tungColor;
++ (UIColor *) lightTungColor;
++ (UIColor *) mediumTungColor;
++ (UIColor *) darkTungColor;
++ (UIColor *) bkgdGrayColor;
++ (UIColor *) facebookColor;
++ (UIColor *) twitterColor;
 
 // requests
 - (void) establishCred;
@@ -159,6 +158,7 @@
 - (void) incrementListenCount:(EpisodeEntity *)episodeEntity;
 - (void) postComment:(NSString*)comment atTime:(NSString*)timestamp onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) postClipWithComment:(NSString*)comment atTime:(NSString*)timestamp withDuration:(NSString *)duration onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+-(void) requestEpisodeInfoForId:(NSString *)episodeId andCollectionId:(NSString *)collectionId withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 // user requests
 - (void) getUserIdFromUsername:(NSString *)username withCallback:(void (^)(NSDictionary *jsonData))callback;
 - (void) getProfileDataForUser:(NSString *)target_id withCallback:(void (^)(NSDictionary *jsonData))callback;
@@ -168,6 +168,15 @@
 - (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback;
 - (void) followAllUsersFromId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) signOut;
+
+// caching
++ (NSData*) retrieveLargeAvatarDataWithUrlString:(NSString *)urlString;
++ (NSData*) retrieveSmallAvatarDataWithUrlString:(NSString *)urlString;
++ (NSData*) retrieveAudioClipDataWithUrlString:(NSString *)urlString;
++ (NSData*) retrieveSSLPodcastArtDataWithUrlString:(NSString *)urlString;
++ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString;
++ (NSURL *) getClipFileURL;
++ (NSString *) getAlbumArtFilenameFromUrlString:(NSString *)artURLString;
 
 // class methods
 + (id) establishTungObjects;
@@ -186,12 +195,9 @@
 + (NSString *) OSStatusToStr:(OSStatus)status;
 + (void)fadeInView:(UIView *)view;
 + (void)fadeOutView:(UIView *)view;
-+ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString;
 + (NSString *)timeElapsed: (NSString *)secondsString;
 + (NSString*) convertSecondsToTimeString:(CGFloat)totalSeconds;
 + (double) convertTimestampToSeconds:(NSString *)timestamp;
-+ (NSURL *) getClipFileURL;
-+ (NSString *) getAlbumArtFilenameFromUrlString:(NSString *)artURLString;
 + (NSInteger) getIndexOfEpisodeWithUrl:(NSString *)urlString inFeed:(NSArray *)feed;
 
 @end

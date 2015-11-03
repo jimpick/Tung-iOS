@@ -146,17 +146,17 @@
                     // construct token of id and token together
                     NSString *userId = [userDict objectForKey:@"tung_id"];
                     NSString *tungCred = [NSString stringWithFormat:@"%@:%@", userId, [userDict objectForKey:@"token"]];
+                    
+                    // save cred to keychain
+                    [TungCommonObjects saveKeychainCred:tungCred];
+                    
+                    // store user data
+                    [TungCommonObjects saveUserWithDict:userDict];
                 	
                     // request to mutually follow all users
                     [_tung followAllUsersFromId:userId withCallback:^(BOOL success, NSDictionary *response) {
                         if (success) {
                             NSLog(@"successfully followed all users: %@", response);
-                            
-                            // save cred to keychain
-                            [TungCommonObjects saveKeychainCred:tungCred];
-                            
-                            // store user data
-                            [TungCommonObjects saveUserWithDict:userDict];
                             
                             // show feed
                             UIViewController *feed = [self.navigationController.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];

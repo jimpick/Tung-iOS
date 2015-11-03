@@ -9,13 +9,6 @@
 #import "SignUpNavController.h"
 #import "TungCommonObjects.h"
 
-@interface SignUpNavController ()
-
-
-@property (nonatomic, retain) TungCommonObjects *tung;
-
-@end
-
 @implementation SignUpNavController
 
 - (id)initWithNibName:(NSString *)nibNameOrNil bundle:(NSBundle *)nibBundleOrNil
@@ -29,14 +22,13 @@
 
 - (void)viewDidLoad
 {
-    _tung = [TungCommonObjects establishTungObjects];
     
     // Navigation bar
     [[UINavigationBar appearance] setBarTintColor: [UIColor whiteColor]];
-    [[UINavigationBar appearance] setTintColor:_tung.tungColor];
+    [[UINavigationBar appearance] setTintColor:[TungCommonObjects tungColor]];
     self.navigationController.navigationBar.translucent = NO;
     
-    [[UINavigationBar appearance] setTitleTextAttributes: [NSDictionary dictionaryWithObjectsAndKeys:_tung.tungColor, NSForegroundColorAttributeName, nil]];
+    [[UINavigationBar appearance] setTitleTextAttributes: [NSDictionary dictionaryWithObjectsAndKeys:[TungCommonObjects tungColor], NSForegroundColorAttributeName, nil]];
     [[UINavigationBar appearance] setBackgroundImage:[UIImage alloc] forBarMetrics:UIBarMetricsDefault];
     [[UINavigationBar appearance] setShadowImage:[UIImage imageNamed:@"navBarShadowWhite@2x.png"]];
     [super viewDidLoad];

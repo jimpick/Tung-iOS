@@ -52,9 +52,13 @@
 
 // feed related methods
 - (void) refreshFeed:(BOOL)fullRefresh;
+- (void) getSessionAndFeed;
 - (void) configureHeaderCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) configureEventCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) configureFooterCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
-- (void) requestPostsNewerThan:(NSNumber *)afterTime orOlderThan:(NSNumber *)beforeTime fromUser:(NSString *)user_id;
+-(void) requestPostsNewerThan:(NSNumber *)afterTime
+                  orOlderThan:(NSNumber *)beforeTime
+                     fromUser:(NSString *)user_id
+                     withCred:(BOOL)withCred;
 
 @end
