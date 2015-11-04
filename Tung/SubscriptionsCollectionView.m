@@ -57,10 +57,10 @@ static NSString * const reuseIdentifier = @"artCell";
     
     NSError *fetchingError;
     if ([_resultsController performFetch:&fetchingError]) {
-        NSLog(@"successfully fetched");
+        CLS_LOG(@"successfully fetched");
     }
     else {
-        NSLog(@"failed to fetch: %@", fetchingError);
+        CLS_LOG(@"failed to fetch: %@", fetchingError);
     }
 
     // set up collection view size based on screen size
@@ -87,11 +87,11 @@ static NSString * const reuseIdentifier = @"artCell";
     if (result.count > 0) {
         for (int i = 0; i < result.count; i++) {
             PodcastEntity *podcastEntity = [result objectAtIndex:i];
-            //NSLog(@"podcast at index: %d", i);
+            //CLS_LOG(@"podcast at index: %d", i);
             // entity -> dict
             NSArray *keys = [[[podcastEntity entity] attributesByName] allKeys];
             NSDictionary *podcastDict = [podcastEntity dictionaryWithValuesForKeys:keys];
-            //NSLog(@"%@", podcastDict);
+            //CLS_LOG(@"%@", podcastDict);
             [_podcast.podcastArray insertObject:podcastDict atIndex:i];
         }
         [_podcast preloadFeedsWithLimit:0];
@@ -109,7 +109,6 @@ static NSString * const reuseIdentifier = @"artCell";
 - (void) viewDidDisappear:(BOOL)animated {
     [super viewDidDisappear:animated];
     if (_podcast.searchController.active) {
-        NSLog(@"search was active, dismissed!");
         [_podcast.searchController setActive:NO];
         [self dismissPodcastSearch];
     }
@@ -178,19 +177,19 @@ static NSString * const reuseIdentifier = @"artCell";
 #pragma mark - NSFetchedResultsController delegate methods
 
 - (void) controllerWillChangeContent:(NSFetchedResultsController *)controller {
-    //NSLog(@"controller will change content");
+    //CLS_LOG(@"controller will change content");
     _sectionChanges = [[NSMutableArray alloc] init];
     _itemChanges = [[NSMutableArray alloc] init];
 }
 - (void) controller:(NSFetchedResultsController *)controller didChangeSection:(id<NSFetchedResultsSectionInfo>)sectionInfo atIndex:(NSUInteger)sectionIndex forChangeType:(NSFetchedResultsChangeType)type {
-    //NSLog(@"controller did change section");
+    //CLS_LOG(@"controller did change section");
     
     NSMutableDictionary *change = [[NSMutableDictionary alloc] init];
     change[@(type)] = @(sectionIndex);
     [_sectionChanges addObject:change];
 }
 - (void) controller:(NSFetchedResultsController *)controller didChangeObject:(id)anObject atIndexPath:(NSIndexPath *)indexPath forChangeType:(NSFetchedResultsChangeType)type newIndexPath:(NSIndexPath *)newIndexPath {
-    //NSLog(@"controller did change object");
+    //CLS_LOG(@"controller did change object");
     
     NSMutableDictionary *change = [[NSMutableDictionary alloc] init];
     switch(type) {
@@ -211,7 +210,7 @@ static NSString * const reuseIdentifier = @"artCell";
 }
 
 - (void) controllerDidChangeContent:(NSFetchedResultsController *)controller {
-    //NSLog(@"controller did change content");
+    //CLS_LOG(@"controller did change content");
     [self.collectionView performBatchUpdates:^{
         for (NSDictionary *change in _sectionChanges) {
             [change enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
@@ -261,7 +260,7 @@ static NSString * const reuseIdentifier = @"artCell";
 }
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-    //NSLog(@"collection view number of items in section");
+    //CLS_LOG(@"collection view number of items in section");
 
     id <NSFetchedResultsSectionInfo> sectionInfo = _resultsController.sections[section];
     if (sectionInfo.numberOfObjects == 0) {
@@ -284,9 +283,9 @@ static NSString * const reuseIdentifier = @"artCell";
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
-    NSLog(@"collection view cell for item at index path %ld", (long)indexPath.row);
+    CLS_LOG(@"collection view cell for item at index path %ld", (long)indexPath.row);
     
-    //NSLog(@"cell for row at index: %ld", (long)indexPath.row);
+    //CLS_LOG(@"cell for row at index: %ld", (long)indexPath.row);
     SubscriptionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:reuseIdentifier forIndexPath:indexPath];
     
     PodcastEntity *podcastEntity = [_resultsController objectAtIndexPath:indexPath];

@@ -80,14 +80,14 @@
 }
 
 -(void) viewDidLayoutSubviews {
-    //NSLog(@"welcome - view did layout subviews");
+    //CLS_LOG(@"welcome - view did layout subviews");
     _endingLogoFrame = _logo.frame;
     
     if (_firstAppearance) {
         // starting logo frame is middle of the screen
         CGRect startingLogoFrame = _logo.frame;
         float screenHeight = [[UIScreen mainScreen]bounds].size.height;
-        //NSLog(@"screen height: %f", screenHeight);
+        //CLS_LOG(@"screen height: %f", screenHeight);
         if (screenHeight > 667) { // iPhone 6 Plus
             startingLogoFrame.origin.y = 736/2 - 124/2;
         }
@@ -106,8 +106,8 @@
 
 -(void)viewDidAppear:(BOOL)animated {
     
-    //NSLog(@"welcome view did appear. First appearance:");
-    //NSLog(_firstAppearance ? @"YES" : @"NO");
+    //CLS_LOG(@"welcome view did appear. First appearance:");
+    //CLS_LOG(_firstAppearance ? @"YES" : @"NO");
     
     if (_firstAppearance) {
         _firstAppearance = NO;
@@ -150,7 +150,7 @@
     if ([animationID isEqualToString:@"animate logo"]) {
         if ([finished boolValue]) {
             CGRect newLogoFrame = _logo.frame;
-            NSLog(@"new logo frame %@", NSStringFromCGRect(newLogoFrame));
+            CLS_LOG(@"new logo frame %@", NSStringFromCGRect(newLogoFrame));
         }
     }
 }*/
@@ -164,14 +164,13 @@
 }
 
 - (void) loginRequestEnded {
-    NSLog(@"login request ended");
     _activityIndicator.alpha = 0;
     _working = NO;
 }
 
 
 - (IBAction)signUpWithTwitter:(id)sender {
-    NSLog(@"sign up with twitter");
+    CLS_LOG(@"sign up with twitter");
     if (!_working) {
         [self loginRequestBegan];
         
@@ -181,7 +180,7 @@
             [self addObserver:self forKeyPath:@"tung.twitterAccountStatus" options:NSKeyValueObservingOptionNew context:nil];
             [_tung establishTwitterAccount];
         } else {
-            //NSLog(@"twitter account to use is already set");
+            //CLS_LOG(@"twitter account to use is already set");
             [self continueTwitterSignUpWithAccount:_tung.twitterAccountToUse];
         }
     }
@@ -189,7 +188,7 @@
 
 -(void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
 {
-    //NSLog(@"----- value changed for key: %@, change: %@", keyPath, change);
+    //CLS_LOG(@"----- value changed for key: %@, change: %@", keyPath, change);
     
     if ([keyPath isEqualToString:@"tung.twitterAccountStatus"]) {
         if ([_tung.twitterAccountStatus isEqualToString:@"failed"]) {
@@ -210,19 +209,19 @@
     verifyCredRequest.account = account;
      
     [verifyCredRequest performRequestWithHandler:^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
-        NSLog(@"Twitter HTTP response: %li", (long)[urlResponse statusCode]);
+        //CLS_LOG(@"Twitter HTTP response: %li", (long)[urlResponse statusCode]);
         //NSString *html = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
-        //NSLog(@"HTML: %@", html);
-        if (error != nil) NSLog(@"Error: %@", error);
+        //CLS_LOG(@"HTML: %@", html);
+        if (error != nil) CLS_LOG(@"Error: %@", error);
         
         error = nil;
         id jsonData = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingAllowFragments error:&error];
         
         if (jsonData != nil && error == nil) {
             NSDictionary *accountData = jsonData;
-            //NSLog(@"%@", accountData);
+            //CLS_LOG(@"%@", accountData);
             if ([accountData objectForKey:@"errors"]) {
-                NSLog(@"Errors: %@", [accountData objectForKey:@"errors"]);
+                CLS_LOG(@"Errors: %@", [accountData objectForKey:@"errors"]);
                 error = nil;
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [_activityIndicator stopAnimating];
@@ -253,7 +252,7 @@
                                     bio, @"bio",
                                     [[accountData valueForKeyPath:@"entities.url.urls.expanded_url"] objectAtIndex:0], @"url", nil];
                 
-                NSLog(@"profile dictionary: %@", _profileData);
+                CLS_LOG(@"profile dictionary: %@", _profileData);
                 _working = NO;
                 
                 dispatch_async(dispatch_get_main_queue(), ^{
@@ -279,18 +278,18 @@
                          fromViewController:self
                                     handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
                                          if (error) {
-                                             NSLog(@"fb - Process error: %@", error);
+                                             CLS_LOG(@"fb - Process error: %@", error);
                                              NSString *alertText = [NSString stringWithFormat:@"\"%@\"", error];
                                              UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Facebook error" message:alertText delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
                                              [errorAlert show];
                                              [self loginRequestEnded];
                                          }
                                          else if (result.isCancelled) {
-                                             NSLog(@"fb - login cancelled");
+                                             CLS_LOG(@"fb - login cancelled");
                                              [self loginRequestEnded];
                                          }
                                          else {
-                                             NSLog(@"fb - Logged in");
+                                             CLS_LOG(@"fb - Logged in");
                                              if ([FBSDKAccessToken currentAccessToken]) {
                                                 [self continueFacebookSignup];
                                              }
@@ -310,7 +309,7 @@
     [[[FBSDKGraphRequest alloc] initWithGraphPath:@"me" parameters:params]
      startWithCompletionHandler:^(FBSDKGraphRequestConnection *connection, id result, NSError *error) {
          if (!error) {
-             NSLog(@"fetched user:%@", result);
+             //CLS_LOG(@"fetched user:%@", result);
              
              NSDictionary *fbUser = result;
              
@@ -324,7 +323,7 @@
                              [[fbUser objectForKey:@"location"] objectForKey:@"name"], @"location",
                              [fbUser objectForKey:@"bio"], @"bio",
                              [fbUser objectForKey:@"website"], @"url", nil];
-             NSLog(@"profile data: %@", _profileData);
+             CLS_LOG(@"fetched user. profile data: %@", _profileData);
              
              // continue...
              [self getTokenWithCallback:^{
@@ -332,14 +331,14 @@
              }];
          }
          else {
-             NSLog(@"request for me error: %@", error);
+             CLS_LOG(@"request for me error: %@", error);
          }
      }];
     
 }
 
 -(void) getTokenWithCallback:(void (^)(void))callback {
-    NSLog(@"getting token");
+    CLS_LOG(@"getting token");
     NSURL *getTokenRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/requestToken.php", _tung.apiRootUrl]];
     NSMutableURLRequest *getTokenRequest = [NSMutableURLRequest requestWithURL:getTokenRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [getTokenRequest setHTTPMethod:@"GET"];
@@ -351,7 +350,7 @@
                 NSDictionary *responseDict = jsonData;
                 if ([responseDict objectForKey:@"value"]) {
                     _appToken = [responseDict objectForKey:@"value"];
-                    NSLog(@"- got token: %@", _appToken);
+                    CLS_LOG(@"- got token: %@", _appToken);
                     dispatch_async(dispatch_get_main_queue(), ^{
                         // callback
                         callback();
@@ -359,12 +358,12 @@
                 } 
             }
             else if ([data length] == 0 && error == nil) {
-                NSLog(@"no response");
+                CLS_LOG(@"no response");
             }
             else if (error != nil) {
-                //NSLog(@"Error: %@", error);
+                //CLS_LOG(@"Error: %@", error);
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                NSLog(@"HTML: %@", html);
+                CLS_LOG(@"HTML: %@", html);
             }
         }
         else {
@@ -384,7 +383,7 @@
 //- (void) someMethod:(NSString*)socialNetwork { // comment me out
     
     // check if user already has account
-    NSLog(@"check for existing account using %@", socialNetwork);
+    CLS_LOG(@"check for existing account using %@", socialNetwork);
     NSString *accountCheckURLString = [NSString stringWithFormat:@"%@users/account_check.php", _tung.apiRootUrl];
     NSDictionary *cred;
     if ([socialNetwork isEqualToString:@"twitter"]) {
@@ -400,16 +399,16 @@
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:cred];
     [accountCheckRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    NSLog(@"send request");
+
     [NSURLConnection sendAsynchronousRequest:accountCheckRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
         error = nil;
         id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
         if (jsonData != nil && error == nil) {
             NSDictionary *responseDict = jsonData;
-            //NSLog(@"account check response: %@", responseDict);
+            //CLS_LOG(@"account check response: %@", responseDict);
             if ([responseDict objectForKey:@"user"]) {
                 // "log in"
-                NSLog(@"account exists. Logging in");
+                CLS_LOG(@"account exists. Logging in");
                 dispatch_async(dispatch_get_main_queue(), ^{
                     
                     NSDictionary *userDict = [responseDict objectForKey:@"user"];
@@ -420,7 +419,7 @@
                     
                     // store user data
                     [TungCommonObjects saveUserWithDict:userDict];
-                    NSLog(@"saved user data: %@", userDict);
+                    CLS_LOG(@"saved user data: %@", userDict);
                     
                     [self loginRequestEnded];
                 
@@ -431,7 +430,7 @@
                 });
                 
             } else {
-                NSLog(@"account does not exist. Proceeding to sign-up");
+                CLS_LOG(@"account does not exist. Proceeding to sign-up");
                 // proceed with sign-up
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self performSegueWithIdentifier:@"startSignUp" sender:self];
@@ -439,12 +438,12 @@
             }
         }
         else if ([data length] == 0 && error == nil) {
-            NSLog(@"no response");
+            CLS_LOG(@"no response");
         }
         else if (error != nil) {
-            NSLog(@"Error: %@", error);
+            CLS_LOG(@"Error: %@", error);
             NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            NSLog(@"HTML: %@", html);
+            CLS_LOG(@"HTML: %@", html);
         }
     }];
 }
@@ -452,7 +451,7 @@
 #pragma mark - actionsheet methods
 
 - (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
-    NSLog(@"button index: %ld", (long)buttonIndex);
+    CLS_LOG(@"button index: %ld", (long)buttonIndex);
     [self continueTwitterSignUpWithAccount:[_arrayOfAccounts objectAtIndex:buttonIndex]];
 }
 

@@ -19,6 +19,8 @@
 
 @implementation CommentsTableViewController
 
+CGFloat screenWidth, labelWidth;
+
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -39,6 +41,9 @@
     tableSpinner.alpha = 1;
     [tableSpinner startAnimating];
     self.tableView.backgroundView = tableSpinner;
+    
+    screenWidth = self.view.frame.size.width;
+    labelWidth = screenWidth - 130 - 8; // right margin, left margin
     
 }
 
@@ -148,7 +153,7 @@ static CGFloat commentBubbleMargins = 27;
 #pragma mark - Table view delegate methods
 
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    //NSLog(@"%@", [_commentsArray objectAtIndex:indexPath.row]);
+    //CLS_LOG(@"%@", [_commentsArray objectAtIndex:indexPath.row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
@@ -169,8 +174,6 @@ static CGFloat commentBubbleMargins = 27;
 //- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
 
 UILabel *prototypeLabel;
-static CGFloat labelWidth;
-static double screenWidth;
 
 -(CGSize) getCommentSizeForIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
@@ -179,12 +182,10 @@ static double screenWidth;
         prototypeLabel.font = [UIFont systemFontOfSize:15];
         prototypeLabel.numberOfLines = 0;
     }
-    if (!screenWidth) screenWidth = [[UIScreen mainScreen]bounds].size.width;
-    if (!labelWidth) { labelWidth = screenWidth - 130 - 8; } // right margin, left margin
     
     prototypeLabel.text = [commentDict objectForKey:@"comment"];
     CGSize labelSize = [prototypeLabel sizeThatFits:CGSizeMake(labelWidth, 400)];
-    //NSLog(@"label size for row %ld: %@", (long)indexPath.row, NSStringFromCGSize(labelSize));
+    //CLS_LOG(@"label size for row %ld: %@", (long)indexPath.row, NSStringFromCGSize(labelSize));
     return labelSize;
 }
 
@@ -204,20 +205,41 @@ static double screenWidth;
 }
 
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
+    
+    UILabel *toCommentLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 25, screenWidth, 40)];
+    toCommentLabel.text = @"To comment, play this episode, then tap 🔈 \nto get to the Now Playing screen";
+    toCommentLabel.numberOfLines = 2;
+    toCommentLabel.textColor = [UIColor lightGrayColor];
+    toCommentLabel.textAlignment = NSTextAlignmentCenter;
+    toCommentLabel.font = [UIFont systemFontOfSize:15];
+    
     if (_commentsArray.count > 0 && section == 1) {
-        UILabel *noMoreLabel = [[UILabel alloc] init];
+        UILabel *noMoreLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 5, screenWidth, 20)];
         noMoreLabel.text = @"That's everything.\n ";
         noMoreLabel.numberOfLines = 0;
         noMoreLabel.textColor = [UIColor grayColor];
         noMoreLabel.textAlignment = NSTextAlignmentCenter;
-        return noMoreLabel;
+        if (_isForNowPlaying) {
+        	return noMoreLabel;
+        }
+        UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 60)];
+        [commentFooterView addSubview:noMoreLabel];
+        [commentFooterView addSubview:toCommentLabel];
+        return commentFooterView;
     }
     else if (_noResults && section == 1) {
-        UILabel *noCommentsLabel = [[UILabel alloc] init];
+        UILabel *noCommentsLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 5, screenWidth, 20)];
         noCommentsLabel.text = @"No comments yet.";
         noCommentsLabel.textColor = [UIColor grayColor];
         noCommentsLabel.textAlignment = NSTextAlignmentCenter;
-        return noCommentsLabel;
+        noCommentsLabel.font = [UIFont systemFontOfSize:15];
+        if (_isForNowPlaying) {
+            return noCommentsLabel;
+        }
+        UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 60)];
+        [commentFooterView addSubview:noCommentsLabel];
+        [commentFooterView addSubview:toCommentLabel];
+        return commentFooterView;
     }
     else {
         return nil;
@@ -253,7 +275,7 @@ static double screenWidth;
                              @"newerThan": afterTime,
                              @"olderThan": beforeTime
                              };    
-    NSLog(@"request for comments with params: %@", params);
+    //CLS_LOG(@"request for comments with params: %@", params);
     _queryExecuted = YES;
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [feedRequest setHTTPBody:serializedParams];
@@ -261,7 +283,7 @@ static double screenWidth;
     [NSURLConnection sendAsynchronousRequest:feedRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
         if (error == nil) {
             id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-            //NSLog(@"got response: %@", jsonData);
+            //CLS_LOG(@"got response: %@", jsonData);
             if (jsonData != nil && error == nil) {
                 if ([jsonData isKindOfClass:[NSDictionary class]]) {
                     NSDictionary *responseDict = jsonData;
@@ -269,7 +291,7 @@ static double screenWidth;
                         dispatch_async(dispatch_get_main_queue(), ^{
                             if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                                 // get new session and re-request
-                                NSLog(@"SESSION EXPIRED");
+                                CLS_LOG(@"SESSION EXPIRED");
                                 [_tung getSessionWithCallback:^{
                                     [self requestCommentsForEpisodeEntity:episodeEntity NewerThan:afterTime orOlderThan:beforeTime];
                                 }];
@@ -287,7 +309,7 @@ static double screenWidth;
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
                         NSArray *newComments = jsonData;
-                        NSLog(@"new comments count: %lu", (unsigned long)newComments.count);
+                        CLS_LOG(@"new comments count: %lu", (unsigned long)newComments.count);
                         
                         // end refreshing
                         [self endRefreshing];
@@ -298,7 +320,7 @@ static double screenWidth;
                         // pull refresh
                         if ([afterTime intValue] > 0) {
                             if (newComments.count > 0) {
-                                NSLog(@"\tgot comments newer than: %@", afterTime);
+                                CLS_LOG(@"\tgot comments newer than: %@", afterTime);
                                 NSArray *newCommentsArray = [newComments arrayByAddingObjectsFromArray:_commentsArray];
                                 _commentsArray = [newCommentsArray mutableCopy];
                                 NSMutableArray *indexPaths = [[NSMutableArray alloc] init];
@@ -322,14 +344,14 @@ static double screenWidth;
                             _loadMoreIndicator.alpha = 0;
                             
                             if (newComments.count == 0) {
-                                NSLog(@"no more comments to get");
+                                CLS_LOG(@"no more comments to get");
                                 _reachedEndOfPosts = YES;
                                 // hide footer
                                 //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_commentsArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
                                 [self.tableView reloadData];
                                 
                             } else {
-                                NSLog(@"\tgot comments older than: %@", beforeTime);
+                                CLS_LOG(@"\tgot comments older than: %@", beforeTime);
                                 int startingIndex = (int)_commentsArray.count;
                                 
                                 NSArray *newCommentsArray = [_commentsArray arrayByAddingObjectsFromArray:newComments];
@@ -351,8 +373,8 @@ static double screenWidth;
                             if (newComments.count > 0) {
                                 _noResults = NO;
                                 _commentsArray = [newComments mutableCopy];
-                                NSLog(@"got comments. commentsArray count: %lu", (unsigned long)[_commentsArray count]);
-                                //NSLog(@"%@", _commentsArray);
+                                CLS_LOG(@"got comments. commentsArray count: %lu", (unsigned long)[_commentsArray count]);
+                                //CLS_LOG(@"%@", _commentsArray);
                             } else {
                                 _noResults = YES;
                             }
@@ -362,8 +384,7 @@ static double screenWidth;
                         if (newComments.count > 0) {
                             _noResults = NO;
                             _commentsArray = [newComments mutableCopy];
-                            NSLog(@"got comments. commentsArray count: %lu", (unsigned long)[_commentsArray count]);
-                            //NSLog(@"%@", _commentsArray);
+                            //CLS_LOG(@"%@", _commentsArray);
                         } else {
                             _noResults = YES;
                         }
@@ -371,7 +392,6 @@ static double screenWidth;
                         
                         // focused comment
                         if (_focusedId && _focusedIndexPath) {
-                            NSLog(@"scroll to focused index path");
                         	[self.tableView scrollToRowAtIndexPath:_focusedIndexPath atScrollPosition:UITableViewScrollPositionMiddle animated:YES];
                     	}
                         
@@ -382,9 +402,9 @@ static double screenWidth;
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self endRefreshing];
                 });
-                NSLog(@"Error: %@", error);
+                CLS_LOG(@"Error: %@", error);
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                NSLog(@"HTML: %@", html);
+                CLS_LOG(@"HTML: %@", html);
             }
         }
         // connection error

@@ -33,6 +33,9 @@
     // default target
     if (_target_id == NULL) _target_id = _tung.tungId;
     
+    // default nav controller (can get overwritten)
+    _navController = self.navigationController;
+    
     // navigation title
     self.navigationItem.title = _queryType;
     
@@ -71,11 +74,11 @@
             _feedRefreshed = YES;
             NSNumber *mostRecent;
             if (_profileArray.count > 0) {
-                NSLog(@"profile list: refresh feed");
+                //CLS_LOG(@"profile list: refresh feed");
                 [self.refreshControl beginRefreshing];
                 mostRecent = [[_profileArray objectAtIndex:0] objectForKey:@"time_secs"];
             } else {
-                NSLog(@"profile list: get feed");
+                //CLS_LOG(@"profile list: get feed");
                 mostRecent = [NSNumber numberWithInt:0];
             }
             [self requestProfileListWithQuery:_queryType
@@ -108,7 +111,7 @@
                              @"target_id": target_id,
                              @"newerThan": afterTime,
                              @"olderThan": beforeTime};
-    NSLog(@"get profile list with params: %@", params);
+    //CLS_LOG(@"get profile list with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [getProfileListRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -122,7 +125,7 @@
                         dispatch_async(dispatch_get_main_queue(), ^{
                             if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                                 // get new session and re-request
-                                NSLog(@"SESSION EXPIRED");
+                                CLS_LOG(@"SESSION EXPIRED");
                                 [_tung getSessionWithCallback:^{
                                     [self requestProfileListWithQuery:queryType forTarget:target_id newerThan:afterTime orOlderThan:beforeTime];
                                 }];
@@ -173,15 +176,15 @@
                         else if ([beforeTime intValue] > 0) {
                             _requestingMore = NO;
                             if (newItems.count == 0) {
-                                NSLog(@"no more items to get");
+                                //CLS_LOG(@"no more items to get");
                                 _noMoreItemsToGet = YES;
                                 // hide footer
                                 //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_profileArray.count-1 inSection:0] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
                                 [self.tableView reloadData];
                             } else {
-                                NSLog(@"\tgot items older than: %@", beforeTime);
+                                //CLS_LOG(@"\tgot items older than: %@", beforeTime);
                                 int startingIndex = (int)_profileArray.count;
-                                // NSLog(@"\tstarting index: %d", startingIndex);
+                                // CLS_LOG(@"\tstarting index: %d", startingIndex);
                                 NSArray *newItemsArray = [_profileArray arrayByAddingObjectsFromArray:newItems];
                                 _profileArray = [newItemsArray mutableCopy];
                                 NSMutableArray *indexPaths = [[NSMutableArray alloc] init];
@@ -203,13 +206,13 @@
                             [self.tableView reloadData];
                         }
                         
-                        NSLog(@"got items. profileArray count: %lu", (unsigned long)[_profileArray count]);
+                        CLS_LOG(@"got items. profileArray count: %lu", (unsigned long)[_profileArray count]);
                         [self preloadAvatars];
                     });
                 }
             }
             else if ([data length] == 0 && error == nil) {
-                NSLog(@"no response");
+                CLS_LOG(@"no response");
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self endRefreshing];
                 });
@@ -218,9 +221,9 @@
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self endRefreshing];
                 });
-                NSLog(@"Error: %@", error);
+                CLS_LOG(@"Error: %@", error);
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                NSLog(@"HTML: %@", html);
+                CLS_LOG(@"HTML: %@", html);
             }
         }
         // error
@@ -279,7 +282,7 @@
 - (void) pushProfileForUserAtIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
     
-    NSLog(@"push profile of user: %@", [profileDict objectForKey:@"username"]);
+    //CLS_LOG(@"push profile of user: %@", [profileDict objectForKey:@"username"]);
     // push profile
     
     ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
@@ -323,12 +326,12 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:profileListCellIdentifier];
-    NSLog(@"profile list cell for row at index path: %ld", (long)indexPath.row);
+    //CLS_LOG(@"profile list cell for row at index path: %ld", (long)indexPath.row);
     ProfileListCell *profileCell = (ProfileListCell *)cell;
     
     // cell data
     profileCell.profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
-    NSLog(@"%@", profileCell.profileDict);
+    //CLS_LOG(@"%@", profileCell.profileDict);
     NSString *action = [profileCell.profileDict objectForKey:@"action"];
     
     // avatar
@@ -351,7 +354,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
         profileCell.subLabelLeadingConstraint.constant = 38;
         profileCell.iconView.hidden = NO;
         profileCell.iconView.backgroundColor = [UIColor clearColor];
-        NSLog(@"action: %@", action);
+        //CLS_LOG(@"action: %@", action);
         NSString *eventString;
         if ([action isEqualToString:@"followed"]) {
             profileCell.iconView.type = kIconTypeAdd;
@@ -373,14 +376,14 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     }
     
     // follow button
-    if ([_tung.tungId isEqualToString:[profileCell.profileDict objectForKey:@"id"]]) {
+    if ([_tung.tungId isEqualToString:[profileCell.profileDict objectForKey:@"id"]]) { 
         profileCell.followBtn.hidden = YES;
         profileCell.youLabel.hidden = NO;
         profileCell.accessoryType = UITableViewCellAccessoryNone;
     }
     else {
         // user/user relationship
-        //NSLog(@"userfollows: %@", [profileCell.profileDict objectForKey:@"userFollows"]);
+        //CLS_LOG(@"userfollows: %@", [profileCell.profileDict objectForKey:@"userFollows"]);
         profileCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         
         profileCell.followBtn.hidden = NO;
@@ -396,8 +399,6 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     profileCell.followBtn.backgroundColor = [UIColor clearColor];
     [profileCell.followBtn setNeedsDisplay];
     
-    
-    NSLog(@"-----");
     return cell;
 }
 
@@ -413,10 +414,11 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     NSDictionary *profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
-    NSLog(@"selected %@", profileDict);
+    //CLS_LOG(@"selected %@", profileDict);
     
     if ([profileDict objectForKey:@"event_id"]) {
-        [self pushEpisodeViewForIndexPath:indexPath withFocusedEventId:[profileDict objectForKey:@"event_id"]];
+        NSString *eventId = [[profileDict objectForKey:@"event_id"] objectForKey:@"$id"];
+        [self pushEpisodeViewForIndexPath:indexPath withFocusedEventId:eventId];
     }
     else {
         if (![_tung.tungId isEqualToString:[profileDict objectForKey:@"id"]]) {
@@ -427,7 +429,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
 }
 
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
-    NSLog(@"view for footer in profile list view");
+    
     if (_noMoreItemsToGet && section == 1) {
         UILabel *noMoreLabel = [[UILabel alloc] init];
         NSString *thatsAll = ([_queryType isEqualToString:@"Notifications"]) ? @"That's everything.\n " : @"That's everyone.\n ";

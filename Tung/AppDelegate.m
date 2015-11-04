@@ -8,8 +8,6 @@
 
 #import "AppDelegate.h"
 #import <Security/Security.h>
-#import <Fabric/Fabric.h>
-#import <Crashlytics/Crashlytics.h>
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import "TungCommonObjects.h"
 
@@ -33,7 +31,6 @@
     
     // look for tung cred in keychain
     
-    NSLog(@"checking for credentials");
     NSDictionary *query = @{
                            (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
                            (__bridge id)kSecAttrService : service,
@@ -46,15 +43,15 @@
     NSDictionary *attributes = (__bridge_transfer NSDictionary *)valueAttributes;
     if (results == errSecSuccess) {
         NSString *creationDate = attributes[(__bridge id)kSecAttrCreationDate];
-        NSLog(@"Credentials found. Created on: %@", creationDate);
+        CLS_LOG(@"Credentials found. Created on: %@", creationDate);
         isLoggedIn = YES;
     } else {
-        NSLog(@"No cred found. Code: %ld", (long)results);
+        CLS_LOG(@"No cred found. Code: %ld", (long)results);
     }
     
     // delete keychain value for cred
     /*
-    NSLog(@"deleting keychain cred");
+    CLS_LOG(@"deleting keychain cred");
     NSDictionary *deleteQuery = @{
                             (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
                             (__bridge id)kSecAttrService : service,
@@ -64,7 +61,7 @@
     if (foundExisting == errSecSuccess) {
         OSStatus deleted = SecItemDelete((__bridge CFDictionaryRef)deleteQuery);
         if (deleted == errSecSuccess) {
-            NSLog(@"successfully deleted cred");
+            CLS_LOG(@"successfully deleted cred");
             isLoggedIn = NO;
         }
      }
@@ -107,7 +104,7 @@
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-    NSLog(@"Application did become active");
+    CLS_LOG(@"Application did become active");
     [_tung checkForNowPlaying];
     
     // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
@@ -123,7 +120,7 @@
 
 - (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
 {
-    //NSLog(@"fb open url: %@, source application: %@, annotation: %@", url, sourceApplication, annotation);
+    //CLS_LOG(@"fb open url: %@, source application: %@, annotation: %@", url, sourceApplication, annotation);
     return [[FBSDKApplicationDelegate sharedInstance] application:application
                                                           openURL:url
                                                 sourceApplication:sourceApplication
@@ -135,12 +132,12 @@
 #pragma mark - Url scheme handling method
 
 - (BOOL)application:(UIApplication *)application handleOpenURL:(NSURL *)url {
-    NSLog(@"url recieved: %@", url);
-    NSLog(@"- query string: %@", [url query]);
-    NSLog(@"- host: %@", [url host]);
-    NSLog(@"- url path: %@", [url path]);
+    CLS_LOG(@"url recieved: %@", url);
+    CLS_LOG(@"- query string: %@", [url query]);
+    CLS_LOG(@"- host: %@", [url host]);
+    CLS_LOG(@"- url path: %@", [url path]);
     NSDictionary *dict = [self parseQueryString:[url query]];
-    NSLog(@"- query dict: %@", dict);
+    CLS_LOG(@"- query dict: %@", dict);
     return YES;
 }
 
@@ -168,7 +165,7 @@
         if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
             // Replace this implementation with code to handle the error appropriately.
             // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-            NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+            CLS_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
             //abort();
         }
     }
@@ -238,7 +235,7 @@
          Lightweight migration will only work for a limited set of schema changes; consult "Core Data Model Versioning and Data Migration Programming Guide" for details.
          
          */
-        NSLog(@"Unresolved error %@, %@", error, [error userInfo]);
+        CLS_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
         //abort();
     }    
     

@@ -69,7 +69,7 @@ static UIImage *iconRedX;
         [self setAvatarFromExistingAvatar];
     }
     // fields array
-    _fields = @[_field_username, _field_name, _field_email, _field_location, _field_bio, _field_url, ];
+    _fields = @[_field_username, _field_name, _field_email, _field_location, _field_bio, _field_url];
     
     // navigation bar
     self.navigationController.navigationBar.barTintColor = [UIColor whiteColor];
@@ -109,7 +109,7 @@ static UIImage *iconRedX;
     [_keyboardToolbar setItems:@[_backBarItem, _fspace, _keyboardLabelBarItem, _fspace, _nextBarItem]];
     
     // set up fields and pre-load fields with profile data
-    NSLog(@"profile data: %@", _profileData);
+    //CLS_LOG(@"profile data: %@", _profileData);
     _field_username.text = [_profileData objectForKey:@"username"];
     _field_username.delegate = self;
     _field_username.inputAccessoryView = _keyboardToolbar;
@@ -153,7 +153,7 @@ static UIImage *iconRedX;
     NSDictionary* keyboardInfo = [notification userInfo];
     NSValue* keyboardFrameBegin = [keyboardInfo valueForKey:UIKeyboardFrameBeginUserInfoKey];
     CGRect keyboardRect = [keyboardFrameBegin CGRectValue];
-    //NSLog(@"keyboard rect: %@", NSStringFromCGRect(keyboardRect));
+    //CLS_LOG(@"keyboard rect: %@", NSStringFromCGRect(keyboardRect));
     
     self.tableView.contentInset =  UIEdgeInsetsMake(0, 0, keyboardRect.size.height, 0);
 }
@@ -168,7 +168,7 @@ static UIImage *iconRedX;
     // registration errors from FinishSignUpController?
     if (_registrationErrors != NULL) {
         if ([_registrationErrors count] > 0) {
-            NSLog(@"registration errors");
+            CLS_LOG(@"registration errors");
             // alert error(s)
             NSArray *regErrors = [_registrationErrors allValues];
             NSString *regErrorsString = [regErrors componentsJoinedByString:@"\n"];
@@ -233,7 +233,7 @@ static UIImage *iconRedX;
 
 - (void) updateProfileData {
     
-    NSLog(@"update profile data");
+    CLS_LOG(@"update profile data");
     
     // make updates server-side
     self.navigationItem.title = @"Saving...";
@@ -264,19 +264,19 @@ static UIImage *iconRedX;
             [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(leftBarItem:) userInfo:nil repeats:NO];
         }
         else if ([responseDict objectForKey:@"error"]) {
-            NSLog(@"error updating user: %@", [responseDict objectForKey:@"error"]);
+            CLS_LOG(@"error updating user: %@", [responseDict objectForKey:@"error"]);
             self.navigationItem.title = @"Edit Profile";
             UIAlertView *updateProfileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
             [updateProfileErrorAlert show];
         } else {
-            NSLog(@"unknown error updating user: %@", responseDict);
+            CLS_LOG(@"unknown error updating user: %@", responseDict);
             self.navigationItem.title = @"Edit Profile";
             UIAlertView *updateProfileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:@"An unknown error occurred." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
             [updateProfileErrorAlert show];
         }
     }];
     
-    NSLog(@"save profile data: %@", _profileData);
+    CLS_LOG(@"save profile data: %@", _profileData);
 }
 
 #pragma mark - Avatar related
@@ -292,21 +292,21 @@ static UIImage *iconRedX;
 }
 
 - (void) createAvatarSizesAndSetAvatarWithCallback:(void (^)(BOOL success))callback {
-    NSLog(@"create avatar sizes and set avatar with callback");
+    CLS_LOG(@"create avatar sizes and set avatar with callback");
     // Avatar
     NSData *dataToResize = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: [_profileData objectForKey:@"avatarURL"]]];
     UIImage *imageToResize = [[UIImage alloc] initWithData:dataToResize];
-    NSLog(@"file size before resizing: %lu b", (unsigned long)[dataToResize length]);
+    //CLS_LOG(@"file size before resizing: %lu b", (unsigned long)[dataToResize length]);
     // resize to "large" size
     CGSize largeSize = CGSizeMake(640, 640);
     UIImage* largeImage = [self image:imageToResize scaledToFitSize:largeSize];
     NSData *largeAvatarImageData = UIImageJPEGRepresentation(largeImage, 0.5);
-    NSLog(@"file size AFTER resizing large image: %lu b", (unsigned long)[largeAvatarImageData length]);
+    //CLS_LOG(@"file size AFTER resizing large image: %lu b", (unsigned long)[largeAvatarImageData length]);
     // resize to small size
     CGSize smallSize = CGSizeMake(120, 120);
     UIImage* smallImage = [self image:imageToResize scaledToFitSize:smallSize];
     NSData *smallAvatarImageData = UIImageJPEGRepresentation(smallImage, 0.9);
-    NSLog(@"file size AFTER resizing small image: %lu b", (unsigned long)[smallAvatarImageData length]);
+    //CLS_LOG(@"file size AFTER resizing small image: %lu b", (unsigned long)[smallAvatarImageData length]);
     
     // save in temp folder and set profileData values
     NSString *largeAvatarFilename = @"large_avatar.jpg";
@@ -316,7 +316,6 @@ static UIImage *iconRedX;
     BOOL wroteLargeFile = [largeAvatarImageData writeToFile:pathToLargeAvatarImageData atomically:YES];
     BOOL wroteSmallFile = [smallAvatarImageData writeToFile:pathToSmallAvatarImageData atomically:YES];
     if (wroteLargeFile && wroteSmallFile) {
-        NSLog(@"successfully saved avatar in temp folder");
         [_profileData setValue:pathToLargeAvatarImageData forKey:@"pathToLargeAvatarImageData"];
         [_profileData setValue:pathToSmallAvatarImageData forKey:@"pathToSmallAvatarImageData"];
         [_profileData setValue:largeAvatarFilename forKey:@"largeAvatarFilename"];
@@ -327,7 +326,6 @@ static UIImage *iconRedX;
         if (callback) callback(NO);
     }
     // set image for avatar view
-    NSLog(@"got Image Data");
     _largeAvatar.avatar = [[UIImage alloc] initWithData:largeAvatarImageData];
     _largeAvatar.useFilter = 0;
     _largeAvatar.borderColor = [TungCommonObjects tungColor];
@@ -374,7 +372,7 @@ static UIImage *iconRedX;
 }
 
 - (void) establishAccountForAvatarRequest {
-    NSLog(@"establish account for avatar request");
+    CLS_LOG(@"establish account for avatar request");
     // spin
     _avatarActivityIndicator.hidden = NO;
     [_avatarActivityIndicator startAnimating];
@@ -391,7 +389,7 @@ static UIImage *iconRedX;
                 if (success) {
                     [self updateAvatar];
                 } else {
-                    NSLog(@"error creating avatar sizes");
+                    CLS_LOG(@"error creating avatar sizes");
                 }
             }];
         });
@@ -412,7 +410,7 @@ static UIImage *iconRedX;
 // wait for twitter account to be established, then request avatar url
 -(void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
 {
-    NSLog(@"----- value changed for key: %@, change: %@", keyPath, change);
+    //CLS_LOG(@"----- value changed for key: %@, change: %@", keyPath, change);
     
     if ([keyPath isEqualToString:@"tung.twitterAccountStatus"]) {
         if ([_tung.twitterAccountStatus isEqualToString:@"failed"]) {
@@ -426,24 +424,24 @@ static UIImage *iconRedX;
 }
 
 - (void) getTwitterAvatarUrl {
-    NSLog(@"get twitter avatar url");
+    CLS_LOG(@"get twitter avatar url");
     ACAccountStore *accountStore = [[ACAccountStore alloc] init];
     NSURL *requestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@account/verify_credentials.json", _tung.twitterApiRootUrl]];
     SLRequest *getAvatarRequest = [SLRequest requestForServiceType:SLServiceTypeTwitter requestMethod:SLRequestMethodGET URL:requestURL parameters:nil];
     getAvatarRequest.account = _tung.twitterAccountToUse;
     
     [getAvatarRequest performRequestWithHandler:^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
-        NSLog(@"	Twitter HTTP response: %li", (long)[urlResponse statusCode]);
+        //CLS_LOG(@"	Twitter HTTP response: %li", (long)[urlResponse statusCode]);
         //NSString *html = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
-        //NSLog(@"HTML: %@", html);
-        if (error != nil) NSLog(@"Error: %@", error);
+        //CLS_LOG(@"HTML: %@", html);
+        if (error != nil) CLS_LOG(@"Error: %@", error);
         error = nil;
         id jsonData = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingAllowFragments error:&error];
         if (jsonData != nil && error == nil) {
             NSDictionary *accountData = jsonData;
-            //NSLog(@"%@", accountData);
+            //CLS_LOG(@"%@", accountData);
             if ([accountData objectForKey:@"errors"]) {
-                NSLog(@"Errors: %@", [accountData objectForKey:@"errors"]);
+                CLS_LOG(@"Errors: %@", [accountData objectForKey:@"errors"]);
                 error = nil;
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [_avatarActivityIndicator stopAnimating];
@@ -457,7 +455,7 @@ static UIImage *iconRedX;
                 NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(_normal)" options:0 error:nil];
                 [regex replaceMatchesInString:avatarURL options:0 range:NSMakeRange(0, [avatarURL length]) withTemplate:@""];
                 
-                NSLog(@"profile dictionary: %@", _profileData);
+                CLS_LOG(@"profile dictionary: %@", _profileData);
                 
                 [_profileData setObject:avatarURL forKey:@"avatarURL"];
                 dispatch_async(dispatch_get_main_queue(), ^{
@@ -465,7 +463,7 @@ static UIImage *iconRedX;
                         if (success) {
                             [self updateAvatar];
                         } else {
-                            NSLog(@"error creating avatar sizes");
+                            CLS_LOG(@"error creating avatar sizes");
                         }
                     }];
                 });
@@ -477,7 +475,7 @@ static UIImage *iconRedX;
 
 // posts new avatar images to server
 - (void) updateAvatar {
-    NSLog(@"update avatar request");
+    CLS_LOG(@"update avatar request");
     // create request object
     NSURL *updateAvatarRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/update-avatar.php", _tung.apiRootUrl]];
     NSMutableURLRequest *updateAvatarRequest = [NSMutableURLRequest requestWithURL:updateAvatarRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
@@ -519,13 +517,13 @@ static UIImage *iconRedX;
         id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
         if (jsonData != nil && error == nil) {
             NSDictionary *responseDict = jsonData;
-            NSLog(@"responseDict: %@", responseDict);
+            //CLS_LOG(@"responseDict: %@", responseDict);
             // errors?
             if ([responseDict objectForKey:@"error"]) {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        NSLog(@"SESSION EXPIRED");
+                        CLS_LOG(@"SESSION EXPIRED");
                         [_tung getSessionWithCallback:^{
                             [self updateAvatar];
                         }];
@@ -547,7 +545,7 @@ static UIImage *iconRedX;
                     [_profileData setObject:[[responseDict objectForKey:@"success"] objectForKey:@"small_av_url"] forKey:@"small_av_url"];
                     [_profileData setObject:[[responseDict objectForKey:@"success"] objectForKey:@"large_av_url"] forKey:@"large_av_url"];
                     // save
-                    NSLog(@"saving new profile data: %@", _profileData);
+                    CLS_LOG(@"saving new profile data: %@", _profileData);
                     [TungCommonObjects saveUserWithDict:_profileData];
                     // set "needs reload" flag
                     _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
@@ -555,12 +553,12 @@ static UIImage *iconRedX;
             }
         }
         else if ([data length] == 0 && error == nil) {
-            NSLog(@"no response");
+            CLS_LOG(@"no response");
         }
         else if (error != nil) {
-            NSLog(@"Error: %@", error);
+            CLS_LOG(@"Error: %@", error);
             NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            NSLog(@"HTML: %@", html);
+            CLS_LOG(@"HTML: %@", html);
         }
         
     }];
@@ -576,7 +574,7 @@ static UIImage *iconRedX;
     // back
     if (tag == 1) {
         _nextBarItem.enabled = YES;
-        NSLog(@"back. current active field: %lu", (unsigned long)_activeFieldIndex);
+        //CLS_LOG(@"back. current active field: %lu", (unsigned long)_activeFieldIndex);
         if (_activeFieldIndex == 0) {
             if ([_purpose isEqualToString:@"signup"])
                 [self leftBarItem:nil];
@@ -587,7 +585,7 @@ static UIImage *iconRedX;
     // next
     else {
         _backBarItem.enabled = YES;
-        NSLog(@"next. current active field: %lu", (unsigned long)_activeFieldIndex);
+        //CLS_LOG(@"next. current active field: %lu", (unsigned long)_activeFieldIndex);
         if (_activeFieldIndex == _fields.count - 1) {
             if ([_purpose isEqualToString:@"signup"])
                 [self rightBarItem:nil];
@@ -596,7 +594,7 @@ static UIImage *iconRedX;
         }
     }
     
-    NSLog(@"- new active field: %lu", (unsigned long)_activeFieldIndex);
+    //CLS_LOG(@"- new active field: %lu", (unsigned long)_activeFieldIndex);
     [self makeActiveFieldFirstResponder];
 }
 
@@ -605,7 +603,7 @@ static UIImage *iconRedX;
     
     // scroll to active field
     NSIndexPath *activeFieldIndexPath = [NSIndexPath indexPathForRow:_activeFieldIndex + 1 inSection:0];
-    [self.tableView scrollToRowAtIndexPath:activeFieldIndexPath atScrollPosition:UITableViewScrollPositionBottom animated:YES];
+    [self.tableView scrollToRowAtIndexPath:activeFieldIndexPath atScrollPosition:UITableViewScrollPositionMiddle animated:YES];
 }
 
 
@@ -669,7 +667,7 @@ static UIImage *iconRedX;
 }
 
 -(void) checkUsernameAvailability {
-    NSLog(@"username check");
+    //CLS_LOG(@"username check");
     // existing username is not invalid
     if ([_profileData objectForKey:@"username"]) {
         if ([[_profileData objectForKey:@"username"] isEqualToString:_field_username.text]) {
@@ -686,7 +684,7 @@ static UIImage *iconRedX;
         id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
         if (jsonData != nil && error == nil) {
             NSDictionary *responseDict = jsonData;
-            NSLog(@"responseDict: %@", responseDict);
+            //CLS_LOG(@"responseDict: %@", responseDict);
             id usernameExistsId = [responseDict objectForKey:@"username_exists"];
             BOOL usernameExists = [usernameExistsId boolValue];
             if (usernameExists) {
@@ -785,13 +783,13 @@ static UIImage *iconRedX;
 
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    //NSLog(@"selected cell at row %ld", (long)[indexPath row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     if (indexPath.row <= _fields.count && indexPath.row > 0) {
         _activeFieldIndex = indexPath.row - 1;
         [self makeActiveFieldFirstResponder];
     }
+    
 }
 
 #pragma mark - text field delegate methods
@@ -836,14 +834,14 @@ static UIImage *iconRedX;
     
     if (hideBioLabel != _prevHideBioLabel) {
         if (hideBioLabel) {
-            NSLog(@"hide bio label");
+            CLS_LOG(@"hide bio label");
             [UIView animateWithDuration:0.2
                              animations:^{
                                  _label_bio.alpha = 0;
                              }
              ];
         } else {
-            NSLog(@"show bio label");
+            CLS_LOG(@"show bio label");
             [UIView animateWithDuration:0.2
                              animations:^{
                                  _label_bio.alpha = 1;
@@ -854,7 +852,7 @@ static UIImage *iconRedX;
     _prevHideBioLabel = hideBioLabel;
     
     // keep text limited to MAX_CHARS
-    //NSLog(@"range.location: %lu", (unsigned long)range.location);
+    //CLS_LOG(@"range.location: %lu", (unsigned long)range.location);
     if (range.location >= MAX_BIO_CHARS) {
         return NO; // return NO to not change text
     } else {
@@ -863,7 +861,7 @@ static UIImage *iconRedX;
 }
 
 - (void) formatKeyboardLabel:(UITextView *)textView {
-    //NSLog(@"text length: %ld", (long)[textView.text length]);
+    //CLS_LOG(@"text length: %ld", (long)[textView.text length]);
     NSInteger remaining = MAX_BIO_CHARS-[textView.text length];
     _keyboardLabel.text = [NSString stringWithFormat:@"%ld", (long)remaining];
     if (remaining > 20) _keyboardLabel.textColor = [UIColor lightGrayColor];
@@ -876,7 +874,7 @@ static UIImage *iconRedX;
 #pragma mark - navigation
 
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    NSLog(@"prepare for segue");
+    CLS_LOG(@"prepare for segue");
     UIViewController *destination = segue.destinationViewController;
     
     if ([[segue identifier] isEqualToString:@"finishSignUp"]) {
@@ -911,13 +909,13 @@ static UIImage *iconRedX;
 #pragma mark - handle alerts
 
 -(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    NSLog(@"dismissed alert view with tag %ld and button index: %ld", (long)alertView.tag, (long)buttonIndex);
+    CLS_LOG(@"dismissed alert view with tag %ld and button index: %ld", (long)alertView.tag, (long)buttonIndex);
     // registration errors alert
     if (alertView.tag == 1) {
         // go to page and field with error
         NSArray *fields = [_registrationErrors allKeys];
         NSString *activeFieldString = [fields objectAtIndex:0];
-        NSLog(@"Error on %@", activeFieldString);
+        CLS_LOG(@"Error on %@", activeFieldString);
         
         if ([activeFieldString isEqualToString:@"username"]) {
             _activeFieldIndex = 0;

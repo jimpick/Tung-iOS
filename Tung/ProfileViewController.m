@@ -23,6 +23,7 @@
 @property (strong, nonatomic) ProfileHeaderView *profileHeader;
 @property UIBarButtonItem *tableHeaderLabel;
 @property NSURL *urlToPass;
+@property UserEntity *userEntity;
 
 @property BOOL isLoggedInUser;
 @property BOOL reachable;
@@ -61,8 +62,8 @@ CGFloat screenWidth;
         _profiledUserId = _tung.tungId;
         
         _isLoggedInUser = YES;
-        
         self.navigationItem.title = @"My Profile";
+        
         // sign out button
         IconButton *signOutInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
         signOutInner.type = kIconButtonTypeSignOut;
@@ -108,7 +109,6 @@ CGFloat screenWidth;
         }
     }
     
-    
     if (!screenWidth) screenWidth = self.view.frame.size.width;
     
     self.definesPresentationContext = YES;
@@ -149,7 +149,7 @@ CGFloat screenWidth;
 //    _switcherBar.translucent = NO;
     _switcherBar.backgroundColor = [UIColor whiteColor];
     // set up segemented control
-    NSArray *switcherItems = @[@"My Activity", @"Notifications"];
+    NSArray *switcherItems = @[@"Notifications", @"My Activity"];
     _switcher = [[UISegmentedControl alloc] initWithItems:switcherItems];
     _switcher.apportionsSegmentWidthsByContent = YES;
     _switcher.tintColor = [TungCommonObjects tungColor];
@@ -173,7 +173,6 @@ CGFloat screenWidth;
     [_switcherBar addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:44]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_switcherBar.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_switcherBar.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
-    _switcherIndex = 0;
     
     CGFloat bottomConstraint = -44;
     
@@ -198,26 +197,26 @@ CGFloat screenWidth;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_storiesView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
     // notifications view
-    _notificationsView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
-    _notificationsView.queryType = @"Notifications";
-    _notificationsView.target_id = _tung.tungId;
-    _notificationsView.navController = [self navigationController];
-    _notificationsView.edgesForExtendedLayout = UIRectEdgeNone;
-    _notificationsView.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
-    [self addChildViewController:_notificationsView];
-    [self.view addSubview:_notificationsView.view];
-    
-    _notificationsView.view.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
-    
-    _notificationsView.view.hidden = YES;
-    
-    [_switcher setSelectedSegmentIndex:_switcherIndex];
-    [self switchViews:_switcher];
-    
+    if (_isLoggedInUser) {
+        _notificationsView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
+        _notificationsView.queryType = @"Notifications";
+        _notificationsView.target_id = _tung.tungId;
+        _notificationsView.navController = [self navigationController];
+        _notificationsView.edgesForExtendedLayout = UIRectEdgeNone;
+        _notificationsView.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
+        [self addChildViewController:_notificationsView];
+        [self.view addSubview:_notificationsView.view];
+        
+        _notificationsView.view.translatesAutoresizingMaskIntoConstraints = NO;
+        [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
+        [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
+        [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
+        [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
+        
+        _switcherIndex = 0;
+        [_switcher setSelectedSegmentIndex:_switcherIndex];
+        [self switchViews:_switcher];
+    }
     
     
 	// get data in viewDidAppear
@@ -228,15 +227,14 @@ CGFloat screenWidth;
 
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    NSLog(@"profile view did appear");
     // scroll view
     if (!_profileHeader.contentSizeSet) {
         CGSize contentSize = _profileHeader.scrollView.contentSize;
-        //NSLog(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
+        //CLS_LOG(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
         contentSize.width = contentSize.width * 2;
         _profileHeader.scrollView.contentSize = contentSize;
         _profileHeader.scrollView.contentInset = UIEdgeInsetsZero;
-        //NSLog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
+        //CLS_LOG(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
         _profileHeader.contentSizeSet = YES;
     }
     
@@ -244,15 +242,15 @@ CGFloat screenWidth;
     //[self addObserver:self forKeyPath:@"storiesView.requestStatus" options:NSKeyValueObservingOptionNew context:nil];
     if (_isLoggedInUser) {
         if (_tung.profileFeedNeedsRefresh.boolValue && _tung.profileNeedsRefresh.boolValue) {
-            NSLog(@"profile feed and data need refresh");
+            CLS_LOG(@"profile feed and data need refresh");
             [self requestPageData];
         }
         else if (_tung.profileFeedNeedsRefresh.boolValue) {
-            NSLog(@"profile feed needs refresh");
+            CLS_LOG(@"profile feed needs refresh");
             [_storiesView refreshFeed:YES];
         }
         else if (_tung.profileNeedsRefresh.boolValue) {
-            NSLog(@"profile data needs refresh");
+            CLS_LOG(@"profile data needs refresh");
             [self refreshProfile];
         }
     } else {
@@ -274,8 +272,7 @@ CGFloat screenWidth;
 - (void) viewDidDisappear:(BOOL)animated {
     [super viewDidDisappear:animated];
     if (_isLoggedInUser && _searchController.active) {
-        NSLog(@"search was active, dismissed!");
-        [_searchController setActive:YES];
+        [_searchController setActive:NO];
         [self dismissProfileSearch];
     }
 }
@@ -285,13 +282,13 @@ CGFloat screenWidth;
     UISegmentedControl *switcher = (UISegmentedControl *)sender;
     
     switch (switcher.selectedSegmentIndex) {
-        case 1: // show notifications view
-            _notificationsView.view.hidden = NO;
-            _storiesView.view.hidden = YES;
-            break;
-        default: // show activity
+        case 1: // show activity
             _storiesView.view.hidden = NO;
             _notificationsView.view.hidden = YES;
+            break;
+        default: // show notifications
+            _notificationsView.view.hidden = NO;
+            _storiesView.view.hidden = YES;
             break;
     }
     _switcherIndex = switcher.selectedSegmentIndex;
@@ -340,7 +337,7 @@ CGFloat screenWidth;
     
 }
 -(void) searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
-    //NSLog(@"search bar text did change: %@", searchText);
+    //CLS_LOG(@"search bar text did change: %@", searchText);
     [_searchTimer invalidate];
     if (searchText.length > 1) {
         _searchTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(keyupSearch:) userInfo:searchText repeats:NO];
@@ -400,7 +397,7 @@ CGFloat screenWidth;
             _profileSearchConnection = nil;
         }
         _profileSearchConnection = [[NSURLConnection alloc] initWithRequest:profileSearchRequest delegate:self];
-        NSLog(@"search profiles with params: %@", params);
+        CLS_LOG(@"search profiles with params: %@", params);
     }
 }
 
@@ -408,7 +405,7 @@ CGFloat screenWidth;
 
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-    //NSLog(@"did receive data");
+    //CLS_LOG(@"did receive data");
     [_profileSearchResultData appendData:data];
 }
 
@@ -423,7 +420,7 @@ CGFloat screenWidth;
                 dispatch_async(dispatch_get_main_queue(), ^{
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        NSLog(@"SESSION EXPIRED");
+                        CLS_LOG(@"SESSION EXPIRED");
                         [_tung getSessionWithCallback:^{
                             [self searchProfilesWithTerm:_searchController.searchBar.text];
                         }];
@@ -445,33 +442,33 @@ CGFloat screenWidth;
                 
                 _profileSearchView.profileArray = [newUsers mutableCopy];
                 
-                NSLog(@"got results: %lu", (unsigned long)_profileSearchView.profileArray.count);
-                //NSLog(@"%@", _profileArray);
+                CLS_LOG(@"got results: %lu", (unsigned long)_profileSearchView.profileArray.count);
+                //CLS_LOG(@"%@", _profileArray);
                 [_profileSearchView preloadAvatars];
                 [_profileSearchView.tableView reloadData];
                 
             }
             else {
                 _profileSearchView.noResults = YES;
-                NSLog(@"NO RESULTS");
+                CLS_LOG(@"NO RESULTS");
                 [_profileSearchView.tableView reloadData];
             }
         }
     }
     else if ([_profileSearchResultData length] == 0 && error == nil) {
-        NSLog(@"no response");
+        CLS_LOG(@"no response");
         
     }
     else if (error != nil) {
         
-        NSLog(@"Error: %@", error);
+        CLS_LOG(@"Error: %@", error);
         NSString *html = [[NSString alloc] initWithData:_profileSearchResultData encoding:NSUTF8StringEncoding];
-        NSLog(@"HTML: %@", html);
+        CLS_LOG(@"HTML: %@", html);
     }
 }
 
 - (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
-    NSLog(@"connection failed: %@", error);
+    CLS_LOG(@"connection failed: %@", error);
     
     UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
     [connectionErrorAlert show];
@@ -479,7 +476,7 @@ CGFloat screenWidth;
 
 /* unused NSURLConnection delegate methods
  - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-	NSLog(@"connection received response: %@", response);
+	CLS_LOG(@"connection received response: %@", response);
  }
  
  */
@@ -523,7 +520,7 @@ NSTimer *sessionCheckTimer;
                 if (jsonData != nil) {
                     NSDictionary *responseDict = jsonData;
                     if ([responseDict objectForKey:@"user"]) {
-                        //NSLog(@"got user: %@", [responseDict objectForKey:@"user"]);
+                        //CLS_LOG(@"got user: %@", [responseDict objectForKey:@"user"]);
                         [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
                         _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
                         [self setUpProfileHeaderViewForData];
@@ -542,7 +539,7 @@ NSTimer *sessionCheckTimer;
                 NSDictionary *responseDict = jsonData;
                 if ([responseDict objectForKey:@"user"]) {
                     _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
-                    NSLog(@"profiled user data %@", _profiledUserData);
+                    //CLS_LOG(@"profiled user data %@", _profiledUserData);
                     [self setUpProfileHeaderViewForData];
                     if (_tung.profileFeedNeedsRefresh.boolValue) {
                         [_storiesView refreshFeed:YES];
@@ -581,7 +578,7 @@ NSTimer *sessionCheckTimer;
     }
     
     CGSize contentSize = _profileHeader.scrollSubViewOne.frame.size;
-    NSLog(@"scroll view starting content size: %@", NSStringFromCGSize(contentSize));
+    //CLS_LOG(@"scroll view starting content size: %@", NSStringFromCGSize(contentSize));
     
     // basic info web view
     NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:0; color:white; font: .9em/1.4em -apple-system, Helvetica; } a { color:rgba(255,255,255,.6); } .name { font-size:1.1em; } .location { color:rgba(0,0,0,.4) } table { width:100%%; height:100%%; border-spacing:0; border-collapse:collapse; border:none; } td { text-align:center; vertical-align:middle; }</style>\n"];
@@ -679,17 +676,17 @@ NSTimer *sessionCheckTimer;
 }
 
 - (void) viewFollowers {
-    NSLog(@"view followers");
+    CLS_LOG(@"view followers");
     if ([[_profiledUserData objectForKey:@"followerCount"] integerValue] > 0)
     	[self pushProfileListForTargetId:_profiledUserId andQuery:@"Followers"];
 }
 - (void) viewFollowing {
-    NSLog(@"view following");
+    CLS_LOG(@"view following");
     if ([[_profiledUserData objectForKey:@"followingCount"] integerValue] > 0)
         [self pushProfileListForTargetId:_profiledUserId andQuery:@"Following"];
 }
 - (void) editProfile {
-    NSLog(@"edit profile");
+    CLS_LOG(@"edit profile");
     [self performSegueWithIdentifier:@"presentEditProfileView" sender:self];
 }
 
@@ -701,13 +698,13 @@ NSTimer *sessionCheckTimer;
         // unfollow
         [_tung unfollowUserWithId:_profiledUserId withCallback:^(BOOL success) {
             if (!success) {// fail
-                NSLog(@"error unfollowing user");
+                CLS_LOG(@"error unfollowing user");
                 [_profiledUserData setValue:userFollowsStartingValue forKey:@"userFollows"];
                 [_profiledUserData setValue:followersStartingValue forKey:@"followerCount"];
                 [self updateUserFollowingData];
             }
             else {
-                NSLog(@"successfully unfollowed user");
+                CLS_LOG(@"successfully unfollowed user");
                 _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
                 _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
             }
@@ -719,13 +716,13 @@ NSTimer *sessionCheckTimer;
         // follow
         [_tung followUserWithId:_profiledUserId withCallback:^(BOOL success) {
             if (!success) {// fail
-                NSLog(@"error following user");
+                CLS_LOG(@"error following user");
                 [_profiledUserData setValue:userFollowsStartingValue forKey:@"userFollows"];
                 [_profiledUserData setValue:followersStartingValue forKey:@"followerCount"];
                 [self updateUserFollowingData];
             }
             else {
-                NSLog(@"success following user");
+                CLS_LOG(@"success following user");
                 _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
                 _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
             }

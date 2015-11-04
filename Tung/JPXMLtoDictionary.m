@@ -7,6 +7,7 @@
 //
 
 #import "JPXMLtoDictionary.h"
+#import <Crashlytics/Crashlytics.h>
 
 @interface JPXMLtoDictionary()
 
@@ -42,7 +43,7 @@
 
 -(void) parserDidStartDocument:(NSXMLParser *)parser {
     
-    //NSLog(@"////// parsing started");
+    //CLS_LOG(@"////// parsing started");
     _isParsing = YES;
 }
 
@@ -132,7 +133,7 @@
 }
 
 -(void) parser:(NSXMLParser *)parser parseErrorOccurred:(NSError *)parseError {
-    NSLog(@"Parser error: %@", [parseError localizedDescription]);
+    CLS_LOG(@"Parser error: %@", [parseError localizedDescription]);
     
     _isParsing = NO;
 }
@@ -180,7 +181,7 @@ static NSDateFormatter *pubDateInterpreter_D = nil;
         date = [pubDateInterpreter_D dateFromString:pubDate];
     }
     else {
-        NSLog(@"could not convert date: %@", pubDate);
+        CLS_LOG(@"could not convert date: %@", pubDate);
         date = [NSDate date];
     }
     return date;

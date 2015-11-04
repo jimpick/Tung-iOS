@@ -160,9 +160,7 @@
 - (void) postClipWithComment:(NSString*)comment atTime:(NSString*)timestamp withDuration:(NSString *)duration onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 -(void) requestEpisodeInfoForId:(NSString *)episodeId andCollectionId:(NSString *)collectionId withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 // user requests
-- (void) getUserIdFromUsername:(NSString *)username withCallback:(void (^)(NSDictionary *jsonData))callback;
 - (void) getProfileDataForUser:(NSString *)target_id withCallback:(void (^)(NSDictionary *jsonData))callback;
-- (void) restoreUserDataWithCallback:(void (^)(void))callback;
 - (void) updateUserWithDictionary:(NSDictionary *)userInfo withCallback:(void (^)(NSDictionary *jsonData))callback;
 - (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback;
 - (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback;

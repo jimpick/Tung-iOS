@@ -29,8 +29,6 @@
     self = [super init];
     if (self) {
         
-        //NSLog(@"init tung podcasts class");
-        
         _podcastArray = [NSMutableArray array];
         
         // podcasts search
@@ -71,14 +69,14 @@
 
     [_searchTimer invalidate];
     // timeout to resign keyboard
-    NSLog(@"SET SELECTOR resignKeyboard");
+    CLS_LOG(@"SET SELECTOR resignKeyboard");
     [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(resignKeyboard) userInfo:nil repeats:NO];
     // search
     [self searchForTerm:searchBar.text];
     
 }
 -(void) searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
-    //NSLog(@"search bar text did change: %@", searchText);
+    //CLS_LOG(@"search bar text did change: %@", searchText);
     [_searchTimer invalidate];
     if (searchText.length > 1) {
     	_searchTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(keyupSearch:) userInfo:searchText repeats:NO];
@@ -112,7 +110,7 @@
 #pragma mark - Search general methods
 
 -(void) keyupSearch:(NSTimer *)timer {
-    //NSLog(@"time-out search for timer: %@", timer);
+    //CLS_LOG(@"time-out search for timer: %@", timer);
     [self searchForTerm:timer.userInfo];
 }
 
@@ -123,13 +121,13 @@
         // so you can search emoji
         /*
         NSString *unicodeText = [NSString stringWithUTF8String:[searchTerm UTF8String]];
-        NSLog(@"unicode: %@", unicodeText);
-        NSLog(@"unicode url encoded: %@", [self urlEncodeString:unicodeText]);
+        CLS_LOG(@"unicode: %@", unicodeText);
+        CLS_LOG(@"unicode url encoded: %@", [self urlEncodeString:unicodeText]);
         NSData *textData = [unicodeText dataUsingEncoding:NSNonLossyASCIIStringEncoding];
         NSString *encodedText = [[NSString alloc] initWithData:textData encoding:NSUTF8StringEncoding];
         NSString *encoded = [self urlEncodeString:encodedText];
          */
-        NSLog(@"SENDING SEARCH for %@", searchTerm);
+        CLS_LOG(@"SENDING SEARCH for %@", searchTerm);
 		_queryExecuted = NO;
         [self searchItunesPodcastDirectoryWithTerm:searchTerm];
         
@@ -186,14 +184,14 @@
         _podcastSearchConnection = nil;
     }
     _podcastSearchConnection = [[NSURLConnection alloc] initWithRequest:podcastSearchRequest delegate:self];
-    NSLog(@"send request for term: %@", searchTerm);
+    CLS_LOG(@"send request for term: %@", searchTerm);
 }
 
 #pragma mark - NSURLConnection delegate methods
 
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-    //NSLog(@"did receive data");
+    //CLS_LOG(@"did receive data");
     [_podcastSearchResultData appendData:data];
 }
 
@@ -211,8 +209,8 @@
                 
                 _podcastArray = [[responseDict objectForKey:@"results"] mutableCopy];
                 
-                NSLog(@"got results: %lu", (unsigned long)_podcastArray.count);
-                //NSLog(@"%@", _podcastArray);
+                CLS_LOG(@"got results: %lu", (unsigned long)_podcastArray.count);
+                //CLS_LOG(@"%@", _podcastArray);
                 [self preloadPodcastArtForArray:_podcastArray];
                 [self preloadFeedsWithLimit:1]; // preload feed of first result
                 [_searchTableViewController.tableView reloadData];
@@ -220,24 +218,24 @@
             }
             else {
                 _noResults = YES;
-                NSLog(@"NO RESULTS");
+                CLS_LOG(@"NO RESULTS");
             }
         }
     }
     else if ([_podcastSearchResultData length] == 0 && error == nil) {
-        NSLog(@"no response");
+        CLS_LOG(@"no response");
         
     }
     else if (error != nil) {
         
-        NSLog(@"Error: %@", error);
+        CLS_LOG(@"Error: %@", error);
         NSString *html = [[NSString alloc] initWithData:_podcastSearchResultData encoding:NSUTF8StringEncoding];
-        NSLog(@"HTML: %@", html);
+        CLS_LOG(@"HTML: %@", html);
     }
 }
 
 - (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
-    NSLog(@"connection failed: %@", error);
+    CLS_LOG(@"connection failed: %@", error);
     //dispatch_async(dispatch_get_main_queue(), ^{
     
     UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
@@ -249,7 +247,7 @@
 
 /* unused NSURLConnection delegate methods
  - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-	NSLog(@"connection received response: %@", response);
+	CLS_LOG(@"connection received response: %@", response);
  }
  
  */
@@ -275,7 +273,7 @@ static NSDateFormatter *releaseDateFormatter = nil;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    //NSLog(@"number of rows in section: %lu", (unsigned long)_podcastArray.count);
+    //CLS_LOG(@"number of rows in section: %lu", (unsigned long)_podcastArray.count);
     return _podcastArray.count;
 }
 
@@ -290,7 +288,7 @@ static NSDateFormatter *releaseDateFormatter = nil;
     NSMutableDictionary *podcastDict;
     // search
     podcastDict = [NSMutableDictionary dictionaryWithDictionary:[_podcastArray objectAtIndex:indexPath.row]];
-    //NSLog(@"---- configure row %ld for search: %@ ",(long)indexPath.row, [podcastDict objectForKey:@"collectionName"]);
+    //CLS_LOG(@"---- configure row %ld for search: %@ ",(long)indexPath.row, [podcastDict objectForKey:@"collectionName"]);
     
     // art
     NSString *artUrlString = [podcastDict objectForKey:@"artworkUrl600"];
@@ -396,12 +394,12 @@ static NSDateFormatter *releaseDateFormatter = nil;
 
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    //NSLog(@"selected cell at row %ld", (long)[indexPath row]);
+    //CLS_LOG(@"selected cell at row %ld", (long)[indexPath row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     // push "show" view
     NSDictionary *podcastDict = [NSDictionary dictionaryWithDictionary:[_podcastArray objectAtIndex:indexPath.row]];
-    NSLog(@"selected %@", [podcastDict objectForKey:@"collectionName"]);
+    CLS_LOG(@"selected %@", [podcastDict objectForKey:@"collectionName"]);
     
     [self resignKeyboard];
     PodcastViewController *podcastView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"podcastView"];
@@ -477,7 +475,7 @@ static NSString *feedDictsDirName = @"feedDicts";
 
 + (void) cacheFeed:(NSDictionary *)feed forEntity:(PodcastEntity *)entity {
     
-    NSLog(@"cache feed for entity");
+    CLS_LOG(@"cache feed for entity");
     NSString *feedDir = [NSTemporaryDirectory() stringByAppendingPathComponent:feedDictsDirName];
     NSError *error;
     if ([[NSFileManager defaultManager] createDirectoryAtPath:feedDir withIntermediateDirectories:YES attributes:nil error:&error]) {
@@ -507,14 +505,14 @@ static NSString *feedDictsDirName = @"feedDicts";
     NSDictionary *feedDict;
     
     if (forceNewest) {
-        NSLog(@"retrieve cached feed for entity :: force newest");
+        CLS_LOG(@"retrieve cached feed for entity :: force newest");
         feedDict = [self requestAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
                                                                andFeedUrl:entity.feedUrl];
     }
     else if (entity.feedLastCached) {
         long timeSinceLastCached = fabs([entity.feedLastCached timeIntervalSinceNow]);
         if (timeSinceLastCached > 60 * 60 * 24) {
-            NSLog(@"retrieve cached feed for entity :: cached feed dict was stale - refetch");
+            CLS_LOG(@"retrieve cached feed for entity :: cached feed dict was stale - refetch");
             feedDict = [self requestAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
                                                                andFeedUrl:entity.feedUrl];
         } else {
@@ -526,16 +524,16 @@ static NSString *feedDictsDirName = @"feedDicts";
             NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:feedFilePath];
             if (dict) {
                 // return cached feed
-                NSLog(@"retrieve cached feed for entity :: found fresh cached feed dictionary");
+                CLS_LOG(@"retrieve cached feed for entity :: found fresh cached feed dictionary");
                 return dict;
             } else {
-                NSLog(@"retrieve cached feed for entity :: tmp dir must have been cleared, fetching feed");
+                CLS_LOG(@"retrieve cached feed for entity :: tmp dir must have been cleared, fetching feed");
                 feedDict = [self requestAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
                                                                    andFeedUrl:entity.feedUrl];
             }
         }
     } else {
-        NSLog(@"retrieve cached feed for entity :: feed dict not yet cached - fetch");
+        CLS_LOG(@"retrieve cached feed for entity :: feed dict not yet cached - fetch");
         feedDict = [self requestAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
                                                            andFeedUrl:entity.feedUrl];
     }
@@ -554,7 +552,7 @@ static NSString *rawFeedsDirName = @"rawFeeds";
 // used for preloading feeds from search results
 -(void) preloadFeedsWithLimit:(NSUInteger)limit {
     
-    NSLog(@"preload feeds");
+    CLS_LOG(@"preload feeds");
     NSString *rawFeedsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:rawFeedsDirName];
     NSError *error;
     if ([[NSFileManager defaultManager] createDirectoryAtPath:rawFeedsDir withIntermediateDirectories:YES attributes:nil error:&error]) {
@@ -579,14 +577,14 @@ static NSString *rawFeedsDirName = @"rawFeeds";
         for (int i = 0; i < maxNumToPreload; i++) {
             
             [_feedPreloadQueue addOperationWithBlock:^{
-                NSLog(@"** preload feed at index: %d", i);
+                CLS_LOG(@"** preload feed at index: %d", i);
                 NSString *feedURLString = [[podcastArrayCopy objectAtIndex:i] objectForKey:@"feedUrl"];
                 NSNumber *collectionId = [[podcastArrayCopy objectAtIndex:i] objectForKey:@"collectionId"];
                 NSString *feedDataFilename = [NSString stringWithFormat:@"%@", collectionId];
                 NSString *feedDataFilepath = [rawFeedsDir stringByAppendingPathComponent:feedDataFilename];
                 
                 NSData *feedData = [NSData dataWithContentsOfURL:[NSURL URLWithString:feedURLString]];
-                //NSLog(@"write feed data at index %d", i);
+                //CLS_LOG(@"write feed data at index %d", i);
                 [feedData writeToFile:feedDataFilepath atomically:YES];
                 
             }];
@@ -609,10 +607,10 @@ static NSString *rawFeedsDirName = @"rawFeeds";
         NSData *feedData;
         // make sure it is cached, even though we preloaded it
         if ([[NSFileManager defaultManager] fileExistsAtPath:feedDataFilepath]) {
-            NSLog(@"raw feed data was cached");
+            CLS_LOG(@"raw feed data was cached");
             feedData = [NSData dataWithContentsOfFile:feedDataFilepath];
         } else {
-            NSLog(@"had to download feed");
+            CLS_LOG(@"had to download feed");
             feedData = [NSData dataWithContentsOfURL:[NSURL URLWithString: [podcastDict objectForKey:@"feedUrl"]]];
             [feedData writeToFile:feedDataFilepath atomically:YES];
         }

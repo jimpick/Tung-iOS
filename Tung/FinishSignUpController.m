@@ -127,21 +127,18 @@
         
         id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
         if (jsonData != nil && error == nil) {
-            NSDictionary *responseDict = jsonData;
-            NSLog(@"responseDict: %@", responseDict);
-            // errors?
-            if ([responseDict objectForKey:@"error"]) {
+            dispatch_async(dispatch_get_main_queue(), ^{
+            	NSDictionary *responseDict = jsonData;
+            	// errors?
+            	if ([responseDict objectForKey:@"error"]) {
                 
-                dispatch_async(dispatch_get_main_queue(), ^{
                 	self.registrationErrors = [responseDict objectForKey:@"error"];
                     [self performSegueWithIdentifier:@"unwindToSignUp" sender:self];
-                });
-            }
-        	// successful registration
-            else if ([responseDict objectForKey:@"user"]) {
-                dispatch_async(dispatch_get_main_queue(), ^{
+            	}
+        		// successful registration
+            	else if ([responseDict objectForKey:@"user"]) {
                     NSDictionary *userDict = [responseDict objectForKey:@"user"];
-                    NSLog(@"got user dict from registration: %@", userDict);
+                    CLS_LOG(@"got user dict from registration: %@", userDict);
                     
                     // construct token of id and token together
                     NSString *userId = [userDict objectForKey:@"tung_id"];
@@ -156,14 +153,14 @@
                     // request to mutually follow all users
                     [_tung followAllUsersFromId:userId withCallback:^(BOOL success, NSDictionary *response) {
                         if (success) {
-                            NSLog(@"successfully followed all users: %@", response);
+                            CLS_LOG(@"successfully followed all users: %@", response);
                             
                             // show feed
                             UIViewController *feed = [self.navigationController.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];
                             [self presentViewController:feed animated:YES completion:^{}];
                             
                         } else {
-                            NSLog(@"failed to follow all users: %@", response);
+                            CLS_LOG(@"failed to follow all users: %@", response);
                             // something f'd up. sign out and try again
                             UIAlertView *followError = [[UIAlertView alloc] initWithTitle:@"Oops" message:@"Something went wrong... please try signing up again." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
                             followError.tag = 34;
@@ -175,17 +172,17 @@
                     
                     // TODO: log fb activation...is this done automatically?
                     //[FBSDKAppEvents activateApp];
-                    
-                });
-            }           
+                
+            	}
+            });
         }
         else if ([data length] == 0 && error == nil) {
-            NSLog(@"no response");
+            CLS_LOG(@"no response");
         }
         else if (error != nil) {
-            NSLog(@"Error: %@", error);
+            CLS_LOG(@"Error: %@", error);
             NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            NSLog(@"HTML: %@", html);
+            CLS_LOG(@"HTML: %@", html);
         }
         
     }];
