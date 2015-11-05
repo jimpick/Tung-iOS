@@ -277,10 +277,11 @@ static NSDateFormatter *releaseDateFormatter = nil;
     return _podcastArray.count;
 }
 
+static NSString *cellIdentifier = @"PodcastResultCell";
+
 // podcast search result cell
 - (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    static NSString *cellIdentifier = @"PodcastResultCell";
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
     PodcastResultCell *podcastCell = (PodcastResultCell *)cell;
     

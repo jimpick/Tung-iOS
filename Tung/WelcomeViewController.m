@@ -412,6 +412,7 @@
                 dispatch_async(dispatch_get_main_queue(), ^{
                     
                     NSDictionary *userDict = [responseDict objectForKey:@"user"];
+                    
                     // construct token of id and token together
                     NSString *tungCred = [NSString stringWithFormat:@"%@:%@", [[userDict objectForKey:@"_id"] objectForKey:@"$id"], [userDict objectForKey:@"token"]];
                     // save cred to keychain
@@ -419,7 +420,6 @@
                     
                     // store user data
                     [TungCommonObjects saveUserWithDict:userDict];
-                    CLS_LOG(@"saved user data: %@", userDict);
                     
                     [self loginRequestEnded];
                 

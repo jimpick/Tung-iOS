@@ -42,10 +42,10 @@
     // title
     NSString *title = [miniDict objectForKey:@"title"];
     if (title.length > 60) {
-        self.titleLabel.font = [UIFont systemFontOfSize:15];
+        self.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
     }
     else {
-        self.titleLabel.font = [UIFont systemFontOfSize:17];
+        self.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightLight];
     }
     self.titleLabel.text = title;
     self.subTitleLabel.text = @"";
@@ -85,13 +85,13 @@ static NSDateFormatter *airDateFormatter = nil;
         subTitle = artist;
         desc = @"Loading feed...";
         if (title.length > 60) {
-            self.titleLabel.font = [UIFont systemFontOfSize:15];
+            self.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
         }
         else if (title.length > 30) {
-            self.titleLabel.font = [UIFont systemFontOfSize:17];
+            self.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightLight];
         }
         else if (title.length > 17) {
-            self.titleLabel.font = [UIFont systemFontOfSize:19];
+            self.titleLabel.font = [UIFont systemFontOfSize:19 weight:UIFontWeightLight];
         }
         
         artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600];
@@ -108,10 +108,10 @@ static NSDateFormatter *airDateFormatter = nil;
         subTitle = [airDateFormatter stringFromDate:episodeEntity.pubDate];
         desc = @"";
         if (title.length > 60) {
-            self.titleLabel.font = [UIFont systemFontOfSize:15];
+            self.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
         }
         else {
-            self.titleLabel.font = [UIFont systemFontOfSize:17];
+            self.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightLight];
         }
         
         artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:episodeEntity.podcast.artworkUrl600];

@@ -40,12 +40,12 @@
     
     // FEED
     _storiesView = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
-    _storiesView.navController = [self navigationController];
     _storiesView.viewController = self;
     _storiesView.profiledUserId = @"";
     
     //_storiesView.edgesForExtendedLayout = UIRectEdgeNone; // seems to not do anything
     [self addChildViewController:_storiesView];
+    _storiesView.navController = [self navigationController];
     [self.view addSubview:_storiesView.view];
     
     
@@ -73,8 +73,8 @@
         [[FBSDKLoginManager new] logOut];
     } */
     
-    _hasPodcastData = [TungCommonObjects checkForPodcastData];
-    _hasUserData = [TungCommonObjects checkForUserData];
+    //[TungCommonObjects checkForUserData]; // for debugging
+    [TungCommonObjects checkForPodcastData]; // for debugging
     
     // first load
     _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
@@ -165,55 +165,7 @@
             }
             // get missing data or get session and feed
             else {
-                if (!_hasUserData || !_hasPodcastData) {
-                    // since this is the first call the app makes, check to see if user has no podcast
-                    // data or no user data so it can be restored. Does not YET sync track progress
-                    [_tung getSessionWithCallback:^{
-                        CLS_LOG(@"has USER data: %@", (_hasUserData) ? @"Yes" : @"No");
-                        if (!_hasUserData) {
-                            [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
-                                if (jsonData != nil) {
-                                    NSDictionary *responseDict = jsonData;
-                                    if ([responseDict objectForKey:@"user"]) {
-                                        CLS_LOG(@"got user: %@", [responseDict objectForKey:@"user"]);
-                                        [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
-                                        _hasUserData = YES;
-                                    }
-                                }
-                            }];
-                        }
-                        CLS_LOG(@"has PODCAST data: %@", (_hasPodcastData) ? @"Yes" : @"No");
-                        if (!_hasPodcastData) {
-                            [_tung restorePodcastDataWithCallback:^(BOOL success, NSDictionary *response) {
-                                if (success) {
-                                    if ([response objectForKey:@"podcasts"]) {
-                                        // restore subscribes
-                                        NSArray *podcasts = [response objectForKey:@"podcasts"];
-                                        for (NSDictionary *podcastDict in podcasts) {
-                                            [TungCommonObjects getEntityForPodcast:podcastDict save:YES];
-                                        }
-                                    }
-                                    if ([response objectForKey:@"episodes"]) {
-                                        // restore recommends
-                                        NSArray *episodes = [response objectForKey:@"episodes"];
-                                        for (NSDictionary *episodeDict in episodes) {
-                                            NSDictionary *eDict = [episodeDict objectForKey:@"episode"];
-                                            NSDictionary *pDict = [episodeDict objectForKey:@"podcast"];
-                                            [TungCommonObjects getEntityForPodcast:pDict andEpisode:eDict save:YES];
-                                        }
-                                    }
-                                    _hasPodcastData = YES;
-                                }
-                                // get feed
-                                [_storiesView refreshFeed:YES];
-                            }];
-                        }
-                    }];
-                }
-                // if has data
-                else {
-                    [_storiesView getSessionAndFeed];
-                }
+                [_storiesView getSessionAndFeed];
             }
         }
         // unreachable

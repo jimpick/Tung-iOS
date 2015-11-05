@@ -90,21 +90,31 @@ static NSArray *playbackRateStrings;
     _tung = [TungCommonObjects establishTungObjects];
     _podcast = [TungPodcast new];
     
+    
+    if (!screenWidth) screenWidth = self.view.frame.size.width;
+    if (!screenHeight) screenHeight = self.view.frame.size.height;
+    
     // is this for now playing?
-    if (_episodeMiniDict) {
+    if (_episodeMiniDict || _episodeEntity) {
         self.navigationItem.title = @"Episode";
     } else {
         _isNowPlayingView = YES;
-        _episodeEntity = _tung.npEpisodeEntity;
-        _podcastEntity = _tung.npEpisodeEntity.podcast;
         self.navigationItem.title = @"Now Playing";
         
         //[self.navigationController.navigationBar setTintColor:[UIColor whiteColor]];
-        //[self.navigationController.navigationBar setBarTintColor:_podcastEntity.keyColor1];
-        //[self.navigationController.navigationBar setBackgroundColor:_podcastEntity.keyColor1];
+        //[self.navigationController.navigationBar setBarTintColor:_episodeEntity.podcast.keyColor1];
+        //[self.navigationController.navigationBar setBackgroundColor:_episodeEntity.podcast.keyColor1];
         
-        //[self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:_podcastEntity.keyColor1 }];
+        //[self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:_episodeEntity.podcast.keyColor1 }];
         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
+        
+        // nothing playing?
+        CGRect labelFrame = CGRectMake((screenWidth - 320)/2, (screenHeight - 64)/2, 320, 20);
+        _nothingPlayingLabel = [[UILabel alloc] initWithFrame:labelFrame];
+        _nothingPlayingLabel.text = @"Nothing is currently playing";
+        _nothingPlayingLabel.textColor = [UIColor grayColor];
+        _nothingPlayingLabel.textAlignment = NSTextAlignmentCenter;
+        _nothingPlayingLabel.hidden = YES;
     }
     
     
@@ -122,20 +132,9 @@ static NSArray *playbackRateStrings;
     
     _timeElapsedLabel.hidden = YES;
     
-    if (!screenWidth) screenWidth = self.view.frame.size.width;
-    if (!screenHeight) screenHeight = self.view.frame.size.height;
-    
-    // nothing playing?
-    CGRect labelFrame = CGRectMake((screenWidth - 320)/2, (screenHeight - 64)/2, 320, 20);
-    _nothingPlayingLabel = [[UILabel alloc] initWithFrame:labelFrame];
-    _nothingPlayingLabel.text = @"Nothing is currently playing";
-    _nothingPlayingLabel.textColor = [UIColor grayColor];
-    _nothingPlayingLabel.textAlignment = NSTextAlignmentCenter;
-    _nothingPlayingLabel.hidden = YES;
     
     // header view
     _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 64, screenWidth, defaultHeaderHeight)];
-    [_headerView setUpHeaderViewForEpisode:_episodeEntity orPodcast:nil];
     [self.view addSubview:_headerView];
     _headerView.hidden = YES;
     
@@ -181,9 +180,9 @@ static NSArray *playbackRateStrings;
     // comments
     _commentsView = [self.storyboard instantiateViewControllerWithIdentifier:@"commentsTableView"];
     _commentsView.edgesForExtendedLayout = UIRectEdgeNone;
-    _commentsView.navController = [self navigationController];
     [self addChildViewController:_commentsView];
     [self.view addSubview:_commentsView.view];
+    _commentsView.navController = self.navigationController;
     _commentsView.refreshControl = [UIRefreshControl new];
     [_commentsView.refreshControl addTarget:self action:@selector(refreshComments:) forControlEvents:UIControlEventValueChanged];
     _commentsView.view.translatesAutoresizingMaskIntoConstraints = NO;
@@ -204,6 +203,7 @@ static NSArray *playbackRateStrings;
     _episodesView.edgesForExtendedLayout = UIRectEdgeNone;
     [self addChildViewController:_episodesView];
     [self.view addSubview:_episodesView.view];
+    _episodesView.navController = self.navigationController;
     _episodesView.refreshControl = [UIRefreshControl new];
     [_episodesView.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
     _episodesView.view.translatesAutoresizingMaskIntoConstraints = NO;
@@ -258,26 +258,37 @@ static NSArray *playbackRateStrings;
         [self setUpViewForWhateversPlaying];
     }
     else {
-        // is there a case where episode entity would be passed to episode view controller?
-        // assuming not and only handling mini dict...
         
-        [_headerView setUpHeaderViewForEpisodeMiniDict:_episodeMiniDict];
-        [_headerView sizeAndConstrainHeaderViewInViewController:self];
-        
-        NSString *episodeId = [[_episodeMiniDict objectForKey:@"id"] objectForKey:@"$id"];
-        NSString *collectionId = [_episodeMiniDict objectForKey:@"collectionId"];
-        
-        [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
-            NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
-            NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
-            _episodeEntity = [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
-            _podcastEntity = _episodeEntity.podcast;
-            
+        // episode view pushed from EpisodesTableViewController
+        if (_episodeEntity) {
             [self setUpViewForEpisode:_episodeEntity];
-        }];
-
+        }
+        // episode view pushed from StoriesTableViewController or notifications
+        else {
+            NSString *episodeId = [[_episodeMiniDict objectForKey:@"id"] objectForKey:@"$id"];
+            NSString *collectionId = [_episodeMiniDict objectForKey:@"collectionId"];
+            
+            // check for episode entity
+            _episodeEntity = [TungCommonObjects getEpisodeEntityFromEpisodeId:episodeId];
+            
+            if (_episodeEntity) {
+                [self setUpViewForEpisode:_episodeEntity];
+            }
+            else {
+            	// no entity yet, request data
+                [_headerView setUpHeaderViewForEpisodeMiniDict:_episodeMiniDict];
+                [_headerView sizeAndConstrainHeaderViewInViewController:self];
+                
+                [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
+                    NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
+                    NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
+                    _episodeEntity = [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
+                    
+                    [self setUpViewForEpisode:_episodeEntity];
+                }];
+            }
+        }
     }
-
 }
 
 - (void) viewWillAppear:(BOOL)animated {
@@ -294,9 +305,6 @@ static NSArray *playbackRateStrings;
         
         _tung.ctrlBtnDelegate = self;
         _tung.viewController = self;
-        
-        _episodeEntity = _tung.npEpisodeEntity;
-        _podcastEntity = _tung.npEpisodeEntity.podcast;
         
         if (!_npControlsViewIsSetup) [self setUpNowPlayingControlView];
         if (!_tung.npViewSetupForCurrentEpisode) [self setUpViewForWhateversPlaying];
@@ -393,8 +401,6 @@ static NSArray *playbackRateStrings;
     CLS_LOG(@"now playing did change (npView)");
     
     if (_isNowPlayingView) {
-        _episodeEntity = _tung.npEpisodeEntity;
-        _podcastEntity = _tung.npEpisodeEntity.podcast;
         [self setUpViewForWhateversPlaying];
         [self resetRecording];
         [self setPlaybackRateToOne];
@@ -422,6 +428,8 @@ static NSArray *playbackRateStrings;
 
 // check if something's playing, if so setup view for it, else set up for nothing playing
 - (void) setUpViewForWhateversPlaying {
+    
+    NSLog(@"set up view for whatever's playing");
 
     _tung.npViewSetupForCurrentEpisode = YES;
     [_posbar setEnabled:NO];
@@ -431,6 +439,7 @@ static NSArray *playbackRateStrings;
     _commentsView.commentsArray = [NSMutableArray new];
         
     if (_tung.npEpisodeEntity) {
+        _episodeEntity = _tung.npEpisodeEntity;
         
         // initialize views
         CLS_LOG(@"setup view for now playing: %@", _tung.npEpisodeEntity.title);
@@ -482,11 +491,11 @@ static NSArray *playbackRateStrings;
     [self refreshComments:YES];
     
     // episodes and description
-    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:NO];
+    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_episodeEntity.podcast forceNewest:NO];
     
     _episodesView.tableView.backgroundView = nil;
     _episodesView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
-    _episodesView.podcastEntity = _podcastEntity;
+    _episodesView.podcastEntity = _episodeEntity.podcast;
     [_episodesView.tableView reloadData];
     
     CLS_LOG(@"set up view for episode: %@", episodeEntity.title);
@@ -513,10 +522,15 @@ static NSArray *playbackRateStrings;
 }
 
 - (void) playEpisode {
-    [_tung queueAndPlaySelectedEpisode:_episodeEntity.url];
-    _headerView.largeButton.on = YES;
-    [_headerView.largeButton setNeedsDisplay];
-    [_episodesView.tableView reloadData];
+    if (_episodeEntity.url.length > 0) {
+        [_tung queueAndPlaySelectedEpisode:_episodeEntity.url fromTimestamp:nil];
+        _headerView.largeButton.on = YES;
+        [_headerView.largeButton setNeedsDisplay];
+        [_episodesView.tableView reloadData];
+    } else {
+        UIAlertView *badXmlAlert = [[UIAlertView alloc] initWithTitle:@"Can't Play - No URL" message:@"Unfortunately, this feed is missing links to its content." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+        [badXmlAlert show];
+    }
 }
 
 #pragma mark Comments view
@@ -540,7 +554,7 @@ static NSArray *playbackRateStrings;
 
 // for refreshControl
 - (void) getNewestFeed {
-    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:YES];
+    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_episodeEntity.podcast forceNewest:YES];
     _episodesView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
     
     [_episodesView.refreshControl endRefreshing];
@@ -577,7 +591,7 @@ static NSArray *playbackRateStrings;
     // only allow subscribing with network connection
     if (_tung.connectionAvailable) {
         
-        if (!_podcastEntity) return;
+        if (!_episodeEntity.podcast) return;
         
         CircleButton *subscribeButton = (CircleButton *)sender;
         
@@ -588,21 +602,13 @@ static NSArray *playbackRateStrings;
         if (subscribeButton.subscribed) {
             CLS_LOG(@"subscribed to podcast");
             
-            NSDate *dateSubscribed = [NSDate date];
-            _podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
-            _podcastEntity.dateSubscribed = dateSubscribed;
-            
-            [_tung subscribeToPodcast:_podcastEntity withButton:subscribeButton];
+            [_tung subscribeToPodcast:_episodeEntity.podcast withButton:subscribeButton];
         }
         // unsubscribe
         else {
             CLS_LOG(@"unsubscribe from podcast ");
             
-            _podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
-            CLS_LOG(@"isSubscribted changed to %@", _podcastEntity.isSubscribed);
-            _podcastEntity.dateSubscribed = nil;
-            
-            [_tung unsubscribeFromPodcast:_podcastEntity withButton:subscribeButton];
+            [_tung unsubscribeFromPodcast:_episodeEntity.podcast withButton:subscribeButton];
         }
         [TungCommonObjects saveContextWithReason:@"(un)subscribed to podcast"];
     }
@@ -1250,7 +1256,7 @@ static CGRect buttonsScrollViewHomeRect;
             [_tung replacePlayerItemWithLocalCopy];
         } else {
             [_posbar setEnabled:NO];
-            [_tung playerPause];
+            //[_tung playerPause];
         }
     }
     [_tung.player seekToTime:time completionHandler:^(BOOL finished) {
@@ -1777,7 +1783,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                 _commentAndPostView.commentTextView.text = @"";
                 
 	
-                NSString *eventShortlink = [[responseDict objectForKey:@"success"] objectForKey:@"eventShortlink"];
+                NSString *eventShortlink = [responseDict objectForKey:@"eventShortlink"];
                 NSString *link = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, eventShortlink];
                 // caption
                 NSString *caption;

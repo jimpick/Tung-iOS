@@ -358,29 +358,29 @@ CGFloat labelWidth = 0;
     headerCell.title.text = title;
     if (screenWidth >= 414) { // iPhone 6+/6s+
         headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
-        if (title.length > 52) {
-            headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
-        }
-        if (title.length > 72) {
+        if (title.length > 82) {
             headerCell.title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
+        }
+        else if (title.length > 62) {
+            headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
         }
     }
     else if (screenWidth >= 375) { // iPhone 6/6s
         headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
-        if (title.length > 42) {
-            headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
-        }
         if (title.length > 62) {
             headerCell.title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
+        }
+        else if (title.length > 42) {
+            headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
         }
     }
     else { // iPhone 5/5s
         headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
-        if (title.length > 32) {
-            headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
-        }
         if (title.length > 52) {
             headerCell.title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
+        }
+        else if (title.length > 32) {
+            headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
         }
     }
     
@@ -590,31 +590,27 @@ CGFloat labelWidth = 0;
             NSString *episodeId = [[[storyDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
             NSString *collectionId = [[storyDict objectForKey:@"episode"] objectForKey:@"collectionId"];
             
-            [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
-                NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
-                NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
-                [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
-                
-                NSString *urlString = [episodeDict objectForKey:@"url"];
-                
-                if (urlString) {
-                    NSURL *url = [NSURL URLWithString:urlString];
+            // check for episode entity
+            EpisodeEntity *epEntity = [TungCommonObjects getEpisodeEntityFromEpisodeId:episodeId];
+            
+            if (epEntity) {
+                NSLog(@"play from timestamp, episode entity exists");
+                [_tung playUrl:epEntity.url fromTimestamp:_timestamp];
+            }
+            else {
+                NSLog(@"play from timestamp, fetch episode entity");
+                [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
+                    NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
+                    NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
+                    [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
                     
-                    if (_tung.playQueue.count > 0 && [[_tung.playQueue objectAtIndex:0] isEqual:url]) {
-                        // already listening
-                        float secs = [TungCommonObjects convertTimestampToSeconds:_timestamp];
-                        CMTime time = CMTimeMake((secs * 100), 100);
-                        [_tung.player seekToTime:time];
+                    NSString *urlString = [episodeDict objectForKey:@"url"];
+                    
+                    if (urlString) {
+                        [_tung playUrl:urlString fromTimestamp:_timestamp];
                     }
-                    else {
-                        // different episode
-                        _tung.playFromTimestamp = _timestamp;
-                        
-                        // play
-                        [_tung queueAndPlaySelectedEpisode:urlString];
-                    }
-                }
-            }];
+                }];
+            }
 
         }
     }
@@ -941,7 +937,15 @@ NSInteger requestTries = 0;
                             [_tung getSessionWithCallback:^{
                                 [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:withCred];
                             }];
-                        } else {
+                        }
+                        else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Unauthorized"]) {
+                            
+                            UIAlertView *unauthorizedAlert = [[UIAlertView alloc] initWithTitle:@"Unauthorized" message:@"Please try Signing in again." delegate:self cancelButtonTitle:nil otherButtonTitles:@"Sign out", nil];
+                            unauthorizedAlert.tag = 99;
+                            [unauthorizedAlert show];
+                            
+                        }
+                        else {
                             [self endRefreshing];
                             self.requestStatus = @"finished";
                             // other error - alert user
@@ -958,6 +962,17 @@ NSInteger requestTries = 0;
                             CLS_LOG(@"got stories AND session in %f seconds.", fabs(requestDuration));
                             _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                             _tung.connectionAvailable = [NSNumber numberWithInt:1];
+                            // check if data needs syncing
+                            UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
+                            //CLS_LOG(@"logged in user: %@", [TungCommonObjects entityToDict:loggedUser]);
+                            if (loggedUser) {
+                                NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                                CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
+                                if (lastDataChange.floatValue > loggedUser.lastDataChange.floatValue) {
+                                    CLS_LOG(@"needs restore. ");
+                                    [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
+                                }
+                            }
                         }
                         else {
                             CLS_LOG(@"got stories in %f seconds.", fabs(requestDuration));
@@ -1206,6 +1221,18 @@ NSInteger requestTries = 0;
     CGSize contentSize = CGSizeMake(screenWidth * 2, scrollViewHeight);
     _profileHeader.scrollView.contentSize = contentSize;
 //    CLS_LOG(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
+}
+
+
+#pragma mark - handle alerts
+
+-(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
+    //CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
+    // unauthorized alert
+    if (alertView.tag == 99) {
+        // sign out
+        [_tung signOut];
+    }
 }
 
 

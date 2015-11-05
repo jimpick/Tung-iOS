@@ -205,9 +205,11 @@
 }
 - (void) playerPlay {
     if (_player && _playQueue.count > 0) {
-        [_player play];
         _shouldStayPaused = NO;
+        [_player play];
         [self setControlButtonStateToPause];
+    } else {
+        NSLog(@"no player!");
     }
 }
 - (void) playerPause {
@@ -277,6 +279,7 @@
                 float secs = 0;
                 CMTime time;
                 if (_playFromTimestamp) {
+                    NSLog(@"has play from timestamp: %@", _playFromTimestamp);
                     secs = [TungCommonObjects convertTimestampToSeconds:_playFromTimestamp];
                     time = CMTimeMake((secs * 100), 100);
                 }
@@ -403,7 +406,7 @@
     }
 }
 
-- (void) queueAndPlaySelectedEpisode:(NSString *)urlString {
+- (void) queueAndPlaySelectedEpisode:(NSString *)urlString fromTimestamp:(NSString *)timestamp {
     
     // url and file
     NSURL *url = [NSURL URLWithString:urlString];
@@ -422,6 +425,9 @@
             // it's new, but something else is loaded
             if (![[_playQueue objectAtIndex:0] isEqual:url]) {
                 [self ejectCurrentEpisode];
+                if (timestamp) {
+                    _playFromTimestamp = timestamp;
+                }
                 [_playQueue insertObject:url atIndex:0];
                 [self playQueuedPodcast];
             }
@@ -436,6 +442,30 @@
             [_playQueue insertObject:url atIndex:0];
             [self playQueuedPodcast];
         }
+    }
+}
+
+- (void) playUrl:(NSString *)urlString fromTimestamp:(NSString *)timestamp {
+    NSURL *url = [NSURL URLWithString:urlString];
+    
+    _playFromTimestamp = timestamp;
+    
+    if (_playQueue.count > 0 && [[_playQueue objectAtIndex:0] isEqual:url]) {
+        // already listening
+        float secs = [TungCommonObjects convertTimestampToSeconds:timestamp];
+        CMTime time = CMTimeMake((secs * 100), 100);
+        if (_player) {
+            [self playerPlay];
+        	[_player seekToTime:time];
+        } else {
+            [self playQueuedPodcast];
+        }
+    }
+    else {
+        // different episode
+        
+        // play
+        [self queueAndPlaySelectedEpisode:urlString fromTimestamp:timestamp];
     }
 }
 
@@ -980,9 +1010,16 @@ static NSString *outputFileName = @"output";
  */
 
 + (PodcastEntity *) getEntityForPodcast:(NSDictionary *)podcastDict save:(BOOL)save {
+    
+    if (!podcastDict) {
+        CLS_LOG(@"get entity for podcast: ERROR: podcast dict was null");
+        return nil;
+    }
+    
+    CLS_LOG(@"get entity for podcast: %@", [podcastDict objectForKey:@"collectionName"]);
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     PodcastEntity *podcastEntity;
     
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     NSError *error = nil;
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
     NSPredicate *predicate = [NSPredicate predicateWithFormat: @"collectionId == %@", [podcastDict objectForKey:@"collectionId"]];
@@ -1001,58 +1038,73 @@ static NSString *outputFileName = @"output";
         }
         podcastEntity.collectionId = collectionId;
         podcastEntity.collectionName = [podcastDict objectForKey:@"collectionName"];
-        podcastEntity.artworkUrl600 = [podcastDict objectForKey:@"artworkUrl600"];
         podcastEntity.artistName = [podcastDict objectForKey:@"artistName"];
-        podcastEntity.feedUrl = [podcastDict objectForKey:@"feedUrl"];
-        // subscribed?
-        if ([podcastDict objectForKey:@"isSubscribed"]) {
-            podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
-            if ([podcastDict objectForKey:@"dateSubscribed"]) {
-            	NSString *dateSubscribed = [podcastDict objectForKey:@"dateSubscribed"];
-                podcastEntity.dateSubscribed = [TungCommonObjects ISODateToNSDate:dateSubscribed];
-            }
-        } else {
-            podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
-        }
-        UIColor *keyColor1, *keyColor2;
-        NSString *keyColor1Hex, *keyColor2Hex;
-        // datasource: podcast search
-        if ([podcastDict objectForKey:@"keyColor1"]) {
-            keyColor1 = [podcastDict objectForKey:@"keyColor1"];
-            keyColor2 = [podcastDict objectForKey:@"keyColor2"];
-            keyColor1Hex = [TungCommonObjects UIColorToHexString:keyColor1];
-            keyColor2Hex = [TungCommonObjects UIColorToHexString:keyColor2];
-        }
-        // datasource: social feed
-        else {
-            keyColor1Hex = [podcastDict objectForKey:@"keyColor1Hex"];
-            keyColor2Hex = [podcastDict objectForKey:@"keyColor2Hex"];
-            keyColor1 = [TungCommonObjects colorFromHexString:keyColor1Hex];
-            keyColor2 = [TungCommonObjects colorFromHexString:keyColor2Hex];
-        }
-        podcastEntity.keyColor1 = keyColor1;
-        podcastEntity.keyColor1Hex = keyColor1Hex;
-        podcastEntity.keyColor2 = keyColor2;
-        podcastEntity.keyColor2Hex = keyColor2Hex;
-        if ([podcastDict objectForKey:@"artworkUrlSSL"]) podcastEntity.artworkUrlSSL = [podcastDict objectForKey:@"artworkUrlSSL"];
-        if ([podcastDict objectForKey:@"website"]) podcastEntity.website = [podcastDict objectForKey:@"website"];
-        if ([podcastDict objectForKey:@"email"]) podcastEntity.email = [podcastDict objectForKey:@"email"];
-        if ([podcastDict objectForKey:@"desc"]) podcastEntity.desc = [podcastDict objectForKey:@"desc"];
-        
-        if (save) [TungCommonObjects saveContextWithReason:@"save new podcast entity"];
     }
+    // things that can change
+    podcastEntity.artworkUrl600 = [podcastDict objectForKey:@"artworkUrl600"];
+    podcastEntity.feedUrl = [podcastDict objectForKey:@"feedUrl"];
+    
+    // subscribed? probably only set when restoring data
+    if ([podcastDict objectForKey:@"isSubscribed"]) {
+        podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
+        if ([podcastDict objectForKey:@"timeSubscribed"]) {
+            NSNumber *timeSubscribed = [podcastDict objectForKey:@"timeSubscribed"];
+            podcastEntity.timeSubscribed = timeSubscribed;
+        }
+    } else {
+        podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
+        podcastEntity.timeSubscribed = 0;
+    }
+    UIColor *keyColor1, *keyColor2;
+    NSString *keyColor1Hex, *keyColor2Hex;
+    // datasource: podcast search
+    if ([podcastDict objectForKey:@"keyColor1"]) {
+        keyColor1 = [podcastDict objectForKey:@"keyColor1"];
+        keyColor2 = [podcastDict objectForKey:@"keyColor2"];
+        keyColor1Hex = [TungCommonObjects UIColorToHexString:keyColor1];
+        keyColor2Hex = [TungCommonObjects UIColorToHexString:keyColor2];
+    }
+    // datasource: social feed
+    else {
+        keyColor1Hex = [podcastDict objectForKey:@"keyColor1Hex"];
+        keyColor2Hex = [podcastDict objectForKey:@"keyColor2Hex"];
+        keyColor1 = [TungCommonObjects colorFromHexString:keyColor1Hex];
+        keyColor2 = [TungCommonObjects colorFromHexString:keyColor2Hex];
+    }
+    podcastEntity.keyColor1 = keyColor1;
+    podcastEntity.keyColor1Hex = keyColor1Hex;
+    podcastEntity.keyColor2 = keyColor2;
+    podcastEntity.keyColor2Hex = keyColor2Hex;
+    if ([podcastDict objectForKey:@"artworkUrlSSL"] != (id)[NSNull null]) {
+        podcastEntity.artworkUrlSSL = [podcastDict objectForKey:@"artworkUrlSSL"];
+    }
+    if ([podcastDict objectForKey:@"website"] != (id)[NSNull null]) {
+        podcastEntity.website = [podcastDict objectForKey:@"website"];
+    }
+    if ([podcastDict objectForKey:@"email"] != (id)[NSNull null]) {
+        podcastEntity.email = [podcastDict objectForKey:@"email"];
+    }
+    if ([podcastDict objectForKey:@"desc"] != (id)[NSNull null]) {
+        podcastEntity.desc = [podcastDict objectForKey:@"desc"];
+    }
+    
+    if (save) [TungCommonObjects saveContextWithReason:@"save new podcast entity"];
     
     return podcastEntity;
 }
 
 + (EpisodeEntity *) getEntityForPodcast:(NSDictionary *)podcastDict andEpisode:(NSDictionary *)episodeDict save:(BOOL)save {
     
-    PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
+    if (!podcastDict || !episodeDict) {
+        CLS_LOG(@"get entity for episode: ERROR: podcast or episode dict was null");
+        return nil;
+    }
     
+    CLS_LOG(@"get episode entity for episode: %@", [episodeDict objectForKey:@"title"]);
+    PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
 
     // get episode entity
-    //CLS_LOG(@"get episode entity for episode dict: %@", episodeDict);
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
     NSPredicate *predicate = [NSPredicate predicateWithFormat: @"guid == %@", [episodeDict objectForKey:@"guid"]];
     [request setPredicate:predicate];
@@ -1119,6 +1171,10 @@ static NSString *outputFileName = @"output";
     } else if ([episodeDict objectForKey:@"url"]) {
         url = [episodeDict objectForKey:@"url"];
     }
+    else {
+        url = @"";
+    }
+
     episodeEntity.url = url;
     episodeEntity.title = [episodeDict objectForKey:@"title"];
     episodeEntity.desc = [TungCommonObjects findEpisodeDescriptionWithDict:episodeDict];
@@ -1180,7 +1236,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
     
     NSDate *date = nil;
     if (ISODateInterpreter == nil) {
-        ISODateInterpreter = [[NSDateFormatter alloc] init]; // "2014-09-05 14:27:40 +0000",
+        ISODateInterpreter = [[NSDateFormatter alloc] init]; // "2014-09-05 14:27:40",
         [ISODateInterpreter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
     }
     
@@ -1195,8 +1251,23 @@ static NSDateFormatter *ISODateInterpreter = nil;
     
 }
 
-+ (UserEntity *) saveUserWithDict:(NSDictionary *)userDict {
++ (EpisodeEntity *) getEpisodeEntityFromEpisodeId:(NSString *)episodeId {
     
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSError *error = nil;
+    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat: @"id == %@", episodeId];
+    [request setPredicate:predicate];
+    NSArray *episodeResult = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
+    if (episodeResult.count) {
+        return [episodeResult lastObject];
+    } else {
+        return nil;
+    }
+}
+
+
++ (UserEntity *) saveUserWithDict:(NSDictionary *)userDict {
     
     NSString *tungId = [userDict objectForKey:@"tung_id"];
     //CLS_LOG(@"save user with dict: %@", userDict);
@@ -1229,6 +1300,10 @@ static NSDateFormatter *ISODateInterpreter = nil;
         NSString *facebook_id = [userDict objectForKey:@"facebook_id"]; //ensure string
         userEntity.facebook_id = facebook_id;
     }
+    // we always set lastDataChange to 0, bc user entity will update before
+    // app gets a chance to compare lastDataChange times and restore data.
+    // lastDataChange only gets set as a property.
+    userEntity.lastDataChange = [NSNumber numberWithInt:0];
 
     [TungCommonObjects saveContextWithReason:@"save new user entity"];
     
@@ -1274,7 +1349,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
     }
 }
 
-// not used
+// not used... only for debugging
 + (BOOL) checkForUserData {
     // Show user entities
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
@@ -1282,13 +1357,13 @@ static NSDateFormatter *ISODateInterpreter = nil;
     NSFetchRequest *findUsers = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
     NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findUsers error:&error];
     if (result.count > 0) {
-        /*
+        
         for (int i = 0; i < result.count; i++) {
             UserEntity *userEntity = [result objectAtIndex:i];
             NSDictionary *userDict = [TungCommonObjects entityToDict:userEntity];
             CLS_LOG(@"user at index: %d", i);
             CLS_LOG(@"%@", userDict);
-        }*/
+        }
         
         return YES;
     } else {
@@ -1297,11 +1372,11 @@ static NSDateFormatter *ISODateInterpreter = nil;
     }
 }
 
+// not used... only for debugging
 + (BOOL) checkForPodcastData {
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     
     // show episode entity data
-    /*
     CLS_LOG(@"episode entity data");
     NSFetchRequest *eRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
     NSError *eError = nil;
@@ -1316,13 +1391,12 @@ static NSDateFormatter *ISODateInterpreter = nil;
             CLS_LOG(@"%@", eDict);
         }
     }
-     */
     
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
     NSError *error;
     NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
     if (result.count > 0) {
-        /*
+        
         for (int i = 0; i < result.count; i++) {
             PodcastEntity *podcastEntity = [result objectAtIndex:i];
             CLS_LOG(@"podcast at index: %d", i);
@@ -1331,7 +1405,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
             NSDictionary *podcastDict = [podcastEntity dictionaryWithValuesForKeys:keys];
             CLS_LOG(@"%@", podcastDict);
         }
-        */
+        
         return YES;
     } else {
         return NO;
@@ -1758,12 +1832,12 @@ static NSArray *colors;
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    NSString *artworkUrlSSL = [[responseDict objectForKey:@"success"] objectForKey:@"artworkUrlSSL"];
+                    NSString *artworkUrlSSL = [responseDict objectForKey:@"artworkUrlSSL"];
                     podcastEntity.artworkUrlSSL = artworkUrlSSL;
                     if (episodeEntity) {
                         // save episode id and shortlink
-                        NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
-                        NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
+                        NSString *episodeId = [responseDict objectForKey:@"episodeId"];
+                        NSString *shortlink = [responseDict objectForKey:@"shortlink"];
                         episodeEntity.id = episodeId;
                         episodeEntity.shortlink = shortlink;
                     }
@@ -1780,12 +1854,14 @@ static NSArray *colors;
 }
 
 // if a user deletes the app, they lose all their subscribe/recommend data. This call restores it.
-- (void) restorePodcastDataWithCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+- (void) restorePodcastDataSinceTime:(NSNumber *)time {
     CLS_LOG(@"restore podcast data request");
     NSURL *restoreRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/restore-podcast-data.php", _apiRootUrl]];
     NSMutableURLRequest *restoreRequest = [NSMutableURLRequest requestWithURL:restoreRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [restoreRequest setHTTPMethod:@"POST"];
-    NSDictionary *params = @{@"sessionId":_sessionId};
+    NSDictionary *params = @{@"sessionId":_sessionId,
+                             @"lastDataChange":[NSString stringWithFormat:@"%@", time]
+                             };
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [restoreRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -1802,17 +1878,36 @@ static NSArray *colors;
                         // get new session and re-request
                         CLS_LOG(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
-                            [self restorePodcastDataWithCallback:callback];
+                            [self restorePodcastDataSinceTime:time];
                         }];
                     }
                     else {
                         CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
-                        callback(NO, responseDict);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    callback(YES, responseDict);
-                    
+                    if ([responseDict objectForKey:@"podcasts"]) {
+                        // restore subscribes
+                        NSArray *podcasts = [responseDict objectForKey:@"podcasts"];
+                        for (NSDictionary *podcastDict in podcasts) {
+                            [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
+                        }
+                    }
+                    if ([responseDict objectForKey:@"episodes"]) {
+                        // restore recommends
+                        NSArray *episodes = [responseDict objectForKey:@"episodes"];
+                        for (NSDictionary *episodeDict in episodes) {
+                            NSDictionary *eDict = [episodeDict objectForKey:@"episode"];
+                            NSDictionary *pDict = [episodeDict objectForKey:@"podcast"];
+                            [TungCommonObjects getEntityForPodcast:pDict andEpisode:eDict save:NO];
+                        }
+                    }
+                    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
+                    if (loggedUser) {
+                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                        loggedUser.lastDataChange = lastDataChange;
+                        [TungCommonObjects saveContextWithReason:@"restored podcast and episode data"];
+                    }
                 }
             }
             else {
@@ -1859,8 +1954,8 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     // save episode id and shortlink
-                    NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
-                    NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
+                    NSString *episodeId = [responseDict objectForKey:@"episodeId"];
+                    NSString *shortlink = [responseDict objectForKey:@"shortlink"];
                     episodeEntity.id = episodeId;
                     episodeEntity.shortlink = shortlink;
                     [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
@@ -1915,9 +2010,17 @@ static NSArray *colors;
                         [button setEnabled:YES];
                     }
                 }
+                // success
                 else if ([responseDict objectForKey:@"success"]) {
                     [button setEnabled:YES];
-                    CLS_LOG(@"%@", [responseDict objectForKey:@"success"]);
+                    NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
+                    if (loggedUser) {
+                        loggedUser.lastDataChange = lastDataChange;
+                    }
+                    podcastEntity.timeSubscribed = lastDataChange;
+                    podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
+                    [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user, subscribe status changed"];
                     // important: do not assign shortlink from subscribe story to episode entity
                 }
             }
@@ -1970,9 +2073,17 @@ static NSArray *colors;
                         [button setEnabled:YES];
                     }
                 }
+                // success
                 else if ([responseDict objectForKey:@"success"]) {
                     [button setEnabled:YES];
-                    CLS_LOG(@"%@", responseDict);
+                    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
+                    if (loggedUser) {
+                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                        loggedUser.lastDataChange = lastDataChange;
+                    }
+                    podcastEntity.timeSubscribed = [NSNumber numberWithInt:0];
+                    podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
+                    [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user, subscribe status change"];
                 }
             }
             else {
@@ -2039,16 +2150,21 @@ static NSArray *colors;
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     CLS_LOG(@"%@", responseDict);
-                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
-                    _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
                     if (!episodeEntity.id) {
                         // save episode id and shortlink
-                        NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
-                        NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
+                        NSString *episodeId = [responseDict objectForKey:@"episodeId"];
+                        NSString *shortlink = [responseDict objectForKey:@"shortlink"];
                         episodeEntity.id = episodeId;
                         episodeEntity.shortlink = shortlink;
-                        [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
                     }
+                    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
+                    if (loggedUser) {
+                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                        loggedUser.lastDataChange = lastDataChange;
+                    }
+                    [TungCommonObjects saveContextWithReason:@"got episode shortlink and id, and lastDataChange"];
+                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                    _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
                     callback(YES, responseDict);
                 }
             }
@@ -2091,6 +2207,7 @@ static NSArray *colors;
                         }];
                     }
                     else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need episode info"]) {
+                        // shouldn't ever happen...
                         __unsafe_unretained typeof(self) weakSelf = self;
                         [self addEpisode:episodeEntity withCallback:^{
                             [weakSelf unRecommendEpisode:episodeEntity];
@@ -2101,7 +2218,12 @@ static NSArray *colors;
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    CLS_LOG(@"%@", responseDict);
+                    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
+                    if (loggedUser) {
+                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                        loggedUser.lastDataChange = lastDataChange;
+                    }
+                    [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user"];
                     _feedNeedsRefresh = [NSNumber numberWithBool:YES];
                     _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
                 }
@@ -2166,8 +2288,8 @@ static NSArray *colors;
                     CLS_LOG(@"increment listen count result: %@", responseDict);
                     if (!episodeEntity.id) {
                         // save episode id and shortlink
-                        NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
-                        NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
+                        NSString *episodeId = [responseDict objectForKey:@"episodeId"];
+                        NSString *shortlink = [responseDict objectForKey:@"shortlink"];
                         episodeEntity.id = episodeId;
                         episodeEntity.shortlink = shortlink;
                         [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
@@ -2238,8 +2360,8 @@ static NSArray *colors;
                     CLS_LOG(@"successfully posted comment");
                     if (!episodeEntity.id) {
                         // save episode id and shortlink
-                        NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
-                        NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
+                        NSString *episodeId = [responseDict objectForKey:@"episodeId"];
+                        NSString *shortlink = [responseDict objectForKey:@"shortlink"];
                         episodeEntity.id = episodeId;
                         episodeEntity.shortlink = shortlink;
                         [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
@@ -2337,8 +2459,8 @@ static NSArray *colors;
                     CLS_LOG(@"successfully posted clip");
                     if (!episodeEntity.id) {
                         // save episode id and shortlink
-                        NSString *episodeId = [[responseDict objectForKey:@"success"] objectForKey:@"episodeId"];
-                        NSString *shortlink = [[responseDict objectForKey:@"success"] objectForKey:@"shortlink"];
+                        NSString *episodeId = [responseDict objectForKey:@"episodeId"];
+                        NSString *shortlink = [responseDict objectForKey:@"shortlink"];
                         episodeEntity.id = episodeId;
                         episodeEntity.shortlink = shortlink;
                         [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
@@ -2427,7 +2549,18 @@ static NSArray *colors;
         id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
         if (jsonData != nil && error == nil) {
             dispatch_async(dispatch_get_main_queue(), ^{
-            	callback(jsonData);
+                
+                NSDictionary *responseDict = jsonData;
+                if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                    // get new session and re-request
+                    CLS_LOG(@"SESSION EXPIRED");
+                    [self getSessionWithCallback:^{
+                        [self getProfileDataForUser:target_id withCallback:callback];
+                    }];
+                }
+                else {
+            		callback(responseDict);
+                }
             });
         }
         else {
@@ -2610,8 +2743,6 @@ static NSArray *colors;
     CLS_LOG(@"--- signing out");
     
     [self playerPause];
-    
-    [self removeNowPlayingStatusFromAllEpisodes];
     
     //[self deleteLoggedInUserData];
     [TungCommonObjects removeAllUserData];

@@ -51,8 +51,6 @@
 		7D4C79EA1BE021B30061816B /* tabBar-subscriptions@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4C79E01BE021B30061816B /* tabBar-subscriptions@2x.png */; };
 		7D4C79EB1BE021B30061816B /* tabBar-subscriptions@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4C79E11BE021B30061816B /* tabBar-subscriptions@3x.png */; };
 		7D4C79ED1BE0FC5A0061816B /* StoriesTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C79EC1BE0FC5A0061816B /* StoriesTableViewController.m */; };
-		7D4C79F31BE10EF50061816B /* UserEntity+CoreDataProperties.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C79F01BE10EF50061816B /* UserEntity+CoreDataProperties.m */; };
-		7D4C79F41BE10EF50061816B /* UserEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D4C79F21BE10EF50061816B /* UserEntity.m */; };
 		7D4F34F61AB778910090EE81 /* tabBar-feed-inactive@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F34F41AB778910090EE81 /* tabBar-feed-inactive@2x.png */; };
 		7D4F34F71AB778910090EE81 /* tabBar-feed@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F34F51AB778910090EE81 /* tabBar-feed@2x.png */; };
 		7D4F35291AB7849E0090EE81 /* btn-player-shadow@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4F351B1AB7849E0090EE81 /* btn-player-shadow@2x.png */; };
@@ -90,6 +88,10 @@
 		7D61F94518A1EB2F00710CA7 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7D61F94318A1EB2F00710CA7 /* InfoPlist.strings */; };
 		7D61F94718A1EB2F00710CA7 /* TungTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D61F94618A1EB2F00710CA7 /* TungTests.m */; };
 		7D61F95118A1ED4700710CA7 /* MainStoryboard.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7D61F95018A1ED4700710CA7 /* MainStoryboard.storyboard */; };
+		7D63675C1BEBC8E70040C52C /* UserEntity+CoreDataProperties.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6367591BEBC8E70040C52C /* UserEntity+CoreDataProperties.m */; };
+		7D63675D1BEBC8E70040C52C /* UserEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D63675B1BEBC8E70040C52C /* UserEntity.m */; };
+		7D6367621BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D63675F1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.m */; };
+		7D6367631BEBD5E40040C52C /* PodcastEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6367611BEBD5E40040C52C /* PodcastEntity.m */; };
 		7D63F80D1AF6CBA100765289 /* HeaderView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7D63F80C1AF6CBA100765289 /* HeaderView.xib */; };
 		7D63F8101AF6CBCC00765289 /* HeaderView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D63F80F1AF6CBCC00765289 /* HeaderView.m */; };
 		7D64376A1BAB58B800766BB4 /* IconView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6437691BAB58B800766BB4 /* IconView.m */; };
@@ -114,7 +116,6 @@
 		7D9551A31B69395F004B56A6 /* find-podcasts-here@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D9551A11B69395F004B56A6 /* find-podcasts-here@2x.png */; };
 		7D9551A41B69395F004B56A6 /* find-podcasts-here@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D9551A21B69395F004B56A6 /* find-podcasts-here@3x.png */; };
 		7DA2124C1AFA8A7F00C619F9 /* EpisodeViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA2124B1AFA8A7F00C619F9 /* EpisodeViewController.m */; };
-		7DA237C51BA08D7C00A9466B /* PodcastEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA237C41BA08D7C00A9466B /* PodcastEntity.m */; };
 		7DA465E119AE2F2C00DA3EE7 /* HorizontalLine.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA465E019AE2F2C00DA3EE7 /* HorizontalLine.m */; };
 		7DA465E419AE312300DA3EE7 /* AvatarWithLineIntersect.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA465E319AE312300DA3EE7 /* AvatarWithLineIntersect.m */; };
 		7DA465EF19AFDF7300DA3EE7 /* FacebookSDK.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DA465EE19AFDF7300DA3EE7 /* FacebookSDK.framework */; };
@@ -122,7 +123,6 @@
 		7DA5ED4A1B548882007BD424 /* FXBlurView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA5ED491B548882007BD424 /* FXBlurView.m */; };
 		7DA76A531B4F401500F1A9F4 /* TungNavController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DA76A521B4F401500F1A9F4 /* TungNavController.m */; };
 		7DA76A551B4F411600F1A9F4 /* navBarBkgd.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DA76A541B4F411600F1A9F4 /* navBarBkgd.png */; };
-		7DAD37B918A202A5000C164D /* NavController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DAD37B818A202A5000C164D /* NavController.m */; };
 		7DBCC19B1A1020E2006AB72D /* Crashlytics.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DBCC1991A1020E2006AB72D /* Crashlytics.framework */; };
 		7DBCC19C1A1020E2006AB72D /* Fabric.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DBCC19A1A1020E2006AB72D /* Fabric.framework */; };
 		7DBD312A19ED8782008938BC /* tungNavBarLogoWhite@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DBD312919ED8782008938BC /* tungNavBarLogoWhite@2x.png */; };
@@ -254,10 +254,6 @@
 		7D4C79E11BE021B30061816B /* tabBar-subscriptions@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tabBar-subscriptions@3x.png"; sourceTree = "<group>"; };
 		7D4C79EC1BE0FC5A0061816B /* StoriesTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = StoriesTableViewController.m; sourceTree = "<group>"; };
 		7D4C79EE1BE0FC8A0061816B /* StoriesTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StoriesTableViewController.h; sourceTree = "<group>"; };
-		7D4C79EF1BE10EF50061816B /* UserEntity+CoreDataProperties.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UserEntity+CoreDataProperties.h"; sourceTree = "<group>"; };
-		7D4C79F01BE10EF50061816B /* UserEntity+CoreDataProperties.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UserEntity+CoreDataProperties.m"; sourceTree = "<group>"; };
-		7D4C79F11BE10EF50061816B /* UserEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UserEntity.h; sourceTree = "<group>"; };
-		7D4C79F21BE10EF50061816B /* UserEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UserEntity.m; sourceTree = "<group>"; };
 		7D4F34F41AB778910090EE81 /* tabBar-feed-inactive@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tabBar-feed-inactive@2x.png"; sourceTree = "<group>"; };
 		7D4F34F51AB778910090EE81 /* tabBar-feed@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tabBar-feed@2x.png"; sourceTree = "<group>"; };
 		7D4F351B1AB7849E0090EE81 /* btn-player-shadow@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "btn-player-shadow@2x.png"; sourceTree = "<group>"; };
@@ -305,6 +301,14 @@
 		7D61F94418A1EB2F00710CA7 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		7D61F94618A1EB2F00710CA7 /* TungTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TungTests.m; sourceTree = "<group>"; };
 		7D61F95018A1ED4700710CA7 /* MainStoryboard.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = MainStoryboard.storyboard; sourceTree = "<group>"; };
+		7D6367581BEBC8E70040C52C /* UserEntity+CoreDataProperties.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UserEntity+CoreDataProperties.h"; sourceTree = "<group>"; };
+		7D6367591BEBC8E70040C52C /* UserEntity+CoreDataProperties.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UserEntity+CoreDataProperties.m"; sourceTree = "<group>"; };
+		7D63675A1BEBC8E70040C52C /* UserEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UserEntity.h; sourceTree = "<group>"; };
+		7D63675B1BEBC8E70040C52C /* UserEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UserEntity.m; sourceTree = "<group>"; };
+		7D63675E1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "PodcastEntity+CoreDataProperties.h"; sourceTree = "<group>"; };
+		7D63675F1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "PodcastEntity+CoreDataProperties.m"; sourceTree = "<group>"; };
+		7D6367601BEBD5E40040C52C /* PodcastEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PodcastEntity.h; sourceTree = "<group>"; };
+		7D6367611BEBD5E40040C52C /* PodcastEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PodcastEntity.m; sourceTree = "<group>"; };
 		7D63F80C1AF6CBA100765289 /* HeaderView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = HeaderView.xib; sourceTree = "<group>"; };
 		7D63F80E1AF6CBCC00765289 /* HeaderView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HeaderView.h; sourceTree = "<group>"; };
 		7D63F80F1AF6CBCC00765289 /* HeaderView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HeaderView.m; sourceTree = "<group>"; };
@@ -340,8 +344,6 @@
 		7D9551A21B69395F004B56A6 /* find-podcasts-here@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "find-podcasts-here@3x.png"; sourceTree = "<group>"; };
 		7DA2124A1AFA8A7F00C619F9 /* EpisodeViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodeViewController.h; sourceTree = "<group>"; };
 		7DA2124B1AFA8A7F00C619F9 /* EpisodeViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodeViewController.m; sourceTree = "<group>"; };
-		7DA237C31BA08D7C00A9466B /* PodcastEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PodcastEntity.h; sourceTree = "<group>"; };
-		7DA237C41BA08D7C00A9466B /* PodcastEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PodcastEntity.m; sourceTree = "<group>"; };
 		7DA465DF19AE2F2C00DA3EE7 /* HorizontalLine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HorizontalLine.h; sourceTree = "<group>"; };
 		7DA465E019AE2F2C00DA3EE7 /* HorizontalLine.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HorizontalLine.m; sourceTree = "<group>"; };
 		7DA465E219AE312300DA3EE7 /* AvatarWithLineIntersect.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AvatarWithLineIntersect.h; sourceTree = "<group>"; };
@@ -354,8 +356,6 @@
 		7DA76A511B4F401500F1A9F4 /* TungNavController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TungNavController.h; sourceTree = "<group>"; };
 		7DA76A521B4F401500F1A9F4 /* TungNavController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TungNavController.m; sourceTree = "<group>"; };
 		7DA76A541B4F411600F1A9F4 /* navBarBkgd.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = navBarBkgd.png; sourceTree = "<group>"; };
-		7DAD37B718A202A5000C164D /* NavController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NavController.h; sourceTree = "<group>"; };
-		7DAD37B818A202A5000C164D /* NavController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NavController.m; sourceTree = "<group>"; };
 		7DBCC1991A1020E2006AB72D /* Crashlytics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Crashlytics.framework; sourceTree = SOURCE_ROOT; };
 		7DBCC19A1A1020E2006AB72D /* Fabric.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Fabric.framework; sourceTree = SOURCE_ROOT; };
 		7DBD312919ED8782008938BC /* tungNavBarLogoWhite@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tungNavBarLogoWhite@2x.png"; sourceTree = "<group>"; };
@@ -534,24 +534,24 @@
 				7DF5664F199D4B56003176C1 /* BrowserViewController.m */,
 				7D61F93218A1EB2F00710CA7 /* Images.xcassets */,
 				7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */,
+				7D63675E1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.h */,
+				7D63675F1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.m */,
+				7D6367601BEBD5E40040C52C /* PodcastEntity.h */,
+				7D6367611BEBD5E40040C52C /* PodcastEntity.m */,
+				7D6367581BEBC8E70040C52C /* UserEntity+CoreDataProperties.h */,
+				7D6367591BEBC8E70040C52C /* UserEntity+CoreDataProperties.m */,
+				7D63675A1BEBC8E70040C52C /* UserEntity.h */,
+				7D63675B1BEBC8E70040C52C /* UserEntity.m */,
 				7D07B6E41BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.h */,
 				7D07B6E51BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m */,
 				7D07B6E61BE4F657008F4CC7 /* SettingsEntity.h */,
 				7D07B6E71BE4F657008F4CC7 /* SettingsEntity.m */,
-				7D4C79EF1BE10EF50061816B /* UserEntity+CoreDataProperties.h */,
-				7D4C79F01BE10EF50061816B /* UserEntity+CoreDataProperties.m */,
-				7D4C79F11BE10EF50061816B /* UserEntity.h */,
-				7D4C79F21BE10EF50061816B /* UserEntity.m */,
 				7DF9F4AC1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.h */,
 				7DF9F4AD1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.m */,
 				7DF997A41BC6F645004FD994 /* EpisodeEntity.h */,
 				7DF997A51BC6F645004FD994 /* EpisodeEntity.m */,
-				7DA237C31BA08D7C00A9466B /* PodcastEntity.h */,
-				7DA237C41BA08D7C00A9466B /* PodcastEntity.m */,
 				7D5BC1A51A546A61008C008D /* MainTabBarController.h */,
 				7D5BC1A61A546A61008C008D /* MainTabBarController.m */,
-				7DAD37B718A202A5000C164D /* NavController.h */,
-				7DAD37B818A202A5000C164D /* NavController.m */,
 				7DA76A511B4F401500F1A9F4 /* TungNavController.h */,
 				7DA76A521B4F401500F1A9F4 /* TungNavController.m */,
 				7D4F352B1AB797FF0090EE81 /* FeedViewController.h */,
@@ -980,7 +980,6 @@
 				7DA5ED471B548181007BD424 /* BlurView.m in Sources */,
 				7DE99BD61ACE3F02007A154F /* EpisodeCell.m in Sources */,
 				7DA465E119AE2F2C00DA3EE7 /* HorizontalLine.m in Sources */,
-				7D4C79F41BE10EF50061816B /* UserEntity.m in Sources */,
 				7DA465E419AE312300DA3EE7 /* AvatarWithLineIntersect.m in Sources */,
 				7D4F35361AB89DB40090EE81 /* CCColorCube.m in Sources */,
 				7D1F0B691BD14F0A001C9A9D /* CommentBkgdView.m in Sources */,
@@ -990,7 +989,6 @@
 				7D12D5C61B17429E00532FC0 /* NowPlayingControlView.m in Sources */,
 				7DE0949E1BC1C20F005B596D /* ProfileHeaderView.m in Sources */,
 				7DA2124C1AFA8A7F00C619F9 /* EpisodeViewController.m in Sources */,
-				7DA237C51BA08D7C00A9466B /* PodcastEntity.m in Sources */,
 				7D64376A1BAB58B800766BB4 /* IconView.m in Sources */,
 				7D61F92E18A1EB2F00710CA7 /* AppDelegate.m in Sources */,
 				7DDC9BED1B67DAB7005E4E52 /* DescriptionWebViewController.m in Sources */,
@@ -1004,7 +1002,6 @@
 				7DC58A8E1AEFF125000DBAF8 /* PodcastViewController.m in Sources */,
 				7D07B6E81BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m in Sources */,
 				7DE4B1BE1B726D6C00C02BE2 /* CommentAndPostView.m in Sources */,
-				7DAD37B918A202A5000C164D /* NavController.m in Sources */,
 				7D4F35331AB894560090EE81 /* PodcastResultCell.m in Sources */,
 				7D3B735A19227F92005413F1 /* WelcomeViewController.m in Sources */,
 				7DE4B1C31B726F8600C02BE2 /* TextAreaBkgdView.m in Sources */,
@@ -1021,6 +1018,7 @@
 				7D8228C81AFBE271004EB4B2 /* CircleButton.m in Sources */,
 				7D8F02C11B619AA300A30492 /* ALDisk.m in Sources */,
 				7D61889619F18FC600F414C2 /* EditProfileTableViewController.m in Sources */,
+				7D63675D1BEBC8E70040C52C /* UserEntity.m in Sources */,
 				7D282C7C1AF29D3400495E74 /* TungPodcastStyleKit.m in Sources */,
 				7DA76A531B4F401500F1A9F4 /* TungNavController.m in Sources */,
 				7D4F35391AB89DDE0090EE81 /* CCLocalMaximum.m in Sources */,
@@ -1028,13 +1026,15 @@
 				7D4B259A1A0AE6B20035FD35 /* ProfileListCell.m in Sources */,
 				7DE780971AE950F20081E28E /* JPXMLtoDictionary.m in Sources */,
 				7D4F35301AB7A2720090EE81 /* TungPodcast.m in Sources */,
+				7D63675C1BEBC8E70040C52C /* UserEntity+CoreDataProperties.m in Sources */,
 				7DF56650199D4B56003176C1 /* BrowserViewController.m in Sources */,
+				7D6367621BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.m in Sources */,
 				7D1407791BBEB83500BD4F89 /* StoryFooterCell.m in Sources */,
+				7D6367631BEBD5E40040C52C /* PodcastEntity.m in Sources */,
 				7DE094A31BC1D2F4005B596D /* ProfileViewController.m in Sources */,
 				7D768CA0192EB20B000C8E3E /* TungCommonObjects.m in Sources */,
 				7DCAC60219FEF81A004B6182 /* FollowersCell.m in Sources */,
 				7D1341E9192530AC00B95C66 /* FinishSignUpController.m in Sources */,
-				7D4C79F31BE10EF50061816B /* UserEntity+CoreDataProperties.m in Sources */,
 				7D14077C1BBEB86D00BD4F89 /* StoryHeaderCell.m in Sources */,
 				7D670F301934EE7600239673 /* Reachability.m in Sources */,
 				7D63F8101AF6CBCC00765289 /* HeaderView.m in Sources */,

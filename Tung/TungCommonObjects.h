@@ -100,7 +100,8 @@
 
 // player
 - (void) controlButtonTapped;
-- (void) queueAndPlaySelectedEpisode:(NSString *)urlString;
+- (void) queueAndPlaySelectedEpisode:(NSString *)urlString fromTimestamp:(NSString *)timestamp;
+- (void) playUrl:(NSString *)urlString fromTimestamp:(NSString *)timestamp;
 - (void) playNextEpisode;
 - (void) dismissSearch;
 - (void) savePositionForNowPlaying;
@@ -122,6 +123,7 @@
 + (NSString *) findPodcastDescriptionWithDict:(NSDictionary *)dict;
 + (NSDictionary *) entityToDict:(NSManagedObject *)entity;
 + (NSDate *) ISODateToNSDate: (NSString *)pubDate;
++ (EpisodeEntity *) getEpisodeEntityFromEpisodeId:(NSString *)episodeId;
 + (UserEntity *) saveUserWithDict:(NSDictionary *)userDict;
 + (UserEntity *) retrieveUserEntityForUserWithId:(NSString *)userId;
 - (NSDictionary *) getLoggedInUserData;
@@ -149,7 +151,7 @@
 - (void) killSessionForTesting;
 // stories post requests
 - (void) addPodcast:(PodcastEntity *)podcastEntity orEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
-- (void) restorePodcastDataWithCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+- (void) restorePodcastDataSinceTime:(NSNumber *)time;
 - (void) addEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
 - (void) subscribeToPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button;
 - (void) unsubscribeFromPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button;

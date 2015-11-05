@@ -30,7 +30,6 @@
 @property (strong, nonatomic) IBOutlet UIPageControl *pageControl;
 
 @property (strong, nonatomic) EpisodeEntity *episodeEntity;
-@property (strong, nonatomic) PodcastEntity *podcastEntity;
 @property (strong, nonatomic) NSString *focusedEventId;
 @property (strong, nonatomic) NSDictionary *episodeMiniDict;
 

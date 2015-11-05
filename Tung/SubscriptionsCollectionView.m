@@ -48,7 +48,7 @@ static NSString * const reuseIdentifier = @"artCell";
     //NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isSubscribed == %@", [NSNumber numberWithBool:YES]];
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSubscribed == YES"];
     request.predicate = predicate;
-    NSSortDescriptor *dateSort = [[NSSortDescriptor alloc] initWithKey:@"dateSubscribed" ascending:YES];
+    NSSortDescriptor *dateSort = [[NSSortDescriptor alloc] initWithKey:@"timeSubscribed" ascending:YES];
 
     request.sortDescriptors = @[dateSort];
     
@@ -272,7 +272,7 @@ static NSString * const reuseIdentifier = @"artCell";
          */
         UIImage *findPodcastsImage = [UIImage imageNamed:@"find-podcasts-here.png"];
         _findPodcastsHere = [[UIImageView alloc] initWithImage:findPodcastsImage];
-        CGRect imageRect = CGRectMake(self.view.bounds.size.width - 220, 70, 200, 173);
+        CGRect imageRect = CGRectMake(self.view.bounds.size.width - 220, 6, 200, 173);
         _findPodcastsHere.frame = imageRect;
         if (![_findPodcastsHere isDescendantOfView:self.view]) [self.view addSubview:_findPodcastsHere];
     }
@@ -283,7 +283,7 @@ static NSString * const reuseIdentifier = @"artCell";
 }
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
-    CLS_LOG(@"collection view cell for item at index path %ld", (long)indexPath.row);
+    //CLS_LOG(@"collection view cell for item at index path %ld", (long)indexPath.row);
     
     //CLS_LOG(@"cell for row at index: %ld", (long)indexPath.row);
     SubscriptionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:reuseIdentifier forIndexPath:indexPath];

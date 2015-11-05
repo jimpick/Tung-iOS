@@ -7,16 +7,16 @@
 //
 
 #import "MainTabBarController.h"
-#import "NavController.h"
+#import "TungNavController.h"
 #import "TungCommonObjects.h"
 #import "IconButton.h"
 
 @interface MainTabBarController ()
 
-@property (strong, nonatomic) NavController *feedView;
-@property (strong, nonatomic) NavController *nowPlayingView;
-@property (strong, nonatomic) NavController *subscriptionsView;
-@property (strong, nonatomic) NavController *profileView;
+@property (strong, nonatomic) TungNavController *feedView;
+@property (strong, nonatomic) TungNavController *nowPlayingView;
+@property (strong, nonatomic) TungNavController *subscriptionsView;
+@property (strong, nonatomic) TungNavController *profileView;
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 
@@ -136,8 +136,7 @@
 - (IBAction)selectTab:(id)sender {
     NSUInteger index = [sender tag];
     self.selectedIndex = index;
-    NSLog(@"select tab: %lu", (unsigned long)index);
-    
+    //NSLog(@"select tab: %lu", (unsigned long)index);
     [self setSelectedViewController:[self.viewControllers objectAtIndex:index]];
 }
 

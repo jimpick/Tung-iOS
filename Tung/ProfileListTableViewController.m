@@ -21,14 +21,17 @@
 
 @end
 
+CGFloat screenWidth;
+
 @implementation ProfileListTableViewController
 
 - (void)viewDidLoad {
     
     [super viewDidLoad];
-    
     _tung = [TungCommonObjects establishTungObjects];
     _tung.viewController = self;
+    
+    screenWidth = self.view.frame.size.width;
     
     // default target
     if (_target_id == NULL) _target_id = _tung.tungId;
@@ -59,6 +62,7 @@
     if (_queryType) {
         [self refreshFeed];
     }
+    NSLog(@"profile list view did load for queryType: %@", _queryType);
 }
 
 - (void)didReceiveMemoryWarning {
@@ -282,7 +286,7 @@
 - (void) pushProfileForUserAtIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
     
-    //CLS_LOG(@"push profile of user: %@", [profileDict objectForKey:@"username"]);
+    CLS_LOG(@"push profile of user: %@", [profileDict objectForKey:@"username"]);
     // push profile
     
     ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
@@ -298,7 +302,6 @@
     EpisodeViewController *episodeView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"episodeView"];
     episodeView.episodeMiniDict = episodeMiniDict;
     episodeView.focusedEventId = eventId;
-    
     
     [_navController pushViewController:episodeView animated:YES];
 }
@@ -345,13 +348,16 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     
     // username
     profileCell.usernameLabel.text = [profileCell.profileDict objectForKey:@"username"];
+    if (screenWidth < 375) {
+        profileCell.usernameLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightBold];
+    }
     [profileCell.avatarButton addTarget:self action:@selector(tableCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     profileCell.avatarButton.tag = 100;
     
     // sub label
     if ([_queryType isEqualToString:@"Notifications"]) {
         
-        profileCell.subLabelLeadingConstraint.constant = 38;
+        profileCell.subLabelLeadingConstraint.constant = 30;
         profileCell.iconView.hidden = NO;
         profileCell.iconView.backgroundColor = [UIColor clearColor];
         //CLS_LOG(@"action: %@", action);
@@ -371,7 +377,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     else {
         
         profileCell.subLabel.text = [profileCell.profileDict objectForKey:@"name"];
-        profileCell.subLabelLeadingConstraint.constant = 14;
+        profileCell.subLabelLeadingConstraint.constant = 7;
         profileCell.iconView.hidden = YES;
     }
     
@@ -405,8 +411,11 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
 #pragma mark - Table view delegate methods
 
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-
-    return 80;
+    if (screenWidth > 320) {
+    	return 80;
+    } else {
+        return 64;
+    }
 }
 
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {

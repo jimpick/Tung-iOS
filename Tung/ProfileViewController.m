@@ -85,7 +85,8 @@ CGFloat screenWidth;
         _profileSearchView.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
         _profileSearchView.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero];
         _profileSearchView.tableView.backgroundView = nil;
-        _profileSearchView.navController = self.navigationController;
+        _profileSearchView.navController = [self navigationController];
+
         
         _searchController = [[UISearchController alloc] initWithSearchResultsController:_profileSearchView];
         _searchController.delegate = self;
@@ -178,7 +179,6 @@ CGFloat screenWidth;
     
     // for activity feed
     _storiesView = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
-    _storiesView.navController = [self navigationController];
     _storiesView.viewController = self;
     _storiesView.profiledUserId = _profiledUserId;
     // for animating header
@@ -189,6 +189,7 @@ CGFloat screenWidth;
     _storiesView.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
     [self addChildViewController:_storiesView];
     [self.view addSubview:_storiesView.view];
+    _storiesView.navController = [self navigationController];
     
     _storiesView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
@@ -201,11 +202,11 @@ CGFloat screenWidth;
         _notificationsView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
         _notificationsView.queryType = @"Notifications";
         _notificationsView.target_id = _tung.tungId;
-        _notificationsView.navController = [self navigationController];
         _notificationsView.edgesForExtendedLayout = UIRectEdgeNone;
         _notificationsView.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
         [self addChildViewController:_notificationsView];
         [self.view addSubview:_notificationsView.view];
+        _notificationsView.navController = [self navigationController];
         
         _notificationsView.view.translatesAutoresizingMaskIntoConstraints = NO;
         [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
@@ -499,6 +500,7 @@ NSTimer *sessionCheckTimer;
     if (_isLoggedInUser) {
         _profiledUserData = [[_tung getLoggedInUserData] mutableCopy];
         if (_profiledUserData) {
+            CLS_LOG(@"Is logged in user: Has logged-in user data.");
             [self setUpProfileHeaderViewForData];
             // request profile just to get current follower/following counts
             [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
@@ -516,6 +518,7 @@ NSTimer *sessionCheckTimer;
         }
         else {
             // restore logged in user data
+            CLS_LOG(@"Is logged in user: Was missing logged-in user data - fetching");
             [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
                 if (jsonData != nil) {
                     NSDictionary *responseDict = jsonData;

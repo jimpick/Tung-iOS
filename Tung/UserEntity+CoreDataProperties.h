@@ -2,7 +2,7 @@
 //  UserEntity+CoreDataProperties.h
 //  Tung
 //
-//  Created by Jamie Perkins on 10/28/15.
+//  Created by Jamie Perkins on 11/5/15.
 //  Copyright © 2015 Jamie Perkins. All rights reserved.
 //
 //  Choose "Create NSManagedObject Subclass…" from the Core Data editor menu
@@ -19,6 +19,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nullable, nonatomic, retain) NSString *email;
 @property (nullable, nonatomic, retain) NSString *facebook_id;
 @property (nullable, nonatomic, retain) NSString *large_av_url;
+@property (nullable, nonatomic, retain) NSNumber *lastSeenNotification;
 @property (nullable, nonatomic, retain) NSString *location;
 @property (nullable, nonatomic, retain) NSString *name;
 @property (nullable, nonatomic, retain) NSString *small_av_url;
@@ -27,7 +28,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nullable, nonatomic, retain) NSString *twitter_username;
 @property (nullable, nonatomic, retain) NSString *url;
 @property (nullable, nonatomic, retain) NSString *username;
-@property (nullable, nonatomic, retain) NSDate *lastSeenNotification;
+@property (nullable, nonatomic, retain) NSNumber *lastDataChange;
 
 @end
 

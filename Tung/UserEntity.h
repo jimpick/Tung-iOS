@@ -2,7 +2,7 @@
 //  UserEntity.h
 //  Tung
 //
-//  Created by Jamie Perkins on 10/28/15.
+//  Created by Jamie Perkins on 11/5/15.
 //  Copyright © 2015 Jamie Perkins. All rights reserved.
 //
 

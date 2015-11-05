@@ -56,6 +56,7 @@
     
     [self addChildViewController:_episodesView];
     [self.view addSubview:_episodesView.view];
+    _episodesView.navController = self.navigationController;
     
     _episodesView.refreshControl = [UIRefreshControl new];
     [_episodesView.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
@@ -168,19 +169,11 @@
         if (subscribeButton.subscribed) {
             NSLog(@"subscribed to podcast");
             
-            NSDate *dateSubscribed = [NSDate date];
-            _podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
-            _podcastEntity.dateSubscribed = dateSubscribed;
-            
             [_tung subscribeToPodcast:_podcastEntity withButton:subscribeButton];
         }
         // unsubscribe
         else {
             NSLog(@"unsubscribe from podcast ");
-            
-            _podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
-            NSLog(@"isSubscribted changed to %@", _podcastEntity.isSubscribed);
-            _podcastEntity.dateSubscribed = nil;
             
             [_tung unsubscribeFromPodcast:_podcastEntity withButton:subscribeButton];
         }

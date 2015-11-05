@@ -7,6 +7,7 @@
 //
 
 #import "EpisodesTableViewController.h"
+#import "EpisodeViewController.h"
 
 @interface EpisodesTableViewController ()
 
@@ -131,19 +132,12 @@ static NSString *cellIdentifier = @"EpisodeCell";
     NSDictionary *episodeDict = [_episodeArray objectAtIndex:indexPath.row];
     NSDictionary *podcastDict = [TungCommonObjects entityToDict:_podcastEntity];
     //NSLog(@"selected episode: %@", episodeDict);
-    NSString *urlString = [[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
-    if (urlString) {
-        
-        [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
-        [TungCommonObjects saveContextWithReason:@"about to play episode"];
-        
-        [_tung queueAndPlaySelectedEpisode:urlString];
-    } else {
-        
-        UIAlertView *badXmlAlert = [[UIAlertView alloc] initWithTitle:@"Can't Play - No URL" message:@"Unfortunately, this feed is missing links to its content." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-        [badXmlAlert show];
-    }
     
+    EpisodeEntity *episodeEntity = [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
+    EpisodeViewController *episodeView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"episodeView"];
+    episodeView.episodeEntity = episodeEntity;
+
+    [_navController pushViewController:episodeView animated:YES];
 }
 
 //- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
