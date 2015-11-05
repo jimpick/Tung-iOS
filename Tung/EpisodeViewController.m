@@ -428,8 +428,6 @@ static NSArray *playbackRateStrings;
 
 // check if something's playing, if so setup view for it, else set up for nothing playing
 - (void) setUpViewForWhateversPlaying {
-    
-    NSLog(@"set up view for whatever's playing");
 
     _tung.npViewSetupForCurrentEpisode = YES;
     [_posbar setEnabled:NO];

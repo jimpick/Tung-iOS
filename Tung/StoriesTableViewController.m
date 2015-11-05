@@ -321,10 +321,7 @@ CGFloat labelWidth = 0;
     NSDictionary *episodeMiniDict = [storyDict objectForKey:@"episode"];
     NSDictionary *userDict = [storyDict objectForKey:@"user"];
     
-    if (_storyId) CLS_LOG(@"story dict for header cell: %@", storyDict);
-    
     // color
-    
     UIColor *keyColor = (UIColor *)[storyDict objectForKey:@"keyColor"];
     headerCell.backgroundColor = keyColor;
     UIView *bgColorView = [[UIView alloc] init];
@@ -965,13 +962,30 @@ NSInteger requestTries = 0;
                             // check if data needs syncing
                             UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
                             //CLS_LOG(@"logged in user: %@", [TungCommonObjects entityToDict:loggedUser]);
+                            NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
                             if (loggedUser) {
-                                NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
                                 CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
                                 if (lastDataChange.floatValue > loggedUser.lastDataChange.floatValue) {
                                     CLS_LOG(@"needs restore. ");
                                     [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
                                 }
+                            } else {
+                                // no logged in user data... fetch
+                                CLS_LOG(@"no logged in user data... fetching");
+                                [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
+                                    if (jsonData != nil) {
+                                        NSDictionary *responseDict = jsonData;
+                                        if ([responseDict objectForKey:@"user"]) {
+                                            //CLS_LOG(@"got user: %@", [responseDict objectForKey:@"user"]);
+                                            UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
+                                            CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
+                                            if (lastDataChange.floatValue > loggedUser.lastDataChange.floatValue) {
+                                                CLS_LOG(@"needs restore. ");
+                                                [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
+                                            }
+                                        }
+                                    }
+                                }];
                             }
                         }
                         else {
