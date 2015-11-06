@@ -494,6 +494,7 @@ static NSArray *playbackRateStrings;
     _episodesView.tableView.backgroundView = nil;
     _episodesView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
     _episodesView.podcastEntity = _episodeEntity.podcast;
+    _episodesView.keyColors = _headerView.keyColors;
     [_episodesView.tableView reloadData];
     
     CLS_LOG(@"set up view for episode: %@", episodeEntity.title);

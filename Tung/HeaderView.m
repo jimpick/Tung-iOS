@@ -125,9 +125,9 @@ static NSDateFormatter *airDateFormatter = nil;
     self.albumArt.image = artImage;
     
     // find key color
-    NSArray *keyColors = [TungCommonObjects determineKeyColorsFromImage:artImage];
-    UIColor *keyColor1 = [keyColors objectAtIndex:0];
-    UIColor *keyColor2 = [keyColors objectAtIndex:1];
+    _keyColors = [TungCommonObjects determineKeyColorsFromImage:artImage];
+    UIColor *keyColor1 = [_keyColors objectAtIndex:0];
+    UIColor *keyColor2 = [_keyColors objectAtIndex:1];
     
     // play button
     if (podcastEntity) {

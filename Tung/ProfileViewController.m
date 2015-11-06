@@ -152,7 +152,7 @@ CGFloat screenWidth;
     // set up segemented control
     NSArray *switcherItems = @[@"Notifications", @"My Activity"];
     _switcher = [[UISegmentedControl alloc] initWithItems:switcherItems];
-    _switcher.apportionsSegmentWidthsByContent = YES;
+    //_switcher.apportionsSegmentWidthsByContent = YES;
     _switcher.tintColor = [TungCommonObjects tungColor];
     _switcher.frame = CGRectMake(0, 0, self.view.bounds.size.width - 20, 28);
     [_switcher addTarget:self action:@selector(switchViews:) forControlEvents:UIControlEventValueChanged];

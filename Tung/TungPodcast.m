@@ -209,7 +209,7 @@
                 
                 _podcastArray = [[responseDict objectForKey:@"results"] mutableCopy];
                 
-                CLS_LOG(@"got results: %lu", (unsigned long)_podcastArray.count);
+                //CLS_LOG(@"got results: %lu", (unsigned long)_podcastArray.count);
                 //CLS_LOG(@"%@", _podcastArray);
                 [self preloadPodcastArtForArray:_podcastArray];
                 [self preloadFeedsWithLimit:1]; // preload feed of first result
@@ -218,31 +218,29 @@
             }
             else {
                 _noResults = YES;
-                CLS_LOG(@"NO RESULTS");
+                //CLS_LOG(@"NO RESULTS");
             }
         }
     }
     else if ([_podcastSearchResultData length] == 0 && error == nil) {
-        CLS_LOG(@"no response");
+        CLS_LOG(@"no response for search");
         
     }
     else if (error != nil) {
         
-        CLS_LOG(@"Error: %@", error);
-        NSString *html = [[NSString alloc] initWithData:_podcastSearchResultData encoding:NSUTF8StringEncoding];
-        CLS_LOG(@"HTML: %@", html);
+        CLS_LOG(@"search error: %@", error);
     }
 }
 
 - (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
-    CLS_LOG(@"connection failed: %@", error);
-    //dispatch_async(dispatch_get_main_queue(), ^{
+    CLS_LOG(@"search connection failed: %@", error);
     
+    /* this error pops up occaisionally, probably because of rapid requests.
+     makes user think something is wrong when it really isn't.
     UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
     //self.tableView.backgroundView = nil;
     [connectionErrorAlert show];
-    //});
-    
+    */
 }
 
 /* unused NSURLConnection delegate methods
@@ -534,8 +532,8 @@ static NSString *feedDictsDirName = @"feedDicts";
             }
         }
     } else {
-        CLS_LOG(@"retrieve cached feed for entity :: feed dict not yet cached - fetch");
-        feedDict = [self requestAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
+        CLS_LOG(@"retrieve cached feed for entity :: ");
+        feedDict = [self retrieveAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
                                                            andFeedUrl:entity.feedUrl];
     }
     [self cacheFeed:feedDict forEntity:entity];
@@ -596,23 +594,22 @@ static NSString *rawFeedsDirName = @"rawFeeds";
 /*
  if there is cached data, the feed is retrieved from it. If not it is requested and converted.
  */
-+ (NSDictionary *) retrieveAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict {
++ (NSDictionary *) retrieveAndConvertPodcastFeedDataWithCollectionId:(NSNumber *)collectionId andFeedUrl:(NSString *)feedUrl {
     
     NSString *rawFeedsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:rawFeedsDirName];
     NSError *error;
     if ([[NSFileManager defaultManager] createDirectoryAtPath:rawFeedsDir withIntermediateDirectories:YES attributes:nil error:&error]) {
         
-        NSNumber *collectionId = [podcastDict objectForKey:@"collectionId"];
         NSString *feedDataFilename = [NSString stringWithFormat:@"%@", collectionId];
         NSString *feedDataFilepath = [rawFeedsDir stringByAppendingPathComponent:feedDataFilename];
         NSData *feedData;
-        // make sure it is cached, even though we preloaded it
+        // get cached copy, or download if necessary
         if ([[NSFileManager defaultManager] fileExistsAtPath:feedDataFilepath]) {
             CLS_LOG(@"raw feed data was cached");
             feedData = [NSData dataWithContentsOfFile:feedDataFilepath];
         } else {
             CLS_LOG(@"had to download feed");
-            feedData = [NSData dataWithContentsOfURL:[NSURL URLWithString: [podcastDict objectForKey:@"feedUrl"]]];
+            feedData = [NSData dataWithContentsOfURL:[NSURL URLWithString: feedUrl]];
             [feedData writeToFile:feedDataFilepath atomically:YES];
         }
         

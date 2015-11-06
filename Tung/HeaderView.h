@@ -20,6 +20,7 @@
 @property (strong, nonatomic) IBOutlet UILabel *descriptionLabel;
 @property (strong, nonatomic) IBOutlet CircleButton *largeButton;
 @property NSLayoutConstraint *heightConstraint;
+@property NSArray *keyColors;
 @property BOOL isConstrained;
 
 -(void) setUpHeaderViewForEpisodeMiniDict:(NSDictionary *)miniDict;

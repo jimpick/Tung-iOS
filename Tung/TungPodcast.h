@@ -54,7 +54,7 @@
 // feeds
 + (void) cacheFeed:(NSDictionary *)feed forEntity:(PodcastEntity *)entity;
 + (NSDictionary *) retrieveAndCacheFeedForPodcastEntity:(PodcastEntity *)entity forceNewest:(BOOL)forceNewest;
-+ (NSDictionary *) retrieveAndConvertPodcastFeedDataFromDict:(NSDictionary *)podcastDict;
++ (NSDictionary *) retrieveAndConvertPodcastFeedDataWithCollectionId:(NSNumber *)collectionId andFeedUrl:(NSString *)feedUrl;
 + (NSDictionary *) requestAndConvertPodcastFeedDataWithCollectionId:(NSNumber *)collectionId andFeedUrl:(NSString *)feedUrl;
 + (NSArray *) extractFeedArrayFromFeedDict:(NSDictionary *)feedDict;
 

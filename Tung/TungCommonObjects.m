@@ -1026,8 +1026,10 @@ static NSString *outputFileName = @"output";
     [request setPredicate:predicate];
     NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
     if (result.count > 0) {
+        CLS_LOG(@"found existing podcast entity for %@", [podcastDict objectForKey:@"collectionName"]);
         podcastEntity = [result lastObject];
     } else {
+        CLS_LOG(@"creating new podcast entity for %@", [podcastDict objectForKey:@"collectionName"]);
         podcastEntity = [NSEntityDescription insertNewObjectForEntityForName:@"PodcastEntity" inManagedObjectContext:appDelegate.managedObjectContext];
         id collectionIdId = [podcastDict objectForKey:@"collectionId"];
         NSNumber *collectionId;
@@ -1039,22 +1041,22 @@ static NSString *outputFileName = @"output";
         podcastEntity.collectionId = collectionId;
         podcastEntity.collectionName = [podcastDict objectForKey:@"collectionName"];
         podcastEntity.artistName = [podcastDict objectForKey:@"artistName"];
+        // subscribed? probably only set when restoring data
+        if ([podcastDict objectForKey:@"isSubscribed"]) {
+            podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
+            if ([podcastDict objectForKey:@"timeSubscribed"]) {
+                NSNumber *timeSubscribed = [podcastDict objectForKey:@"timeSubscribed"];
+                podcastEntity.timeSubscribed = timeSubscribed;
+            }
+        } else {
+            podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
+            podcastEntity.timeSubscribed = 0;
+        }
     }
     // things that can change
     podcastEntity.artworkUrl600 = [podcastDict objectForKey:@"artworkUrl600"];
     podcastEntity.feedUrl = [podcastDict objectForKey:@"feedUrl"];
     
-    // subscribed? probably only set when restoring data
-    if ([podcastDict objectForKey:@"isSubscribed"]) {
-        podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
-        if ([podcastDict objectForKey:@"timeSubscribed"]) {
-            NSNumber *timeSubscribed = [podcastDict objectForKey:@"timeSubscribed"];
-            podcastEntity.timeSubscribed = timeSubscribed;
-        }
-    } else {
-        podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
-        podcastEntity.timeSubscribed = 0;
-    }
     UIColor *keyColor1, *keyColor2;
     NSString *keyColor1Hex, *keyColor2Hex;
     // datasource: podcast search
@@ -1890,7 +1892,7 @@ static NSArray *colors;
                         // restore subscribes
                         NSArray *podcasts = [responseDict objectForKey:@"podcasts"];
                         for (NSDictionary *podcastDict in podcasts) {
-                            [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
+                            [TungCommonObjects getEntityForPodcast:podcastDict save:YES];
                         }
                     }
                     if ([responseDict objectForKey:@"episodes"]) {
@@ -1906,8 +1908,8 @@ static NSArray *colors;
                     if (loggedUser) {
                         NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
                         loggedUser.lastDataChange = lastDataChange;
-                        [TungCommonObjects saveContextWithReason:@"restored podcast and episode data"];
                     }
+                    [TungCommonObjects saveContextWithReason:@"restored podcast and episode data"];
                 }
             }
             else {
