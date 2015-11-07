@@ -174,7 +174,7 @@
 + (NSData*) retrieveSmallAvatarDataWithUrlString:(NSString *)urlString;
 + (NSData*) retrieveAudioClipDataWithUrlString:(NSString *)urlString;
 + (NSData*) retrieveSSLPodcastArtDataWithUrlString:(NSString *)urlString;
-+ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString;
++ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (NSURL *) getClipFileURL;
 + (NSString *) getAlbumArtFilenameFromUrlString:(NSString *)artURLString;
 

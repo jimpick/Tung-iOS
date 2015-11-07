@@ -287,11 +287,12 @@ static NSString *cellIdentifier = @"PodcastResultCell";
     NSMutableDictionary *podcastDict;
     // search
     podcastDict = [NSMutableDictionary dictionaryWithDictionary:[_podcastArray objectAtIndex:indexPath.row]];
-    //CLS_LOG(@"---- configure row %ld for search: %@ ",(long)indexPath.row, [podcastDict objectForKey:@"collectionName"]);
+    NSLog(@"---- configure row %ld for search: %@ ",(long)indexPath.row, [podcastDict objectForKey:@"collectionName"]);
     
     // art
     NSString *artUrlString = [podcastDict objectForKey:@"artworkUrl600"];
-    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString];
+    NSLog(@"%@", artUrlString);
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString andCollectionId:[podcastDict objectForKey:@"collectionId"]];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     podcastCell.podcastArtImageView.image = artImage;
     
@@ -458,7 +459,8 @@ static NSString *cellIdentifier = @"PodcastResultCell";
         
         [preloadQueue addOperationWithBlock:^{
             NSString *artURLString = [[itemArrayCopy objectAtIndex:i] objectForKey:@"artworkUrl600"];
-            [TungCommonObjects retrievePodcastArtDataWithUrlString:artURLString];
+            NSNumber *collectionId = [[itemArrayCopy objectAtIndex:i] objectForKey:@"collectionId"];
+            [TungCommonObjects retrievePodcastArtDataWithUrlString:artURLString andCollectionId:collectionId];
         }];
     }
 }

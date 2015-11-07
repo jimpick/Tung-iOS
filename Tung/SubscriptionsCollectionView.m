@@ -293,7 +293,7 @@ static NSString * const reuseIdentifier = @"artCell";
     //NSArray *keys = [[[podcastEntity entity] attributesByName] allKeys];
     //NSDictionary *podcastDict = [podcastEntity dictionaryWithValuesForKeys:keys];
     
-    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600];
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600 andCollectionId:podcastEntity.collectionId];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
 
     cell.artImageView.image = artImage;

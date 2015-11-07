@@ -40,12 +40,11 @@
     
     // FEED
     _storiesView = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
-    _storiesView.viewController = self;
-    _storiesView.profiledUserId = @"";
     
     //_storiesView.edgesForExtendedLayout = UIRectEdgeNone; // seems to not do anything
     [self addChildViewController:_storiesView];
     _storiesView.navController = [self navigationController];
+    _storiesView.profiledUserId = @"";
     [self.view addSubview:_storiesView.view];
     
     
@@ -74,7 +73,7 @@
     } */
     
     //[TungCommonObjects checkForUserData]; // for debugging
-    [TungCommonObjects checkForPodcastData]; // for debugging
+    //[TungCommonObjects checkForPodcastData]; // for debugging
     
     // first load
     _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
@@ -89,21 +88,13 @@
 -(void) viewWillAppear:(BOOL)animated {
     self.navigationController.navigationBar.translucent = NO;
     
-
-}
-
--(void) viewDidAppear:(BOOL)animated {
-    [super viewDidAppear:animated];
-    
     _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
     
     // let's get retarded in here
     if (_tung.feedNeedsRefresh.boolValue) {
-    	[self refreshFeed];
+        [self refreshFeed];
     }
-    
-    self.navigationController.navigationBar.translucent = NO;
 }
 
 - (void) viewWillDisappear:(BOOL)animated {

@@ -37,7 +37,6 @@
 
 // references to host viewcontroller's properties
 @property (strong, nonatomic) UINavigationController *navController;
-@property (strong, nonatomic) UIViewController *viewController;
 @property ProfileHeaderView *profileHeader;
 @property NSLayoutConstraint *profileHeightConstraint;
 

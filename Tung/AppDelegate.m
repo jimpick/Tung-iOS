@@ -105,7 +105,6 @@
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
     CLS_LOG(@"Application did become active");
-    
     [_tung checkForNowPlaying];
     
     

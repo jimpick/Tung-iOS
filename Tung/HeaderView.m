@@ -94,7 +94,7 @@ static NSDateFormatter *airDateFormatter = nil;
             self.titleLabel.font = [UIFont systemFontOfSize:19 weight:UIFontWeightLight];
         }
         
-        artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600];
+        artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600 andCollectionId:podcastEntity.collectionId];
         
         isSubscribed = podcastEntity.isSubscribed.boolValue;
         
@@ -114,7 +114,7 @@ static NSDateFormatter *airDateFormatter = nil;
             self.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightLight];
         }
         
-        artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:episodeEntity.podcast.artworkUrl600];
+        artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:episodeEntity.podcast.artworkUrl600 andCollectionId:episodeEntity.collectionId];
         
         isSubscribed = episodeEntity.podcast.isSubscribed.boolValue;
         

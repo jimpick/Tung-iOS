@@ -179,7 +179,6 @@ CGFloat screenWidth;
     
     // for activity feed
     _storiesView = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
-    _storiesView.viewController = self;
     _storiesView.profiledUserId = _profiledUserId;
     // for animating header
     _storiesView.profileHeader = _profileHeader;

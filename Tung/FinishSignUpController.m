@@ -149,6 +149,8 @@
                     
                     // store user data
                     [TungCommonObjects saveUserWithDict:userDict];
+                    
+                    [CrashlyticsKit setUserName:[userDict objectForKey:@"username"]];
                 	
                     // request to mutually follow all users
                     [_tung followAllUsersFromId:userId withCallback:^(BOOL success, NSDictionary *response) {

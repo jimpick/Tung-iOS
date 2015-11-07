@@ -65,8 +65,8 @@
         
         _sessionId = @"";
         _tung_version = @"0.1.0";
-        //_apiRootUrl = @"https://api.tung.fm/";
-        _apiRootUrl = @"https://staging-api.tung.fm/";
+        _apiRootUrl = @"https://api.tung.fm/";
+        //_apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         _twitterApiRootUrl = @"https://api.twitter.com/1.1/";
         // refresh feed flag
@@ -310,6 +310,7 @@
                             CLS_LOG(@"not yet playing, play");
                             [self playerPlay];
                         }
+                        [self determineTotalSeconds];
                     }];
                     
                 }
@@ -521,7 +522,7 @@
         _currentFeedIndex = [TungCommonObjects getIndexOfEpisodeWithUrl:urlString inFeed:_currentFeed];
         
         // set now playing info center info
-        NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:_npEpisodeEntity.podcast.artworkUrl600];
+        NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:_npEpisodeEntity.podcast.artworkUrl600 andCollectionId:_npEpisodeEntity.collectionId];
         UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
         MPMediaItemArtwork *albumArt = [[MPMediaItemArtwork alloc] initWithImage:artImage];
         [_trackInfo setObject:albumArt forKey:MPMediaItemPropertyArtwork];
@@ -1803,7 +1804,7 @@ static NSArray *colors;
     // podcast art
     [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"podcastArt\"; filename=\"%@\"\r\n", @"art.jpg"] dataUsingEncoding:NSUTF8StringEncoding]];
     [body appendData:[@"Content-Type: image/jpeg\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-    NSData *podcastArtData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600];
+    NSData *podcastArtData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600 andCollectionId:podcastEntity.collectionId];
     [body appendData:podcastArtData];
     [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
     
@@ -2763,6 +2764,11 @@ static NSArray *colors;
     if ([FBSDKAccessToken currentAccessToken]) {
     	[[FBSDKLoginManager new] logOut];
     }
+    
+    // clear temp directory
+    [TungCommonObjects clearTempDirectory];
+    
+    [CrashlyticsKit setUserName:@""];
 
     // since this method can get called by dismissing an unauthorized alert
     // make sure _viewController property is set for VCs that call signOut
@@ -3045,13 +3051,15 @@ static NSArray *colors;
 }
 
 // for podcast art url from feed
-+ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString {
++ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId {
     
     NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
     NSError *error;
     if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
         
-        NSString *artFilename = [self getAlbumArtFilenameFromUrlString:urlString];
+        NSString *extension = [[urlString lastPathComponent] pathExtension];
+        if (!extension) extension = @"jpg";
+        NSString *artFilename = [NSString stringWithFormat:@"%@.%@", collectionId, extension];
         NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
         NSData *artImageData;
         if ([[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {

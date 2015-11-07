@@ -47,7 +47,6 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     self.requestStatus = @"";
     
     // default vc and nav controller (can get overwritten)
-    _viewController = self;
     _navController = self.navigationController;
     
     // table
@@ -546,7 +545,7 @@ CGFloat labelWidth = 0;
                 [storyOptionSheet addButtonWithTitle:option];
             }
             [storyOptionSheet setTag:1];
-            [storyOptionSheet showInView:_viewController.view];
+            [storyOptionSheet showInView:self.view];
         }
     }
 }
@@ -564,7 +563,7 @@ CGFloat labelWidth = 0;
         [optionsOptionSheet addButtonWithTitle:option];
     }
     [optionsOptionSheet setTag:2];
-    [optionsOptionSheet showInView:_viewController.view];
+    [optionsOptionSheet showInView:self.view];
 }
 
 - (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
@@ -576,7 +575,7 @@ CGFloat labelWidth = 0;
         if (buttonIndex == 1) { // share this clip/interaction
             
             UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[_shareText] applicationActivities:nil];
-            [_viewController presentViewController:shareSheet animated:YES completion:nil];
+            [self presentViewController:shareSheet animated:YES completion:nil];
         }
         else if (buttonIndex == 2) { // copy link
             [[UIPasteboard generalPasteboard] setString:_shareLink];
@@ -626,7 +625,7 @@ CGFloat labelWidth = 0;
         switch (buttonIndex) {
             case 1 : {
                 UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[episodeShareText] applicationActivities:nil];
-                [_viewController presentViewController:shareSheet animated:YES completion:nil];
+                [self presentViewController:shareSheet animated:YES completion:nil];
                 break;
             }
             case 2 : {
@@ -635,7 +634,7 @@ CGFloat labelWidth = 0;
             }
             case 3 : {
                 UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[storyShareText] applicationActivities:nil];
-                [_viewController presentViewController:shareSheet animated:YES completion:nil];
+                [self presentViewController:shareSheet animated:YES completion:nil];
                 break;
             }
             case 4 : {
@@ -955,6 +954,7 @@ NSInteger requestTries = 0;
                         NSTimeInterval requestDuration = [requestStarted timeIntervalSinceNow];
                         NSArray *newStories = [responseDict objectForKey:@"stories"];
                         
+                        
                         if (withCred) {
                             CLS_LOG(@"got stories AND session in %f seconds.", fabs(requestDuration));
                             _tung.sessionId = [responseDict objectForKey:@"sessionId"];
@@ -1058,11 +1058,14 @@ NSInteger requestTries = 0;
                         
                         // feed is now refreshed
                         self.requestStatus = @"finished";
-                        if ([_viewController isKindOfClass:[FeedViewController class]]) {
-                        	_tung.feedNeedsRefresh = [NSNumber numberWithBool:NO];
-                        }
-                        if ([_viewController isKindOfClass:[ProfileViewController class]]) {
+                        
+                        if (_profiledUserId.length && [_profiledUserId isEqualToString:_tung.tungId]) {
+                            // profile feed has been refreshed
                             _tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:NO];
+                        }
+                        else if (!_profiledUserId.length && !_storyId) {
+                            // main feed page has been refreshed
+                            _tung.feedNeedsRefresh = [NSNumber numberWithBool:NO];
                         }
                     }
                 }
@@ -1227,7 +1230,7 @@ NSInteger requestTries = 0;
 }
 
 - (void) setScrollViewContentSizeForHeight {
-    CLS_LOG(@"set scroll view content size for height");
+    //CLS_LOG(@"set scroll view content size for height");
     // set scroll view content size for height
     CGFloat scrollViewHeight = _profileHeightConstraint.constant - tableHeaderRow;
 //    CLS_LOG(@"scroll view height: %f", scrollViewHeight);

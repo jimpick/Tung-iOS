@@ -421,6 +421,8 @@
                     // store user data
                     [TungCommonObjects saveUserWithDict:userDict];
                     
+                    [CrashlyticsKit setUserName:[userDict objectForKey:@"username"]];
+                    
                     [self loginRequestEnded];
                 
                     // show feed
