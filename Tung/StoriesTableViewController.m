@@ -271,6 +271,10 @@ CGFloat labelWidth = 0;
 }
 
 
+-(CGFloat)tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    return 0.01f;
+}
+
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
     
     if (section == _storiesArray.count) {
@@ -279,6 +283,12 @@ CGFloat labelWidth = 0;
     else {
         return 1;
     }
+}
+
+-(UIView *) tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
+    UIView *separator = [UIView new];
+    separator.backgroundColor = [UIColor whiteColor];
+    return separator;
 }
 
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
@@ -523,12 +533,19 @@ CGFloat labelWidth = 0;
             NSString *playFromString = [NSString stringWithFormat:@"Play from %@", _timestamp];
             CLS_LOG(@"event dict: %@", eventDict);
             NSString *type = [eventDict objectForKey:@"type"];
+            NSString *destructiveOption = @"Delete this comment";
             
             if ([type isEqualToString:@"clip"]) {
                 options = @[@"Share this clip", @"Copy link to clip", playFromString];
                 NSString *clipShortlink = [eventDict objectForKey:@"shortlink"];
                 _shareLink = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, clipShortlink];
                 _shareText = [NSString stringWithFormat:@"Here's a clip from %@: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], _shareLink];
+                NSString *comment = [eventDict objectForKey:@"comment"];
+                if (comment.length > 0) {
+                    destructiveOption = @"Delete clip & comment";
+                } else {
+                    destructiveOption = @"Delete this clip";
+                }
             }
             else if ([type isEqualToString:@"comment"]) {
                 options = @[@"Share this interaction", @"Copy link to interaction", playFromString];
@@ -538,9 +555,13 @@ CGFloat labelWidth = 0;
             else {
                 return;
             }
-            // TODO: add "flag for moderation" or "delete clip/comment" destructive option
+            // determine destructive option
+            NSString *userId = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+            if (![userId isEqualToString:_tung.tungId]) {
+                destructiveOption = @"Request moderation";
+            }
             
-            UIActionSheet *storyOptionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:nil otherButtonTitles:nil];
+            UIActionSheet *storyOptionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:destructiveOption otherButtonTitles:nil];
             for (NSString *option in options) {
                 [storyOptionSheet addButtonWithTitle:option];
             }
@@ -568,10 +589,27 @@ CGFloat labelWidth = 0;
 
 - (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
     
-    //CLS_LOG(@"dismissed action sheet with button: %ld", (long)buttonIndex);
+    CLS_LOG(@"dismissed action sheet with button: %ld", (long)buttonIndex);
     
     // long press table cell
     if (actionSheet.tag == 1) {
+        if (buttonIndex == 0) { // destructive option
+            NSDictionary *headerDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
+            NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:_buttonPressIndexPath.row]];
+            NSString *userId = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+            NSString *eventId = [[eventDict objectForKey:@"id"] objectForKey:@"$id"];
+            // delete story event
+            if ([userId isEqualToString:_tung.tungId]) {
+                
+                NSLog(@"delete story event event id: %@", eventId);
+            }
+            // request moderation
+            else {
+                NSLog(@"request moderation for story event with event id: %@", eventId);
+            }
+            
+            
+        }
         if (buttonIndex == 1) { // share this clip/interaction
             
             UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[_shareText] applicationActivities:nil];
@@ -930,6 +968,10 @@ NSInteger requestTries = 0;
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                             // get new session and re-request
                             CLS_LOG(@"SESSION EXPIRED");
+                            if (!_tung.tungId) {
+                                [_tung establishCred];
+                                CLS_LOG(@"--------- TUNG ID WAS NULL ----------");
+                            }
                             [_tung getSessionWithCallback:^{
                                 [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:withCred];
                             }];

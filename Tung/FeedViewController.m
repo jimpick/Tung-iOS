@@ -106,10 +106,11 @@
 
 - (void) viewDidDisappear:(BOOL)animated {
     [super viewDidDisappear:animated];
+    /* ppl want what was there to remain
     if (_podcast.searchController.active) {
         [_podcast.searchController setActive:NO];
         [self dismissPodcastSearch];
-    }
+    }*/
 }
 
 #pragma mark - tungObjects/tungPodcasts delegate methods

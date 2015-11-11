@@ -271,10 +271,11 @@ CGFloat screenWidth;
 
 - (void) viewDidDisappear:(BOOL)animated {
     [super viewDidDisappear:animated];
+    /*
     if (_isLoggedInUser && _searchController.active) {
         [_searchController setActive:NO];
         [self dismissProfileSearch];
-    }
+    }*/
 }
 
 
@@ -397,7 +398,7 @@ CGFloat screenWidth;
             _profileSearchConnection = nil;
         }
         _profileSearchConnection = [[NSURLConnection alloc] initWithRequest:profileSearchRequest delegate:self];
-        CLS_LOG(@"search profiles with params: %@", params);
+        CLS_LOG(@"search profiles for: %@", searchTerm);
     }
 }
 

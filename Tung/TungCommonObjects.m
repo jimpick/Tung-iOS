@@ -64,9 +64,9 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        _tung_version = @"0.1.0";
-        _apiRootUrl = @"https://api.tung.fm/";
-        //_apiRootUrl = @"https://staging-api.tung.fm/";
+        _tung_version = @"0.1.1";
+        //_apiRootUrl = @"https://api.tung.fm/";
+        _apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         _twitterApiRootUrl = @"https://api.twitter.com/1.1/";
         // refresh feed flag
@@ -1017,7 +1017,7 @@ static NSString *outputFileName = @"output";
         return nil;
     }
     
-    CLS_LOG(@"get entity for podcast: %@", [podcastDict objectForKey:@"collectionName"]);
+    //CLS_LOG(@"get entity for podcast: %@", [podcastDict objectForKey:@"collectionName"]);
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     PodcastEntity *podcastEntity;
     
@@ -1027,10 +1027,10 @@ static NSString *outputFileName = @"output";
     [request setPredicate:predicate];
     NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
     if (result.count > 0) {
-        CLS_LOG(@"found existing podcast entity for %@", [podcastDict objectForKey:@"collectionName"]);
+        //CLS_LOG(@"found existing podcast entity for %@", [podcastDict objectForKey:@"collectionName"]);
         podcastEntity = [result lastObject];
     } else {
-        CLS_LOG(@"creating new podcast entity for %@", [podcastDict objectForKey:@"collectionName"]);
+        //CLS_LOG(@"creating new podcast entity for %@", [podcastDict objectForKey:@"collectionName"]);
         podcastEntity = [NSEntityDescription insertNewObjectForEntityForName:@"PodcastEntity" inManagedObjectContext:appDelegate.managedObjectContext];
         id collectionIdId = [podcastDict objectForKey:@"collectionId"];
         NSNumber *collectionId;
@@ -1103,7 +1103,7 @@ static NSString *outputFileName = @"output";
         return nil;
     }
     
-    CLS_LOG(@"get episode entity for episode: %@", [episodeDict objectForKey:@"title"]);
+    //CLS_LOG(@"get episode entity for episode: %@", [episodeDict objectForKey:@"title"]);
     PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
 
@@ -1669,7 +1669,11 @@ static NSArray *colors;
 // all requests require a session ID instead of credentials
 // start here and get session with credentials
 - (void) getSessionWithCallback:(void (^)(void))callback {
-    CLS_LOG(@"getting new session");
+    CLS_LOG(@"getting new session with id: %@", _tungId);
+    if (!_tungId) {
+        [self establishCred];
+        CLS_LOG(@"--------- TUNG ID WAS NULL ----------");
+    }
     
     NSURL *getSessionRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/session.php", _apiRootUrl]];
     NSMutableURLRequest *getSessionRequest = [NSMutableURLRequest requestWithURL:getSessionRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
@@ -1823,7 +1827,7 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                CLS_LOG(@"%@", responseDict);
+                //CLS_LOG(@"%@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
@@ -1902,15 +1906,15 @@ static NSArray *colors;
                         for (NSDictionary *episodeDict in episodes) {
                             NSDictionary *eDict = [episodeDict objectForKey:@"episode"];
                             NSDictionary *pDict = [episodeDict objectForKey:@"podcast"];
-                            [TungCommonObjects getEntityForPodcast:pDict andEpisode:eDict save:NO];
+                            [TungCommonObjects getEntityForPodcast:pDict andEpisode:eDict save:YES];
                         }
                     }
                     UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
                     if (loggedUser) {
                         NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
                         loggedUser.lastDataChange = lastDataChange;
+                        [TungCommonObjects saveContextWithReason:@"updated lastDataChange for restore"];
                     }
-                    [TungCommonObjects saveContextWithReason:@"restored podcast and episode data"];
                 }
             }
             else {
@@ -2766,7 +2770,7 @@ static NSArray *colors;
     }
     
     // clear temp directory
-    [TungCommonObjects clearTempDirectory];
+    //[TungCommonObjects clearTempDirectory];
     
     [CrashlyticsKit setUserName:@""];
 
@@ -2798,10 +2802,9 @@ static NSArray *colors;
                 _arrayOfTwitterAccounts = [accountStore accountsWithAccountType:accountType];
                 if ([_arrayOfTwitterAccounts count] > 0) {
                     // first check if userData has a twitter id
-                    NSString *twitter_username;
                     NSDictionary *userData = [self getLoggedInUserData];
-                    if (userData) twitter_username = [userData objectForKey:@"twitter_username"];
-                    if (twitter_username != NULL) {
+                    if (userData && [userData objectForKey:@"twitter_username"] != (id)[NSNull null]) {
+                        NSString *twitter_username = [userData objectForKey:@"twitter_username"];
                         CLS_LOG(@"twitter username found in logged-in user data: %@", twitter_username);
                         for (ACAccount *acct in _arrayOfTwitterAccounts) {
                             if ([acct.username isEqualToString:twitter_username]) {

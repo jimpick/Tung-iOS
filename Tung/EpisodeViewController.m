@@ -325,10 +325,11 @@ static NSArray *playbackRateStrings;
 
 - (void) viewDidDisappear:(BOOL)animated {
     [super viewDidDisappear:animated];
+    /*
     if (_isNowPlayingView && _podcast.searchController.active) {
         [_podcast.searchController setActive:NO];
         [self dismissPodcastSearch];
-    }
+    }*/
 }
 
 
@@ -883,8 +884,15 @@ static CGRect buttonsScrollViewHomeRect;
 
 - (void) openPodcastWebsite {
     // open web browsing modal
-    _urlToPass = [NSURL URLWithString:_episodeEntity.podcast.website];
-    [self performSegueWithIdentifier:@"presentWebView" sender:self];
+    if (_episodeEntity.podcast.website.length) {
+        _urlToPass = [NSURL URLWithString:_episodeEntity.podcast.website];
+        [self performSegueWithIdentifier:@"presentWebView" sender:self];
+    } else {
+        CLS_LOG(@"no website");
+        
+        UIAlertView *noWebsiteAlert = [[UIAlertView alloc] initWithTitle:@"Bummer" message:@"This podcast doesn't have a website in its feed." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+        [noWebsiteAlert show];
+    }
 }
 
 #pragma mark - clip recording and playback methods
@@ -1012,7 +1020,7 @@ static CGRect buttonsScrollViewHomeRect;
 }
 
 - (void) resetRecording {
-    CLS_LOG(@"reset recording");
+    //CLS_LOG(@"reset recording");
     
     if ([_audioPlayer isPlaying]) [_audioPlayer stop];
     _audioPlayer = nil;
@@ -1190,7 +1198,7 @@ static CGRect buttonsScrollViewHomeRect;
 
 // toggles clipConfirm view state and scroll view
 - (void) toggleNewClipView {
-    CLS_LOG(@"toggle new clip view. clipConfirmActive: %@", (_clipConfirmActive) ? @"YES" : @"NO");
+    //CLS_LOG(@"toggle new clip view. clipConfirmActive: %@", (_clipConfirmActive) ? @"YES" : @"NO");
     // dismiss comment and post view
     if (_clipConfirmActive) {
         if (_keyboardActive) {
@@ -1664,6 +1672,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
     if (btn.on) {
         [self addObserver:self forKeyPath:@"tung.twitterAccountStatus" options:NSKeyValueObservingOptionNew context:nil];
         [_tung establishTwitterAccount];
+        [_commentAndPostView.commentTextView setEditable:NO];
     }
     else {
         [self removeObserver:self forKeyPath:@"tung.twitterAccountStatus"];
@@ -1716,6 +1725,9 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
     //CLS_LOG(@"----- value changed for key: %@, change: %@", keyPath, change);
     
     if ([keyPath isEqualToString:@"tung.twitterAccountStatus"]) {
+        
+        [_commentAndPostView.commentTextView setEditable:YES];
+        
         if ([_tung.twitterAccountStatus isEqualToString:@"failed"]) {
             _commentAndPostView.twitterButton.on = NO;
             [_commentAndPostView.twitterButton setNeedsDisplay];

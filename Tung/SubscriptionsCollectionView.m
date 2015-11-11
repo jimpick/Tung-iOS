@@ -108,10 +108,11 @@ static NSString * const reuseIdentifier = @"artCell";
 
 - (void) viewDidDisappear:(BOOL)animated {
     [super viewDidDisappear:animated];
+    /*
     if (_podcast.searchController.active) {
         [_podcast.searchController setActive:NO];
         [self dismissPodcastSearch];
-    }
+    }*/
 }
 
 

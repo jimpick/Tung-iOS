@@ -12,7 +12,7 @@
 #import <FacebookSDK/FacebookSDK.h>
 #import "AppDelegate.h"
 
-#define MAX_BIO_CHARS 120
+#define MAX_BIO_CHARS 160
 
 @interface EditProfileTableViewController ()
 
@@ -213,6 +213,7 @@ static UIImage *iconRedX;
     if (_field_username.text.length == 0) [_fieldErrors setObject:@"A username is required" forKey:@"username"];
     if (_field_name.text.length == 0) [_fieldErrors setObject:@"Name is required" forKey:@"name"];
     if (_field_email.text.length == 0) [_fieldErrors setObject:@"Email is required" forKey:@"email"];
+    if (_field_bio.text.length > MAX_BIO_CHARS) [_fieldErrors setObject:@"Bio can't exceed 160 characters" forKey:@"bio"];
     // check for errors
     if ([_fieldErrors count] > 0) {
         // display error alert
@@ -761,7 +762,7 @@ static UIImage *iconRedX;
     }
 }
 
--(void) validatePhoneField:(UITextField *)textField {
+-(void) validatePhoneField:(UITextField *)textField { // not used
     // UIDataDetectorTypePhoneNumber
     if ([textField.text length] > 0) {
         NSRegularExpression *phoneRegex = [NSRegularExpression regularExpressionWithPattern:@"^[0-9]{10,19}$" options:0 error:nil];
@@ -817,6 +818,9 @@ static UIImage *iconRedX;
 #pragma mark - text view delegate methods
 
 - (void)textViewDidChange:(UITextView *)textView {
+    if (textView.text.length <= MAX_BIO_CHARS && [_fieldErrors objectForKey:@"bio"]) {
+        [_fieldErrors removeObjectForKey:@"bio"];
+    }
     [self formatKeyboardLabel:textView];
 }
 
@@ -851,13 +855,7 @@ static UIImage *iconRedX;
     }
     _prevHideBioLabel = hideBioLabel;
     
-    // keep text limited to MAX_CHARS
-    //CLS_LOG(@"range.location: %lu", (unsigned long)range.location);
-    if (range.location >= MAX_BIO_CHARS) {
-        return NO; // return NO to not change text
-    } else {
-        return YES;
-    }
+    return YES; // always yes because user can paste past the character limit.
 }
 
 - (void) formatKeyboardLabel:(UITextView *)textView {

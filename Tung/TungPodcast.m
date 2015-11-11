@@ -118,7 +118,7 @@
     
     if (searchTerm.length > 0) {
         
-        // so you can search emoji
+        // so you can search emoji - not needed
         /*
         NSString *unicodeText = [NSString stringWithUTF8String:[searchTerm UTF8String]];
         CLS_LOG(@"unicode: %@", unicodeText);
@@ -127,7 +127,7 @@
         NSString *encodedText = [[NSString alloc] initWithData:textData encoding:NSUTF8StringEncoding];
         NSString *encoded = [self urlEncodeString:encodedText];
          */
-        CLS_LOG(@"SENDING SEARCH for %@", searchTerm);
+        //CLS_LOG(@"SENDING SEARCH for %@", searchTerm);
 		_queryExecuted = NO;
         [self searchItunesPodcastDirectoryWithTerm:searchTerm];
         
@@ -184,7 +184,7 @@
         _podcastSearchConnection = nil;
     }
     _podcastSearchConnection = [[NSURLConnection alloc] initWithRequest:podcastSearchRequest delegate:self];
-    CLS_LOG(@"send request for term: %@", searchTerm);
+    //CLS_LOG(@"send request for term: %@", searchTerm);
 }
 
 #pragma mark - NSURLConnection delegate methods
