@@ -10,7 +10,7 @@
 #import "CommentBkgdView.h"
 
 @interface CommentCell : UITableViewCell
-@property (strong, nonatomic) IBOutlet UILabel *usernameLabel;
+@property (strong, nonatomic) IBOutlet UIButton *usernameBtn;
 @property (strong, nonatomic) IBOutlet UILabel *timestampLabel;
 @property (strong, nonatomic) IBOutlet UILabel *commentLabel;
 @property (strong, nonatomic) IBOutlet CommentBkgdView *commentBkgd;

@@ -2486,6 +2486,100 @@ static NSArray *colors;
     }];
 }
 
+- (void) deleteStoryEventWithId:(NSString *)eventId withCallback:(void (^)(BOOL success))callback  {
+    CLS_LOG(@"delete story event with id: %@", eventId);
+    NSURL *deleteEventRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/delete-story-event.php", _apiRootUrl]];
+    NSMutableURLRequest *deleteEventRequest = [NSMutableURLRequest requestWithURL:deleteEventRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [deleteEventRequest setHTTPMethod:@"POST"];
+    
+    NSDictionary *params = @{@"sessionId":_sessionId,
+                             @"eventId": eventId
+                             };
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [deleteEventRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:deleteEventRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                if ([responseDict objectForKey:@"error"]) {
+                    // session expired
+                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                        // get new session and re-request
+                        CLS_LOG(@"SESSION EXPIRED");
+                        [self getSessionWithCallback:^{
+                            [self deleteStoryEventWithId:eventId withCallback:callback];
+                        }];
+                    }
+                    else {
+                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        callback(NO);
+                    }
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    CLS_LOG(@"successfully deleted event - %@", responseDict);
+                    callback(YES);
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                CLS_LOG(@"Error. HTML: %@", html);
+                callback(NO);
+            }
+        });
+    }];
+}
+
+- (void) flagCommentWithId:(NSString *)eventId {
+    CLS_LOG(@"flag comment with id: %@", eventId);
+    NSURL *flagCommentRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/flag.php", _apiRootUrl]];
+    NSMutableURLRequest *flagCommentRequest = [NSMutableURLRequest requestWithURL:flagCommentRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [flagCommentRequest setHTTPMethod:@"POST"];
+    
+    NSDictionary *params = @{@"sessionId":_sessionId,
+                             @"eventId": eventId
+                             };
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [flagCommentRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:flagCommentRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                if ([responseDict objectForKey:@"error"]) {
+                    // session expired
+                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                        // get new session and re-request
+                        CLS_LOG(@"SESSION EXPIRED");
+                        [self getSessionWithCallback:^{
+                            [self flagCommentWithId:eventId];
+                        }];
+                    }
+                    else {
+                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        UIAlertView *errorFlaggingAlert = [[UIAlertView alloc] initWithTitle:@"Error flagging" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                        [errorFlaggingAlert show];
+                    }
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    CLS_LOG(@"successfully flagged comment - %@", responseDict);
+                    
+                    UIAlertView *successfullyFlaggedAlert = [[UIAlertView alloc] initWithTitle:@"Successfully flagged" message:@"This comment will be moderated. Thank you for your feedback." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                    [successfullyFlaggedAlert show];
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                CLS_LOG(@"Error. HTML: %@", html);
+            }
+        });
+    }];
+}
+
 // for getting episode and podcast entities
 -(void) requestEpisodeInfoForId:(NSString *)episodeId andCollectionId:(NSString *)collectionId withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
     //CLS_LOG(@"requesting episode info");

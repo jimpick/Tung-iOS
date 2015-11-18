@@ -96,8 +96,10 @@ static NSArray *playbackRateStrings;
     
     // is this for now playing?
     if (_episodeMiniDict || _episodeEntity) {
+        NSLog(@"episode mini dict or episode entity present");
         self.navigationItem.title = @"Episode";
     } else {
+        NSLog(@"no episode mini dict or entity. must be for now playing");
         _isNowPlayingView = YES;
         self.navigationItem.title = @"Now Playing";
         

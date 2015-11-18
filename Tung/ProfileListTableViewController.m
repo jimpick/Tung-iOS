@@ -62,7 +62,6 @@ CGFloat screenWidth;
     if (_queryType) {
         [self refreshFeed];
     }
-    NSLog(@"profile list view did load for queryType: %@", _queryType);
 }
 
 - (void)didReceiveMemoryWarning {

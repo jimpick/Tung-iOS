@@ -11,9 +11,9 @@
 
 @interface CommentsTableViewController ()
 
-
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property NSIndexPath *focusedIndexPath;
+@property NSIndexPath *buttonPressIndexPath;
 
 @end
 
@@ -134,7 +134,8 @@ static CGFloat commentBubbleMargins = 27;
     
     // theirs
     commentCell.commentLabel.textColor = [UIColor darkTextColor];
-    commentCell.usernameLabel.text = [[commentDict objectForKey:@"user"] objectForKey:@"username"];
+    [commentCell.usernameBtn setTitle:[[commentDict objectForKey:@"user"] objectForKey:@"username"] forState:UIControlStateNormal];
+    [commentCell.usernameBtn addTarget:self action:@selector(theirCommentUsernameButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     commentCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
     commentCell.commentBkgd.type = kCommentBkgdTypeTheirs;
     commentCell.commentBkgd.backgroundColor = [UIColor clearColor];
@@ -156,19 +157,28 @@ static CGFloat commentBubbleMargins = 27;
     //CLS_LOG(@"%@", [_commentsArray objectAtIndex:indexPath.row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
+    _buttonPressIndexPath = indexPath;
     NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
     NSString *idString = [[[commentDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
     
     if ([idString isEqualToString:_tung.tungId]) {
         // logged-in user's comment
-        // TODO: preset action sheet with option to delete comment
+        UIActionSheet *deleteCommentActionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Delete this comment" otherButtonTitles:nil];
+
+        [deleteCommentActionSheet setTag:1];
+        [deleteCommentActionSheet showInView:self.view];
     } else {
         // other user's comment
-        // push profile view
-        ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
-        profileView.profiledUserId = idString;
-        [_navController pushViewController:profileView animated:YES];
+        UIActionSheet *commentOptionsActionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Flag this comment" otherButtonTitles:nil];
+        
+        [commentOptionsActionSheet setTag:2];
+        [commentOptionsActionSheet showInView:self.view];
     }
+}
+
+- (void) tableView:(UITableView *)tableView accessoryButtonTappedForRowWithIndexPath:(NSIndexPath *)indexPath {
+    NSLog(@"accessory pressed at index path: %@", indexPath);
+    [self pushProfileForUserAtIndexPath:indexPath];
 }
 
 //- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
@@ -252,6 +262,59 @@ UILabel *prototypeLabel;
     }
     else {
         return 0;
+    }
+}
+
+#pragma mark - Table cell taps
+
+- (void) theirCommentUsernameButtonTapped:(id)sender {
+    NSLog(@"username button tapped");
+    CommentCell* cell  = (CommentCell*)[[sender superview] superview];
+    _buttonPressIndexPath = [self.tableView indexPathForCell:cell];
+    
+    [self pushProfileForUserAtIndexPath:_buttonPressIndexPath];
+    
+}
+
+- (void) pushProfileForUserAtIndexPath:(NSIndexPath *)indexPath {
+    
+    // push profile
+    NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
+    NSString *idString = [[[commentDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+    
+    ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
+    profileView.profiledUserId = idString;
+    [_navController pushViewController:profileView animated:YES];
+}
+
+- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
+    
+    CLS_LOG(@"dismissed commentsTableView action sheet with button: %ld", (long)buttonIndex);
+    NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:_buttonPressIndexPath.row]];
+    // delete own comment
+    if (actionSheet.tag == 1) {
+        
+        if (buttonIndex == 0) { // destructive option
+            
+            NSString *eventId = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
+            [_tung deleteStoryEventWithId:eventId withCallback:^(BOOL success) {
+                [_commentsArray removeObjectAtIndex:_buttonPressIndexPath.row];
+                // remove table row
+                [self.tableView beginUpdates];
+                [self.tableView deleteRowsAtIndexPaths:@[_buttonPressIndexPath] withRowAnimation:UITableViewRowAnimationRight];
+                [self.tableView endUpdates];
+                _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
+            }];
+        }
+    }
+    // their comment
+    if (actionSheet.tag == 2) {
+        
+        if (buttonIndex == 0) { // destructive option
+            
+            NSString *eventId = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
+            [_tung flagCommentWithId:eventId];
+        }
     }
 }
 

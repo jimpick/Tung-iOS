@@ -287,11 +287,10 @@ static NSString *cellIdentifier = @"PodcastResultCell";
     NSMutableDictionary *podcastDict;
     // search
     podcastDict = [NSMutableDictionary dictionaryWithDictionary:[_podcastArray objectAtIndex:indexPath.row]];
-    NSLog(@"---- configure row %ld for search: %@ ",(long)indexPath.row, [podcastDict objectForKey:@"collectionName"]);
+    //NSLog(@"---- configure row %ld for search: %@ ",(long)indexPath.row, [podcastDict objectForKey:@"collectionName"]);
     
     // art
     NSString *artUrlString = [podcastDict objectForKey:@"artworkUrl600"];
-    NSLog(@"%@", artUrlString);
     NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString andCollectionId:[podcastDict objectForKey:@"collectionId"]];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     podcastCell.podcastArtImageView.image = artImage;

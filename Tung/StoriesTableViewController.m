@@ -533,7 +533,8 @@ CGFloat labelWidth = 0;
             NSString *playFromString = [NSString stringWithFormat:@"Play from %@", _timestamp];
             CLS_LOG(@"event dict: %@", eventDict);
             NSString *type = [eventDict objectForKey:@"type"];
-            NSString *destructiveOption = @"Delete this comment";
+            NSString *destructiveOption;
+            NSString *userId = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
             
             if ([type isEqualToString:@"clip"]) {
                 options = @[@"Share this clip", @"Copy link to clip", playFromString];
@@ -541,24 +542,32 @@ CGFloat labelWidth = 0;
                 _shareLink = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, clipShortlink];
                 _shareText = [NSString stringWithFormat:@"Here's a clip from %@: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], _shareLink];
                 NSString *comment = [eventDict objectForKey:@"comment"];
-                if (comment.length > 0) {
-                    destructiveOption = @"Delete clip & comment";
+                if ([userId isEqualToString:_tung.tungId]) {
+                    if (comment.length > 0) {
+                        destructiveOption = @"Delete clip & comment";
+                    } else {
+                        destructiveOption = @"Delete this clip";
+                    }
                 } else {
-                    destructiveOption = @"Delete this clip";
+                    if (comment.length > 0) {
+                        destructiveOption = @"Flag this comment";
+                    } else {
+                        destructiveOption = nil;
+                    }
                 }
             }
             else if ([type isEqualToString:@"comment"]) {
                 options = @[@"Share this interaction", @"Copy link to interaction", playFromString];
                 _shareLink = [headerDict objectForKey:@"storyLink"];
                 _shareText = [self getShareTextForStoryWithDict:headerDict];
+                if ([userId isEqualToString:_tung.tungId]) {
+                    destructiveOption = @"Delete this comment";
+                } else {
+                    destructiveOption = @"Flag this comment";
+                }
             }
             else {
                 return;
-            }
-            // determine destructive option
-            NSString *userId = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
-            if (![userId isEqualToString:_tung.tungId]) {
-                destructiveOption = @"Request moderation";
             }
             
             UIActionSheet *storyOptionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:destructiveOption otherButtonTitles:nil];
@@ -578,7 +587,7 @@ CGFloat labelWidth = 0;
     
     //CLS_LOG(@"set button press index path: %@", _buttonPressIndexPath);
     
-    UIActionSheet *optionsOptionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:nil otherButtonTitles:nil];
+    UIActionSheet *optionsOptionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Flag this" otherButtonTitles:nil];
     NSArray *options = @[@"Share episode", @"Copy link to episode", @"Share this interaction", @"Copy link to interaction"];
     for (NSString *option in options) {
         [optionsOptionSheet addButtonWithTitle:option];
@@ -589,7 +598,7 @@ CGFloat labelWidth = 0;
 
 - (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
     
-    CLS_LOG(@"dismissed action sheet with button: %ld", (long)buttonIndex);
+    CLS_LOG(@"dismissed action sheet with tag: %ld and button: %ld", (long)actionSheet.tag, (long)buttonIndex);
     
     // long press table cell
     if (actionSheet.tag == 1) {
@@ -601,16 +610,37 @@ CGFloat labelWidth = 0;
             // delete story event
             if ([userId isEqualToString:_tung.tungId]) {
                 
-                NSLog(@"delete story event event id: %@", eventId);
+                [_tung deleteStoryEventWithId:eventId withCallback:^(BOOL success) {
+                    if (success) {
+                        // remove story or just event
+                        NSArray *storyArray = [_storiesArray objectAtIndex:_buttonPressIndexPath.section];
+                        if (storyArray.count == 3) {
+                            [_storiesArray removeObjectAtIndex:_buttonPressIndexPath.section];
+                            // remove section (story)
+                            [self.tableView beginUpdates];
+                            [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:_buttonPressIndexPath.section]withRowAnimation:UITableViewRowAnimationRight];
+                            [self.tableView endUpdates];
+                        }
+                        // remove just event
+                        else {
+                            [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] removeObjectAtIndex:_buttonPressIndexPath.row];
+                            // remove table row
+                            [self.tableView beginUpdates];
+                            [self.tableView deleteRowsAtIndexPaths:@[_buttonPressIndexPath] withRowAnimation:UITableViewRowAnimationRight];
+                            [self.tableView endUpdates];
+                        }
+                    }
+                }];
             }
             // request moderation
             else {
-                NSLog(@"request moderation for story event with event id: %@", eventId);
+                // can only flag comments
+                if ([[eventDict objectForKey:@"comment"] length] > 0) {
+                	[_tung flagCommentWithId:eventId];
+                }
             }
-            
-            
         }
-        if (buttonIndex == 1) { // share this clip/interaction
+        else if (buttonIndex == 1) { // share this clip/interaction
             
             UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[_shareText] applicationActivities:nil];
             [self presentViewController:shareSheet animated:YES completion:nil];
@@ -650,6 +680,7 @@ CGFloat labelWidth = 0;
     }
     // options button
     else if (actionSheet.tag == 2) {
+        CLS_LOG(@"options button");
         //@"Share episode", @"Copy link to episode", @"Share this interaction", @"Copy link to interaction"
         
         NSDictionary *headerDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
@@ -661,6 +692,11 @@ CGFloat labelWidth = 0;
         NSString *storyShareText = [self getShareTextForStoryWithDict:headerDict];
         
         switch (buttonIndex) {
+            case 0 : {
+                UIAlertView *howToFlagAlert = [[UIAlertView alloc] initWithTitle:@"Flagging" message:@"To flag a comment for moderation, long press on the comment, and select 'Flag this comment'.\n\nPlease remember Tung cannot moderate the content of podcasts themselves." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                [howToFlagAlert show];
+                break;
+            }
             case 1 : {
                 UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[episodeShareText] applicationActivities:nil];
                 [self presentViewController:shareSheet animated:YES completion:nil];
@@ -679,8 +715,9 @@ CGFloat labelWidth = 0;
                 [[UIPasteboard generalPasteboard] setString:storyLink];
                 break;
             }
-            default:
+            default: { // used for 0, since case 0 doesn't work
                 break;
+            }
         }
         
     }
