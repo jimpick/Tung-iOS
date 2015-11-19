@@ -139,10 +139,8 @@ static NSDateFormatter *airDateFormatter = nil;
         self.largeButton.type = kCircleTypePlay;
         if (episodeEntity.isNowPlaying.boolValue) {
             self.largeButton.on = YES;
-            [self.largeButton setEnabled:NO];
         } else {
             self.largeButton.on = NO;
-            [self.largeButton setEnabled:YES];
         }
     }
     self.largeButton.color = keyColor2;

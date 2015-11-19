@@ -141,7 +141,7 @@
 }
 
 - (void) setSelectedViewController:(UIViewController *)selectedViewController {
-    //NSLog(@"set selected view controller");
+    NSLog(@"set selected view controller");
     
     // make button selected based on self.selectedIndex;
     for (int i = 0; i < _innerButtons.count; i++) {

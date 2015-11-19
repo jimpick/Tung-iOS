@@ -11,4 +11,6 @@
 
 @interface MainTabBarController : UITabBarController
 
+- (IBAction)selectTab:(id)sender;
+
 @end

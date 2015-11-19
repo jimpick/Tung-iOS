@@ -8,10 +8,12 @@
 
 #import <UIKit/UIKit.h>
 #import "CircleButton.h"
+#import "TungMiscView.h"
 
 @interface CommentAndPostView : UIView
 
 @property (strong, nonatomic) IBOutlet UIView *view;
+@property (strong, nonatomic) IBOutlet TungMiscView *textAreaBkgdView;
 @property (strong, nonatomic) IBOutlet CircleButton *twitterButton;
 @property (strong, nonatomic) IBOutlet CircleButton *facebookButton;
 @property (strong, nonatomic) IBOutlet CircleButton *postButton;

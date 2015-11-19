@@ -14,6 +14,7 @@
 #import "EpisodesTableViewController.h"
 #import "CommentsTableViewController.h"
 #import "CommentAndPostView.h"
+#import "MainTabBarController.h"
 
 #include <AudioToolbox/AudioToolbox.h>
 
@@ -525,10 +526,20 @@ static NSArray *playbackRateStrings;
 
 - (void) playEpisode {
     if (_episodeEntity.url.length > 0) {
-        [_tung queueAndPlaySelectedEpisode:_episodeEntity.url fromTimestamp:nil];
-        _headerView.largeButton.on = YES;
-        [_headerView.largeButton setNeedsDisplay];
-        [_episodesView.tableView reloadData];
+        if (_headerView.largeButton.on) {
+            // select Now Playing tab
+            MainTabBarController *tabVC = (MainTabBarController *)self.parentViewController.parentViewController;
+            tabVC.selectedIndex = 1;
+            UIButton *btn = [[UIButton alloc] init];
+            btn.tag = 1;
+            [tabVC selectTab:btn];
+            
+        } else {
+            [_tung queueAndPlaySelectedEpisode:_episodeEntity.url fromTimestamp:nil];
+            _headerView.largeButton.on = YES;
+            [_headerView.largeButton setNeedsDisplay];
+            [_episodesView.tableView reloadData];
+        }
     } else {
         UIAlertView *badXmlAlert = [[UIAlertView alloc] initWithTitle:@"Can't Play - No URL" message:@"Unfortunately, this feed is missing links to its content." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
         [badXmlAlert show];
@@ -612,7 +623,6 @@ static NSArray *playbackRateStrings;
             
             [_tung unsubscribeFromPodcast:_episodeEntity.podcast withButton:subscribeButton];
         }
-        [TungCommonObjects saveContextWithReason:@"(un)subscribed to podcast"];
     }
     else {
         [_podcast showNoConnectionAlert];

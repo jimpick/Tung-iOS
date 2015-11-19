@@ -105,7 +105,7 @@ static CGFloat commentBubbleMargins = 27;
     
     // mine
     commentCell.accessoryType = UITableViewCellAccessoryNone;
-    commentCell.commentBkgd.type = kCommentBkgdTypeMine;
+    commentCell.commentBkgd.type = kMiscViewTypeCommentBkgdMine;
     commentCell.commentBkgd.backgroundColor = [UIColor clearColor];
     [commentCell.commentBkgd setNeedsDisplay];
     
@@ -137,7 +137,7 @@ static CGFloat commentBubbleMargins = 27;
     [commentCell.usernameBtn setTitle:[[commentDict objectForKey:@"user"] objectForKey:@"username"] forState:UIControlStateNormal];
     [commentCell.usernameBtn addTarget:self action:@selector(theirCommentUsernameButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     commentCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-    commentCell.commentBkgd.type = kCommentBkgdTypeTheirs;
+    commentCell.commentBkgd.type = kMiscViewTypeCommentBkgdTheirs;
     commentCell.commentBkgd.backgroundColor = [UIColor clearColor];
     [commentCell.commentBkgd setNeedsDisplay];
     

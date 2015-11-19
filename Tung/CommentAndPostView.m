@@ -23,6 +23,7 @@
         _cancelButton.type = kCircleTypeCancel;
         _postButton.type = kCircleTypeTextButton;
         _postButton.buttonText = @"Post";
+        _textAreaBkgdView.type = kMiscViewTypeTextAreaBkgd;
         
     }
     return self;
@@ -40,6 +41,7 @@
         _cancelButton.type = kCircleTypeCancel;
         _postButton.type = kCircleTypeTextButton;
         _postButton.buttonText = @"Post";
+        _textAreaBkgdView.type = kMiscViewTypeTextAreaBkgd;
     }
     return self;
 }
