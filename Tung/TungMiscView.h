@@ -9,10 +9,11 @@
 #import <UIKit/UIKit.h>
 
 typedef enum {
-    kMiscViewTypeTextAreaBkgd,
-    kMiscViewTypePopup,
+    kMiscViewTypePopupWithArrowLeft,
+    kMiscViewTypePopupWithArrowRight,
     kMiscViewTypeCommentBkgdMine,
-    kMiscViewTypeCommentBkgdTheirs
+    kMiscViewTypeCommentBkgdTheirs,
+    kMiscViewTypeSolidCircle
 } MiscViewType;
 
 @interface TungMiscView : UIView

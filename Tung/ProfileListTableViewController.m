@@ -358,7 +358,6 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
         
         profileCell.subLabelLeadingConstraint.constant = 30;
         profileCell.iconView.hidden = NO;
-        profileCell.iconView.backgroundColor = [UIColor clearColor];
         //CLS_LOG(@"action: %@", action);
         NSString *eventString;
         if ([action isEqualToString:@"followed"]) {

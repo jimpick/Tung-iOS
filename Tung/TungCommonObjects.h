@@ -110,7 +110,7 @@
 - (void) playerPause;
 - (void) setControlButtonStateToPlay;
 - (void) setControlButtonStateToPause;
-- (void) setControlButtonStateToAdd;
+- (void) setControlButtonStateToFauxDisabled;
 - (void) setControlButtonStateToBuffering;
 - (NSURL *) getEpisodeUrl:(NSURL *)url;
 - (void) replacePlayerItemWithLocalCopy;
@@ -130,6 +130,7 @@
 - (void) deleteLoggedInUserData;
 + (BOOL) checkForUserData;
 + (BOOL) checkForPodcastData;
++ (SettingsEntity *) settings;
 
 // colors
 + (NSArray *) determineKeyColorsFromImage:(UIImage *)image;

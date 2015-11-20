@@ -152,7 +152,7 @@
     } else {
         //CLS_LOG(@"no episode playing yet");
         _playQueue = [NSMutableArray array];
-        [self setControlButtonStateToAdd];
+        [self setControlButtonStateToFauxDisabled];;
     }
 }
 
@@ -271,7 +271,7 @@
             case AVPlayerStatusFailed:
                 CLS_LOG(@"-- AVPlayer status: Failed");
                 [self ejectCurrentEpisode];
-                [self setControlButtonStateToAdd];
+                [self setControlButtonStateToFauxDisabled];;
                 break;
             case AVPlayerStatusReadyToPlay:
                 CLS_LOG(@"-- AVPlayer status: ready to play");
@@ -379,9 +379,9 @@
         }
     }
     else {
-        if ([_ctrlBtnDelegate respondsToSelector:@selector(initiateSearch)]) {
-        	[_ctrlBtnDelegate initiateSearch];
-        }
+        UIAlertView *searchPromptAlert = [[UIAlertView alloc] initWithTitle:@"Nothing is Queued" message:@"Would you like to search for a podcast?" delegate:self cancelButtonTitle:@"No" otherButtonTitles:@"Yes", nil];
+        [searchPromptAlert setTag:10];
+        [searchPromptAlert show];
     }
     
 }
@@ -646,7 +646,7 @@
 
             [self playQueuedPodcast];
         } else {
-            [self setControlButtonStateToAdd];
+            [self setControlButtonStateToFauxDisabled];;
         }
     }
 }
@@ -668,7 +668,7 @@
  
         [self playQueuedPodcast];
     } else {
-        [self setControlButtonStateToAdd];
+        [self setControlButtonStateToFauxDisabled];;
     }
 }
 
@@ -816,23 +816,28 @@
  */
 - (void) setControlButtonStateToPlay {
     [_btnActivityIndicator stopAnimating];
+    [_btn_player setEnabled:YES];
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-play.png"] forState:UIControlStateNormal];
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
 }
 - (void) setControlButtonStateToPause {
     [_btnActivityIndicator stopAnimating];
+    [_btn_player setEnabled:YES];
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause.png"] forState:UIControlStateNormal];
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause-down.png"] forState:UIControlStateHighlighted];
 }
-- (void) setControlButtonStateToAdd {
+- (void) setControlButtonStateToFauxDisabled {
     [_btnActivityIndicator stopAnimating];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-add.png"] forState:UIControlStateNormal];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-add-down.png"] forState:UIControlStateHighlighted];
+    [_btn_player setEnabled:YES];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateNormal];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
 }
 - (void) setControlButtonStateToBuffering {
     [_btnActivityIndicator startAnimating];
+    [_btn_player setEnabled:NO];
     [_btn_player setImage:nil forState:UIControlStateNormal];
     [_btn_player setImage:nil forState:UIControlStateHighlighted];
+    [_btn_player setImage:nil forState:UIControlStateDisabled];
 }
 
 #pragma mark - NSURLConnection delegate
@@ -1350,6 +1355,23 @@ static NSDateFormatter *ISODateInterpreter = nil;
         [appDelegate.managedObjectContext deleteObject:userEntity];
         [TungCommonObjects saveContextWithReason:@"delete logged in user entity"];
     }
+}
+
++ (SettingsEntity *) settings {
+    
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSError *error = nil;
+    NSFetchRequest *findSettings = [[NSFetchRequest alloc] initWithEntityName:@"SettingsEntity"];
+    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findSettings error:&error];
+    
+    SettingsEntity *settings;
+    if (result.count > 0) {
+        settings = [result objectAtIndex:0];
+    } else {
+        settings = [NSEntityDescription insertNewObjectForEntityForName:@"SettingsEntity" inManagedObjectContext:appDelegate.managedObjectContext];
+        settings.hasSeenFeedDemo = [NSNumber numberWithInt:NO];
+    }
+    return settings;
 }
 
 // not used... only for debugging
@@ -3037,10 +3059,15 @@ static NSArray *colors;
 #pragma mark - handle alerts
 
 -(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    //CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
+    CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
+    // search prompt
+    if (alertView.tag == 10 && buttonIndex) {
+        if ([_ctrlBtnDelegate respondsToSelector:@selector(initiateSearch)]) {
+            [_ctrlBtnDelegate initiateSearch];
+        }
+    }
     // unauthorized alert
     if (alertView.tag == 99) {
-        // sign out
         [self signOut];
     }
 }
@@ -3050,11 +3077,14 @@ static NSArray *colors;
 - (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
     
     //CLS_LOG(@"dismissed action sheet with button: %ld", (long)buttonIndex);
+    
+    // sign out
     if (actionSheet.tag == 99) {
         
         if (buttonIndex == 0)
             [self signOut];
     }
+    // chose twitter account
     if (actionSheet.tag == 89) {
         
         _twitterAccountToUse = [_arrayOfTwitterAccounts objectAtIndex:buttonIndex];
@@ -3271,11 +3301,11 @@ static NSArray *colors;
     OSStatus results = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&cfValue);
     
     if (results == errSecSuccess) {
-        CLS_LOG(@"credentials found");
+        //CLS_LOG(@"credentials found");
         NSString *tungCred = [[NSString alloc] initWithData:(__bridge_transfer NSData *)cfValue encoding:NSUTF8StringEncoding];
         return tungCred;
     } else {
-    	CLS_LOG(@"No cred found. Code: %ld", (long)results);
+    	//CLS_LOG(@"No cred found. Code: %ld", (long)results);
         return NULL;
     }
 }

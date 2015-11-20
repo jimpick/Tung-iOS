@@ -11,8 +11,26 @@
 
 @implementation IconView
 
+-(id) initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.backgroundColor = [UIColor clearColor];
+        _color = [TungPodcastStyleKit tungColor];
+    }
+    return self;
+}
+
+-(id) initWithCoder:(NSCoder *)aDecoder {
+    self = [super initWithCoder:aDecoder];
+    if (self) {
+        self.backgroundColor = [UIColor clearColor];
+        _color = [TungPodcastStyleKit tungColor];
+    }
+    return self;
+}
 
 - (void)drawRect:(CGRect)rect {
+    
     switch (_type) {
         case kIconTypeNone:
             break;
@@ -29,7 +47,7 @@
             [TungPodcastStyleKit drawSaveIconWithFrame:rect color:_color];
             break;
         case kIconTypeSubscribe:
-            [TungPodcastStyleKit drawSubscribeIconWithFrame:rect color:_color];
+            [TungPodcastStyleKit drawSubscribeIconSolidWithFrame:rect color:_color];
             break;
         case kIconTypeComment:
             [TungPodcastStyleKit drawCommentIconWithFrame:rect color:_color];
@@ -39,6 +57,13 @@
             break;
         case kIconTypeAdd:
             [TungPodcastStyleKit drawAddCircleIconWithFrame:rect color:_color];
+            break;
+        case kIconTypeFeed:
+            [TungPodcastStyleKit drawFeedIconWithFrame:rect color:_color];
+            break;
+        case kIconTypeProfile:
+            [TungPodcastStyleKit drawProfileIconWithFrame:rect color:_color];
+            break;
         default:
             break;
     }

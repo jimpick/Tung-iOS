@@ -1643,7 +1643,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
 }
 
 - (void) keyboardAnimationStopped:(NSString *)animationId finished:(NSNumber *)finished context:(void *)context {
-    NSLog(@"keyboard animation stopped");
+    //NSLog(@"keyboard animation stopped");
     // keyboard going up
     if ([animationId isEqualToString:@"keyboard up"]) {
         _hideControlsButton.hidden = YES;

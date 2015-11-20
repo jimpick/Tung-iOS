@@ -11,15 +11,31 @@
 
 @implementation TungMiscView
 
+-(id) initWithFrame:(CGRect)frame {
+    self = [super initWithFrame:frame];
+    if (self) {
+        self.backgroundColor = [UIColor clearColor];
+    }
+    return self;
+}
+
+-(id) initWithCoder:(NSCoder *)aDecoder {
+    self = [super initWithCoder:aDecoder];
+    if (self) {
+        self.backgroundColor = [UIColor clearColor];
+    }
+    return self;
+}
+
 - (void)drawRect:(CGRect)rect {
     
     switch (_type) {
             
-        case kMiscViewTypeTextAreaBkgd:
-            [TungPodcastStyleKit drawTextAreaBkgdWithFrame:rect];
+        case kMiscViewTypePopupWithArrowLeft:
+            [TungPodcastStyleKit drawPopupWithArrowLeftWithFrame:rect];
             break;
-        case kMiscViewTypePopup:
-            [TungPodcastStyleKit drawPopupWithFrame:rect];
+        case kMiscViewTypePopupWithArrowRight:
+            [TungPodcastStyleKit drawPopupWithArrowRightWithFrame:rect];
             break;
         case kMiscViewTypeCommentBkgdMine:
             [TungPodcastStyleKit drawCommentBkgdUserWithOuterFrame:rect];
@@ -27,11 +43,12 @@
         case kMiscViewTypeCommentBkgdTheirs:
             [TungPodcastStyleKit drawCommentBkgdWithOuterFrame:rect];
             break;
+        case kMiscViewTypeSolidCircle:
+            [TungPodcastStyleKit drawSolidCircleWithFrame:rect];
+            break;
         default:
             break;
     }
-    
-    self.backgroundColor = [UIColor clearColor];
 }
 
 @end

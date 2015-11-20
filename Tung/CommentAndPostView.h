@@ -13,7 +13,7 @@
 @interface CommentAndPostView : UIView
 
 @property (strong, nonatomic) IBOutlet UIView *view;
-@property (strong, nonatomic) IBOutlet TungMiscView *textAreaBkgdView;
+@property (strong, nonatomic) IBOutlet UIView *textAreaBkgdView;
 @property (strong, nonatomic) IBOutlet CircleButton *twitterButton;
 @property (strong, nonatomic) IBOutlet CircleButton *facebookButton;
 @property (strong, nonatomic) IBOutlet CircleButton *postButton;

@@ -16,14 +16,7 @@
         [[NSBundle mainBundle] loadNibNamed:@"CommentAndPostView" owner:self options:nil];
         self.bounds = self.view.bounds;
         [self addSubview:self.view];
-        
-        // button setup
-        _twitterButton.type = kCircleTypeTwitter;
-        _facebookButton.type = kCircleTypeFacebook;
-        _cancelButton.type = kCircleTypeCancel;
-        _postButton.type = kCircleTypeTextButton;
-        _postButton.buttonText = @"Post";
-        _textAreaBkgdView.type = kMiscViewTypeTextAreaBkgd;
+        [self setProperties];
         
     }
     return self;
@@ -34,16 +27,19 @@
     if (self) {
         [[NSBundle mainBundle] loadNibNamed:@"HeaderView" owner:self options:nil];
         [self addSubview:self.view];
+        [self setProperties];
         
-        // button setup
-        _twitterButton.type = kCircleTypeTwitter;
-        _facebookButton.type = kCircleTypeFacebook;
-        _cancelButton.type = kCircleTypeCancel;
-        _postButton.type = kCircleTypeTextButton;
-        _postButton.buttonText = @"Post";
-        _textAreaBkgdView.type = kMiscViewTypeTextAreaBkgd;
     }
     return self;
+}
+
+- (void) setProperties {
+    // button setup
+    _twitterButton.type = kCircleTypeTwitter;
+    _facebookButton.type = kCircleTypeFacebook;
+    _cancelButton.type = kCircleTypeCancel;
+    _postButton.type = kCircleTypeTextButton;
+    _postButton.buttonText = @"Post";
 }
 
 @end

@@ -95,8 +95,8 @@
     _tung.btn_player.frame = CGRectMake(x, y, 76, 63);
     [_tung.btn_player setBackgroundImage:[UIImage imageNamed:@"btn-player-bkgd.png"] forState:UIControlStateNormal];
     [_tung.btn_player setBackgroundImage:[UIImage imageNamed:@"btn-player-bkgd-down.png"] forState:UIControlStateHighlighted];
-    [_tung.btn_player setImage:[UIImage imageNamed:@"btn-player-add.png"] forState:UIControlStateNormal];
-    [_tung.btn_player setImage:[UIImage imageNamed:@"btn-player-add-down.png"] forState:UIControlStateHighlighted];
+    [_tung.btn_player setImage:[UIImage imageNamed:@"btn-player-play.png"] forState:UIControlStateNormal];
+    [_tung.btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
     [_tung.btn_player setContentMode:UIViewContentModeCenter];
     [_tung.btn_player addTarget:_tung action:@selector(controlButtonTapped) forControlEvents:UIControlEventTouchUpInside];
     // buffering indicator
@@ -141,7 +141,6 @@
 }
 
 - (void) setSelectedViewController:(UIViewController *)selectedViewController {
-    NSLog(@"set selected view controller");
     
     // make button selected based on self.selectedIndex;
     for (int i = 0; i < _innerButtons.count; i++) {

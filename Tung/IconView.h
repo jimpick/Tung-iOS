@@ -17,7 +17,9 @@ typedef enum {
     kIconTypeSubscribe,
     kIconTypeComment,
     kIconTypeClip,
-    kIconTypeAdd
+    kIconTypeAdd,
+    kIconTypeFeed,
+    kIconTypeProfile
 } IconType;
 
 @interface IconView : UIView

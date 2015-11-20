@@ -15,6 +15,8 @@
 #import "EpisodeViewController.h"
 #import "ProfileViewController.h"
 #import "FeedViewController.h"
+#import "KLCPopup.h"
+#import "PopupView.h"
 
 @interface StoriesTableViewController()
 
@@ -1133,6 +1135,12 @@ NSInteger requestTries = 0;
                             }
                             
                             [self.tableView reloadData];
+                            
+                            // welcome tutorial
+                            SettingsEntity *settings = [TungCommonObjects settings];
+                            if (!settings.hasSeenFeedDemo.boolValue) {
+                            	[NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(showWelcomePopup) userInfo:nil repeats:NO];
+                            }
                         }
                         
                         // feed is now refreshed
@@ -1259,6 +1267,23 @@ NSInteger requestTries = 0;
 
     }
     return results;
+}
+
+- (void) showWelcomePopup {
+    
+    PopupView *popupView = [[PopupView alloc] initWithFrame:CGRectMake(0,0,230,270)];
+    
+    KLCPopup *welcomePopup = [KLCPopup popupWithContentView:popupView
+                                                   showType:KLCPopupShowTypeGrowIn
+                                                dismissType:KLCPopupDismissTypeShrinkOut
+                                                   maskType:KLCPopupMaskTypeClear
+                                   dismissOnBackgroundTouch:NO
+                                      dismissOnContentTouch:NO];
+    
+    welcomePopup.didFinishShowingCompletion = ^{
+        [popupView setContentSize];
+    };
+    [welcomePopup show];
 }
 
 #pragma mark - scroll view delegate methods

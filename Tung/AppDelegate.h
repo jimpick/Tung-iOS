@@ -10,6 +10,7 @@
 #import "PodcastEntity.h"
 #import "EpisodeEntity.h"
 #import "UserEntity.h"
+#import "SettingsEntity.h"
 #import <Fabric/Fabric.h>
 #import <Crashlytics/Crashlytics.h>
 

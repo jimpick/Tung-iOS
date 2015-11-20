@@ -24,7 +24,7 @@
             <rect key="frame" x="0.0" y="0.0" width="320" height="123"/>
             <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
             <subviews>
-                <view opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="6yl-YJ-dCb" customClass="TungMiscView">
+                <view opaque="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="6yl-YJ-dCb">
                     <rect key="frame" x="13" y="0.0" width="294" height="65"/>
                     <subviews>
                         <textView opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" showsHorizontalScrollIndicator="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Urz-GO-6q0">
@@ -43,6 +43,7 @@
                         </label>
                     </subviews>
                     <animations/>
+                    <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.050000000000000003" colorSpace="calibratedRGB"/>
                     <constraints>
                         <constraint firstAttribute="centerY" secondItem="i6r-TB-onj" secondAttribute="centerY" id="3Bl-ER-HLN"/>
                         <constraint firstItem="i6r-TB-onj" firstAttribute="leading" secondItem="6yl-YJ-dCb" secondAttribute="leading" constant="8" id="4X2-cx-n3I"/>
