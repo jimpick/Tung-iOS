@@ -1188,7 +1188,11 @@ static CGRect buttonsScrollViewHomeRect;
 
 - (void) newComment {
     _shareIntention = kNewCommentIntention;
-    _shareTimestamp = [TungCommonObjects convertSecondsToTimeString:CMTimeGetSeconds(_tung.player.currentTime)];
+    if (_tung.totalSeconds > 0) {
+    	_shareTimestamp = [TungCommonObjects convertSecondsToTimeString:CMTimeGetSeconds(_tung.player.currentTime)];
+    } else {
+        _shareTimestamp = [TungCommonObjects convertSecondsToTimeString:0];
+    }
     _shareLabel.text = [NSString stringWithFormat:@"New comment @ %@", _shareTimestamp];
     _commentAndPostView.commentTextView.text = @"";
     [_commentAndPostView.postButton setEnabled:NO];
@@ -1682,12 +1686,18 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
     [btn setNeedsDisplay];
     
     if (btn.on) {
-        [self addObserver:self forKeyPath:@"tung.twitterAccountStatus" options:NSKeyValueObservingOptionNew context:nil];
-        [_tung establishTwitterAccount];
-        [_commentAndPostView.commentTextView setEditable:NO];
-    }
-    else {
-        [self removeObserver:self forKeyPath:@"tung.twitterAccountStatus"];
+        if (![Twitter sharedInstance].sessionStore.session) {
+            if (_keyboardActive) {
+				[_commentAndPostView.commentTextView resignFirstResponder];
+            }
+            [[Twitter sharedInstance] logInWithCompletion:^(TWTRSession *session, NSError *error) {
+                if (!session) {
+                    NSLog(@"error: %@", [error localizedDescription]);
+                    btn.on = NO;
+                    [btn setNeedsDisplay];
+                }
+            }];
+        }
     }
 }
 
@@ -1731,22 +1741,6 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         }
     }];
 }
-
--(void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
-{
-    //CLS_LOG(@"----- value changed for key: %@, change: %@", keyPath, change);
-    
-    if ([keyPath isEqualToString:@"tung.twitterAccountStatus"]) {
-        
-        [_commentAndPostView.commentTextView setEditable:YES];
-        
-        if ([_tung.twitterAccountStatus isEqualToString:@"failed"]) {
-            _commentAndPostView.twitterButton.on = NO;
-            [_commentAndPostView.twitterButton setNeedsDisplay];
-        }
-    }
-}
-
 
 
 - (void) post {

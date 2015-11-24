@@ -40,6 +40,7 @@
     _cancelButton.type = kCircleTypeCancel;
     _postButton.type = kCircleTypeTextButton;
     _postButton.buttonText = @"Post";
+    _textAreaBkgdView.layer.cornerRadius = 15.0;
 }
 
 @end

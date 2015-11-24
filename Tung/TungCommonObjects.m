@@ -26,6 +26,7 @@
 //#import "ALDisk.h"
 #import "CCColorCube.h"
 #import "TungPodcast.h"
+#import <CommonCrypto/CommonDigest.h>
 
 #import <MobileCoreServices/MobileCoreServices.h> // for AVURLAsset resource loading
 
@@ -1277,7 +1278,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 
 + (UserEntity *) saveUserWithDict:(NSDictionary *)userDict {
     
-    NSString *tungId = [userDict objectForKey:@"tung_id"];
+    NSString *tungId = [[userDict objectForKey:@"_id"] objectForKey:@"$id"];
     //CLS_LOG(@"save user with dict: %@", userDict);
     UserEntity *userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:tungId];
     
@@ -2871,11 +2872,15 @@ static NSArray *colors;
     [TungCommonObjects removeAllUserData];
     [TungCommonObjects removePodcastAndEpisodeData];
     
+    // session
     _tungId = @"";
     _tungToken = @"";
     _sessionId = @"";
-    _twitterAccountToUse = nil;
-    _twitterAccountStatus = @"";
+    
+    // twitter
+    [[Twitter sharedInstance] logOut];
+    _twitterAccountToUse = nil; // TODO: remove
+    _twitterAccountStatus = @""; // TODO: remove
     
     // delete cred
     [TungCommonObjects deleteCredentials];
@@ -2980,25 +2985,38 @@ static NSArray *colors;
 // post tweet
 - (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url {
     
+    
     NSString *tweet = [NSString stringWithFormat:@"%@ %@", text, url];
     
-    //CLS_LOG(@"Attempting to post tweet: %@", tweet);
+    ;
+    //TWTRSession *session = [TWTRSessionStore session];
+    NSString *twitterID = [Twitter sharedInstance].sessionStore.session.userID;
+    TWTRAPIClient *client = [[TWTRAPIClient alloc] initWithUserID:twitterID];
+    
+    NSString *updateStatusEndpoint = @"https://api.twitter.com/1.1/statuses/update.json";
     NSDictionary *tweetParams = @{@"status": tweet};
-    NSURL *requestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@statuses/update.json", _twitterApiRootUrl]];
-    SLRequest *postTweetRequest = [SLRequest requestForServiceType:SLServiceTypeTwitter requestMethod:SLRequestMethodPOST URL:requestURL parameters:tweetParams];
-    postTweetRequest.account = _twitterAccountToUse;
-    CLS_LOG(@"posting tweet with account: %@", _twitterAccountToUse.username);
-    [postTweetRequest performRequestWithHandler:^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
-        long responseCode =  (long)[urlResponse statusCode];
-        if (responseCode == 200) CLS_LOG(@"tweet posted");
-        
-        //CLS_LOG(@"Twitter HTTP response: %li", responseCode);
-        if (error != nil) {
-            //CLS_LOG(@"Error: %@", error);
-            NSString *html = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
-            CLS_LOG(@"HTML: %@", html);
-        }
-    }];
+    NSError *clientError;
+    
+    NSURLRequest *request = [[[Twitter sharedInstance] APIClient] URLRequestWithMethod:@"POST" URL:updateStatusEndpoint parameters:tweetParams error:&clientError];
+    
+    if (request) {
+        [client sendTwitterRequest:request completion:^(NSURLResponse *urlResponse, NSData *data, NSError *connectionError) {
+            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)urlResponse;
+            long responseCode =  (long)[httpResponse statusCode];
+            if (responseCode == 200) {
+                CLS_LOG(@"tweet posted");
+            }
+            
+            CLS_LOG(@"Twitter HTTP response: %li", responseCode);
+            if (connectionError != nil) {
+                CLS_LOG(@"Error: %@", connectionError);
+            }
+        }];
+    }
+    else {
+        NSLog(@"Error: %@", clientError);
+    }
+    
 }
 
 #pragma mark - Facebook sharing and share delegate methods

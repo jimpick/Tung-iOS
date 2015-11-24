@@ -1051,22 +1051,12 @@ NSInteger requestTries = 0;
                                     [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
                                 }
                             } else {
-                                // no logged in user data... fetch
-                                CLS_LOG(@"no logged in user data... fetching");
-                                [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
-                                    if (jsonData != nil) {
-                                        NSDictionary *responseDict = jsonData;
-                                        if ([responseDict objectForKey:@"user"]) {
-                                            //CLS_LOG(@"got user: %@", [responseDict objectForKey:@"user"]);
-                                            UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
-                                            CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
-                                            if (lastDataChange.floatValue > loggedUser.lastDataChange.floatValue) {
-                                                CLS_LOG(@"needs restore. ");
-                                                [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
-                                            }
-                                        }
-                                    }
-                                }];
+                                // no logged in user data - save with data from request
+                                CLS_LOG(@"no logged in user data... save new entity and restore data");
+                                UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
+                                
+                                // we don't have local data to compare, so we just restore
+                                [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
                             }
                         }
                         else {

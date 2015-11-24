@@ -8,7 +8,6 @@
 
 #import "AppDelegate.h"
 #import <Security/Security.h>
-#import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import "TungCommonObjects.h"
 
 @implementation AppDelegate
@@ -73,7 +72,8 @@
     NSString *storyboardId = isLoggedIn ? @"authenticated" : @"welcome";
     self.window.rootViewController = [self.window.rootViewController.storyboard instantiateViewControllerWithIdentifier:storyboardId];
     
-    [Fabric with:@[CrashlyticsKit]];
+    [[Twitter sharedInstance] startWithConsumerKey:@"JwOEqvjaWbdEgMRXLJ86rPUf5" consumerSecret:@"XRoROyD7pM1PZ3Xt6CAg4yN4tVgQG8kavx6dmvQZsqJ9DI1cGt"];
+    [Fabric with:@[CrashlyticsKit, [Twitter sharedInstance]]];
 
     //return YES;
     return [[FBSDKApplicationDelegate sharedInstance] application:application

@@ -13,6 +13,8 @@
 #import "SettingsEntity.h"
 #import <Fabric/Fabric.h>
 #import <Crashlytics/Crashlytics.h>
+#import <TwitterKit/TwitterKit.h>
+#import <FBSDKCoreKit/FBSDKCoreKit.h>
 
 @class TungCommonObjects;
 

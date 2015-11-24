@@ -11,7 +11,6 @@
 
 @interface WelcomeViewController : UIViewController <UIAlertViewDelegate, UIActionSheetDelegate>
 
-@property (nonatomic, assign) BOOL working;
 @property (strong, nonatomic) IBOutlet UIImageView *logo;
 @property (strong, nonatomic) IBOutlet SignUpButton *btn_signUpWithTwitter;
 @property (strong, nonatomic) IBOutlet SignUpButton *btn_signUpWithFacebook;
