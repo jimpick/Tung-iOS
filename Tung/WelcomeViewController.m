@@ -243,28 +243,27 @@
                     // user is new
                     else {
                         
+                        NSDictionary *twitterProfile = [responseDict objectForKey:@"twitterProfile"];
                         CLS_LOG(@"user is new.");
-                        NSDictionary *profileData = [responseDict objectForKey:@"profileData"];
-                        CLS_LOG(@"profile data: %@", profileData);
                         // sanitize bio (remove urls)
-                        NSMutableString *bio = [[profileData objectForKey:@"description"] mutableCopy];
+                        NSMutableString *bio = [[twitterProfile objectForKey:@"description"] mutableCopy];
                         NSDataDetector *linkDetector = [NSDataDetector dataDetectorWithTypes:NSTextCheckingTypeLink error:nil];
                         [linkDetector replaceMatchesInString:bio options:0 range:NSMakeRange(0, [bio length]) withTemplate:@""];
                         
                         // make image hi-res by removing "_normal"
-                        NSMutableString *avatarURL = [[profileData objectForKey:@"profile_image_url"] mutableCopy];
+                        NSMutableString *avatarURL = [[twitterProfile objectForKey:@"profile_image_url"] mutableCopy];
                         NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(_normal)" options:0 error:nil];
                         [regex replaceMatchesInString:avatarURL options:0 range:NSMakeRange(0, [avatarURL length]) withTemplate:@""];
                         
                         _profileData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
                                         avatarURL, @"avatarURL",
-                                        [profileData objectForKey:@"id"], @"twitter_id",
-                                        [profileData objectForKey:@"screen_name"], @"username",
-                                        [profileData objectForKey:@"screen_name"], @"twitter_username",
-                                        [profileData objectForKey:@"name"], @"name",
-                                        [profileData objectForKey:@"location"], @"location",
+                                        [twitterProfile objectForKey:@"id"], @"twitter_id",
+                                        [twitterProfile objectForKey:@"screen_name"], @"username",
+                                        [twitterProfile objectForKey:@"screen_name"], @"twitter_username",
+                                        [twitterProfile objectForKey:@"name"], @"name",
+                                        [twitterProfile objectForKey:@"location"], @"location",
                                         bio, @"bio",
-                                        [profileData objectForKey:@"url"], @"url", nil];
+                                        [twitterProfile objectForKey:@"url"], @"url", nil];
 
                         // proceed to sign-up
                         [self performSegueWithIdentifier:@"startSignUp" sender:self];
@@ -281,91 +280,12 @@
     }];
 }
 
--(void)observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
-{
-    //CLS_LOG(@"----- value changed for key: %@, change: %@", keyPath, change);
-    
-    if ([keyPath isEqualToString:@"tung.twitterAccountStatus"]) {
-        if ([_tung.twitterAccountStatus isEqualToString:@"failed"]) {
-            [self loginRequestEnded];
-        }
-        else if ([_tung.twitterAccountStatus isEqualToString:@"success"]) {
-            [self continueTwitterSignUpWithAccount:_tung.twitterAccountToUse];
-        }
-    }
-}
-
-- (void) continueTwitterSignUpWithAccount:(ACAccount *)account {
-    
-    ACAccountStore *accountStore = [[ACAccountStore alloc] init];
-     
-    NSURL *requestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@account/verify_credentials.json", _tung.twitterApiRootUrl]];
-    SLRequest *verifyCredRequest = [SLRequest requestForServiceType:SLServiceTypeTwitter requestMethod:SLRequestMethodGET URL:requestURL parameters:nil];
-    verifyCredRequest.account = account;
-     
-    [verifyCredRequest performRequestWithHandler:^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
-        //CLS_LOG(@"Twitter HTTP response: %li", (long)[urlResponse statusCode]);
-        //NSString *html = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
-        //CLS_LOG(@"HTML: %@", html);
-        if (error != nil) CLS_LOG(@"Error: %@", error);
-        
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingAllowFragments error:&error];
-        
-        if (jsonData != nil && error == nil) {
-            NSDictionary *accountData = jsonData;
-            //CLS_LOG(@"%@", accountData);
-            if ([accountData objectForKey:@"errors"]) {
-                CLS_LOG(@"Errors: %@", [accountData objectForKey:@"errors"]);
-                error = nil;
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [_activityIndicator stopAnimating];
-                    [accountStore renewCredentialsForAccount:account completion:^(ACAccountCredentialRenewResult renewResult, NSError *error) {
-                        //_working = NO;
-                    }];
-                });
-                
-            } else {
-                
-                // sanitize bio (remove urls)
-                NSMutableString *bio = [[accountData objectForKey:@"description"] mutableCopy];
-                NSDataDetector *linkDetector = [NSDataDetector dataDetectorWithTypes:NSTextCheckingTypeLink error:nil];
-                [linkDetector replaceMatchesInString:bio options:0 range:NSMakeRange(0, [bio length]) withTemplate:@""];
-                
-                // make image big by removing "_normal"
-                NSMutableString *avatarURL = [[accountData objectForKey:@"profile_image_url"] mutableCopy];
-                NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(_normal)" options:0 error:nil];
-                [regex replaceMatchesInString:avatarURL options:0 range:NSMakeRange(0, [avatarURL length]) withTemplate:@""];
-                
-                _profileData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
-                                    avatarURL, @"avatarURL",
-                                    [accountData objectForKey:@"id"], @"twitter_id",
-                                	[accountData objectForKey:@"screen_name"], @"username",
-                                	[accountData objectForKey:@"screen_name"], @"twitter_username",
-                                    [accountData objectForKey:@"name"], @"name",
-                                    [accountData objectForKey:@"location"], @"location",
-                                    bio, @"bio",
-                                    [[accountData valueForKeyPath:@"entities.url.urls.expanded_url"] objectAtIndex:0], @"url", nil];
-                
-                CLS_LOG(@"profile dictionary: %@", _profileData);
-                //_working = NO;
-                
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self getTokenWithCallback:^{
-                    	[self signInOrSignUpUsing:@"twitter"];
-                    }];
-                });
-            }
-        }
-    }];
-}
-
 - (IBAction)signUpWithFacebook:(id)sender {
         
     [self loginRequestBegan];
     
-    if (![FBSDKAccessToken currentAccessToken]) {
-        
+//    if (![FBSDKAccessToken currentAccessToken]) {
+    
         FBSDKLoginManager *login = [[FBSDKLoginManager alloc] init];
         [login logInWithReadPermissions: @[@"public_profile", @"email", @"user_location", @"user_website", @"user_about_me"]
                      fromViewController:self
@@ -384,15 +304,104 @@
                                      else {
                                          CLS_LOG(@"fb - Logged in");
                                          if ([FBSDKAccessToken currentAccessToken]) {
-                                            [self continueFacebookSignup];
+                                             NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
+                                             NSLog(@"fb access token: %@", tokenString);
+                                             [self verifyCredWithFacebookAccessToken:tokenString];
                                          }
                                      }
          }];
-    }
-    else {
-        [self continueFacebookSignup];
-        
-    }
+//    }
+//    else {
+//        [self continueFacebookSignup];
+//        
+//    }
+}
+
+- (void) verifyCredWithFacebookAccessToken:(NSString *)token {
+    
+    NSURL *verifyCredRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/facebook-signin.php", _tung.apiRootUrl]];
+    NSMutableURLRequest *verifyCredRequest = [NSMutableURLRequest requestWithURL:verifyCredRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [verifyCredRequest setHTTPMethod:@"POST"];
+    NSDictionary *params = @{ @"accessToken": token };
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [verifyCredRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:verifyCredRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                CLS_LOG(@"Verify cred response %@", responseDict);
+                if ([responseDict objectForKey:@"error"]) {
+                    CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                    [self loginRequestEnded];
+                    UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                    [errorAlert show];
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    
+                    
+                    // user exists
+                    if ([responseDict objectForKey:@"sessionId"]) {
+                        
+                        [self loginRequestEnded];
+                        
+                        CLS_LOG(@"user exists. signing in...");
+                        _tung.sessionId = [responseDict objectForKey:@"sessionId"];
+                        _tung.connectionAvailable = [NSNumber numberWithInt:1];
+                        UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
+                        //CLS_LOG(@"logged in user: %@", [TungCommonObjects entityToDict:loggedUser]);
+                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                        
+                        CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
+                        if (lastDataChange.floatValue > loggedUser.lastDataChange.floatValue) {
+                            CLS_LOG(@"needs restore. ");
+                            [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
+                        }
+                        
+                        NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
+                        
+                        // construct token of id and token together
+                        NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
+                        // save cred to keychain
+                        [TungCommonObjects saveKeychainCred:tungCred];
+                        
+                        // show feed
+                        UIViewController *feed = [self.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];
+                        [self presentViewController:feed animated:YES completion:^{}];
+                        
+                    }
+                    // user is new
+                    else {
+                        
+                        NSDictionary *facebookProfile = [responseDict objectForKey:@"facebookProfile"];
+                        CLS_LOG(@"user is new.");
+                        
+                        NSString *userImageURL = [NSString stringWithFormat:@"https://graph.facebook.com/%@/picture?type=square&height=640&width=640", [facebookProfile objectForKey:@"id"]];
+                        _profileData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
+                                        userImageURL, @"avatarURL",
+                                        [facebookProfile objectForKey:@"id"], @"facebook_id",
+                                        @"", @"username",
+                                        [facebookProfile objectForKey:@"name"], @"name",
+                                        [facebookProfile objectForKey:@"email"], @"email",
+                                        [facebookProfile objectForKey:@"location"], @"location",
+                                        [facebookProfile objectForKey:@"bio"], @"bio",
+                                        [facebookProfile objectForKey:@"website"], @"url", nil];
+                        
+                        // proceed to sign-up
+                        [self performSegueWithIdentifier:@"startSignUp" sender:self];
+                    }
+                    
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                CLS_LOG(@"Error. HTML: %@", html);
+                [self loginRequestEnded];
+            }
+        });
+    }];
 }
 
 - (void) continueFacebookSignup {
@@ -541,14 +550,6 @@
         }
     }];
 }
-
-#pragma mark - actionsheet methods
-
-- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
-    CLS_LOG(@"button index: %ld", (long)buttonIndex);
-    [self continueTwitterSignUpWithAccount:[_arrayOfAccounts objectAtIndex:buttonIndex]];
-}
-
 
 #pragma mark - Navigation
 

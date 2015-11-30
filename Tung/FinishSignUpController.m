@@ -136,24 +136,21 @@
                     [self performSegueWithIdentifier:@"unwindToSignUp" sender:self];
             	}
         		// successful registration
-            	else if ([responseDict objectForKey:@"user"]) {
-                    NSDictionary *userDict = [responseDict objectForKey:@"user"];
-                    CLS_LOG(@"got user dict from registration: %@", userDict);
+            	else if ([responseDict objectForKey:@"success"]) {
+                    CLS_LOG(@"successful registration");
+                    _tung.sessionId = [responseDict objectForKey:@"sessionId"];
+                    _tung.connectionAvailable = [NSNumber numberWithInt:1];
+                    [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
+                    
+                    NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
                     
                     // construct token of id and token together
-                    NSString *userId = [userDict objectForKey:@"tung_id"];
-                    NSString *tungCred = [NSString stringWithFormat:@"%@:%@", userId, [userDict objectForKey:@"token"]];
-                    
+                    NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
                     // save cred to keychain
                     [TungCommonObjects saveKeychainCred:tungCred];
                     
-                    // store user data
-                    [TungCommonObjects saveUserWithDict:userDict];
-                    
-                    [CrashlyticsKit setUserName:[userDict objectForKey:@"username"]];
-                	
                     // request to mutually follow all users
-                    [_tung followAllUsersFromId:userId withCallback:^(BOOL success, NSDictionary *response) {
+                    [_tung followAllUsersFromId:tungId withCallback:^(BOOL success, NSDictionary *response) {
                         if (success) {
                             CLS_LOG(@"successfully followed all users: %@", response);
                             

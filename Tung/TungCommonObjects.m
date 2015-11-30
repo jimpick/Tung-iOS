@@ -1695,7 +1695,6 @@ static NSArray *colors;
     CLS_LOG(@"getting new session with id: %@", _tungId);
     if (!_tungId) {
         [self establishCred];
-        CLS_LOG(@"--------- TUNG ID WAS NULL ----------");
     }
     
     NSURL *getSessionRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/session.php", _apiRootUrl]];
