@@ -328,15 +328,16 @@
         if (_player.currentItem.playbackLikelyToKeepUp) {
             CLS_LOG(@"-- player likely to keep up");
             
-            if (_totalSeconds == 0) [self determineTotalSeconds];
-
-            float currentSecs = CMTimeGetSeconds(_player.currentTime);
-            //CLS_LOG(@"current secs: %f, total secs: %f", currentSecs, _totalSeconds);
-            if (_totalSeconds > 0 && currentSecs >= _totalSeconds) {
-                [self completedPlayback];
-                return;
+            if (_totalSeconds == 0) {
+                [self determineTotalSeconds];
             }
-            
+            else if (_totalSeconds > 0) {
+                float currentSecs = CMTimeGetSeconds(_player.currentTime);
+            	if (floor(currentSecs) >= floor(_totalSeconds)) {
+                    [self completedPlayback];
+                    return;
+                }
+            }
             if ([self isPlaying]) {
                 [self setControlButtonStateToPause];
             }
@@ -584,8 +585,31 @@
 }
 
 - (void) completedPlayback {
+    float currentTimeSecs = CMTimeGetSeconds(_player.currentTime);
+    CLS_LOG(@"completed playback. current secs: %f, total secs: %f", currentTimeSecs, _totalSeconds);
+    if (floor(currentTimeSecs) < floor(_totalSeconds)) {
+        CLS_LOG(@"completed playback called prematurely.");
+        if (_fileIsStreaming && _fileIsLocal) {
+            CLS_LOG(@"attempt to play local file");
+            CMTime currentTime = _player.currentTime;
+            [self replacePlayerItemWithLocalCopy];
+            _shouldStayPaused = YES;
+            [_player seekToTime:currentTime completionHandler:^(BOOL finished) {
+                [_player pause];
+            }];
+        }
+        else {
+            CLS_LOG(@"attempt to reload episode");
+            // do not need timestamp bc eject current episode saves position
+            //NSString *timestamp = [TungCommonObjects convertSecondsToTimeString:currentTimeSecs];
+            NSString *urlString = _npEpisodeEntity.url;
+            [self ejectCurrentEpisode];
+            [self queueAndPlaySelectedEpisode:urlString fromTimestamp:nil];
+        }
+        
+        return;
+    }
     // increment play count request
-    CLS_LOG(@"completed playback");
     [self incrementListenCount:_npEpisodeEntity];
     // custom eject
     if (_playQueue.count > 0) {

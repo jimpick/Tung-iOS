@@ -10,3 +10,9 @@ Tung.xcodeproj/project.xcworkspace/xcuserdata/Jamie.xcuserdatad/UserInterfaceSta
 ## Obj-C/Swift specific
 *.hmap
 *.ipa
+
+
+## Fabric
+TwitterKit.framework
+TwitterCore.framework
+Tung/TwitterKitResources.bundle
