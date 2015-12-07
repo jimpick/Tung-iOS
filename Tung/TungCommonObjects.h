@@ -100,6 +100,9 @@
 
 // player
 - (void) controlButtonTapped;
+- (void) seekToTime:(CMTime)time;
+- (void) skipAhead15;
+- (void) skipBack15;
 - (void) queueAndPlaySelectedEpisode:(NSString *)urlString fromTimestamp:(NSString *)timestamp;
 - (void) playUrl:(NSString *)urlString fromTimestamp:(NSString *)timestamp;
 - (void) playNextEpisode;

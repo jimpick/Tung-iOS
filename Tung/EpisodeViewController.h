@@ -14,6 +14,7 @@
 #import "FXBlurView.h"
 #import <AVFoundation/AVFoundation.h>
 #import <MediaPlayer/MediaPlayer.h>
+#import "IconButton.h"
 
 @interface EpisodeViewController : UIViewController <TungPodcastsDelegate, UIActionSheetDelegate, AVAudioPlayerDelegate, ControlButtonDelegate, UIWebViewDelegate, UITextViewDelegate, UIScrollViewDelegate>
 
@@ -32,6 +33,8 @@
 @property (strong, nonatomic) EpisodeEntity *episodeEntity;
 @property (strong, nonatomic) NSString *focusedEventId;
 @property (strong, nonatomic) NSDictionary *episodeMiniDict;
+@property (strong, nonatomic) IBOutlet IconButton *skipAheadBtn;
+@property (strong, nonatomic) IBOutlet IconButton *skipBackBtn;
 
 - (IBAction)toggleNpControlsView:(id)sender;
 - (IBAction)touchDownInShowHideControlsButton:(id)sender;

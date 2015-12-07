@@ -2234,12 +2234,12 @@
                                         <variation key="widthClass=compact" constant="292"/>
                                     </constraint>
                                     <constraint firstItem="Eec-U5-Ymg" firstAttribute="top" secondItem="iFL-30-I6w" secondAttribute="top" constant="113" id="BXc-b2-IUj">
-                                        <variation key="widthClass=compact" constant="110"/>
+                                        <variation key="widthClass=compact" constant="100"/>
                                     </constraint>
                                     <constraint firstAttribute="trailing" secondItem="SzR-2f-Vva" secondAttribute="trailing" constant="15" id="BZ2-qQ-5W4"/>
                                     <constraint firstItem="RD4-Eq-fE3" firstAttribute="leading" secondItem="iFL-30-I6w" secondAttribute="leading" id="DyB-KO-TQq"/>
                                     <constraint firstItem="qbb-m2-RZS" firstAttribute="top" secondItem="iFL-30-I6w" secondAttribute="top" constant="73" id="Emm-dB-6VF">
-                                        <variation key="widthClass=compact" constant="72"/>
+                                        <variation key="widthClass=compact" constant="100"/>
                                     </constraint>
                                     <constraint firstAttribute="trailing" secondItem="Erp-eo-HzV" secondAttribute="trailing" constant="15" id="F8x-AA-KNc"/>
                                     <constraint firstAttribute="trailing" secondItem="UEf-bs-Whp" secondAttribute="trailing" id="ICL-6k-H9X">
@@ -2272,7 +2272,7 @@
                                     </constraint>
                                     <constraint firstAttribute="trailing" secondItem="IA2-qs-aia" secondAttribute="trailing" id="prK-Se-BHz"/>
                                     <constraint firstItem="3CZ-kK-RkQ" firstAttribute="top" secondItem="iFL-30-I6w" secondAttribute="top" constant="93" id="wEW-Kx-WCx">
-                                        <variation key="widthClass=compact" constant="90"/>
+                                        <variation key="widthClass=compact" constant="80"/>
                                     </constraint>
                                     <constraint firstItem="IA2-qs-aia" firstAttribute="leading" secondItem="iFL-30-I6w" secondAttribute="leading" id="yhL-l9-hZV"/>
                                 </constraints>
@@ -2379,17 +2379,74 @@
                                     </mask>
                                 </variation>
                             </label>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4v1-zk-9hK" customClass="IconButton">
+                                <rect key="frame" x="-23" y="-15" width="46" height="30"/>
+                                <animations/>
+                                <constraints>
+                                    <constraint firstAttribute="height" constant="30" id="NFr-dJ-XZ6">
+                                        <variation key="widthClass=compact" constant="25"/>
+                                    </constraint>
+                                    <constraint firstAttribute="width" constant="30" id="Z15-OQ-wAM">
+                                        <variation key="widthClass=compact" constant="25"/>
+                                    </constraint>
+                                </constraints>
+                                <variation key="default">
+                                    <mask key="constraints">
+                                        <exclude reference="NFr-dJ-XZ6"/>
+                                        <exclude reference="Z15-OQ-wAM"/>
+                                    </mask>
+                                </variation>
+                                <variation key="widthClass=compact">
+                                    <mask key="constraints">
+                                        <include reference="NFr-dJ-XZ6"/>
+                                        <include reference="Z15-OQ-wAM"/>
+                                    </mask>
+                                </variation>
+                            </button>
+                            <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="2tP-lL-9hK" customClass="IconButton">
+                                <rect key="frame" x="-23" y="-15" width="46" height="30"/>
+                                <animations/>
+                                <constraints>
+                                    <constraint firstAttribute="width" constant="30" id="5BX-LE-8UR">
+                                        <variation key="widthClass=compact" constant="25"/>
+                                    </constraint>
+                                    <constraint firstAttribute="height" constant="30" id="wVk-Pt-vM2">
+                                        <variation key="widthClass=compact" constant="25"/>
+                                    </constraint>
+                                </constraints>
+                                <variation key="default">
+                                    <mask key="constraints">
+                                        <exclude reference="wVk-Pt-vM2"/>
+                                        <exclude reference="5BX-LE-8UR"/>
+                                    </mask>
+                                </variation>
+                                <variation key="widthClass=compact">
+                                    <mask key="constraints">
+                                        <include reference="wVk-Pt-vM2"/>
+                                        <include reference="5BX-LE-8UR"/>
+                                    </mask>
+                                </variation>
+                            </button>
                         </subviews>
                         <animations/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
+                            <constraint firstItem="voR-Bw-ZMk" firstAttribute="top" secondItem="2tP-lL-9hK" secondAttribute="bottom" constant="50" id="4uQ-iL-FT5">
+                                <variation key="widthClass=compact" constant="48"/>
+                            </constraint>
+                            <constraint firstItem="2tP-lL-9hK" firstAttribute="centerX" secondItem="szV-s8-ETY" secondAttribute="centerX" multiplier="1.3" id="5lr-MS-0H5"/>
+                            <constraint firstItem="4v1-zk-9hK" firstAttribute="centerX" secondItem="szV-s8-ETY" secondAttribute="centerX" multiplier="0.7" id="Ef6-yr-Swi"/>
                             <constraint firstItem="iFL-30-I6w" firstAttribute="leading" secondItem="szV-s8-ETY" secondAttribute="leading" id="I4c-ob-KuZ"/>
                             <constraint firstItem="voR-Bw-ZMk" firstAttribute="top" secondItem="Zst-Gi-PtM" secondAttribute="bottom" constant="58" id="Kvu-Gk-M0h">
                                 <variation key="widthClass=compact" constant="53"/>
                             </constraint>
+                            <constraint firstAttribute="bottomMargin" secondItem="4v1-zk-9hK" secondAttribute="bottom" constant="50" id="Mbx-VN-XG8"/>
                             <constraint firstAttribute="trailing" secondItem="iFL-30-I6w" secondAttribute="trailing" id="RAH-pt-9QW"/>
                             <constraint firstItem="voR-Bw-ZMk" firstAttribute="top" secondItem="iFL-30-I6w" secondAttribute="bottom" id="h23-8e-TiD">
                                 <variation key="widthClass=compact" constant="-102"/>
+                            </constraint>
+                            <constraint firstItem="voR-Bw-ZMk" firstAttribute="top" secondItem="4v1-zk-9hK" secondAttribute="bottom" constant="6" id="qfK-ix-699">
+                                <variation key="widthClass=compact" constant="48"/>
                             </constraint>
                             <constraint firstItem="Zst-Gi-PtM" firstAttribute="leading" secondItem="szV-s8-ETY" secondAttribute="leading" constant="16" id="rrU-9N-rBd"/>
                         </constraints>
@@ -2397,26 +2454,40 @@
                             <mask key="subviews">
                                 <exclude reference="iFL-30-I6w"/>
                                 <exclude reference="Zst-Gi-PtM"/>
+                                <exclude reference="4v1-zk-9hK"/>
+                                <exclude reference="2tP-lL-9hK"/>
                             </mask>
                             <mask key="constraints">
-                                <exclude reference="rrU-9N-rBd"/>
-                                <exclude reference="Kvu-Gk-M0h"/>
-                                <exclude reference="h23-8e-TiD"/>
                                 <exclude reference="I4c-ob-KuZ"/>
                                 <exclude reference="RAH-pt-9QW"/>
+                                <exclude reference="5lr-MS-0H5"/>
+                                <exclude reference="rrU-9N-rBd"/>
+                                <exclude reference="Ef6-yr-Swi"/>
+                                <exclude reference="Mbx-VN-XG8"/>
+                                <exclude reference="4uQ-iL-FT5"/>
+                                <exclude reference="Kvu-Gk-M0h"/>
+                                <exclude reference="h23-8e-TiD"/>
+                                <exclude reference="qfK-ix-699"/>
                             </mask>
                         </variation>
                         <variation key="widthClass=compact">
                             <mask key="subviews">
                                 <include reference="iFL-30-I6w"/>
                                 <include reference="Zst-Gi-PtM"/>
+                                <include reference="4v1-zk-9hK"/>
+                                <include reference="2tP-lL-9hK"/>
                             </mask>
                             <mask key="constraints">
-                                <include reference="rrU-9N-rBd"/>
-                                <include reference="Kvu-Gk-M0h"/>
-                                <include reference="h23-8e-TiD"/>
                                 <include reference="I4c-ob-KuZ"/>
                                 <include reference="RAH-pt-9QW"/>
+                                <include reference="5lr-MS-0H5"/>
+                                <include reference="rrU-9N-rBd"/>
+                                <include reference="Ef6-yr-Swi"/>
+                                <exclude reference="Mbx-VN-XG8"/>
+                                <include reference="4uQ-iL-FT5"/>
+                                <include reference="Kvu-Gk-M0h"/>
+                                <include reference="h23-8e-TiD"/>
+                                <include reference="qfK-ix-699"/>
                             </mask>
                         </variation>
                     </view>
@@ -2432,6 +2503,8 @@
                         <outlet property="progressBar" destination="Eec-U5-Ymg" id="pdu-up-Rfd"/>
                         <outlet property="shareLabel" destination="Erp-eo-HzV" id="tXv-Ce-hRV"/>
                         <outlet property="showControlsButton" destination="IA2-qs-aia" id="o8V-6o-R34"/>
+                        <outlet property="skipAheadBtn" destination="2tP-lL-9hK" id="FE8-Qb-t3T"/>
+                        <outlet property="skipBackBtn" destination="4v1-zk-9hK" id="eFN-XI-gxD"/>
                         <outlet property="timeElapsedLabel" destination="Zst-Gi-PtM" id="Wr5-Bz-MiB"/>
                         <outlet property="totalTimeLabel" destination="SzR-2f-Vva" id="rA3-C8-jhS"/>
                         <segue destination="wD7-6S-Iws" kind="presentation" identifier="presentWebView" id="09H-aj-Zdd"/>
@@ -3218,6 +3291,6 @@
         <image name="tungSignInLogo.png" width="194" height="124"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="pGF-82-xjV"/>
+        <segue reference="09H-aj-Zdd"/>
     </inferredMetricsTieBreakers>
 </document>

@@ -65,7 +65,7 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        _tung_version = @"0.1.1";
+        _tung_version = @"0.2.0";
         //_apiRootUrl = @"https://api.tung.fm/";
         _apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
@@ -99,6 +99,8 @@
         [commandCenter.seekBackwardCommand addTarget:self action:@selector(seekBack)];
         [commandCenter.previousTrackCommand addTarget:self action:@selector(playPreviousEpisode)];
         [commandCenter.nextTrackCommand addTarget:self action:@selector(playNextEpisode)];
+        [commandCenter.skipBackwardCommand addTarget:self action:@selector(skipBack15)];
+        [commandCenter.skipForwardCommand addTarget:self action:@selector(skipAhead15)];
         
         _ISODateFormatter = [[NSDateFormatter alloc] init];
         [_ISODateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
@@ -398,7 +400,26 @@
             [self playerPause];
         }
     }
+    [_trackInfo setObject:[NSNumber numberWithFloat:CMTimeGetSeconds(time)] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
+    [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_trackInfo];
     [_player seekToTime:time];
+}
+
+- (void) skipAhead15 {
+    if (_player && _totalSeconds) {
+        float secs = CMTimeGetSeconds(_player.currentTime);
+        secs += 15;
+        secs = MIN(_totalSeconds - 1, secs - 1);
+        [self seekToTime:(CMTimeMake((secs * 100), 100))];
+    }
+}
+- (void) skipBack15 {
+    if (_player && _totalSeconds) {
+        float secs = CMTimeGetSeconds(_player.currentTime);
+        secs -= 15;
+        secs = MAX(0, secs);
+        [self seekToTime:(CMTimeMake((secs * 100), 100))];
+    }
 }
 
 
@@ -621,7 +642,8 @@
 - (void) ejectCurrentEpisode {
     if (_playQueue.count > 0) {
         if ([self isPlaying]) [_player pause];
-        _npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:NO];
+        [self removeNowPlayingStatusFromAllEpisodes];
+        //_npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:NO];
         [self savePositionForNowPlaying];
         CLS_LOG(@"ejected current episode");
         [_playQueue removeObjectAtIndex:0];
@@ -630,7 +652,7 @@
 }
 
 - (void) removeNowPlayingStatusFromAllEpisodes {
-    CLS_LOG(@"Remove now playing status from all episodes");
+    //CLS_LOG(@"Remove now playing status from all episodes");
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     NSFetchRequest *eRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
     NSError *eError = nil;
@@ -641,12 +663,12 @@
             episodeEntity.isNowPlaying = [NSNumber numberWithBool:NO];
         }
     }
-    [TungCommonObjects saveContextWithReason:@"remove now playing status from all episodes"];
+    //[TungCommonObjects saveContextWithReason:@"remove now playing status from all episodes"];
 }
 
 // TODO: handle this error before shipping
 - (void) playerError:(NSNotification *)notification {
-    CLS_LOG(@"player error: %@", notification);
+    CLS_LOG(@"player error: %@", [notification userInfo]);
 }
 
 - (void) playNextEpisode {

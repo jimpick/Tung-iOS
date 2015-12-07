@@ -134,7 +134,8 @@ static NSArray *playbackRateStrings;
     _npControlsView.hidden = YES;
     
     _timeElapsedLabel.hidden = YES;
-    
+    _skipAheadBtn.hidden = YES;
+    _skipBackBtn.hidden = YES;    
     
     // header view
     _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 64, screenWidth, defaultHeaderHeight)];
@@ -648,6 +649,17 @@ static CGRect buttonsScrollViewHomeRect;
 
 - (void) setUpNowPlayingControlView {
     _npControlsViewIsVisible = YES;
+    
+    _skipAheadBtn.hidden = NO;
+    _skipAheadBtn.type = kIconButtonTypeSkipAhead15;
+    _skipAheadBtn.color = [TungCommonObjects tungColor];
+    [_skipAheadBtn setNeedsDisplay];
+    [_skipAheadBtn addTarget:_tung action:@selector(skipAhead15) forControlEvents:UIControlEventTouchUpInside];
+    _skipBackBtn.hidden = NO;
+    _skipBackBtn.type = kIconButtonTypeSkipBack15;
+    _skipBackBtn.color = [TungCommonObjects tungColor];
+    [_skipBackBtn setNeedsDisplay];
+    [_skipBackBtn addTarget:_tung action:@selector(skipBack15) forControlEvents:UIControlEventTouchUpInside];
     
     if (!circleButtonDimension) circleButtonDimension = 45;
     
@@ -1284,6 +1296,8 @@ static CGRect buttonsScrollViewHomeRect;
     }
     [_tung.player seekToTime:time completionHandler:^(BOOL finished) {
         //CLS_LOG(@"finished seeking to time (%@)", (finished) ? @"yes" : @"no");
+        [_tung.trackInfo setObject:[NSNumber numberWithFloat:CMTimeGetSeconds(time)] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
+        [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_tung.trackInfo];
         [_posbar setEnabled:YES];
     }];
     
@@ -1336,6 +1350,8 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                              _progressBar.alpha = 0;
                              _timeElapsedLabel.alpha = 0;
                              _totalTimeLabel.alpha = 0;
+                             _skipAheadBtn.alpha = 0;
+                             _skipBackBtn.alpha = 0;
                              _pageControl.alpha = 0;
                              _hideControlsButton.alpha = 0;
                              _commentAndPostView.alpha = 1;
@@ -1346,6 +1362,8 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                              _posbar.alpha = 1;
                              _progressBar.alpha = 1;
                              _timeElapsedLabel.alpha = 1;
+                             _skipAheadBtn.alpha = 1;
+                             _skipBackBtn.alpha = 1;
                              _totalTimeLabel.alpha = 1;
                              _pageControl.alpha = 1;
                              _hideControlsButton.alpha = 1;
