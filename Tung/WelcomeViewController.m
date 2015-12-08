@@ -341,11 +341,10 @@
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     
+                    [self loginRequestEnded];
                     
                     // user exists
                     if ([responseDict objectForKey:@"sessionId"]) {
-                        
-                        [self loginRequestEnded];
                         
                         CLS_LOG(@"user exists. signing in...");
                         _tung.sessionId = [responseDict objectForKey:@"sessionId"];

@@ -287,34 +287,56 @@ UILabel *prototypeLabel;
     [_navController pushViewController:profileView animated:YES];
 }
 
-- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
+#pragma mark - Handle alerts/action sheets
+
+-(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
+    //CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
     
-    CLS_LOG(@"dismissed commentsTableView action sheet with button: %ld", (long)buttonIndex);
     NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:_buttonPressIndexPath.row]];
-    // delete own comment
-    if (actionSheet.tag == 1) {
+    
+    // confirm delete comment
+    if (alertView.tag == 59 && buttonIndex == 1) {
         
-        if (buttonIndex == 0) { // destructive option
-            
-            NSString *eventId = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
-            [_tung deleteStoryEventWithId:eventId withCallback:^(BOOL success) {
-                [_commentsArray removeObjectAtIndex:_buttonPressIndexPath.row];
+        NSString *eventId = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
+        [_tung deleteStoryEventWithId:eventId withCallback:^(BOOL success) {
+            [_commentsArray removeObjectAtIndex:_buttonPressIndexPath.row];
+            if (_commentsArray.count > 0) {
                 // remove table row
                 [self.tableView beginUpdates];
                 [self.tableView deleteRowsAtIndexPaths:@[_buttonPressIndexPath] withRowAnimation:UITableViewRowAnimationRight];
                 [self.tableView endUpdates];
-                _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
-            }];
-        }
+            } else {
+                _noResults = YES;
+                [self.tableView reloadData];
+            }
+            _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
+        }];
+    }
+    else if (alertView.tag == 49 && buttonIndex == 1) { // flag for moderation
+        
+        NSString *eventId = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
+        [_tung flagCommentWithId:eventId];
+    }
+}
+
+- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
+    
+    //CLS_LOG(@"dismissed commentsTableView action sheet with button: %ld", (long)buttonIndex);
+
+    // delete own comment
+    if (actionSheet.tag == 1 && buttonIndex == 0) {
+            
+        UIAlertView *confirmDelete = [[UIAlertView alloc] initWithTitle:@"Delete comment" message:@"Are you sure? This can't be undone." delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Delete", nil];
+        [confirmDelete setTag:59];
+        [confirmDelete show];
     }
     // their comment
-    if (actionSheet.tag == 2) {
+    else if (actionSheet.tag == 2 && buttonIndex == 0) {
         
-        if (buttonIndex == 0) { // destructive option
-            
-            NSString *eventId = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
-            [_tung flagCommentWithId:eventId];
-        }
+        UIAlertView *confirmFlag = [[UIAlertView alloc] initWithTitle:@"Flag for moderation?" message:nil delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Yes", nil];
+        [confirmFlag setTag:49];
+        [confirmFlag show];
+        
     }
 }
 

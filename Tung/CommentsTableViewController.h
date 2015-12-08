@@ -12,7 +12,7 @@
 #import "CommentCellMine.h"
 #import "EpisodeEntity.h"
 
-@interface CommentsTableViewController : UITableViewController <UIActionSheetDelegate>
+@interface CommentsTableViewController : UITableViewController <UIActionSheetDelegate, UIAlertViewDelegate>
 
 @property (strong, nonatomic) NSMutableArray *commentsArray;
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;

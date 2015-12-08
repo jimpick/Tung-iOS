@@ -533,7 +533,7 @@ CGFloat labelWidth = 0;
             NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:_buttonPressIndexPath.row]];
             _timestamp = [eventDict objectForKey:@"timestamp"];
             NSString *playFromString = [NSString stringWithFormat:@"Play from %@", _timestamp];
-            CLS_LOG(@"event dict: %@", eventDict);
+            //CLS_LOG(@"event dict: %@", eventDict);
             NSString *type = [eventDict objectForKey:@"type"];
             NSString *destructiveOption;
             NSString *userId = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
@@ -598,91 +598,109 @@ CGFloat labelWidth = 0;
     [optionsOptionSheet showInView:self.view];
 }
 
+- (NSString *) getShareTextForStoryWithDict:(NSDictionary *)headerDict {
+    NSString *shareLink = [headerDict objectForKey:@"storyLink"];
+    NSString *shareText;
+    NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+    if ([uid isEqualToString:_tung.tungId]) {
+        shareText = [NSString stringWithFormat:@"I listened to %@ on #tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+    } else {
+        shareText = [NSString stringWithFormat:@"%@ listened to %@ on #tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+    }
+    return shareText;
+}
+- (NSString *) getShareTextForEpisodeWithDict:(NSDictionary *)headerDict {
+    NSString *shareLink = [headerDict objectForKey:@"episodeLink"];
+    NSString *shareText;
+    NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+    if ([uid isEqualToString:_tung.tungId]) {
+        shareText = [NSString stringWithFormat:@"I listened to %@ on #tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+    } else {
+        shareText = [NSString stringWithFormat:@"%@ listened to %@ on #tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+    }
+    return shareText;
+}
+
+#pragma mark - Handle alerts/action sheets
+
 - (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
     
-    CLS_LOG(@"dismissed action sheet with tag: %ld and button: %ld", (long)actionSheet.tag, (long)buttonIndex);
+    //CLS_LOG(@"dismissed action sheet with tag: %ld and button: %ld", (long)actionSheet.tag, (long)buttonIndex);
     
     // long press table cell
     if (actionSheet.tag == 1) {
-        if (buttonIndex == 0) { // destructive option
-            NSDictionary *headerDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
-            NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:_buttonPressIndexPath.row]];
-            NSString *userId = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
-            NSString *eventId = [[eventDict objectForKey:@"id"] objectForKey:@"$id"];
-            // delete story event
-            if ([userId isEqualToString:_tung.tungId]) {
-                
-                [_tung deleteStoryEventWithId:eventId withCallback:^(BOOL success) {
-                    if (success) {
-                        // remove story or just event
-                        NSArray *storyArray = [_storiesArray objectAtIndex:_buttonPressIndexPath.section];
-                        if (storyArray.count == 3) {
-                            [_storiesArray removeObjectAtIndex:_buttonPressIndexPath.section];
-                            // remove section (story)
-                            [self.tableView beginUpdates];
-                            [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:_buttonPressIndexPath.section]withRowAnimation:UITableViewRowAnimationRight];
-                            [self.tableView endUpdates];
-                        }
-                        // remove just event
-                        else {
-                            [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] removeObjectAtIndex:_buttonPressIndexPath.row];
-                            // remove table row
-                            [self.tableView beginUpdates];
-                            [self.tableView deleteRowsAtIndexPaths:@[_buttonPressIndexPath] withRowAnimation:UITableViewRowAnimationRight];
-                            [self.tableView endUpdates];
-                        }
-                    }
-                }];
-            }
-            // request moderation
-            else {
-                // can only flag comments
-                if ([[eventDict objectForKey:@"comment"] length] > 0) {
-                	[_tung flagCommentWithId:eventId];
+        
+        switch (buttonIndex) {
+            case 0: { // destructive option
+                NSDictionary *headerDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
+                NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:_buttonPressIndexPath.row]];
+                NSString *userId = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+                // delete story event
+                if ([userId isEqualToString:_tung.tungId]) {
+                    
+                    UIAlertView *confirmDelete = [[UIAlertView alloc] initWithTitle:@"Delete" message:@"Are you sure? This can't be undone." delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Delete", nil];
+                    [confirmDelete setTag:59];
+                    [confirmDelete show];
                 }
-            }
-        }
-        else if (buttonIndex == 1) { // share this clip/interaction
-            
-            UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[_shareText] applicationActivities:nil];
-            [self presentViewController:shareSheet animated:YES completion:nil];
-        }
-        else if (buttonIndex == 2) { // copy link
-            [[UIPasteboard generalPasteboard] setString:_shareLink];
-        }
-        else if (buttonIndex == 3) { // play from timestamp
-            
-            NSDictionary *storyDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
-            NSString *episodeId = [[[storyDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
-            NSString *collectionId = [[storyDict objectForKey:@"episode"] objectForKey:@"collectionId"];
-            
-            // check for episode entity
-            EpisodeEntity *epEntity = [TungCommonObjects getEpisodeEntityFromEpisodeId:episodeId];
-            
-            if (epEntity) {
-                NSLog(@"play from timestamp, episode entity exists");
-                [_tung playUrl:epEntity.url fromTimestamp:_timestamp];
-            }
-            else {
-                NSLog(@"play from timestamp, fetch episode entity");
-                [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
-                    NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
-                    NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
-                    [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
-                    
-                    NSString *urlString = [episodeDict objectForKey:@"url"];
-                    
-                    if (urlString) {
-                        [_tung playUrl:urlString fromTimestamp:_timestamp];
+                // request moderation
+                else {
+                    // can only flag comments
+                    if ([[eventDict objectForKey:@"comment"] length] > 0) {
+                        
+                        UIAlertView *confirmFlag = [[UIAlertView alloc] initWithTitle:@"Flag for moderation?" message:nil delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Yes", nil];
+                        [confirmFlag setTag:49];
+                        [confirmFlag show];
+                        
                     }
-                }];
+                }
+                break;
             }
-
+            case 2: { // share this clip/interaction
+                
+                UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[_shareText] applicationActivities:nil];
+                [self presentViewController:shareSheet animated:YES completion:nil];
+                break;
+            }
+            case 3: { // copy link
+                [[UIPasteboard generalPasteboard] setString:_shareLink];
+                break;
+            }
+            case 4: { // play from timestamp
+                
+                NSDictionary *storyDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
+                NSString *episodeId = [[[storyDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
+                NSString *collectionId = [[storyDict objectForKey:@"episode"] objectForKey:@"collectionId"];
+                
+                // check for episode entity
+                EpisodeEntity *epEntity = [TungCommonObjects getEpisodeEntityFromEpisodeId:episodeId];
+                
+                if (epEntity) {
+                    NSLog(@"play from timestamp, episode entity exists");
+                    [_tung playUrl:epEntity.url fromTimestamp:_timestamp];
+                }
+                else {
+                    NSLog(@"play from timestamp, fetch episode entity");
+                    [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
+                        NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
+                        NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
+                        [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
+                        
+                        NSString *urlString = [episodeDict objectForKey:@"url"];
+                        
+                        if (urlString) {
+                            [_tung playUrl:urlString fromTimestamp:_timestamp];
+                        }
+                    }];
+                }
+                break;
+            }
+            default:
+                break;
         }
     }
+    
     // options button
     else if (actionSheet.tag == 2) {
-        CLS_LOG(@"options button");
         //@"Share episode", @"Copy link to episode", @"Share this interaction", @"Copy link to interaction"
         
         NSDictionary *headerDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
@@ -695,7 +713,7 @@ CGFloat labelWidth = 0;
         
         switch (buttonIndex) {
             case 0 : {
-                UIAlertView *howToFlagAlert = [[UIAlertView alloc] initWithTitle:@"Flagging" message:@"To flag a comment for moderation, long press on the comment, and select 'Flag this comment'.\n\nPlease remember Tung cannot moderate the content of podcasts themselves." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                UIAlertView *howToFlagAlert = [[UIAlertView alloc] initWithTitle:@"Flagging" message:@"To flag a comment for moderation, long press on the comment, and select 'Flag this comment'.\n\nPlease remember Tung cannot moderate the content of podcasts." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
                 [howToFlagAlert show];
                 break;
             }
@@ -725,27 +743,49 @@ CGFloat labelWidth = 0;
     }
 }
 
-- (NSString *) getShareTextForStoryWithDict:(NSDictionary *)headerDict {
-    NSString *shareLink = [headerDict objectForKey:@"storyLink"];
-    NSString *shareText;
-    NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
-    if ([uid isEqualToString:_tung.tungId]) {
-        shareText = [NSString stringWithFormat:@"I listened to %@ on #tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
-    } else {
-        shareText = [NSString stringWithFormat:@"%@ listened to %@ on #tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+-(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
+    //CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
+    
+    if (alertView.tag == 99) { // unauthorized alert
+        // sign out
+        [_tung signOut];
     }
-    return shareText;
-}
-- (NSString *) getShareTextForEpisodeWithDict:(NSDictionary *)headerDict {
-    NSString *shareLink = [headerDict objectForKey:@"episodeLink"];
-    NSString *shareText;
-    NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
-    if ([uid isEqualToString:_tung.tungId]) {
-        shareText = [NSString stringWithFormat:@"I listened to %@ on #tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
-    } else {
-        shareText = [NSString stringWithFormat:@"%@ listened to %@ on #tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+    else if (alertView.tag == 59 && buttonIndex == 1) { // delete event
+        
+        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:_buttonPressIndexPath.row]];
+        NSString *eventId = [[eventDict objectForKey:@"id"] objectForKey:@"$id"];
+        
+        [_tung deleteStoryEventWithId:eventId withCallback:^(BOOL success) {
+            if (success) {
+                // remove story or just event
+                NSArray *storyArray = [_storiesArray objectAtIndex:_buttonPressIndexPath.section];
+                if (storyArray.count == 3) {
+                    [_storiesArray removeObjectAtIndex:_buttonPressIndexPath.section];
+                    // remove section (story)
+                    [self.tableView beginUpdates];
+                    [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:_buttonPressIndexPath.section]withRowAnimation:UITableViewRowAnimationRight];
+                    [self.tableView endUpdates];
+                }
+                // remove just event
+                else {
+                    [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] removeObjectAtIndex:_buttonPressIndexPath.row];
+                    // remove table row
+                    [self.tableView beginUpdates];
+                    [self.tableView deleteRowsAtIndexPaths:@[_buttonPressIndexPath] withRowAnimation:UITableViewRowAnimationRight];
+                    [self.tableView endUpdates];
+                }
+            }
+        }];
+
     }
-    return shareText;
+    else if (alertView.tag == 49 && buttonIndex == 1) { // flag for moderation
+        
+        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:_buttonPressIndexPath.row]];
+        NSString *eventId = [[eventDict objectForKey:@"id"] objectForKey:@"$id"];
+        
+        [_tung flagCommentWithId:eventId];
+        
+    }
 }
 
 #pragma mark - Feed cell controls
@@ -1332,18 +1372,6 @@ NSInteger requestTries = 0;
     CGSize contentSize = CGSizeMake(screenWidth * 2, scrollViewHeight);
     _profileHeader.scrollView.contentSize = contentSize;
 //    CLS_LOG(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
-}
-
-
-#pragma mark - handle alerts
-
--(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    //CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
-    // unauthorized alert
-    if (alertView.tag == 99) {
-        // sign out
-        [_tung signOut];
-    }
 }
 
 

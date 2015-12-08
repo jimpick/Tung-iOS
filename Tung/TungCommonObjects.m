@@ -66,10 +66,9 @@
         
         _sessionId = @"";
         _tung_version = @"0.2.0";
-        //_apiRootUrl = @"https://api.tung.fm/";
-        _apiRootUrl = @"https://staging-api.tung.fm/";
+        _apiRootUrl = @"https://api.tung.fm/";
+        //_apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
-        _twitterApiRootUrl = @"https://api.twitter.com/1.1/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
         
