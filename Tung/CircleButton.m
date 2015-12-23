@@ -13,80 +13,77 @@
 
 - (void)drawRect:(CGRect)rect {
     
-    switch (_type) {
-            
-        case kCircleTypeSubscribe:
-            if (rect.size.width > 0) {
+    if (rect.size.width > 0) {
+        switch (_type) {
+                
+            case kCircleTypeSubscribe:
                 [TungPodcastStyleKit drawSubscribeButtonWithFrame:rect color:_color on:_subscribed down:self.highlighted];
-            }
-            //else {
-            //    NSLog(@"bad rect");
-            //}
-            break;
-            
-        case kCircleTypeNewClip:
-            [TungPodcastStyleKit drawClipButtonWithFrame:rect down:self.highlighted];
-            break;
-            
-        case kCircleTypeRecommend:
-            [TungPodcastStyleKit drawRecommendButtonWithFrame:rect on:_recommended down:self.highlighted];
-            break;
-            
-        case kCircleTypeShare:
-            [TungPodcastStyleKit drawShareButtonWithFrame:rect down:self.highlighted];
-            break;
-            
-        case kCircleTypeWebsite:
-            [TungPodcastStyleKit drawWebsiteButtonWithFrame:rect down:self.highlighted disabled:!self.enabled];
-            break;
-            
-        case kCircleTypeRecord:
-            [TungPodcastStyleKit drawClipRecordButtonWithFrame:rect on:_isRecording down:self.highlighted disabled:!self.enabled];
-            break;
-            
-        case kCircleTypePlayClip:
-            [TungPodcastStyleKit drawClipPlayButtonWithFrame:rect on:_isPlaying down:self.highlighted disabled:!self.enabled];
-            break;
-            
-        case kCircleTypeCancel:
-            [TungPodcastStyleKit drawClipCancelButtonWithFrame:rect down:self.highlighted disabled:!self.enabled];
-            break;
-            
-        case kCircleTypeOkay:
-            [TungPodcastStyleKit drawClipOkButtonWithFrame:rect down:self.highlighted disabled:!self.enabled];
-            break;
-            
-        case kCircleTypeComment:
-            [TungPodcastStyleKit drawCommentButtonWithFrame:rect on:_on down:self.highlighted disabled:!self.enabled];
-            break;
-            
-        case kCircleTypeTwitter:
-            [TungPodcastStyleKit drawTwitterButtonWithFrame:rect on:_on down:self.highlighted];
-            break;
-            
-        case kCircleTypeFacebook:
-            [TungPodcastStyleKit drawFacebookButtonWithFrame:rect on:_on down:self.highlighted];
-            break;
-            
-        case kCircleTypeTextButton:
-            [TungPodcastStyleKit drawPillTextbuttonWithFrame:rect down:self.highlighted disabled:!self.enabled buttonText:_buttonText];
-            break;
-            
-        case kCircleTypeSpeed:
-            [TungPodcastStyleKit drawSpeedButtonWithFrame:rect down:self.highlighted buttonText:_buttonText];
-            break;
-            
-        case kCircleTypeSave:
-            [TungPodcastStyleKit drawSaveButtonWithFrame:rect on:_on down:self.highlighted];
-            break;
-            
-        case kCircleTypePlay:
-            [TungPodcastStyleKit drawPlayButtonWithFrame:rect color:_color on:_on down:self.highlighted];
-            break;
-            
-        default:
-            [TungPodcastStyleKit drawClipButtonWithFrame:rect down:self.highlighted];
-            break;
+                break;
+                
+            case kCircleTypeNewClip:
+                [TungPodcastStyleKit drawClipButtonWithFrame:rect down:self.highlighted];
+                break;
+                
+            case kCircleTypeRecommend:
+                [TungPodcastStyleKit drawRecommendButtonWithFrame:rect on:_recommended down:self.highlighted];
+                break;
+                
+            case kCircleTypeShare:
+                [TungPodcastStyleKit drawShareButtonWithFrame:rect down:self.highlighted];
+                break;
+                
+            case kCircleTypeWebsite:
+                [TungPodcastStyleKit drawWebsiteButtonWithFrame:rect down:self.highlighted disabled:!self.enabled];
+                break;
+                
+            case kCircleTypeRecord:
+                [TungPodcastStyleKit drawClipRecordButtonWithFrame:rect on:_isRecording down:self.highlighted disabled:!self.enabled];
+                break;
+                
+            case kCircleTypePlayClip:
+                [TungPodcastStyleKit drawClipPlayButtonWithFrame:rect on:_isPlaying down:self.highlighted disabled:!self.enabled];
+                break;
+                
+            case kCircleTypeCancel:
+                [TungPodcastStyleKit drawClipCancelButtonWithFrame:rect down:self.highlighted disabled:!self.enabled];
+                break;
+                
+            case kCircleTypeOkay:
+                [TungPodcastStyleKit drawClipOkButtonWithFrame:rect down:self.highlighted disabled:!self.enabled];
+                break;
+                
+            case kCircleTypeComment:
+                [TungPodcastStyleKit drawCommentButtonWithFrame:rect on:_on down:self.highlighted disabled:!self.enabled];
+                break;
+                
+            case kCircleTypeTwitter:
+                [TungPodcastStyleKit drawTwitterButtonWithFrame:rect on:_on down:self.highlighted];
+                break;
+                
+            case kCircleTypeFacebook:
+                [TungPodcastStyleKit drawFacebookButtonWithFrame:rect on:_on down:self.highlighted];
+                break;
+                
+            case kCircleTypeTextButton:
+                [TungPodcastStyleKit drawPillTextbuttonWithFrame:rect down:self.highlighted disabled:!self.enabled buttonText:_buttonText];
+                break;
+                
+            case kCircleTypeSpeed:
+                [TungPodcastStyleKit drawSpeedButtonWithFrame:rect down:self.highlighted buttonText:_buttonText];
+                break;
+                
+            case kCircleTypeSave:
+                [TungPodcastStyleKit drawSaveButtonWithFrame:rect on:_on down:self.highlighted];
+                break;
+                
+            case kCircleTypePlay:
+                [TungPodcastStyleKit drawPlayButtonWithFrame:rect color:_color on:_on down:self.highlighted];
+                break;
+                
+            default:
+                [TungPodcastStyleKit drawClipButtonWithFrame:rect down:self.highlighted];
+                break;
+        }
     }
 }
 

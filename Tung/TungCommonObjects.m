@@ -66,8 +66,8 @@
         
         _sessionId = @"";
         _tung_version = @"0.2.0";
-        _apiRootUrl = @"https://api.tung.fm/";
-        //_apiRootUrl = @"https://staging-api.tung.fm/";
+        //_apiRootUrl = @"https://api.tung.fm/";
+        _apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
@@ -241,6 +241,23 @@
     }
 }
 
+- (void) skipAhead15 {
+    if (_player && _totalSeconds) {
+        float secs = CMTimeGetSeconds(_player.currentTime);
+        secs += 15;
+        secs = MIN(_totalSeconds - 1, secs - 1);
+        [self seekToTime:(CMTimeMake((secs * 100), 100))];
+    }
+}
+- (void) skipBack15 {
+    if (_player && _totalSeconds) {
+        float secs = CMTimeGetSeconds(_player.currentTime);
+        secs -= 15;
+        secs = MAX(0, secs);
+        [self seekToTime:(CMTimeMake((secs * 100), 100))];
+    }
+}
+
 - (void) stopClipPlayback {
     if (_clipPlayer && [_clipPlayer isPlaying]) {
         
@@ -348,7 +365,7 @@
             
         } else {
             CLS_LOG(@"-- player NOT likely to keep up");
-            if ([self isPlaying]) [self setControlButtonStateToBuffering];
+            if (!_shouldStayPaused) [self setControlButtonStateToBuffering];
         }
     }
     /*
@@ -382,7 +399,7 @@
         }
     }
     else {
-        UIAlertView *searchPromptAlert = [[UIAlertView alloc] initWithTitle:@"Nothing is Queued" message:@"Would you like to search for a podcast?" delegate:self cancelButtonTitle:@"No" otherButtonTitles:@"Yes", nil];
+        UIAlertView *searchPromptAlert = [[UIAlertView alloc] initWithTitle:@"Nothing is playing" message:@"Would you like to search for a podcast?" delegate:self cancelButtonTitle:@"No" otherButtonTitles:@"Yes", nil];
         [searchPromptAlert setTag:10];
         [searchPromptAlert show];
     }
@@ -391,34 +408,15 @@
 
 - (void) seekToTime:(CMTime)time {
     // disable posbar and show spinner while player seeks
-    if (_fileIsStreaming) {
-        // see if file is cached yet
-        if (_fileIsLocal) {
-            [self replacePlayerItemWithLocalCopy];
-        } else {
-            [self playerPause];
-        }
+    if (_fileIsStreaming && _fileIsLocal) {
+        [self replacePlayerItemWithLocalCopy];
     }
     [_trackInfo setObject:[NSNumber numberWithFloat:CMTimeGetSeconds(time)] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
     [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_trackInfo];
-    [_player seekToTime:time];
-}
-
-- (void) skipAhead15 {
-    if (_player && _totalSeconds) {
-        float secs = CMTimeGetSeconds(_player.currentTime);
-        secs += 15;
-        secs = MIN(_totalSeconds - 1, secs - 1);
-        [self seekToTime:(CMTimeMake((secs * 100), 100))];
-    }
-}
-- (void) skipBack15 {
-    if (_player && _totalSeconds) {
-        float secs = CMTimeGetSeconds(_player.currentTime);
-        secs -= 15;
-        secs = MAX(0, secs);
-        [self seekToTime:(CMTimeMake((secs * 100), 100))];
-    }
+    //[_player seekToTime:time];
+    [_player seekToTime:time completionHandler:^(BOOL finished) {
+        if (!_shouldStayPaused) [self playerPlay];
+    }];
 }
 
 
@@ -2911,6 +2909,7 @@ static NSArray *colors;
     CLS_LOG(@"--- signing out");
     
     [self playerPause];
+    _playQueue = [@[] mutableCopy];
     
     //[self deleteLoggedInUserData];
     [TungCommonObjects removeAllUserData];
@@ -2935,7 +2934,7 @@ static NSArray *colors;
     }
     
     // clear temp directory
-    //[TungCommonObjects clearTempDirectory];
+    [TungCommonObjects clearTempDirectory];
     
     [CrashlyticsKit setUserName:@""];
 
@@ -3066,24 +3065,6 @@ static NSArray *colors;
 #pragma mark - Facebook sharing and share delegate methods
 
 - (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity {
-    
-    /*
-    FBSDKShareLinkContent *content = [[FBSDKShareLinkContent alloc] init];
-    content.contentURL = [NSURL URLWithString:link];
-    content.imageURL = [NSURL URLWithString:episodeEntity.podcast.artworkUrl600];
-    content.contentDescription = @"Tung.fm - a social podcast player";
-    
-    NSDictionary *userData = [self getLoggedInUserData];
-    NSArray *firstAndLastName = [[userData objectForKey:@"name"] componentsSeparatedByCharactersInSet:[NSCharacterSet whitespaceCharacterSet]];
-    
-    content.contentTitle = [NSString stringWithFormat:@"%@ listened to a podcast on Tung", [firstAndLastName objectAtIndex:0]];
-    
-    // with dialog
-    //[FBSDKShareDialog showFromViewController:_viewController withContent:content delegate:self];
-    
-    // direct api post link
-    [FBSDKShareAPI shareWithContent:content delegate:self];
-    */
     
     // status message
     NSDictionary *params = @{@"message": text,

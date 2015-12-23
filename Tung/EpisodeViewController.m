@@ -97,10 +97,8 @@ static NSArray *playbackRateStrings;
     
     // is this for now playing?
     if (_episodeMiniDict || _episodeEntity) {
-        NSLog(@"episode mini dict or episode entity present");
         self.navigationItem.title = @"Episode";
     } else {
-        NSLog(@"no episode mini dict or entity. must be for now playing");
         _isNowPlayingView = YES;
         self.navigationItem.title = @"Now Playing";
         
@@ -259,7 +257,6 @@ static NSArray *playbackRateStrings;
         _shareLabel.textColor = [TungCommonObjects tungColor];
         
         
-        [self setUpViewForWhateversPlaying];
     }
     else {
         
@@ -298,7 +295,10 @@ static NSArray *playbackRateStrings;
 - (void) viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     self.navigationController.navigationBar.translucent = NO;
-    if (_isNowPlayingView) [self updateTimeElapsedAndPosbar];
+    if (_isNowPlayingView) {
+        [self updateTimeElapsedAndPosbar];
+        [self setUpViewForWhateversPlaying];
+    }
 }
 
 - (void) viewDidAppear:(BOOL)animated {
@@ -424,6 +424,8 @@ static NSArray *playbackRateStrings;
     _npControlsView.hidden = YES;
     _headerView.hidden = YES;
     _timeElapsedLabel.hidden = YES;
+    _skipAheadBtn.hidden = YES;
+    _skipBackBtn.hidden = YES;
     _switcherBar.hidden = YES;
     _descriptionView.view.hidden = YES;
     _episodesView.view.hidden = YES;
@@ -431,7 +433,7 @@ static NSArray *playbackRateStrings;
     
 }
 
-// check if something's playing, if so setup view for it, else set up for nothing playing
+// if something's playing, setup view for it, else set up for nothing playing
 - (void) setUpViewForWhateversPlaying {
 
     _tung.npViewSetupForCurrentEpisode = YES;
@@ -441,7 +443,7 @@ static NSArray *playbackRateStrings;
     _totalTimeSet = NO;
     _commentsView.commentsArray = [NSMutableArray new];
         
-    if (_tung.npEpisodeEntity) {
+    if (_tung.npEpisodeEntity && _tung.npEpisodeEntity.title) {
         _episodeEntity = _tung.npEpisodeEntity;
         
         // initialize views
@@ -457,6 +459,8 @@ static NSArray *playbackRateStrings;
         _timeElapsedLabel.hidden = NO;
         _timeElapsedLabel.text = @"00:00:00";
         _totalTimeLabel.text = @"--:--:--";
+        _skipAheadBtn.hidden = NO;
+        _skipBackBtn.hidden = NO;
         
         [self refreshRecommendStatus];
         
@@ -649,13 +653,11 @@ static CGRect buttonsScrollViewHomeRect;
 
 - (void) setUpNowPlayingControlView {
     _npControlsViewIsVisible = YES;
-    
-    _skipAheadBtn.hidden = NO;
+    CLS_LOG(@"set up now playing control view");
     _skipAheadBtn.type = kIconButtonTypeSkipAhead15;
     _skipAheadBtn.color = [TungCommonObjects tungColor];
     [_skipAheadBtn setNeedsDisplay];
     [_skipAheadBtn addTarget:_tung action:@selector(skipAhead15) forControlEvents:UIControlEventTouchUpInside];
-    _skipBackBtn.hidden = NO;
     _skipBackBtn.type = kIconButtonTypeSkipBack15;
     _skipBackBtn.color = [TungCommonObjects tungColor];
     [_skipBackBtn setNeedsDisplay];
@@ -1309,8 +1311,8 @@ static CGRect buttonsScrollViewHomeRect;
 
 float dragStartPos;
 float constraintStartPos;
-static float closedConstraint = -216;
-static float openConstraint = -102;
+static float closedConstraint = -211;
+static float openConstraint = -99;
 static float clipConfirmConstraint;
 float totalAnimDuration = .3;
 float animDuration = .3;
@@ -1651,6 +1653,8 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         _progressBar.alpha = 1;
         _timeElapsedLabel.alpha = 1;
         _totalTimeLabel.alpha = 1;
+        _skipAheadBtn.alpha = 1;
+        _skipBackBtn.alpha = 1;
         _pageControl.alpha = 1;
         _hideControlsButton.alpha = 1;
         _buttonsScrollView.alpha = 1;
