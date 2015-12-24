@@ -52,7 +52,7 @@
     // add child table view controller
     _episodesView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodesView"];
     _episodesView.edgesForExtendedLayout = UIRectEdgeNone;
-    _episodesView.podcastEntity = _podcastEntity; // for pushing episode view
+    _episodesView.podcastEntity = _podcastEntity; // for pushing episode view & track progress
     _episodesView.keyColors = _headerView.keyColors;
     
     [self addChildViewController:_episodesView];
@@ -95,7 +95,8 @@
 // for refreshControl
 - (void) getNewestFeed {
     NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:YES];
-    _episodesView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
+    _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
+    [_episodesView findEachEpisodesProgress];
     
     [_episodesView.refreshControl endRefreshing];
     
@@ -107,7 +108,8 @@
     // remove spinner
     _episodesView.tableView.backgroundView = nil;
     
-    _episodesView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:dict];
+    _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:dict] mutableCopy];
+    [_episodesView findEachEpisodesProgress];
     
     // find focused indexPath if focused GUID
     if (_focusedGUID) {

@@ -1705,8 +1705,35 @@
                                                 </mask>
                                             </variation>
                                         </view>
+                                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="FxI-n0-cpf" customClass="TungMiscView">
+                                            <rect key="frame" x="0.0" y="0.0" width="240" height="128"/>
+                                            <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                            <constraints>
+                                                <constraint firstAttribute="width" constant="50" id="E3B-iW-lnn"/>
+                                                <constraint firstAttribute="height" constant="7" id="Jx2-Us-si3">
+                                                    <variation key="widthClass=compact" constant="12"/>
+                                                </constraint>
+                                            </constraints>
+                                            <variation key="default">
+                                                <mask key="constraints">
+                                                    <exclude reference="E3B-iW-lnn"/>
+                                                    <exclude reference="Jx2-Us-si3"/>
+                                                </mask>
+                                            </variation>
+                                            <variation key="widthClass=compact">
+                                                <mask key="constraints">
+                                                    <include reference="E3B-iW-lnn"/>
+                                                    <include reference="Jx2-Us-si3"/>
+                                                </mask>
+                                            </variation>
+                                        </view>
                                     </subviews>
                                     <constraints>
+                                        <constraint firstItem="rQ1-Tb-5vL" firstAttribute="leading" secondItem="FxI-n0-cpf" secondAttribute="trailing" constant="12" id="1Ve-HV-ZBB"/>
+                                        <constraint firstItem="FxI-n0-cpf" firstAttribute="leading" secondItem="AcK-Vl-02w" secondAttribute="leading" constant="12" id="3Oh-WK-N9q"/>
+                                        <constraint firstAttribute="bottom" secondItem="FxI-n0-cpf" secondAttribute="bottom" constant="12" id="5Wk-xI-OGA">
+                                            <variation key="widthClass=compact" constant="11"/>
+                                        </constraint>
                                         <constraint firstAttribute="trailing" secondItem="rQ1-Tb-5vL" secondAttribute="trailing" constant="20" id="7Pf-gc-TgE">
                                             <variation key="widthClass=compact" constant="12"/>
                                         </constraint>
@@ -1729,16 +1756,20 @@
                                             <exclude reference="QHx-04-f3g"/>
                                             <exclude reference="rQ1-Tb-5vL"/>
                                             <exclude reference="COO-L7-30h"/>
+                                            <exclude reference="FxI-n0-cpf"/>
                                         </mask>
                                         <mask key="constraints">
+                                            <exclude reference="aVA-VE-tPC"/>
+                                            <exclude reference="wKq-wY-gS6"/>
                                             <exclude reference="Mlp-NK-ZCS"/>
                                             <exclude reference="ZBU-gd-CUh"/>
                                             <exclude reference="Zu9-eS-VUk"/>
+                                            <exclude reference="3Oh-WK-N9q"/>
+                                            <exclude reference="5Wk-xI-OGA"/>
+                                            <exclude reference="1Ve-HV-ZBB"/>
                                             <exclude reference="7Pf-gc-TgE"/>
                                             <exclude reference="fqE-Xa-cjU"/>
                                             <exclude reference="ibn-Xh-xSe"/>
-                                            <exclude reference="aVA-VE-tPC"/>
-                                            <exclude reference="wKq-wY-gS6"/>
                                         </mask>
                                     </variation>
                                     <variation key="widthClass=compact">
@@ -1746,22 +1777,27 @@
                                             <include reference="QHx-04-f3g"/>
                                             <include reference="rQ1-Tb-5vL"/>
                                             <include reference="COO-L7-30h"/>
+                                            <include reference="FxI-n0-cpf"/>
                                         </mask>
                                         <mask key="constraints">
+                                            <include reference="aVA-VE-tPC"/>
+                                            <include reference="wKq-wY-gS6"/>
                                             <include reference="Mlp-NK-ZCS"/>
                                             <include reference="ZBU-gd-CUh"/>
                                             <include reference="Zu9-eS-VUk"/>
+                                            <include reference="3Oh-WK-N9q"/>
+                                            <include reference="5Wk-xI-OGA"/>
+                                            <include reference="1Ve-HV-ZBB"/>
                                             <include reference="7Pf-gc-TgE"/>
                                             <include reference="fqE-Xa-cjU"/>
-                                            <include reference="ibn-Xh-xSe"/>
-                                            <include reference="aVA-VE-tPC"/>
-                                            <include reference="wKq-wY-gS6"/>
+                                            <exclude reference="ibn-Xh-xSe"/>
                                         </mask>
                                     </variation>
                                 </tableViewCellContentView>
                                 <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
                                 <connections>
                                     <outlet property="airDate" destination="rQ1-Tb-5vL" id="sIk-Na-Zcb"/>
+                                    <outlet property="episodeProgress" destination="FxI-n0-cpf" id="R7y-KD-WzS"/>
                                     <outlet property="episodeTitle" destination="QHx-04-f3g" id="Pti-DG-gWE"/>
                                     <outlet property="iconView" destination="COO-L7-30h" id="kdH-3F-Ts5"/>
                                     <outlet property="leadingTitleConstraint" destination="ZBU-gd-CUh" id="xxX-AM-EIi"/>

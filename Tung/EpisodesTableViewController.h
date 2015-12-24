@@ -12,11 +12,13 @@
 
 @interface EpisodesTableViewController : UITableViewController
 
-@property (strong, nonatomic) NSArray *episodeArray;
+@property (strong, nonatomic) NSMutableArray *episodeArray;
 @property (strong, nonatomic) PodcastEntity *podcastEntity;
 @property (strong, nonatomic) NSIndexPath *focusedIndexPath;
 @property BOOL noResults;
 @property (strong, nonatomic) UINavigationController *navController;
 @property NSArray *keyColors;
+
+- (void) findEachEpisodesProgress;
 
 @end

@@ -43,6 +43,25 @@
     // Dispose of any resources that can be recreated.
 }
 
+- (void) findEachEpisodesProgress {
+    
+    //NSLog(@"find each episode's progress");
+    for (EpisodeEntity *ep in _podcastEntity.episodes) {
+        // if episode has progress, loop through episode array and assign value to matching episode
+        if (ep.trackPosition.floatValue > 0.0f) {
+            for (int i = 0; i < _episodeArray.count; i++) {
+                NSMutableDictionary *episodeDict = [[NSDictionary dictionaryWithDictionary:[_episodeArray objectAtIndex:i]] mutableCopy];
+                if ([ep.guid isEqualToString:[episodeDict objectForKey:@"guid"]]) {
+                    //NSLog(@"set track position %f for %@", ep.trackPosition.floatValue, ep.title);
+                    [episodeDict setObject:ep.trackPosition forKey:@"trackPosition"];
+                    [_episodeArray replaceObjectsAtIndexes:[NSIndexSet indexSetWithIndex:i] withObjects:@[episodeDict]];
+                    break;
+                }
+            }
+        }
+    }
+}
+
 #pragma mark - Table view data source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -70,7 +89,7 @@ static NSString *cellIdentifier = @"EpisodeCell";
     
     // cell data
     NSDictionary *episodeDict = [NSDictionary dictionaryWithDictionary:[_episodeArray objectAtIndex:indexPath.row]];
-    //NSLog(@"cell for row at index path, row: %ld", (long)indexPath.row);
+    //NSLog(@"episode cell for row at index path, row: %ld", (long)indexPath.row);
     
     // title
     episodeCell.episodeTitle.text = [episodeDict objectForKey:@"title"];
@@ -107,11 +126,20 @@ static NSString *cellIdentifier = @"EpisodeCell";
         episodeCell.backgroundColor = [UIColor whiteColor];
     }
     
-    // kill insets for iOS 8
-    if ([[UIDevice currentDevice].systemVersion floatValue] >= 8) {
-        episodeCell.preservesSuperviewLayoutMargins = NO;
-        [episodeCell setLayoutMargins:UIEdgeInsetsZero];
+    // episode Progress
+    episodeCell.episodeProgress.type = kMIscViewTypeEpisodeProgress;
+    episodeCell.episodeProgress.color = _podcastEntity.keyColor2;
+    float position = 0;
+    if ([episodeDict objectForKey:@"trackPosition"]) {
+        NSNumber *nPosition = [episodeDict objectForKey:@"trackPosition"];
+        position = nPosition.floatValue;
     }
+    episodeCell.episodeProgress.progress = position;
+    [episodeCell.episodeProgress setNeedsDisplay];
+    
+    // kill insets
+    episodeCell.preservesSuperviewLayoutMargins = NO;
+    [episodeCell setLayoutMargins:UIEdgeInsetsZero];
     
     return episodeCell;
 }

@@ -97,8 +97,10 @@ static NSArray *playbackRateStrings;
     
     // is this for now playing?
     if (_episodeMiniDict || _episodeEntity) {
+        NSLog(@"episode view for episode");
         self.navigationItem.title = @"Episode";
     } else {
+        NSLog(@"episode view for now playing");
         _isNowPlayingView = YES;
         self.navigationItem.title = @"Now Playing";
         
@@ -354,6 +356,9 @@ static NSArray *playbackRateStrings;
         case 2: // show episode view
             _commentsView.view.hidden = YES;
             _episodesView.view.hidden = NO;
+            [_tung savePositionForNowPlaying];
+            [_episodesView findEachEpisodesProgress];
+            [_episodesView.tableView reloadData];
             _descriptionView.view.hidden = YES;
             break;
         default: // show description
@@ -501,7 +506,8 @@ static NSArray *playbackRateStrings;
     NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_episodeEntity.podcast forceNewest:NO];
     
     _episodesView.tableView.backgroundView = nil;
-    _episodesView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
+    _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
+    [_episodesView findEachEpisodesProgress];
     _episodesView.podcastEntity = _episodeEntity.podcast;
     _episodesView.keyColors = _headerView.keyColors;
     [_episodesView.tableView reloadData];
@@ -573,7 +579,8 @@ static NSArray *playbackRateStrings;
 // for refreshControl
 - (void) getNewestFeed {
     NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_episodeEntity.podcast forceNewest:YES];
-    _episodesView.episodeArray = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
+    _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
+    [_episodesView findEachEpisodesProgress];
     
     [_episodesView.refreshControl endRefreshing];
     

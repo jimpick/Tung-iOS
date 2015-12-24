@@ -675,11 +675,11 @@ CGFloat labelWidth = 0;
                 EpisodeEntity *epEntity = [TungCommonObjects getEpisodeEntityFromEpisodeId:episodeId];
                 
                 if (epEntity) {
-                    NSLog(@"play from timestamp, episode entity exists");
+                    //NSLog(@"play from timestamp, episode entity exists");
                     [_tung playUrl:epEntity.url fromTimestamp:_timestamp];
                 }
                 else {
-                    NSLog(@"play from timestamp, fetch episode entity");
+                    //NSLog(@"play from timestamp, fetch episode entity");
                     [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
                         NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
                         NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
@@ -1082,11 +1082,10 @@ NSInteger requestTries = 0;
                             _tung.connectionAvailable = [NSNumber numberWithInt:1];
                             // check if data needs syncing
                             UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
-                            //CLS_LOG(@"logged in user: %@", [TungCommonObjects entityToDict:loggedUser]);
                             NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
                             if (loggedUser) {
                                 CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
-                                if (lastDataChange.floatValue > loggedUser.lastDataChange.floatValue) {
+                                if (lastDataChange.doubleValue > loggedUser.lastDataChange.doubleValue) {
                                     CLS_LOG(@"needs restore. ");
                                     [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
                                 }

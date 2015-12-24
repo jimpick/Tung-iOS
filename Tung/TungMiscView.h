@@ -13,11 +13,14 @@ typedef enum {
     kMiscViewTypePopupWithArrowRight,
     kMiscViewTypeCommentBkgdMine,
     kMiscViewTypeCommentBkgdTheirs,
-    kMiscViewTypeSolidCircle
+    kMiscViewTypeSolidCircle,
+    kMIscViewTypeEpisodeProgress
 } MiscViewType;
 
 @interface TungMiscView : UIView
 
 @property (nonatomic) MiscViewType type;
+@property (copy) UIColor *color; // episode progress
+@property (nonatomic) CGFloat progress; // episode progress
 
 @end

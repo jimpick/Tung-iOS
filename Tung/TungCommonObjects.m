@@ -65,9 +65,9 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        _tung_version = @"0.2.0";
-        //_apiRootUrl = @"https://api.tung.fm/";
-        _apiRootUrl = @"https://staging-api.tung.fm/";
+        _tung_version = @"0.2.1";
+        _apiRootUrl = @"https://api.tung.fm/";
+        //_apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
@@ -129,6 +129,18 @@
          }
          */
         
+        // all saved user data
+        /*
+        AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+        NSError *error = nil;
+        NSFetchRequest *users = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
+        NSArray *uResult = [appDelegate.managedObjectContext executeFetchRequest:users error:&error];
+        NSLog(@"ALL USERS:");
+        if (uResult.count > 0) {
+            UserEntity *user = [uResult objectAtIndex:0];
+            NSLog(@"user: %@", [TungCommonObjects entityToDict:user]);
+        }
+         */
     }
     return self;
 }
@@ -210,8 +222,6 @@
         _shouldStayPaused = NO;
         [_player play];
         [self setControlButtonStateToPause];
-    } else {
-        NSLog(@"no player!");
     }
 }
 - (void) playerPause {
@@ -298,7 +308,6 @@
                 float secs = 0;
                 CMTime time;
                 if (_playFromTimestamp) {
-                    NSLog(@"has play from timestamp: %@", _playFromTimestamp);
                     secs = [TungCommonObjects convertTimestampToSeconds:_playFromTimestamp];
                     time = CMTimeMake((secs * 100), 100);
                 }
@@ -386,6 +395,7 @@
 }
 
 - (void) controlButtonTapped {
+    if (_btnActivityIndicator.isAnimating) return;
     
     if (_playQueue.count > 0) {
         if (_player) {
@@ -403,7 +413,31 @@
         [searchPromptAlert setTag:10];
         [searchPromptAlert show];
     }
-    
+}
+
+/*
+ Setting control button states
+ */
+- (void) setControlButtonStateToPlay {
+    [_btnActivityIndicator stopAnimating];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play.png"] forState:UIControlStateNormal];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
+}
+- (void) setControlButtonStateToPause {
+    [_btnActivityIndicator stopAnimating];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause.png"] forState:UIControlStateNormal];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause-down.png"] forState:UIControlStateHighlighted];
+}
+- (void) setControlButtonStateToFauxDisabled {
+    [_btnActivityIndicator stopAnimating];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateNormal];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
+}
+- (void) setControlButtonStateToBuffering {
+    [_btnActivityIndicator startAnimating];
+    [_btn_player setImage:nil forState:UIControlStateNormal];
+    [_btn_player setImage:nil forState:UIControlStateHighlighted];
+    [_btn_player setImage:nil forState:UIControlStateDisabled];
 }
 
 - (void) seekToTime:(CMTime)time {
@@ -592,14 +626,13 @@
 
 - (void) savePositionForNowPlaying {
     
-    float secs = CMTimeGetSeconds(_player.currentTime);
-    
-    _npEpisodeEntity.trackProgress = [NSNumber numberWithFloat:secs];
     if (_totalSeconds > 0) {
+        float secs = CMTimeGetSeconds(_player.currentTime);
+        _npEpisodeEntity.trackProgress = [NSNumber numberWithFloat:secs];
         float pos = secs / _totalSeconds;
         _npEpisodeEntity.trackPosition = [NSNumber numberWithFloat:pos];
+        [TungCommonObjects saveContextWithReason:[NSString stringWithFormat:@"saving track progress: %f", secs]];
     }
-    [TungCommonObjects saveContextWithReason:[NSString stringWithFormat:@"saving track progress: %f", secs]];
 }
 
 - (void) completedPlayback {
@@ -649,14 +682,16 @@
 }
 
 - (void) removeNowPlayingStatusFromAllEpisodes {
-    //CLS_LOG(@"Remove now playing status from all episodes");
+    // find playing episodes
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
-    NSFetchRequest *eRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
-    NSError *eError = nil;
-    NSArray *eResult = [appDelegate.managedObjectContext executeFetchRequest:eRequest error:&eError];
-    if (eResult.count > 0) {
-        for (int i = 0; i < eResult.count; i++) {
-            EpisodeEntity *episodeEntity = [eResult objectAtIndex:i];
+    NSFetchRequest *npRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isNowPlaying == YES"];
+    [npRequest setPredicate:predicate];
+    NSError *error = nil;
+    NSArray *npResult = [appDelegate.managedObjectContext executeFetchRequest:npRequest error:&error];
+    if (npResult.count > 0) {
+        for (int i = 0; i < npResult.count; i++) {
+            EpisodeEntity *episodeEntity = [npResult objectAtIndex:i];
             episodeEntity.isNowPlaying = [NSNumber numberWithBool:NO];
         }
     }
@@ -855,34 +890,6 @@
     }
 }
 
-/*
- Setting control button states
- */
-- (void) setControlButtonStateToPlay {
-    [_btnActivityIndicator stopAnimating];
-    [_btn_player setEnabled:YES];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play.png"] forState:UIControlStateNormal];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
-}
-- (void) setControlButtonStateToPause {
-    [_btnActivityIndicator stopAnimating];
-    [_btn_player setEnabled:YES];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause.png"] forState:UIControlStateNormal];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause-down.png"] forState:UIControlStateHighlighted];
-}
-- (void) setControlButtonStateToFauxDisabled {
-    [_btnActivityIndicator stopAnimating];
-    [_btn_player setEnabled:YES];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateNormal];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
-}
-- (void) setControlButtonStateToBuffering {
-    [_btnActivityIndicator startAnimating];
-    [_btn_player setEnabled:NO];
-    [_btn_player setImage:nil forState:UIControlStateNormal];
-    [_btn_player setImage:nil forState:UIControlStateHighlighted];
-    [_btn_player setImage:nil forState:UIControlStateDisabled];
-}
 
 #pragma mark - NSURLConnection delegate
 
@@ -3057,7 +3064,7 @@ static NSArray *colors;
         }];
     }
     else {
-        NSLog(@"Error: %@", clientError);
+        CLS_LOG(@"Error: %@", clientError);
     }
     
 }
