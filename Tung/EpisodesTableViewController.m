@@ -152,10 +152,7 @@ static NSString *cellIdentifier = @"EpisodeCell";
     
     // play episode selected
     NSDictionary *episodeDict = [_episodeArray objectAtIndex:indexPath.row];
-    NSDictionary *podcastDict = [TungCommonObjects entityToDict:_podcastEntity];
-    //NSLog(@"selected episode: %@", episodeDict);
-    
-    EpisodeEntity *episodeEntity = [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
+    EpisodeEntity *episodeEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:_podcastEntity save:YES];
     EpisodeViewController *episodeView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"episodeView"];
     episodeView.episodeEntity = episodeEntity;
 

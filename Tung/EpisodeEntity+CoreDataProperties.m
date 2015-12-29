@@ -2,7 +2,7 @@
 //  EpisodeEntity+CoreDataProperties.m
 //  Tung
 //
-//  Created by Jamie Perkins on 10/23/15.
+//  Created by Jamie Perkins on 12/25/15.
 //  Copyright © 2015 Jamie Perkins. All rights reserved.
 //
 //  Choose "Create NSManagedObject Subclass…" from the Core Data editor menu
@@ -14,21 +14,19 @@
 @implementation EpisodeEntity (CoreDataProperties)
 
 @dynamic collectionId;
-@dynamic dataLength;
 @dynamic desc;
-@dynamic duration;
 @dynamic episodeImageUrl;
 @dynamic guid;
 @dynamic id;
+@dynamic isNowPlaying;
 @dynamic isRecommended;
 @dynamic pubDate;
 @dynamic shortlink;
 @dynamic title;
 @dynamic trackPosition;
 @dynamic trackProgress;
+@dynamic dataLength;
 @dynamic url;
-@dynamic isNowPlaying;
-@dynamic isQueuedAtIndex;
 @dynamic podcast;
 
 @end

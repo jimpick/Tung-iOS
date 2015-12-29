@@ -1759,17 +1759,17 @@
                                             <exclude reference="FxI-n0-cpf"/>
                                         </mask>
                                         <mask key="constraints">
-                                            <exclude reference="aVA-VE-tPC"/>
-                                            <exclude reference="wKq-wY-gS6"/>
                                             <exclude reference="Mlp-NK-ZCS"/>
                                             <exclude reference="ZBU-gd-CUh"/>
                                             <exclude reference="Zu9-eS-VUk"/>
-                                            <exclude reference="3Oh-WK-N9q"/>
-                                            <exclude reference="5Wk-xI-OGA"/>
                                             <exclude reference="1Ve-HV-ZBB"/>
                                             <exclude reference="7Pf-gc-TgE"/>
                                             <exclude reference="fqE-Xa-cjU"/>
                                             <exclude reference="ibn-Xh-xSe"/>
+                                            <exclude reference="3Oh-WK-N9q"/>
+                                            <exclude reference="5Wk-xI-OGA"/>
+                                            <exclude reference="aVA-VE-tPC"/>
+                                            <exclude reference="wKq-wY-gS6"/>
                                         </mask>
                                     </variation>
                                     <variation key="widthClass=compact">
@@ -1780,17 +1780,17 @@
                                             <include reference="FxI-n0-cpf"/>
                                         </mask>
                                         <mask key="constraints">
-                                            <include reference="aVA-VE-tPC"/>
-                                            <include reference="wKq-wY-gS6"/>
                                             <include reference="Mlp-NK-ZCS"/>
                                             <include reference="ZBU-gd-CUh"/>
                                             <include reference="Zu9-eS-VUk"/>
-                                            <include reference="3Oh-WK-N9q"/>
-                                            <include reference="5Wk-xI-OGA"/>
                                             <include reference="1Ve-HV-ZBB"/>
                                             <include reference="7Pf-gc-TgE"/>
                                             <include reference="fqE-Xa-cjU"/>
                                             <exclude reference="ibn-Xh-xSe"/>
+                                            <include reference="3Oh-WK-N9q"/>
+                                            <include reference="5Wk-xI-OGA"/>
+                                            <include reference="aVA-VE-tPC"/>
+                                            <include reference="wKq-wY-gS6"/>
                                         </mask>
                                     </variation>
                                 </tableViewCellContentView>

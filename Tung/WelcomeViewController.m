@@ -64,12 +64,6 @@
 -(void) viewWillDisappear:(BOOL)animated {
     
     [super viewWillDisappear:animated];
-    
-    @try {
-        [self removeObserver:self forKeyPath:@"tung.twitterAccountStatus"];
-    }
-    @catch (NSException *exception) {}
-    @finally {}
 }
 
 -(void) viewDidLayoutSubviews {

@@ -274,10 +274,12 @@ static NSArray *playbackRateStrings;
             // check for episode entity
             _episodeEntity = [TungCommonObjects getEpisodeEntityFromEpisodeId:episodeId];
             
-            if (_episodeEntity) {
+            if (_episodeEntity && _episodeEntity.title) {
+                NSLog(@"will set up view for complete episode entity: %@", _episodeEntity);
                 [self setUpViewForEpisode:_episodeEntity];
             }
             else {
+                NSLog(@"will set up view for episode mini dict then request episode data");
             	// no entity yet, request data
                 [_headerView setUpHeaderViewForEpisodeMiniDict:_episodeMiniDict];
                 [_headerView sizeAndConstrainHeaderViewInViewController:self];
@@ -285,7 +287,8 @@ static NSArray *playbackRateStrings;
                 [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
                     NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
                     NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
-                    _episodeEntity = [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
+                    PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
+                    _episodeEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:podcastEntity save:YES];
                     
                     [self setUpViewForEpisode:_episodeEntity];
                 }];
@@ -356,7 +359,7 @@ static NSArray *playbackRateStrings;
         case 2: // show episode view
             _commentsView.view.hidden = YES;
             _episodesView.view.hidden = NO;
-            [_tung savePositionForNowPlaying];
+            [_tung savePositionForNowPlayingAndSync:NO];
             [_episodesView findEachEpisodesProgress];
             [_episodesView.tableView reloadData];
             _descriptionView.view.hidden = YES;
@@ -517,13 +520,14 @@ static NSArray *playbackRateStrings;
     if (episodeEntity.desc.length == 0) {
         // refresh description web view with description from feed
         NSInteger feedIndex = [TungCommonObjects getIndexOfEpisodeWithUrl:episodeEntity.url inFeed:_episodesView.episodeArray];
-        NSDictionary *epDict = [_episodesView.episodeArray objectAtIndex:feedIndex];
-        NSString *desc = [TungCommonObjects findEpisodeDescriptionWithDict:epDict];
-        
-        if (desc.length > 0) {
-            episodeEntity.desc = desc;
-        } else {
-            episodeEntity.desc = @"No description";
+        episodeEntity.desc = @"No description";
+        if (feedIndex >= 0) {
+            NSDictionary *epDict = [_episodesView.episodeArray objectAtIndex:feedIndex];
+            NSString *desc = [TungCommonObjects findEpisodeDescriptionWithDict:epDict];
+            
+            if (desc.length > 0) {
+                episodeEntity.desc = desc;
+            }
         }
     }
     [self loadDescriptionWebViewStringForEntity:episodeEntity];
@@ -1879,9 +1883,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         else {
             [_tung unRecommendEpisode:_tung.npEpisodeEntity];
         }
-        
         _tung.npEpisodeEntity.isRecommended = [NSNumber numberWithBool:_recommendButton.recommended];
-        [TungCommonObjects saveContextWithReason:@"(un)recommended episode"];
     }
     else {
         [_podcast showNoConnectionAlert];

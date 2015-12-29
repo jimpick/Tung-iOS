@@ -397,6 +397,7 @@
 		7DDA94DC1AFEE3BC0090F70C /* posbar-thumb@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "posbar-thumb@3x.png"; sourceTree = "<group>"; };
 		7DDC9BEB1B67DAB7005E4E52 /* DescriptionWebViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DescriptionWebViewController.h; sourceTree = "<group>"; };
 		7DDC9BEC1B67DAB7005E4E52 /* DescriptionWebViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = DescriptionWebViewController.m; sourceTree = "<group>"; };
+		7DDD164E1C2DEDEE004D5193 /* TungDataModel 2.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TungDataModel 2.xcdatamodel"; sourceTree = "<group>"; };
 		7DDF1B9D1987F87A008CB927 /* AvatarContainerView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = AvatarContainerView.h; sourceTree = "<group>"; };
 		7DDF1B9E1987F87A008CB927 /* AvatarContainerView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = AvatarContainerView.m; sourceTree = "<group>"; };
 		7DDF1BBE198AA43F008CB927 /* AudioToolbox.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AudioToolbox.framework; path = System/Library/Frameworks/AudioToolbox.framework; sourceTree = SDKROOT; };
@@ -1298,9 +1299,10 @@
 		7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				7DDD164E1C2DEDEE004D5193 /* TungDataModel 2.xcdatamodel */,
 				7D282C871AF2C89F00495E74 /* TungDataModel.xcdatamodel */,
 			);
-			currentVersion = 7D282C871AF2C89F00495E74 /* TungDataModel.xcdatamodel */;
+			currentVersion = 7DDD164E1C2DEDEE004D5193 /* TungDataModel 2.xcdatamodel */;
 			path = TungDataModel.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

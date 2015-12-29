@@ -107,7 +107,7 @@
 - (void) playUrl:(NSString *)urlString fromTimestamp:(NSString *)timestamp;
 - (void) playNextEpisode;
 - (void) dismissSearch;
-- (void) savePositionForNowPlaying;
+- (void) savePositionForNowPlayingAndSync:(BOOL)sync;
 - (BOOL) isPlaying;
 - (void) playerPlay;
 - (void) playerPause;
@@ -121,7 +121,7 @@
 // core data
 + (BOOL) saveContextWithReason:(NSString*)reason;
 + (PodcastEntity *) getEntityForPodcast:(NSDictionary *)podcastDict save:(BOOL)save;
-+ (EpisodeEntity *) getEntityForPodcast:(NSDictionary *)podcastDict andEpisode:(NSDictionary *)episodeDict save:(BOOL)save;
++ (EpisodeEntity *) getEntityForEpisode:(NSDictionary *)episodeDict withPodcastEntity:(PodcastEntity *)podcastEntity save:(BOOL)save;
 + (NSString *) findEpisodeDescriptionWithDict:(NSDictionary *)episodeDict;
 + (NSString *) findPodcastDescriptionWithDict:(NSDictionary *)dict;
 + (NSDictionary *) entityToDict:(NSManagedObject *)entity;
@@ -162,7 +162,6 @@
 - (void) recommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) unRecommendEpisode:(EpisodeEntity *)episodeEntity;
 - (void) syncProgressForEpisode:(EpisodeEntity *)episodeEntity;
-- (void) incrementListenCount:(EpisodeEntity *)episodeEntity;
 - (void) postComment:(NSString*)comment atTime:(NSString*)timestamp onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) postClipWithComment:(NSString*)comment atTime:(NSString*)timestamp withDuration:(NSString *)duration onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) deleteStoryEventWithId:(NSString *)eventId withCallback:(void (^)(BOOL success))callback;

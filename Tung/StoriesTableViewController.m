@@ -683,7 +683,8 @@ CGFloat labelWidth = 0;
                     [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
                         NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
                         NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
-                        [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
+                        PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
+                        [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:podcastEntity save:YES];
                         
                         NSString *urlString = [episodeDict objectForKey:@"url"];
                         
@@ -1167,7 +1168,7 @@ NSInteger requestTries = 0;
                             
                             // welcome tutorial
                             SettingsEntity *settings = [TungCommonObjects settings];
-                            if (!settings.hasSeenFeedDemo.boolValue) {
+                            if (!settings.hasSeenWelcomePopup.boolValue) {
                             	[NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(showWelcomePopup) userInfo:nil repeats:NO];
                             }
                         }

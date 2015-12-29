@@ -101,7 +101,7 @@
 - (void) dismiss:(id)sender {
     if ([sender isKindOfClass:[UIView class]]) {
         SettingsEntity *settings = [TungCommonObjects settings];
-        settings.hasSeenFeedDemo = [NSNumber numberWithBool:YES];
+        settings.hasSeenWelcomePopup = [NSNumber numberWithBool:YES];
         [TungCommonObjects saveContextWithReason:@"has seen welcome tutorial"];
         [(UIView*)sender dismissPresentingPopup];
     }
@@ -110,7 +110,7 @@
 - (void) setContentSize {
     
     CGSize contentSize = _scrollView.contentSize;
-    NSLog(@"scroll view content size: %@", NSStringFromCGSize(_scrollView.contentSize));
+    //NSLog(@"scroll view content size: %@", NSStringFromCGSize(_scrollView.contentSize));
     contentSize.width = contentSize.width * 5;
     _scrollView.contentSize = contentSize;
     _scrollView.contentInset = UIEdgeInsetsZero;
