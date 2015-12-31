@@ -77,6 +77,8 @@
     [super viewDidAppear:animated];
     
     self.navigationController.navigationBar.translucent = NO;
+    
+    [_episodesView markNewEpisodesAsSeen];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -87,6 +89,7 @@
     [super viewWillDisappear:animated];
     self.navigationController.navigationBar.translucent = YES;
 }
+
 // ControlButtonDelegate optional method
 -(void) nowPlayingDidChange {
     [_episodesView.tableView reloadData];
@@ -170,17 +173,15 @@
         
         // subscribe
         if (subscribeButton.subscribed) {
-            NSLog(@"subscribed to podcast");
             
             [_tung subscribeToPodcast:_podcastEntity withButton:subscribeButton];
+            [_episodesView markNewEpisodesAsSeen];
         }
         // unsubscribe
         else {
-            NSLog(@"unsubscribe from podcast ");
             
             [_tung unsubscribeFromPodcast:_podcastEntity withButton:subscribeButton];
         }
-        [TungCommonObjects saveContextWithReason:@"(un)subscribed to podcast"];
     }
     else {
         [_podcast showNoConnectionAlert];

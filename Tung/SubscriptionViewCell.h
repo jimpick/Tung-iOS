@@ -7,8 +7,12 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "TungMiscView.h"
 
 @interface SubscriptionViewCell : UICollectionViewCell
 
 @property (strong, nonatomic) IBOutlet UIImageView *artImageView;
+@property (strong, nonatomic) IBOutlet TungMiscView *badge;
+@property (strong, nonatomic) IBOutlet NSLayoutConstraint *badgeWidthContstraint;
+
 @end

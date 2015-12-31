@@ -62,6 +62,19 @@
     }
 }
 
+// used for setting entity properties after new subscribe,
+// and also marking new episodes as "seen" to reset badge.
+-(void) markNewEpisodesAsSeen {
+    if (_episodeArray && _episodeArray.count) {
+        _podcastEntity.numNewEpisodes = [NSNumber numberWithInt:0];
+        // in case mostRecentEpisodeDate was not set yet or new episode was published after bkgd fetch
+        NSDate *mostRecentEpisodeDate = [[_episodeArray objectAtIndex:0] objectForKey:@"pubDate"];
+        _podcastEntity.mostRecentEpisodeDate = mostRecentEpisodeDate;
+        _podcastEntity.mostRecentSeenEpisodeDate = mostRecentEpisodeDate;
+        [TungCommonObjects saveContextWithReason:@"marking new episodes as \"seen\""];
+    }
+}
+
 #pragma mark - Table view data source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -100,7 +113,8 @@ static NSString *cellIdentifier = @"EpisodeCell";
         airDateFormatter = [[NSDateFormatter alloc] init];
         [airDateFormatter setDateFormat:@"MMM d, yyyy"];
     }
-    episodeCell.airDate.text = [airDateFormatter stringFromDate:[episodeDict objectForKey:@"pubDate"]];
+    NSDate *pubDate = [episodeDict objectForKey:@"pubDate"];
+    episodeCell.airDate.text = [airDateFormatter stringFromDate:pubDate];
     
     // now playing?
     episodeCell.iconView.backgroundColor = [UIColor clearColor];
@@ -120,14 +134,28 @@ static NSString *cellIdentifier = @"EpisodeCell";
     }
     
     // background color
-    if (_focusedIndexPath && _focusedIndexPath.row == indexPath.row) {
-        episodeCell.backgroundColor = [TungCommonObjects lightTungColor];
-    } else {
+    if (_focusedIndexPath) {
+        // only color focused row
+        if (_focusedIndexPath.row == indexPath.row) {
+            episodeCell.backgroundColor = [TungCommonObjects lightTungColor];
+        } else {
+            episodeCell.backgroundColor = [UIColor whiteColor];
+        }
+    }
+    else if (_podcastEntity.mostRecentEpisodeDate) {
+        // color new episodes if entity has a mostRecentEpisodeDate set
+        if ([_podcastEntity.mostRecentSeenEpisodeDate compare:pubDate] == NSOrderedAscending) {
+            episodeCell.backgroundColor = [TungCommonObjects lightTungColor];
+        } else {
+            episodeCell.backgroundColor = [UIColor whiteColor];
+        }
+    }
+    else {
         episodeCell.backgroundColor = [UIColor whiteColor];
     }
     
     // episode Progress
-    episodeCell.episodeProgress.type = kMIscViewTypeEpisodeProgress;
+    episodeCell.episodeProgress.type = kMiscViewTypeEpisodeProgress;
     episodeCell.episodeProgress.color = _podcastEntity.keyColor2;
     float position = 0;
     if ([episodeDict objectForKey:@"trackPosition"]) {

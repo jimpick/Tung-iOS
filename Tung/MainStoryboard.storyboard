@@ -3163,17 +3163,73 @@
                                         <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="pyR-cj-pNH">
                                             <rect key="frame" x="0.0" y="0.0" width="166" height="166"/>
                                         </imageView>
+                                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="CMK-NY-3Nz" customClass="TungMiscView">
+                                            <rect key="frame" x="0.0" y="0.0" width="240" height="128"/>
+                                            <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                            <constraints>
+                                                <constraint firstAttribute="width" relation="greaterThanOrEqual" constant="30" id="ENo-pt-agm"/>
+                                                <constraint firstAttribute="height" constant="20" id="RTu-lm-vAP">
+                                                    <variation key="widthClass=compact" constant="30"/>
+                                                </constraint>
+                                                <constraint firstAttribute="width" constant="20" id="Zb8-Sl-Dvc">
+                                                    <variation key="widthClass=compact" constant="30"/>
+                                                </constraint>
+                                                <constraint firstAttribute="width" constant="30" id="mas-Gd-xrA"/>
+                                            </constraints>
+                                            <variation key="default">
+                                                <mask key="constraints">
+                                                    <exclude reference="ENo-pt-agm"/>
+                                                    <exclude reference="RTu-lm-vAP"/>
+                                                    <exclude reference="Zb8-Sl-Dvc"/>
+                                                    <exclude reference="mas-Gd-xrA"/>
+                                                </mask>
+                                            </variation>
+                                            <variation key="widthClass=compact">
+                                                <mask key="constraints">
+                                                    <exclude reference="ENo-pt-agm"/>
+                                                    <include reference="RTu-lm-vAP"/>
+                                                    <exclude reference="Zb8-Sl-Dvc"/>
+                                                    <include reference="mas-Gd-xrA"/>
+                                                </mask>
+                                            </variation>
+                                        </view>
                                     </subviews>
                                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                                 </view>
                                 <constraints>
+                                    <constraint firstItem="CMK-NY-3Nz" firstAttribute="top" secondItem="En8-v9-cC3" secondAttribute="top" constant="6" id="E0x-fJ-R8f">
+                                        <variation key="widthClass=compact" constant="4"/>
+                                    </constraint>
                                     <constraint firstAttribute="trailing" secondItem="pyR-cj-pNH" secondAttribute="trailing" id="SkW-wP-Dkb"/>
+                                    <constraint firstAttribute="trailing" secondItem="CMK-NY-3Nz" secondAttribute="trailing" constant="6" id="UiY-NU-DtV">
+                                        <variation key="widthClass=compact" constant="6"/>
+                                    </constraint>
+                                    <constraint firstItem="CMK-NY-3Nz" firstAttribute="top" secondItem="En8-v9-cC3" secondAttribute="topMargin" id="dns-8A-E2J"/>
+                                    <constraint firstItem="CMK-NY-3Nz" firstAttribute="trailing" secondItem="En8-v9-cC3" secondAttribute="trailingMargin" id="mwP-g4-rDh"/>
                                     <constraint firstAttribute="bottom" secondItem="pyR-cj-pNH" secondAttribute="bottom" id="qxp-XP-DAG"/>
                                     <constraint firstItem="pyR-cj-pNH" firstAttribute="leading" secondItem="En8-v9-cC3" secondAttribute="leading" id="tQ2-Qg-dNJ"/>
                                     <constraint firstItem="pyR-cj-pNH" firstAttribute="top" secondItem="En8-v9-cC3" secondAttribute="top" id="x24-ZT-C3L"/>
                                 </constraints>
+                                <variation key="default">
+                                    <mask key="constraints">
+                                        <exclude reference="E0x-fJ-R8f"/>
+                                        <exclude reference="UiY-NU-DtV"/>
+                                        <exclude reference="dns-8A-E2J"/>
+                                        <exclude reference="mwP-g4-rDh"/>
+                                    </mask>
+                                </variation>
+                                <variation key="widthClass=compact">
+                                    <mask key="constraints">
+                                        <include reference="E0x-fJ-R8f"/>
+                                        <include reference="UiY-NU-DtV"/>
+                                        <exclude reference="dns-8A-E2J"/>
+                                        <exclude reference="mwP-g4-rDh"/>
+                                    </mask>
+                                </variation>
                                 <connections>
                                     <outlet property="artImageView" destination="pyR-cj-pNH" id="VWb-7p-s0Z"/>
+                                    <outlet property="badge" destination="CMK-NY-3Nz" id="Hb1-MS-G1m"/>
+                                    <outlet property="badgeWidthContstraint" destination="mas-Gd-xrA" id="bg8-VW-U3V"/>
                                 </connections>
                             </collectionViewCell>
                         </cells>
@@ -3195,6 +3251,6 @@
         <image name="tungSignInLogo.png" width="194" height="124"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="09H-aj-Zdd"/>
+        <segue reference="sbA-US-dCS"/>
     </inferredMetricsTieBreakers>
 </document>

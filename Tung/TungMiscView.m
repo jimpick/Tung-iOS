@@ -46,8 +46,11 @@
         case kMiscViewTypeSolidCircle:
             [TungPodcastStyleKit drawSolidCircleWithFrame:rect];
             break;
-        case kMIscViewTypeEpisodeProgress:
+        case kMiscViewTypeEpisodeProgress:
             [TungPodcastStyleKit drawEpisodeProgressWithOuterFrame:rect color:_color progress:_progress];
+            break;
+        case kMiscViewTypeSubscribeBadge:
+            [TungPodcastStyleKit drawBadgeWithFrame:rect buttonText:_text];
             break;
         default:
             break;

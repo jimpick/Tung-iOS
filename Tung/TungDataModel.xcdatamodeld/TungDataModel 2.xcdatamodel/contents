@@ -33,14 +33,19 @@
         <attribute name="keyColor2" optional="YES" attributeType="Transformable" syncable="YES"/>
         <attribute name="keyColor2Hex" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="mostRecentEpisodeDate" optional="YES" attributeType="Date" syncable="YES"/>
-        <attribute name="mostRecentSeenEpisodedate" optional="YES" attributeType="Date" syncable="YES"/>
-        <attribute name="notifyOfNewEpisodes" optional="YES" attributeType="Boolean" syncable="YES"/>
+        <attribute name="mostRecentSeenEpisodeDate" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="notifyOfNewEpisodes" optional="YES" attributeType="Boolean" defaultValueString="YES" syncable="YES"/>
+        <attribute name="numNewEpisodes" optional="YES" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
         <attribute name="timeSubscribed" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
         <attribute name="website" optional="YES" attributeType="String" syncable="YES"/>
         <relationship name="episodes" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="EpisodeEntity" inverseName="podcast" inverseEntity="EpisodeEntity" syncable="YES"/>
     </entity>
     <entity name="SettingsEntity" representedClassName="SettingsEntity" syncable="YES">
-        <attribute name="hasSeenWelcomePopup" attributeType="Boolean" elementID="hasSeenFeedDemo" syncable="YES"/>
+        <attribute name="hasSeenMentionsPrompt" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+        <attribute name="hasSeenNewEpisodesPrompt" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+        <attribute name="hasSeenWelcomePopup" attributeType="Boolean" defaultValueString="NO" elementID="hasSeenFeedDemo" syncable="YES"/>
+        <attribute name="numPodcastNotifications" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
+        <attribute name="numProfileNotifications" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
     </entity>
     <entity name="UserEntity" representedClassName="UserEntity" syncable="YES">
         <attribute name="bio" optional="YES" attributeType="String" syncable="YES"/>
@@ -60,8 +65,8 @@
     </entity>
     <elements>
         <element name="EpisodeEntity" positionX="-18" positionY="27" width="128" height="270"/>
-        <element name="PodcastEntity" positionX="-45" positionY="0" width="128" height="345"/>
-        <element name="SettingsEntity" positionX="-27" positionY="153" width="128" height="60"/>
+        <element name="PodcastEntity" positionX="-45" positionY="0" width="128" height="360"/>
+        <element name="SettingsEntity" positionX="-27" positionY="153" width="128" height="120"/>
         <element name="UserEntity" positionX="-27" positionY="126" width="128" height="255"/>
     </elements>
 </model>

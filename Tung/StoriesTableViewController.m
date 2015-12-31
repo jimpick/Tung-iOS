@@ -16,7 +16,7 @@
 #import "ProfileViewController.h"
 #import "FeedViewController.h"
 #import "KLCPopup.h"
-#import "PopupView.h"
+#import "WelcomePopupView.h"
 
 @interface StoriesTableViewController()
 
@@ -1301,7 +1301,7 @@ NSInteger requestTries = 0;
 
 - (void) showWelcomePopup {
     
-    PopupView *popupView = [[PopupView alloc] initWithFrame:CGRectMake(0,0,230,270)];
+    WelcomePopupView *popupView = [[WelcomePopupView alloc] initWithFrame:CGRectMake(0,0,230,270)];
     
     KLCPopup *welcomePopup = [KLCPopup popupWithContentView:popupView
                                                    showType:KLCPopupShowTypeGrowIn

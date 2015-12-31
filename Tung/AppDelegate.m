@@ -9,6 +9,7 @@
 #import "AppDelegate.h"
 #import <Security/Security.h>
 #import "TungCommonObjects.h"
+#import "TungPodcast.h"
 
 @implementation AppDelegate
 
@@ -74,14 +75,136 @@
     
     [[Twitter sharedInstance] startWithConsumerKey:@"JwOEqvjaWbdEgMRXLJ86rPUf5" consumerSecret:@"XRoROyD7pM1PZ3Xt6CAg4yN4tVgQG8kavx6dmvQZsqJ9DI1cGt"];
     [Fabric with:@[CrashlyticsKit, [Twitter sharedInstance]]];
+    
+    // background fetch
+    [application setMinimumBackgroundFetchInterval:UIApplicationBackgroundFetchIntervalMinimum];
 
     //return YES;
     return [[FBSDKApplicationDelegate sharedInstance] application:application
                                     didFinishLaunchingWithOptions:launchOptions];
 }
+
+- (void) application:(UIApplication *)application performFetchWithCompletionHandler:(nonnull void (^)(UIBackgroundFetchResult))completionHandler {
+    
+    // get all subscribed podcasts and check for new episodes
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSubscribed == YES"];
+    request.predicate = predicate;
+    NSSortDescriptor *dateSort = [[NSSortDescriptor alloc] initWithKey:@"timeSubscribed" ascending:YES];
+    request.sortDescriptors = @[dateSort];
+    
+    NSError *error;
+    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
+    
+    if (result.count > 0) {
+        
+        BOOL hasNewEpisodes = NO;
+        NSMutableArray *podcastsWithNewEpisodes = [NSMutableArray array];
+        BOOL newEpisodesPlural = NO; // used for forming string of new episode(s) alert
+    	
+        for (int i = 0; i < result.count; i++) {
+            PodcastEntity *podEntity = [result objectAtIndex:i];
+            NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:podEntity forceNewest:YES];
+            NSArray *episodes = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
+            
+            NSLog(@"PODCAST: %@", podEntity.collectionName);
+            
+            // check if mostRecentEpisodeDate is established
+            if (!podEntity.mostRecentEpisodeDate && episodes.count > 0) {
+                NSLog(@"- did not have mostRecentEpisodeDate established yet.");
+                NSDate *mostRecent = [episodes[3] objectForKey:@"pubDate"]; // TEMP: set newest to older episode for testing
+                podEntity.mostRecentEpisodeDate = mostRecent;
+                podEntity.mostRecentSeenEpisodeDate = mostRecent;
+                [TungCommonObjects saveContextWithReason:@"updated most recent episode date for podcast entity"];
+            }
+            else {
+                NSLog(@"- mostRecentEpisodeDate: %@", podEntity.mostRecentEpisodeDate);
+                NSDate *mostRecentForCompare = podEntity.mostRecentEpisodeDate;
+                NSInteger numNewEpisodes = podEntity.numNewEpisodes.integerValue;
+                BOOL newMostRecentSet = NO;
+                
+                for (int i = 0; i < episodes.count; i++) {
+                    NSDate *pubDate = [episodes[i] objectForKey:@"pubDate"];
+                    // check if episode is newer than entity's mostRecentEpisodeDate
+                    if ([mostRecentForCompare compare:pubDate] == NSOrderedAscending) {
+                        numNewEpisodes++;
+                        hasNewEpisodes = YES;
+                        // set most recent episode date
+                        if (!newMostRecentSet) {
+                            podEntity.mostRecentEpisodeDate = pubDate;
+                            newMostRecentSet = YES;
+                            if (podEntity.notifyOfNewEpisodes.boolValue) {
+                                [podcastsWithNewEpisodes addObject:podEntity.collectionName];
+                            }
+                        }
+                    } else {
+                        break;
+                    }
+                }
+                if (numNewEpisodes > 1) newEpisodesPlural = YES;
+                podEntity.numNewEpisodes = [NSNumber numberWithInteger:numNewEpisodes];
+                [TungCommonObjects saveContextWithReason:@"updated most recent episode date for podcast entity"];
+            }
+        }
+        if (hasNewEpisodes) {
+            NSLog(@"background fetch result: NEW episodes");
+            
+            NSLog(@"podcasts with new episodes: %@", podcastsWithNewEpisodes);
+            // if we should notify user of new episodes, build notification message string and notify
+            if (podcastsWithNewEpisodes.count > 0) {
+                // update number of new podcast notifications
+                SettingsEntity *settings = [TungCommonObjects settings];
+                settings.numPodcastNotifications = [NSNumber numberWithInteger:podcastsWithNewEpisodes.count];
+                [TungCommonObjects saveContextWithReason:@"number of new podcast notifications changed"];
+                // build message string
+                NSString *alertBody;
+                if (podcastsWithNewEpisodes.count == 1) {
+                    NSString *episodesPlural = [NSString stringWithFormat:@"%@", (newEpisodesPlural) ? @"new episodes" : @"a new episode"];
+                    alertBody = [NSString stringWithFormat:@"%@ has %@", [podcastsWithNewEpisodes objectAtIndex:0], episodesPlural];
+                }
+                else if (podcastsWithNewEpisodes.count == 2) {
+                    alertBody = [NSString stringWithFormat:@"%@ and %@ have new episodes", [podcastsWithNewEpisodes objectAtIndex:0], [podcastsWithNewEpisodes objectAtIndex:1]];
+                }
+                else {
+                    alertBody = [NSString stringWithFormat:@"%lul subscribed podcasts have new episodes", (unsigned long)podcastsWithNewEpisodes.count];
+                }
+                _notif = [[UILocalNotification alloc] init];
+                _notif.alertBody = alertBody;
+                _notif.fireDate = [NSDate dateWithTimeIntervalSinceNow:0.0];
+                _notif.timeZone = [[NSCalendar currentCalendar] timeZone];
+                _notif.hasAction = YES;
+                _notif.alertAction = @"Yes";
+                _notif.applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber + podcastsWithNewEpisodes.count;
+                [[UIApplication sharedApplication] scheduleLocalNotification:_notif];
+            }
+            completionHandler(UIBackgroundFetchResultNewData);
+        }
+        else {
+            NSLog(@"background fetch result: NO new episodes");
+            completionHandler(UIBackgroundFetchResultNoData);
+        }
+    }
+    else {
+        NSLog(@"background fetch result: no subscriptions");
+        completionHandler(UIBackgroundFetchResultNoData);
+    }
+    NSLog(@"============================");
+}
+
+- (void) application:(UIApplication *)application didReceiveLocalNotification:(UILocalNotification *)notification {
+    
+    NSLog(@"did receive local notification: %@", [notification userInfo]);
+}
+
+- (void) application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo {
+    
+    NSLog(@"did receive remote notification: %@", userInfo);
+}
+
 /*
 - (NSUInteger)application:(UIApplication *)application supportedInterfaceOrientationsForWindow:(UIWindow *)window {
-    
+ 
 }
 */
 

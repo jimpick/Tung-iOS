@@ -131,6 +131,7 @@
          */
         
         // all saved user data
+        /*
         AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
         NSError *error = nil;
         NSFetchRequest *users = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
@@ -140,9 +141,11 @@
             UserEntity *user = [uResult objectAtIndex:0];
             NSLog(@"user: %@", [TungCommonObjects entityToDict:user]);
         }
+         */
         
         // log all podcast and episode entities
-        [TungCommonObjects checkForPodcastData];
+        //[TungCommonObjects checkForPodcastData];
+        
     }
     return self;
 }
@@ -317,18 +320,23 @@
                     
                     CLS_LOG(@"seeking to time: %f", secs);
                     [_trackInfo setObject:[NSNumber numberWithFloat:secs] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
+                    [self setControlButtonStateToBuffering];
+                    /* TODO: if trackProgress is too far into the episode, player 
+                     will stall for a long time. Need to download episode then play.
+                     */
                     [_player seekToTime:time completionHandler:^(BOOL finished) {
+                        CLS_LOG(@"finished seeking");
                         [self playerPlay];
                         
                     }];
                 } else {
                     [_trackInfo setObject:[NSNumber numberWithFloat:0] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
                     
-                    if ([self isPlaying]) {
+                    if ([self isPlaying] && _fileIsLocal) {
                         CLS_LOG(@"play from beginning - already playing");
                         [self setControlButtonStateToPause];
                     } else {
-
+                        [self setControlButtonStateToBuffering];
                         CLS_LOG(@"play from beginning - with preroll");
                         [_player prerollAtRate:1.0 completionHandler:^(BOOL finished) {
                             CLS_LOG(@"-- finished preroll: %d", finished);
@@ -650,8 +658,12 @@
 
 - (void) completedPlayback {
     float currentTimeSecs = CMTimeGetSeconds(_player.currentTime);
-    CLS_LOG(@"completed playback. current secs: %f, total secs: %f", currentTimeSecs, _totalSeconds);
+    CLS_LOG(@"completed playback? current secs: %f, total secs: %f", currentTimeSecs, _totalSeconds);
     // called prematurely
+    if (_totalSeconds == 0) {
+        CLS_LOG(@"completed playback called prematurely. totalSeconds not set");
+        return;
+    }
     if (floor(currentTimeSecs) < floor(_totalSeconds)) {
         CLS_LOG(@"completed playback called prematurely.");
         if (_fileIsStreaming && _fileIsLocal) {
@@ -667,11 +679,7 @@
         
         return;
     }
-    // custom eject
-//    if (_playQueue.count > 0) {
-//        _npEpisodeEntity.trackPosition = [NSNumber numberWithFloat:1];
-//        [_playQueue removeObjectAtIndex:0];
-//    }
+
     [self playNextEpisode]; // ejects current episode
 }
 - (void) ejectCurrentEpisode {
@@ -704,7 +712,7 @@
 }
 
 - (void) playerError:(NSNotification *)notification {
-    CLS_LOG(@"player error: %@ attempting to recover playback", [notification userInfo]);
+    CLS_LOG(@"PLAYER ERROR: %@ ...attempting to recover playback", [notification userInfo]);
     
     if (_fileIsStreaming && _fileIsLocal) {
         [self replacePlayerItemWithLocalCopy];
@@ -1445,7 +1453,6 @@ static NSDateFormatter *ISODateInterpreter = nil;
         settings = [result objectAtIndex:0];
     } else {
         settings = [NSEntityDescription insertNewObjectForEntityForName:@"SettingsEntity" inManagedObjectContext:appDelegate.managedObjectContext];
-        settings.hasSeenWelcomePopup = [NSNumber numberWithInt:NO];
     }
     return settings;
 }
@@ -2091,6 +2098,14 @@ static NSArray *colors;
 - (void) subscribeToPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button {
     CLS_LOG(@"subscribe request for podcast with id %@", podcastEntity.collectionId);
     [button setEnabled:NO];
+    
+    SettingsEntity *settings = [TungCommonObjects settings];
+    if (!settings.hasSeenNewEpisodesPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
+        UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"New Episodes" message:@"Tung can notify you when new episodes are released for podcasts you subscribe to, based on your preference for each podcast. Would you like to receive notifications?" delegate:self cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
+        [notifPermissionAlert setTag:20];
+        [notifPermissionAlert show];
+    }
+    
     NSURL *subscribeRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/subscribe.php", _apiRootUrl]];
     NSMutableURLRequest *subscribeRequest = [NSMutableURLRequest requestWithURL:subscribeRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [subscribeRequest setHTTPMethod:@"POST"];
@@ -3029,7 +3044,12 @@ static NSArray *colors;
     // clear temp directory
     [TungCommonObjects clearTempDirectory];
     
-    [CrashlyticsKit setUserName:@""];
+    // settings
+    [UIApplication sharedApplication].applicationIconBadgeNumber = 0;
+    SettingsEntity *settings = [TungCommonObjects settings];
+    settings.numPodcastNotifications = [NSNumber numberWithInt:0];
+    settings.numProfileNotifications = [NSNumber numberWithInt:0];
+    [TungCommonObjects saveContextWithReason:@"reset settings"];
 
     // since this method can get called by dismissing an unauthorized alert
     // make sure _viewController property is set for VCs that call signOut
@@ -3200,6 +3220,28 @@ static NSArray *colors;
     if (alertView.tag == 10 && buttonIndex) {
         if ([_ctrlBtnDelegate respondsToSelector:@selector(initiateSearch)]) {
             [_ctrlBtnDelegate initiateSearch];
+        }
+    }
+    // notification permissions - new episodes
+    if (alertView.tag == 20) {
+        
+        SettingsEntity *settings = [TungCommonObjects settings];
+        settings.hasSeenNewEpisodesPrompt = [NSNumber numberWithBool:YES];
+        [TungCommonObjects saveContextWithReason:@"settings changed"];
+        
+        if (buttonIndex == 1) {
+            [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
+        }
+    }
+    // notification permissions - mentions
+    if (alertView.tag == 21) {
+        
+        SettingsEntity *settings = [TungCommonObjects settings];
+        settings.hasSeenMentionsPrompt = [NSNumber numberWithBool:YES];
+        [TungCommonObjects saveContextWithReason:@"settings changed"];
+        
+        if (buttonIndex == 1) {
+            [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
         }
     }
     // unauthorized alert
@@ -3745,6 +3787,11 @@ static NSDateFormatter *dayDateFormatter = nil;
         }
     }
     return feedIndex;
+}
+
++ (BOOL) hasGrantedNotificationPermissions {
+    UIUserNotificationSettings *notifSettings = [[UIApplication sharedApplication] currentUserNotificationSettings];
+    return (notifSettings.types == UIUserNotificationTypeAlert || notifSettings.types == UIUserNotificationTypeBadge);
 }
 
 @end

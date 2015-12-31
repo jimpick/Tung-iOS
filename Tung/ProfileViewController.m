@@ -256,6 +256,22 @@ CGFloat screenWidth;
     } else {
         [self requestPageData];
     }
+    
+    // clear profile badge and adjust app badge
+    SettingsEntity *settings = [TungCommonObjects settings];
+    
+    if (!settings.hasSeenMentionsPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
+        UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"User Mentions" message:@"Tung can notify you when someone mentions you in a comment, or when new episodes are released for podcasts you subscribe to. Would you like to receive notifications?" delegate:_tung cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
+        [notifPermissionAlert setTag:21];
+        [notifPermissionAlert show];
+    }
+    if (settings.numProfileNotifications.integerValue > 0) {
+        if ([UIApplication sharedApplication].applicationIconBadgeNumber > 0) {
+            [UIApplication sharedApplication].applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - settings.numProfileNotifications.integerValue;
+        }
+        settings.numProfileNotifications = [NSNumber numberWithInteger:0];
+        [TungCommonObjects saveContextWithReason:@"adjust subscriptions badge number"];
+    }
 }
 
 - (void) viewWillDisappear:(BOOL)animated {

@@ -323,12 +323,21 @@ static NSArray *playbackRateStrings;
         [_onEnterFrame addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
         
     }
+    else {
+        SettingsEntity *settings = [TungCommonObjects settings];
+        if (!settings.hasSeenMentionsPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
+            UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"User Mentions" message:@"Tung can notify you when someone mentions you in a comment, or when new episodes are released for podcasts you subscribe to. Would you like to receive notifications?" delegate:_tung cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
+            [notifPermissionAlert setTag:21];
+            [notifPermissionAlert show];
+        }
+    }
 }
 
 - (void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     [_podcast.feedPreloadQueue cancelAllOperations];
     [_onEnterFrame invalidate];
+    [markAsSeenTimer invalidate];
     
 }
 
@@ -347,6 +356,8 @@ static NSArray *playbackRateStrings;
     // Dispose of any resources that can be recreated.
 }
 
+NSTimer *markAsSeenTimer;
+
 - (void) switchViews:(id)sender {
     UISegmentedControl *switcher = (UISegmentedControl *)sender;
     
@@ -362,6 +373,7 @@ static NSArray *playbackRateStrings;
             [_tung savePositionForNowPlayingAndSync:NO];
             [_episodesView findEachEpisodesProgress];
             [_episodesView.tableView reloadData];
+            markAsSeenTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:_episodesView selector:@selector(markNewEpisodesAsSeen) userInfo:nil repeats:NO];
             _descriptionView.view.hidden = YES;
             break;
         default: // show description
@@ -629,13 +641,12 @@ static NSArray *playbackRateStrings;
         
         // subscribe
         if (subscribeButton.subscribed) {
-            CLS_LOG(@"subscribed to podcast");
             
             [_tung subscribeToPodcast:_episodeEntity.podcast withButton:subscribeButton];
+            [_episodesView markNewEpisodesAsSeen];
         }
         // unsubscribe
         else {
-            CLS_LOG(@"unsubscribe from podcast ");
             
             [_tung unsubscribeFromPodcast:_episodeEntity.podcast withButton:subscribeButton];
         }

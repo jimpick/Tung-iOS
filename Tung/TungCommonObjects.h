@@ -205,5 +205,6 @@
 + (NSString*) convertSecondsToTimeString:(CGFloat)totalSeconds;
 + (double) convertTimestampToSeconds:(NSString *)timestamp;
 + (NSInteger) getIndexOfEpisodeWithUrl:(NSString *)urlString inFeed:(NSArray *)feed;
++ (BOOL) hasGrantedNotificationPermissions;
 
 @end

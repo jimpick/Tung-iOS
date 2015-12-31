@@ -20,5 +20,6 @@
 @property NSArray *keyColors;
 
 - (void) findEachEpisodesProgress;
+- (void) markNewEpisodesAsSeen;
 
 @end

@@ -123,8 +123,8 @@
 		7DA76A551B4F411600F1A9F4 /* navBarBkgd.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DA76A541B4F411600F1A9F4 /* navBarBkgd.png */; };
 		7DB6A1AD1BFD54040057D337 /* TungMiscView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DB6A1AC1BFD54040057D337 /* TungMiscView.m */; };
 		7DB6A1B01BFE0EB20057D337 /* KLCPopup.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DB6A1AF1BFE0EB20057D337 /* KLCPopup.m */; };
-		7DB6A1B31BFE0F2B0057D337 /* PopupView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DB6A1B21BFE0F2B0057D337 /* PopupView.m */; };
-		7DB6A1B91BFE2E7C0057D337 /* PopupView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7DB6A1B81BFE2E7C0057D337 /* PopupView.xib */; };
+		7DB6A1B31BFE0F2B0057D337 /* WelcomePopupView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DB6A1B21BFE0F2B0057D337 /* WelcomePopupView.m */; };
+		7DB6A1B91BFE2E7C0057D337 /* WelcomePopupView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7DB6A1B81BFE2E7C0057D337 /* WelcomePopupView.xib */; };
 		7DB6A1BD1C011C110057D337 /* TwitterKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DB6A1BA1C011C110057D337 /* TwitterKit.framework */; };
 		7DB6A1BE1C011C110057D337 /* TwitterKitResources.bundle in Resources */ = {isa = PBXBuildFile; fileRef = 7DB6A1BB1C011C110057D337 /* TwitterKitResources.bundle */; };
 		7DB6A1BF1C011C110057D337 /* TwitterCore.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DB6A1BC1C011C110057D337 /* TwitterCore.framework */; };
@@ -360,9 +360,9 @@
 		7DB6A1AC1BFD54040057D337 /* TungMiscView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TungMiscView.m; sourceTree = "<group>"; };
 		7DB6A1AE1BFE0EB20057D337 /* KLCPopup.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = KLCPopup.h; sourceTree = "<group>"; };
 		7DB6A1AF1BFE0EB20057D337 /* KLCPopup.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = KLCPopup.m; sourceTree = "<group>"; };
-		7DB6A1B11BFE0F2B0057D337 /* PopupView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PopupView.h; sourceTree = "<group>"; };
-		7DB6A1B21BFE0F2B0057D337 /* PopupView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PopupView.m; sourceTree = "<group>"; };
-		7DB6A1B81BFE2E7C0057D337 /* PopupView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = PopupView.xib; sourceTree = "<group>"; };
+		7DB6A1B11BFE0F2B0057D337 /* WelcomePopupView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WelcomePopupView.h; sourceTree = "<group>"; };
+		7DB6A1B21BFE0F2B0057D337 /* WelcomePopupView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WelcomePopupView.m; sourceTree = "<group>"; };
+		7DB6A1B81BFE2E7C0057D337 /* WelcomePopupView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = WelcomePopupView.xib; sourceTree = "<group>"; };
 		7DB6A1BA1C011C110057D337 /* TwitterKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = TwitterKit.framework; path = Tung/TwitterKit.framework; sourceTree = "<group>"; };
 		7DB6A1BB1C011C110057D337 /* TwitterKitResources.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; name = TwitterKitResources.bundle; path = Tung/TwitterKitResources.bundle; sourceTree = "<group>"; };
 		7DB6A1BC1C011C110057D337 /* TwitterCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = TwitterCore.framework; path = Tung/TwitterCore.framework; sourceTree = "<group>"; };
@@ -585,9 +585,9 @@
 				7D63F80E1AF6CBCC00765289 /* HeaderView.h */,
 				7D63F80F1AF6CBCC00765289 /* HeaderView.m */,
 				7D63F80C1AF6CBA100765289 /* HeaderView.xib */,
-				7DB6A1B11BFE0F2B0057D337 /* PopupView.h */,
-				7DB6A1B21BFE0F2B0057D337 /* PopupView.m */,
-				7DB6A1B81BFE2E7C0057D337 /* PopupView.xib */,
+				7DB6A1B11BFE0F2B0057D337 /* WelcomePopupView.h */,
+				7DB6A1B21BFE0F2B0057D337 /* WelcomePopupView.m */,
+				7DB6A1B81BFE2E7C0057D337 /* WelcomePopupView.xib */,
 				7DDC9BEB1B67DAB7005E4E52 /* DescriptionWebViewController.h */,
 				7DDC9BEC1B67DAB7005E4E52 /* DescriptionWebViewController.m */,
 				7DE4B1BC1B726D6C00C02BE2 /* CommentAndPostView.h */,
@@ -957,7 +957,7 @@
 				7D4C79E41BE021B30061816B /* tabBar-nowPlaying-inactive@3x.png in Resources */,
 				7D5BC1B51A547AC9008C008D /* tabBar-search@2x.png in Resources */,
 				7D4336871926C65600CBC02E /* UINavigationBarNextIndicatorDefault@2x.png in Resources */,
-				7DB6A1B91BFE2E7C0057D337 /* PopupView.xib in Resources */,
+				7DB6A1B91BFE2E7C0057D337 /* WelcomePopupView.xib in Resources */,
 				7DBD62251AE3675E00233005 /* btn-player-bkgd-down@2x.png in Resources */,
 				7D4C79EA1BE021B30061816B /* tabBar-subscriptions@2x.png in Resources */,
 			);
@@ -1051,7 +1051,7 @@
 				7DCAC60219FEF81A004B6182 /* FollowersCell.m in Sources */,
 				7D1341E9192530AC00B95C66 /* FinishSignUpController.m in Sources */,
 				7D14077C1BBEB86D00BD4F89 /* StoryHeaderCell.m in Sources */,
-				7DB6A1B31BFE0F2B0057D337 /* PopupView.m in Sources */,
+				7DB6A1B31BFE0F2B0057D337 /* WelcomePopupView.m in Sources */,
 				7D670F301934EE7600239673 /* Reachability.m in Sources */,
 				7D63F8101AF6CBCC00765289 /* HeaderView.m in Sources */,
 				7DF9823C1BB42B6A00D76B9F /* PillButton.m in Sources */,

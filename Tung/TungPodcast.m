@@ -494,28 +494,24 @@ static NSString *feedDictsDirName = @"feedDicts";
             [TungCommonObjects saveContextWithReason:@"update feedLastCached"];
         }
     }
-    
 }
 
-/* 
- Will retrieve a feed no older than a day, optionally force refetch. Caches feed if feed was not freshly cached.
- */
+// Will retrieve a cached feed no older than a day, else refetches. Caches feed.
 + (NSDictionary*) retrieveAndCacheFeedForPodcastEntity:(PodcastEntity *)entity forceNewest:(BOOL)forceNewest {
     
     NSDictionary *feedDict;
     
     if (forceNewest) {
         CLS_LOG(@"retrieve cached feed for entity :: force newest");
-        feedDict = [self requestAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
-                                                               andFeedUrl:entity.feedUrl];
+        feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
     }
     else if (entity.feedLastCached) {
         long timeSinceLastCached = fabs([entity.feedLastCached timeIntervalSinceNow]);
         if (timeSinceLastCached > 60 * 60 * 24) {
             CLS_LOG(@"retrieve cached feed for entity :: cached feed dict was stale - refetch");
-            feedDict = [self requestAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
-                                                               andFeedUrl:entity.feedUrl];
+            feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
         } else {
+            // pull feed dict from cache
             NSString *feedDir = [NSTemporaryDirectory() stringByAppendingPathComponent:feedDictsDirName];
             NSError *error;
             [[NSFileManager defaultManager] createDirectoryAtPath:feedDir withIntermediateDirectories:YES attributes:nil error:&error];
@@ -528,117 +524,58 @@ static NSString *feedDictsDirName = @"feedDicts";
                 return dict;
             } else {
                 CLS_LOG(@"retrieve cached feed for entity :: tmp dir must have been cleared, fetching feed");
-                feedDict = [self requestAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
-                                                                   andFeedUrl:entity.feedUrl];
+                feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
             }
         }
     } else {
-        CLS_LOG(@"retrieve cached feed for entity :: ");
-        feedDict = [self retrieveAndConvertPodcastFeedDataWithCollectionId:entity.collectionId
-                                                           andFeedUrl:entity.feedUrl];
+        CLS_LOG(@"retrieve cached feed for entity :: need to request new");
+        feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
     }
     [self cacheFeed:feedDict forEntity:entity];
     return feedDict;
     
 }
 
-
-/* ////////////////////////
- RAW FEEDS
- /////////////////////////*/
-
-static NSString *rawFeedsDirName = @"rawFeeds";
-
-// used for preloading feeds from search results
+// used for preloading feeds in _podcastArray (from search results)
 -(void) preloadFeedsWithLimit:(NSUInteger)limit {
     
-    CLS_LOG(@"preload feeds");
-    NSString *rawFeedsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:rawFeedsDirName];
-    NSError *error;
-    if ([[NSFileManager defaultManager] createDirectoryAtPath:rawFeedsDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+    NSArray *podcastArrayCopy = [_podcastArray copy];
+    
+    if (_feedPreloadQueue) {
+        [_feedPreloadQueue cancelAllOperations];
+        _feedPreloadQueue = nil;
+    }
+    
+    _feedPreloadQueue = [[NSOperationQueue alloc] init];
+    _feedPreloadQueue.maxConcurrentOperationCount = 1; // only 1 so streaming is smooth
+    
+    NSUInteger maxNumToPreload;
+    if (limit == 0) { // 0 limit means no limit
+        maxNumToPreload = podcastArrayCopy.count;
+    } else {
+        maxNumToPreload = (podcastArrayCopy.count < limit) ? podcastArrayCopy.count : limit;
+    }
+    
+    for (int i = 0; i < maxNumToPreload; i++) {
         
-        NSArray *podcastArrayCopy = [_podcastArray copy];
-        
-        if (_feedPreloadQueue) {
-            [_feedPreloadQueue cancelAllOperations];
-            _feedPreloadQueue = nil;
-        }
-        
-        _feedPreloadQueue = [[NSOperationQueue alloc] init];
-        _feedPreloadQueue.maxConcurrentOperationCount = 1; // only 1 so streaming is smooth
-        
-        NSUInteger maxNumToPreload;
-        if (limit == 0) { // 0 limit means no limit
-            maxNumToPreload = podcastArrayCopy.count;
-        } else {
-        	maxNumToPreload = (podcastArrayCopy.count < limit) ? podcastArrayCopy.count : limit;
-        }
-        
-        for (int i = 0; i < maxNumToPreload; i++) {
-            
-            [_feedPreloadQueue addOperationWithBlock:^{
-                CLS_LOG(@"** preload feed at index: %d", i);
-                NSString *feedURLString = [[podcastArrayCopy objectAtIndex:i] objectForKey:@"feedUrl"];
-                NSNumber *collectionId = [[podcastArrayCopy objectAtIndex:i] objectForKey:@"collectionId"];
-                NSString *feedDataFilename = [NSString stringWithFormat:@"%@", collectionId];
-                NSString *feedDataFilepath = [rawFeedsDir stringByAppendingPathComponent:feedDataFilename];
-                
-                NSData *feedData = [NSData dataWithContentsOfURL:[NSURL URLWithString:feedURLString]];
-                //CLS_LOG(@"write feed data at index %d", i);
-                [feedData writeToFile:feedDataFilepath atomically:YES];
-                
-            }];
-        }
+        [_feedPreloadQueue addOperationWithBlock:^{
+            CLS_LOG(@"** preload feed at index: %d", i);
+            PodcastEntity *podEntity = [TungCommonObjects getEntityForPodcast:[podcastArrayCopy objectAtIndex:i] save:NO];
+            NSDictionary *feedDict = [TungPodcast requestAndConvertPodcastFeedDataWithFeedUrl:podEntity.feedUrl];
+            [TungPodcast cacheFeed:feedDict forEntity:podEntity];
+        }];
     }
 }
 
-/*
- if there is cached data, the feed is retrieved from it. If not it is requested and converted.
- */
-+ (NSDictionary *) retrieveAndConvertPodcastFeedDataWithCollectionId:(NSNumber *)collectionId andFeedUrl:(NSString *)feedUrl {
+// get raw feed and return converted data.
++ (NSDictionary *) requestAndConvertPodcastFeedDataWithFeedUrl:(NSString *)feedUrl {
     
-    NSString *rawFeedsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:rawFeedsDirName];
-    NSError *error;
-    if ([[NSFileManager defaultManager] createDirectoryAtPath:rawFeedsDir withIntermediateDirectories:YES attributes:nil error:&error]) {
-        
-        NSString *feedDataFilename = [NSString stringWithFormat:@"%@", collectionId];
-        NSString *feedDataFilepath = [rawFeedsDir stringByAppendingPathComponent:feedDataFilename];
-        NSData *feedData;
-        // get cached copy, or download if necessary
-        if ([[NSFileManager defaultManager] fileExistsAtPath:feedDataFilepath]) {
-            CLS_LOG(@"raw feed data was cached");
-            feedData = [NSData dataWithContentsOfFile:feedDataFilepath];
-        } else {
-            CLS_LOG(@"had to download feed");
-            feedData = [NSData dataWithContentsOfURL:[NSURL URLWithString: feedUrl]];
-            [feedData writeToFile:feedDataFilepath atomically:YES];
-        }
-        
-        JPXMLtoDictionary *xmlToDict = [[JPXMLtoDictionary alloc] init];
-        return [xmlToDict xmlDataToDictionary:feedData];
-    }
-    return nil;
-}
-/*
- forces re-fetch of the feed, returns converted data.
- */
-+ (NSDictionary *) requestAndConvertPodcastFeedDataWithCollectionId:(NSNumber *)collectionId andFeedUrl:(NSString *)feedUrl {
-    
-    NSString *rawFeedsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:rawFeedsDirName];
-    NSError *error;
-    if ([[NSFileManager defaultManager] createDirectoryAtPath:rawFeedsDir withIntermediateDirectories:YES attributes:nil error:&error]) {
-        
-        NSString *feedDataFilename = [NSString stringWithFormat:@"%@", collectionId];
-        NSString *feedDataFilepath = [rawFeedsDir stringByAppendingPathComponent:feedDataFilename];
-        NSData *feedData = [NSData dataWithContentsOfURL:[NSURL URLWithString: feedUrl]];
-        [feedData writeToFile:feedDataFilepath atomically:YES];
-        
-        JPXMLtoDictionary *xmlToDict = [[JPXMLtoDictionary alloc] init];
-        return [xmlToDict xmlDataToDictionary:feedData];
-    }
-    return nil;
+    NSData *feedData = [NSData dataWithContentsOfURL:[NSURL URLWithString: feedUrl]];
+    JPXMLtoDictionary *xmlToDict = [[JPXMLtoDictionary alloc] init];
+    return [xmlToDict xmlDataToDictionary:feedData];
 }
 
+// get an episode array from a feed dict.
 + (NSArray *) extractFeedArrayFromFeedDict:(NSDictionary *)feedDict {
     id item = [[feedDict objectForKey:@"channel"] objectForKey:@"item"];
     if ([item isKindOfClass:[NSArray class]]) {

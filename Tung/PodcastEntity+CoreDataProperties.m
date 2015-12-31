@@ -2,7 +2,7 @@
 //  PodcastEntity+CoreDataProperties.m
 //  Tung
 //
-//  Created by Jamie Perkins on 12/25/15.
+//  Created by Jamie Perkins on 12/30/15.
 //  Copyright © 2015 Jamie Perkins. All rights reserved.
 //
 //  Choose "Create NSManagedObject Subclass…" from the Core Data editor menu
@@ -27,10 +27,12 @@
 @dynamic keyColor1Hex;
 @dynamic keyColor2;
 @dynamic keyColor2Hex;
-@dynamic timeSubscribed;
-@dynamic website;
 @dynamic mostRecentEpisodeDate;
 @dynamic notifyOfNewEpisodes;
+@dynamic timeSubscribed;
+@dynamic website;
+@dynamic mostRecentSeenEpisodeDate;
+@dynamic numNewEpisodes;
 @dynamic episodes;
 
 @end

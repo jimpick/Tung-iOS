@@ -2,7 +2,7 @@
 //  PodcastEntity+CoreDataProperties.h
 //  Tung
 //
-//  Created by Jamie Perkins on 12/25/15.
+//  Created by Jamie Perkins on 12/30/15.
 //  Copyright © 2015 Jamie Perkins. All rights reserved.
 //
 //  Choose "Create NSManagedObject Subclass…" from the Core Data editor menu
@@ -29,10 +29,12 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nullable, nonatomic, retain) NSString *keyColor1Hex;
 @property (nullable, nonatomic, retain) id keyColor2;
 @property (nullable, nonatomic, retain) NSString *keyColor2Hex;
-@property (nullable, nonatomic, retain) NSNumber *timeSubscribed;
-@property (nullable, nonatomic, retain) NSString *website;
 @property (nullable, nonatomic, retain) NSDate *mostRecentEpisodeDate;
 @property (nullable, nonatomic, retain) NSNumber *notifyOfNewEpisodes;
+@property (nullable, nonatomic, retain) NSNumber *timeSubscribed;
+@property (nullable, nonatomic, retain) NSString *website;
+@property (nullable, nonatomic, retain) NSDate *mostRecentSeenEpisodeDate;
+@property (nullable, nonatomic, retain) NSNumber *numNewEpisodes;
 @property (nullable, nonatomic, retain) NSSet<EpisodeEntity *> *episodes;
 
 @end

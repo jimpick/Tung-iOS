@@ -30,6 +30,8 @@
 
 @property (strong, nonatomic) UINavigationController *navControl;
 
+@property (strong, nonatomic) UILocalNotification *notif;
+
 - (void)saveContext;
 - (NSURL *)applicationDocumentsDirectory;
 

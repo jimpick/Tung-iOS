@@ -1,21 +1,21 @@
 //
-//  PopupView.m
+//  WelcomePopupView.m
 //  Tung
 //
 //  Created by Jamie Perkins on 11/19/15.
 //  Copyright © 2015 Jamie Perkins. All rights reserved.
 //
 
-#import "PopupView.h"
+#import "WelcomePopupView.h"
 #import "KLCPopup.h"
 #import "TungCommonObjects.h"
 
-@implementation PopupView
+@implementation WelcomePopupView
 
 -(id) initWithFrame:(CGRect)frame {
     self = [super initWithFrame:frame];
     if (self) {
-        [[NSBundle mainBundle] loadNibNamed:@"PopupView" owner:self options:nil];
+        [[NSBundle mainBundle] loadNibNamed:@"WelcomePopupView" owner:self options:nil];
         self.bounds = self.view.bounds;
         [self addSubview:self.view];
         
@@ -27,7 +27,7 @@
 -(id) initWithCoder:(NSCoder *)aDecoder {
     self = [super initWithCoder:aDecoder];
     if (self) {
-        [[NSBundle mainBundle] loadNibNamed:@"PopupView" owner:self options:nil];
+        [[NSBundle mainBundle] loadNibNamed:@"WelcomePopupView" owner:self options:nil];
         [self addSubview:self.view];
         
         [self setProperties];

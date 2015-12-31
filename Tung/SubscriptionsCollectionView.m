@@ -81,21 +81,21 @@ static NSString * const reuseIdentifier = @"artCell";
     self.collectionView.scrollEnabled = YES;
     self.collectionView.backgroundColor = [TungCommonObjects bkgdGrayColor];
     
+    // TODO: remove
     // preload feeds, check for no subs
+    /*
     NSError *error;
     NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
     if (result.count > 0) {
         for (int i = 0; i < result.count; i++) {
             PodcastEntity *podcastEntity = [result objectAtIndex:i];
-            //CLS_LOG(@"podcast at index: %d", i);
-            // entity -> dict
-            NSArray *keys = [[[podcastEntity entity] attributesByName] allKeys];
-            NSDictionary *podcastDict = [podcastEntity dictionaryWithValuesForKeys:keys];
+            NSDictionary *podcastDict = [TungCommonObjects entityToDict:podcastEntity];
             //CLS_LOG(@"%@", podcastDict);
             [_podcast.podcastArray insertObject:podcastDict atIndex:i];
         }
         [_podcast preloadFeedsWithLimit:0];
     }
+     */
     
 }
 
@@ -104,6 +104,22 @@ static NSString * const reuseIdentifier = @"artCell";
     
     _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
+    
+    // clear subscriptions badge and adjust app badge
+    SettingsEntity *settings = [TungCommonObjects settings];
+    if (!settings.hasSeenNewEpisodesPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
+        UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"New Episodes" message:@"Tung can notify you when new episodes are released for podcasts you subscribe to, based on your preference for each podcast. Would you like to receive notifications?" delegate:_tung cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
+        [notifPermissionAlert setTag:20];
+        [notifPermissionAlert show];
+    }
+    if (settings.numPodcastNotifications.integerValue > 0) {
+        if ([UIApplication sharedApplication].applicationIconBadgeNumber > 0) {
+            [UIApplication sharedApplication].applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - settings.numPodcastNotifications.integerValue;
+        }
+        settings.numPodcastNotifications = [NSNumber numberWithInteger:0];
+        [TungCommonObjects saveContextWithReason:@"adjust subscriptions badge number"];
+    }
+    
 }
 
 - (void) viewDidDisappear:(BOOL)animated {
@@ -283,6 +299,8 @@ static NSString * const reuseIdentifier = @"artCell";
     return sectionInfo.numberOfObjects;
 }
 
+UILabel static *prototypeBadge;
+
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
     //CLS_LOG(@"collection view cell for item at index path %ld", (long)indexPath.row);
     
@@ -290,15 +308,44 @@ static NSString * const reuseIdentifier = @"artCell";
     SubscriptionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:reuseIdentifier forIndexPath:indexPath];
     
     PodcastEntity *podcastEntity = [_resultsController objectAtIndexPath:indexPath];
-    // entity -> dict
-    //NSArray *keys = [[[podcastEntity entity] attributesByName] allKeys];
-    //NSDictionary *podcastDict = [podcastEntity dictionaryWithValuesForKeys:keys];
     
     NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600 andCollectionId:podcastEntity.collectionId];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
-
+    
+    // podcast art
     cell.artImageView.image = artImage;
     cell.contentView.backgroundColor = [UIColor whiteColor];
+    
+    // new episodes badge
+    cell.badge.type = kMiscViewTypeSubscribeBadge;
+    cell.badge.text = @"";
+    if (podcastEntity.numNewEpisodes.integerValue > 0) {
+        cell.badge.hidden = NO;
+        if (podcastEntity.numNewEpisodes.integerValue > 20) {
+            cell.badge.text = @"20+";
+        } else {
+            cell.badge.text = [NSString stringWithFormat:@"%@", podcastEntity.numNewEpisodes];
+        }
+    } else {
+        cell.badge.hidden = YES;
+    }
+    
+    // adjust badge width if necessary
+    if (!prototypeBadge) {
+        prototypeBadge = [[UILabel alloc] init];
+        prototypeBadge.font = [UIFont systemFontOfSize:15];
+        prototypeBadge.numberOfLines = 1;
+    }
+    prototypeBadge.text = cell.badge.text;
+    CGSize badgeSize = [prototypeBadge sizeThatFits:CGSizeMake(80, 30)];
+    CGFloat margins = 20;
+    if ((badgeSize.width + margins) > 30) {
+        cell.badgeWidthContstraint.constant = badgeSize.width + margins;
+    } else {
+        cell.badgeWidthContstraint.constant = 30;
+    }
+    [cell.badge layoutIfNeeded];
+    [cell.badge setNeedsDisplay];
     
     return cell;
 }

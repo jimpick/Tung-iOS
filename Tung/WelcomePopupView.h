@@ -1,5 +1,5 @@
 //
-//  PopupView.h
+//  WelcomePopupView.h
 //  Tung
 //
 //  Created by Jamie Perkins on 11/19/15.
@@ -10,7 +10,7 @@
 #import "TungMiscView.h"
 #import "IconView.h"
 
-@interface PopupView : UIView <UIScrollViewDelegate>
+@interface WelcomePopupView : UIView <UIScrollViewDelegate>
 
 @property (strong, nonatomic) IBOutlet UIView *view;
 @property (strong, nonatomic) IBOutlet TungMiscView *solidCircle;
