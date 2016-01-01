@@ -1065,7 +1065,44 @@ static NSString *outputFileName = @"output";
     [self.pendingRequests removeObject:loadingRequest];
 }
 
+#pragma mark - custom tab bar badges
 
+UILabel *prototypeBadge;
+
+- (void) setBadgeNumber:(NSNumber *)number forBadge:(TungMiscView *)badge {
+    
+    CGRect badgeFrame = badge.frame;
+    badgeFrame.size = CGSizeMake(22, 22); // set default
+    if (number.integerValue > 0) {
+        if (number.integerValue > 9) {
+            NSString *text;
+            if (number.integerValue > 99) {
+                text = @"99+";
+            }
+            else {
+                text = [NSString stringWithFormat:@"%@", number];
+            }
+            if (!prototypeBadge) {
+                prototypeBadge = [[UILabel alloc] init];
+                prototypeBadge.font = [UIFont systemFontOfSize:12];
+                prototypeBadge.numberOfLines = 1;
+            }
+            prototypeBadge.text = text;
+            CGSize badgeSize = [prototypeBadge sizeThatFits:CGSizeMake(44, 22)];
+            CGFloat newWidth = badgeSize.width + 15;
+            badgeFrame.size.width = newWidth;
+            badge.text = text;
+        } else {
+            badge.text = [NSString stringWithFormat:@"%@", number];
+        }
+        badge.hidden = NO;
+    } else {
+        badge.text = @"0";
+        badge.hidden = YES;
+    }
+    badge.bounds = badgeFrame;
+    [badge setNeedsDisplay];
+}
 
 #pragma mark - core data related
 
@@ -3791,7 +3828,9 @@ static NSDateFormatter *dayDateFormatter = nil;
 
 + (BOOL) hasGrantedNotificationPermissions {
     UIUserNotificationSettings *notifSettings = [[UIApplication sharedApplication] currentUserNotificationSettings];
-    return (notifSettings.types == UIUserNotificationTypeAlert || notifSettings.types == UIUserNotificationTypeBadge);
+    BOOL notifSettingsPermissions = (notifSettings.types == UIUserNotificationTypeAlert || notifSettings.types == UIUserNotificationTypeBadge);
+    NSLog(@"has granted notif permissions: %@", [NSNumber numberWithBool:notifSettingsPermissions]);
+    return notifSettingsPermissions;
 }
 
 @end

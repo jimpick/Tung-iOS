@@ -56,10 +56,7 @@ static NSString * const reuseIdentifier = @"artCell";
     _resultsController.delegate = self;
     
     NSError *fetchingError;
-    if ([_resultsController performFetch:&fetchingError]) {
-        CLS_LOG(@"successfully fetched");
-    }
-    else {
+    if (![_resultsController performFetch:&fetchingError]) {
         CLS_LOG(@"failed to fetch: %@", fetchingError);
     }
 

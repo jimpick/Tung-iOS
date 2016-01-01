@@ -25,10 +25,12 @@
 #import <MediaPlayer/MediaPlayer.h>
 
 #import "CircleButton.h"
+#import "TungMiscView.h"
 
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
 #import <FBSDKShareKit/FBSDKShareKit.h>
+
 
 @protocol ControlButtonDelegate <NSObject>
 
@@ -77,7 +79,30 @@
 @property BOOL fileIsStreaming; // file can be local and streaming at the same time
 @property BOOL shouldStayPaused;
 
--(void) checkForNowPlaying;
+- (void) checkForNowPlaying;
+- (void) controlButtonTapped;
+- (void) seekToTime:(CMTime)time;
+- (void) skipAhead15;
+- (void) skipBack15;
+- (void) queueAndPlaySelectedEpisode:(NSString *)urlString fromTimestamp:(NSString *)timestamp;
+- (void) playUrl:(NSString *)urlString fromTimestamp:(NSString *)timestamp;
+- (void) playNextEpisode;
+- (void) dismissSearch;
+- (void) savePositionForNowPlayingAndSync:(BOOL)sync;
+- (BOOL) isPlaying;
+- (void) playerPlay;
+- (void) playerPause;
+- (void) setControlButtonStateToPlay;
+- (void) setControlButtonStateToPause;
+- (void) setControlButtonStateToFauxDisabled;
+- (void) setControlButtonStateToBuffering;
+- (NSURL *) getEpisodeUrl:(NSURL *)url;
+- (void) replacePlayerItemWithLocalCopy;
+
+// badges
+@property (strong, nonatomic) TungMiscView *subscriptionsBadge;
+@property (strong, nonatomic) TungMiscView *profileBadge;
+- (void) setBadgeNumber:(NSNumber *)number forBadge:(TungMiscView *)badge;
 
 // clip player
 @property (nonatomic, strong) AVAudioPlayer *clipPlayer;
@@ -97,26 +122,6 @@
 @property (strong, nonatomic) NSNumber *feedNeedsRefresh;
 @property (strong, nonatomic) NSNumber *profileFeedNeedsRefresh;
 @property (strong, nonatomic) NSNumber *profileNeedsRefresh;
-
-// player
-- (void) controlButtonTapped;
-- (void) seekToTime:(CMTime)time;
-- (void) skipAhead15;
-- (void) skipBack15;
-- (void) queueAndPlaySelectedEpisode:(NSString *)urlString fromTimestamp:(NSString *)timestamp;
-- (void) playUrl:(NSString *)urlString fromTimestamp:(NSString *)timestamp;
-- (void) playNextEpisode;
-- (void) dismissSearch;
-- (void) savePositionForNowPlayingAndSync:(BOOL)sync;
-- (BOOL) isPlaying;
-- (void) playerPlay;
-- (void) playerPause;
-- (void) setControlButtonStateToPlay;
-- (void) setControlButtonStateToPause;
-- (void) setControlButtonStateToFauxDisabled;
-- (void) setControlButtonStateToBuffering;
-- (NSURL *) getEpisodeUrl:(NSURL *)url;
-- (void) replacePlayerItemWithLocalCopy;
 
 // core data
 + (BOOL) saveContextWithReason:(NSString*)reason;

@@ -369,7 +369,7 @@ CGFloat labelWidth = 0;
         if (title.length > 82) {
             headerCell.title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
         }
-        else if (title.length > 62) {
+        else if (title.length > 52) {
             headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
         }
     }

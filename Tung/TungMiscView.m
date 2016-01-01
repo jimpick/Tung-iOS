@@ -50,10 +50,20 @@
             [TungPodcastStyleKit drawEpisodeProgressWithOuterFrame:rect color:_color progress:_progress];
             break;
         case kMiscViewTypeSubscribeBadge:
-            [TungPodcastStyleKit drawBadgeWithFrame:rect buttonText:_text];
+            [TungPodcastStyleKit drawLargeBadgeWithFrame:rect buttonText:_text];
+            break;
+        case kMiscViewTypeSmallBadge:
+            [TungPodcastStyleKit drawSmallBadgeWithFrame:rect buttonText:_text];
             break;
         default:
             break;
+    }
+}
+
+- (void) touchesEnded:(NSSet *)touches withEvent:(UIEvent *)event {
+    // forward touches to next view
+    if (self.type == kMiscViewTypeSmallBadge || self.type == kMiscViewTypeSubscribeBadge) {
+    	[[self.nextResponder nextResponder] touchesEnded:touches withEvent:event];
     }
 }
 

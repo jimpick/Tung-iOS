@@ -15,7 +15,8 @@ typedef enum {
     kMiscViewTypeCommentBkgdTheirs,
     kMiscViewTypeSolidCircle,
     kMiscViewTypeEpisodeProgress,
-    kMiscViewTypeSubscribeBadge
+    kMiscViewTypeSubscribeBadge,
+    kMiscViewTypeSmallBadge
 } MiscViewType;
 
 @interface TungMiscView : UIView

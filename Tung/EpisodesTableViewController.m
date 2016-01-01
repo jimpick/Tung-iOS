@@ -66,11 +66,18 @@
 // and also marking new episodes as "seen" to reset badge.
 -(void) markNewEpisodesAsSeen {
     if (_episodeArray && _episodeArray.count) {
+        NSNumber *numNew = _podcastEntity.numNewEpisodes;
         _podcastEntity.numNewEpisodes = [NSNumber numberWithInt:0];
         // in case mostRecentEpisodeDate was not set yet or new episode was published after bkgd fetch
         NSDate *mostRecentEpisodeDate = [[_episodeArray objectAtIndex:0] objectForKey:@"pubDate"];
         _podcastEntity.mostRecentEpisodeDate = mostRecentEpisodeDate;
         _podcastEntity.mostRecentSeenEpisodeDate = mostRecentEpisodeDate;
+        SettingsEntity *settings = [TungCommonObjects settings];
+        NSInteger numPodcastNotifications = settings.numPodcastNotifications.integerValue - numNew.integerValue;
+        if (numPodcastNotifications < 0) numPodcastNotifications = 0;
+        settings.numPodcastNotifications = [NSNumber numberWithInteger:numPodcastNotifications];
+        [_tung setBadgeNumber:settings.numPodcastNotifications forBadge:_tung.subscriptionsBadge];
+        
         [TungCommonObjects saveContextWithReason:@"marking new episodes as \"seen\""];
     }
 }

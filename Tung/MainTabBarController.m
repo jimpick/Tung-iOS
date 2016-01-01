@@ -9,7 +9,6 @@
 #import "MainTabBarController.h"
 #import "TungNavController.h"
 #import "TungCommonObjects.h"
-#import "IconButton.h"
 
 @interface MainTabBarController ()
 
@@ -51,8 +50,9 @@
     self.tabBar.hidden = YES;
     UIToolbar *toolbar = [UIToolbar new];
     toolbar.translucent = NO;
-    CGFloat screenWidth = [[UIScreen mainScreen]bounds].size.width;
-    CGFloat screenHeight = [[UIScreen mainScreen]bounds].size.height;
+    CGRect screenBounds = [[UIScreen mainScreen]bounds];
+    CGFloat screenWidth = screenBounds.size.width;
+    CGFloat screenHeight = screenBounds.size.height;
     toolbar.frame = CGRectMake(0, screenHeight - 44, screenWidth, 44);
     //NSLog(@"toolbar frame: %@", NSStringFromCGRect(toolbar.frame));
     toolbar.clipsToBounds = YES;
@@ -69,7 +69,7 @@
     UIBarButtonItem *profileBarBtn = [[UIBarButtonItem alloc] initWithCustomView:_profileInnerBtn];
     _innerButtons = @[_feedInnerBtn, _nowPlayingInnerBtn, _subscribesInnerBtn, _profileInnerBtn];
     UIBarButtonItem *fixedSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:self action:nil];
-    fixedSpace.width = 100;
+    fixedSpace.width = screenWidth * .25;
     UIBarButtonItem *flexSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
     [toolbar setItems:@[feedBarBtn, flexSpace,
                         nowPlayingBarBtn, flexSpace,
@@ -81,17 +81,16 @@
     //NSLog(@"view frame: %@", NSStringFromCGRect(self.view.frame));
     
     // control button shadow
-    CGRect screenBounds = [[UIScreen mainScreen]bounds];
     UIImageView *btn_player_shadow = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"btn-player-shadow.png"]];
-    int shadow_x = (screenBounds.size.width - 116) / 2 ;
-    int shadow_y = screenBounds.size.height - 77;
+    int shadow_x = (screenWidth - 116) / 2 ;
+    int shadow_y = screenHeight - 77;
     btn_player_shadow.frame = CGRectMake(shadow_x, shadow_y, 116, 77);
     [self.view insertSubview:btn_player_shadow aboveSubview:self.view];
     
     // control button
     _tung.btn_player = [UIButton buttonWithType:UIButtonTypeCustom];
-    int x = (screenBounds.size.width - 76) / 2 ;
-    int y = screenBounds.size.height - 63;
+    int x = (screenWidth - 76) / 2 ;
+    int y = screenHeight - 63;
     _tung.btn_player.frame = CGRectMake(x, y, 76, 63);
     [_tung.btn_player setBackgroundImage:[UIImage imageNamed:@"btn-player-bkgd.png"] forState:UIControlStateNormal];
     [_tung.btn_player setBackgroundImage:[UIImage imageNamed:@"btn-player-bkgd-down.png"] forState:UIControlStateHighlighted];
@@ -101,13 +100,31 @@
     [_tung.btn_player addTarget:_tung action:@selector(controlButtonTapped) forControlEvents:UIControlEventTouchUpInside];
     // buffering indicator
     _tung.btnActivityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
-    int indicator_x = (screenBounds.size.width - 37) / 2 ;
-    int indicator_y = screenBounds.size.height - 45;
+    int indicator_x = (screenWidth - 37) / 2 ;
+    int indicator_y = screenHeight - 45;
     _tung.btnActivityIndicator.frame = CGRectMake(indicator_x, indicator_y, 37, 37);
     // add views
     [self.view insertSubview:_tung.btn_player aboveSubview:self.view];
     [self.view insertSubview:_tung.btnActivityIndicator aboveSubview:_tung.btn_player];
     
+    // custom tab bar badges
+    CGFloat badgeY = screenHeight - 40;
+    CGPoint subscriptionsBadgeCenter = CGPointMake(screenWidth * 0.76, badgeY);
+    CGPoint profileBadgeCenter = CGPointMake(screenWidth * 0.94, badgeY);
+    CGRect badgeFrame = CGRectMake(0, 0, 22, 22);
+    SettingsEntity *settings = [TungCommonObjects settings];
+    
+    _tung.subscriptionsBadge = [[TungMiscView alloc] initWithFrame:badgeFrame];
+    _tung.subscriptionsBadge.type = kMiscViewTypeSmallBadge;
+    [self.view addSubview:_tung.subscriptionsBadge];
+    _tung.subscriptionsBadge.center = subscriptionsBadgeCenter;
+    [_tung setBadgeNumber:settings.numPodcastNotifications forBadge:_tung.subscriptionsBadge];
+    
+    _tung.profileBadge = [[TungMiscView alloc] initWithFrame:badgeFrame];
+    _tung.profileBadge.type = kMiscViewTypeSmallBadge;
+    [self.view addSubview:_tung.profileBadge];
+    _tung.profileBadge.center = profileBadgeCenter;
+    [_tung setBadgeNumber:settings.numProfileNotifications forBadge:_tung.profileBadge];
     
     // initial view controller
     self.selectedIndex = 0;
