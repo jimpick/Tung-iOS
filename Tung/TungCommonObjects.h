@@ -76,7 +76,8 @@
 @property (strong, nonatomic) UIActivityIndicatorView *btnActivityIndicator;
 @property BOOL npViewSetupForCurrentEpisode;
 @property BOOL fileIsLocal;
-@property BOOL fileIsStreaming; // file can be local and streaming at the same time
+@property BOOL fileIsStreaming;
+@property BOOL fileWillBeCached; // file will only be cached if custom url scheme is used
 @property BOOL shouldStayPaused;
 
 - (void) checkForNowPlaying;

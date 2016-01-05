@@ -192,6 +192,7 @@
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
     //CLS_LOG(@"did receive data");
+
     [_podcastSearchResultData appendData:data];
 }
 
@@ -502,13 +503,13 @@ static NSString *feedDictsDirName = @"feedDicts";
     NSDictionary *feedDict;
     
     if (forceNewest) {
-        CLS_LOG(@"retrieve cached feed for entity :: force newest");
+        //CLS_LOG(@"retrieve cached feed for entity :: force newest");
         feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
     }
     else if (entity.feedLastCached) {
         long timeSinceLastCached = fabs([entity.feedLastCached timeIntervalSinceNow]);
         if (timeSinceLastCached > 60 * 60 * 24) {
-            CLS_LOG(@"retrieve cached feed for entity :: cached feed dict was stale - refetch");
+            //CLS_LOG(@"retrieve cached feed for entity :: cached feed dict was stale - refetch");
             feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
         } else {
             // pull feed dict from cache
@@ -520,15 +521,15 @@ static NSString *feedDictsDirName = @"feedDicts";
             NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:feedFilePath];
             if (dict) {
                 // return cached feed
-                CLS_LOG(@"retrieve cached feed for entity :: found fresh cached feed dictionary");
+                //CLS_LOG(@"retrieve cached feed for entity :: found fresh cached feed dictionary");
                 return dict;
             } else {
-                CLS_LOG(@"retrieve cached feed for entity :: tmp dir must have been cleared, fetching feed");
+                //CLS_LOG(@"retrieve cached feed for entity :: tmp dir must have been cleared, fetching feed");
                 feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
             }
         }
     } else {
-        CLS_LOG(@"retrieve cached feed for entity :: need to request new");
+        //CLS_LOG(@"retrieve cached feed for entity :: need to request new");
         feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
     }
     [self cacheFeed:feedDict forEntity:entity];

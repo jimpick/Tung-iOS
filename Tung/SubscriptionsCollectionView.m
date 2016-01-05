@@ -43,15 +43,12 @@ static NSString * const reuseIdentifier = @"artCell";
     
     // get subscribed podcasts
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
-    
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
     //NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isSubscribed == %@", [NSNumber numberWithBool:YES]];
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSubscribed == YES"];
     request.predicate = predicate;
     NSSortDescriptor *dateSort = [[NSSortDescriptor alloc] initWithKey:@"timeSubscribed" ascending:YES];
-
     request.sortDescriptors = @[dateSort];
-    
     _resultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:request managedObjectContext:appDelegate.managedObjectContext sectionNameKeyPath:nil cacheName:nil];
     _resultsController.delegate = self;
     
@@ -77,22 +74,6 @@ static NSString * const reuseIdentifier = @"artCell";
     self.collectionView.collectionViewLayout = flowLayout;
     self.collectionView.scrollEnabled = YES;
     self.collectionView.backgroundColor = [TungCommonObjects bkgdGrayColor];
-    
-    // TODO: remove
-    // preload feeds, check for no subs
-    /*
-    NSError *error;
-    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
-    if (result.count > 0) {
-        for (int i = 0; i < result.count; i++) {
-            PodcastEntity *podcastEntity = [result objectAtIndex:i];
-            NSDictionary *podcastDict = [TungCommonObjects entityToDict:podcastEntity];
-            //CLS_LOG(@"%@", podcastDict);
-            [_podcast.podcastArray insertObject:podcastDict atIndex:i];
-        }
-        [_podcast preloadFeedsWithLimit:0];
-    }
-     */
     
 }
 

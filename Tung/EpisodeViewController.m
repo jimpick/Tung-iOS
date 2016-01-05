@@ -467,7 +467,7 @@ NSTimer *markAsSeenTimer;
         _episodeEntity = _tung.npEpisodeEntity;
         
         // initialize views
-        CLS_LOG(@"setup view for now playing: %@", _tung.npEpisodeEntity.title);
+        //CLS_LOG(@"setup view for now playing: %@", _tung.npEpisodeEntity.title);
         _npControlsView.hidden = NO;
         _nothingPlayingLabel.hidden = YES;
         
@@ -675,7 +675,7 @@ static CGRect buttonsScrollViewHomeRect;
 
 - (void) setUpNowPlayingControlView {
     _npControlsViewIsVisible = YES;
-    CLS_LOG(@"set up now playing control view");
+    //CLS_LOG(@"set up now playing control view");
     _skipAheadBtn.type = kIconButtonTypeSkipAhead15;
     _skipAheadBtn.color = [TungCommonObjects tungColor];
     [_skipAheadBtn setNeedsDisplay];
@@ -1046,8 +1046,13 @@ static CGRect buttonsScrollViewHomeRect;
         }
         [_recordButton setNeedsDisplay];
     } else {
+        
         UIAlertView *waitForDownloadAlert = [[UIAlertView alloc] initWithTitle:@"Hang on..." message:@"You can record as soon as this episode finishes downloading." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
         [waitForDownloadAlert show];
+        
+        if (!_tung.fileWillBeCached) {
+            [_tung saveNowPlayingEpisodeInTempDirectory];
+        }
     }
     
 }
@@ -1295,7 +1300,7 @@ static CGRect buttonsScrollViewHomeRect;
     _timeElapsedLabel.text = [TungCommonObjects convertSecondsToTimeString:secondsAtPosition];
     
     // limit to preloaded amount
-    if (slider.value > _progressBar.progress) {
+    if (_tung.fileWillBeCached && slider.value > _progressBar.progress) {
         slider.value = _progressBar.progress - 0.001;
     }
 }
@@ -1325,8 +1330,6 @@ static CGRect buttonsScrollViewHomeRect;
         [_posbar setEnabled:YES];
     }];
     
-    
-
 }
 
 #pragma mark Showing/Hiding controls
