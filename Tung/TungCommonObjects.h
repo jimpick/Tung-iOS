@@ -98,6 +98,7 @@
 - (void) setControlButtonStateToBuffering;
 - (NSURL *) getEpisodeUrl:(NSURL *)url;
 - (void) replacePlayerItemWithLocalCopy;
+- (void) saveNowPlayingEpisodeInTempDirectory;
 
 // badges
 @property (strong, nonatomic) TungMiscView *subscriptionsBadge;
@@ -117,6 +118,10 @@
 
 // facebook
 - (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity;
+
+// alerts
+- (void) promptForNotificationsForEpisodes;
+- (void) promptForNotificationsForMentions;
 
 // flags
 @property (strong, nonatomic) NSNumber *feedNeedsRefresh;
@@ -156,7 +161,10 @@
 
 // requests
 - (void) establishCred;
+- (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+- (void) verifyCredWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) getSessionWithCallback:(void (^)(void))callback;
+- (void) handleUnauthorizedWithCallback:(void (^)(void))callback;
 - (void) killSessionForTesting;
 // stories post requests
 - (void) addPodcast:(PodcastEntity *)podcastEntity orEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;

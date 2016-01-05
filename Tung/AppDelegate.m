@@ -50,22 +50,7 @@
     }
     
     // delete keychain value for cred
-    /*
-    CLS_LOG(@"deleting keychain cred");
-    NSDictionary *deleteQuery = @{
-                            (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
-                            (__bridge id)kSecAttrService : service,
-                            (__bridge id)kSecAttrAccount : key
-                            };
-    OSStatus foundExisting = SecItemCopyMatching((__bridge CFDictionaryRef)deleteQuery, NULL);
-    if (foundExisting == errSecSuccess) {
-        OSStatus deleted = SecItemDelete((__bridge CFDictionaryRef)deleteQuery);
-        if (deleted == errSecSuccess) {
-            CLS_LOG(@"successfully deleted cred");
-            isLoggedIn = NO;
-        }
-     }
-    */
+    //[TungCommonObjects deleteCredentials];
     
     //isLoggedIn = NO; // DEV ONLY
     
@@ -174,7 +159,7 @@
                         alertBody = [NSString stringWithFormat:@"%@ and %@ have new episodes", [podcastsWithNewEpisodesNotify objectAtIndex:0], [podcastsWithNewEpisodesNotify objectAtIndex:1]];
                     }
                     else {
-                        alertBody = [NSString stringWithFormat:@"%lul subscribed podcasts have new episodes", (unsigned long)podcastsWithNewEpisodesNotify.count];
+                        alertBody = [NSString stringWithFormat:@"%lu subscribed podcasts have new episodes", (unsigned long)podcastsWithNewEpisodesNotify.count];
                     }
                     _notif = [[UILocalNotification alloc] init];
                     _notif.alertBody = alertBody;

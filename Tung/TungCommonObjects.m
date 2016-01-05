@@ -146,6 +146,8 @@
         // log all podcast and episode entities
         //[TungCommonObjects checkForPodcastData];
         
+        [TungCommonObjects clearTempDirectory];
+        
     }
     return self;
 }
@@ -287,7 +289,7 @@
         CLS_LOG(@"determined total seconds: %f (%@)", _totalSeconds, [TungCommonObjects convertSecondsToTimeString:_totalSeconds]);
     }
     else if (_totalSeconds == 0) {
-        [NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:NO];
+        [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:NO];
     }
 }
 
@@ -620,12 +622,12 @@
         // add observers
         [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
         //[_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
-        [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
         //[_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
         // Subscribe to AVPlayerItem's notifications
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(completedPlayback) name:AVPlayerItemDidPlayToEndTimeNotification object:playerItem];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemPlaybackStalledNotification object:playerItem];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemFailedToPlayToEndTimeNotification object:playerItem];
+        [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
         
         [self setControlButtonStateToBuffering];
         
@@ -637,7 +639,7 @@
 }
 
 - (void) savePositionForNowPlayingAndSync:(BOOL)sync {
-    NSLog(@"save position for now playing");
+
     if (_totalSeconds > 0) {
         float secs = CMTimeGetSeconds(_player.currentTime);
         _npEpisodeEntity.trackProgress = [NSNumber numberWithFloat:secs];
@@ -662,6 +664,7 @@
     // called prematurely
     if (_totalSeconds == 0) {
         CLS_LOG(@"completed playback called prematurely. totalSeconds not set");
+        [self determineTotalSeconds];
         return;
     }
     if (floor(currentTimeSecs) < floor(_totalSeconds)) {
@@ -676,7 +679,6 @@
             [self ejectCurrentEpisode];
             [self queueAndPlaySelectedEpisode:urlString fromTimestamp:nil];
         }
-        
         return;
     }
 
@@ -727,29 +729,49 @@
 }
 
 - (void) playNextEpisode {
+    // play manually queued episode
     if (_playQueue.count > 1) {
         [self ejectCurrentEpisode];
         AudioServicesPlaySystemSound(1103); // play beep
-        CLS_LOG(@"play next episode in queue");
+        CLS_LOG(@"play next episode");
         [self playQueuedPodcast];
     }
+    // play next episode in feed
     else {
         if (!_currentFeed) {
             _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO]];
         }
-        // play the next podcast in the feed if there is one
-        if (_currentFeedIndex + 1 < _currentFeed.count) {
-            CLS_LOG(@"play next episode in feed");
-            [self ejectCurrentEpisode];
-            _currentFeedIndex++;
-            NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex];
-            NSURL *url = [NSURL URLWithString:[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"]];
-            [_playQueue insertObject:url atIndex:0];
-
-            [self playQueuedPodcast];
-        } else {
-            [self setControlButtonStateToFauxDisabled];;
+        // first see if there is a newer one and if it has been listened to yet
+        if (_currentFeedIndex - 1 > -1) {
+            
+            NSDictionary *epDict = [_currentFeed objectAtIndex:_currentFeedIndex - 1];
+            EpisodeEntity *epEntity = [TungCommonObjects getEntityForEpisode:epDict withPodcastEntity:_npEpisodeEntity.podcast save:YES];
+            
+            if (epEntity.trackPosition.floatValue == 0) {
+                CLS_LOG(@"newer episode hasn't been listened to yet, queue and play");
+                [self ejectCurrentEpisode];
+                _currentFeedIndex--;
+                [_playQueue insertObject:[NSURL URLWithString:epEntity.url] atIndex:0];
+                [self playQueuedPodcast];
+                return;
+            }
         }
+        // check if there is an older one
+        if (_currentFeedIndex + 1 < _currentFeed.count) {
+            NSDictionary *epDict = [_currentFeed objectAtIndex:_currentFeedIndex + 1];
+            EpisodeEntity *epEntity = [TungCommonObjects getEntityForEpisode:epDict withPodcastEntity:_npEpisodeEntity.podcast save:YES];
+            
+            if (epEntity.trackPosition.floatValue == 0) {
+                CLS_LOG(@"older episode hasn't been listened to yet, queue and play");
+                [self ejectCurrentEpisode];
+                _currentFeedIndex++;
+                [_playQueue insertObject:[NSURL URLWithString:epEntity.url] atIndex:0];
+                [self playQueuedPodcast];
+                return;
+            }
+        }
+        CLS_LOG(@"episodes in both directions have been played. stopping");
+        [self setControlButtonStateToFauxDisabled];
     }
 }
 
@@ -777,7 +799,7 @@
 // looks for local file, else returns url with custom scheme
 - (NSURL *) getEpisodeUrl:(NSURL *)url {
     
-    //CLS_LOG(@"get episode url: %@", url);
+    CLS_LOG(@"get episode url: %@", url);
     
     NSString *episodeDir = [NSTemporaryDirectory() stringByAppendingPathComponent:episodeDirName];
     NSError *error;
@@ -792,7 +814,7 @@
         }
     }
     */
-    NSString *episodeFilename = [url.absoluteString lastPathComponent];
+    NSString *episodeFilename = [url.path lastPathComponent];
     episodeFilename = [episodeFilename stringByRemovingPercentEncoding];
     NSString *episodeFilepath = [episodeDir stringByAppendingPathComponent:episodeFilename];
 
@@ -805,9 +827,15 @@
         CLS_LOG(@"^^^ will stream from url");
         _fileIsLocal = NO;
         _fileIsStreaming = YES;
-        // return url with custom scheme
+        
         NSURLComponents *components = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
-        components.scheme = @"tungstream";
+        // if episode has track position > 0.1, we do not use custom scheme,
+        // because this way AVPlayer will start streaming from the timestamp
+        // instead of downloading from the start as with a custom scheme
+        //if (_npEpisodeEntity.trackPosition.floatValue <= 0.1) {
+            // return url with custom scheme
+        	components.scheme = @"tungstream";
+        //}
         return [components URL];
     }
 }
@@ -829,51 +857,24 @@
     }];
 }
 
-// not currently used, since switch to AVPlayer means NSURLConnectionDataDelegate does it for us.
-// may repurpose this later to save in documents directory
+static NSString *episodeDirName = @"episodes";
+
+// IN PROGRESS
 /*
 - (void) saveNowPlayingEpisodeInTempDirectory {
     NSFileManager *fileManager = [[NSFileManager alloc] init];
     NSString *episodeDir = [NSTemporaryDirectory() stringByAppendingPathComponent:episodeDirName];
     NSError *error;
     [fileManager createDirectoryAtPath:episodeDir withIntermediateDirectories:YES attributes:nil error:&error];
-    
-    NSString *outputName = [NSString stringWithFormat:@"%@.%@", outputFileName, _nowPlayingFileType];
-    NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:outputName];
-    
-    NSURL *url = _streamer.url;
-    
-//    CLS_LOG(@"file name absolute string: %@", [url.absoluteString lastPathComponent]);
-//    CLS_LOG(@"file name path: %@", [url.path lastPathComponent]);
-    
-    NSString *episodeFilename = [url.path lastPathComponent];
+    NSString *episodeFilename = [[_playQueue objectAtIndex:0] lastPathComponent];
     NSString *episodeFilepath = [episodeDir stringByAppendingPathComponent:episodeFilename];
-    error = nil;
     
-    //CLS_LOG(@"file to save: %@", episodeFilename);
-    
-    // save it isn't already saved
-    if (![fileManager fileExistsAtPath:episodeFilepath]) {
-        if ([fileManager copyItemAtPath:outputFilePath toPath:episodeFilepath error:&error]) {
-            CLS_LOG(@"^^^ successfully saved episode in temp dir");
-        } else {
-            CLS_LOG(@"^^^ failed to save episode in temp dir: %@", error);
-        }
+    if ([_trackData writeToFile:episodeFilepath options:0 error:&error]) {
+        CLS_LOG(@"-- saved podcast track in temp episode dir");
+        _fileIsLocal = YES;
     }
-    
-    // show what's in temp episode dir
- 
-     NSError *ftError = nil;
-     NSArray *episodeFolderContents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:episodeDir error:&ftError];
-     CLS_LOG(@"episode folder contents ---------------");
-     if ([episodeFolderContents count] > 0 && ftError == nil) {
-         for (NSString *item in episodeFolderContents) {
-         	CLS_LOG(@"- %@", item);
-         }
-     }
- 
 }
-*/
+ */
 
 /*
  Play Queue saving and retrieving
@@ -919,9 +920,6 @@
 
 
 #pragma mark - NSURLConnection delegate
-
-static NSString *episodeDirName = @"episodes";
-static NSString *outputFileName = @"output";
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
@@ -1808,11 +1806,81 @@ static NSArray *colors;
     CLS_LOG(@"token: %@", _tungToken);
 }
 
+- (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+    
+    NSURL *verifyCredRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/twitter-signin.php", _apiRootUrl]];
+    NSMutableURLRequest *verifyCredRequest = [NSMutableURLRequest requestWithURL:verifyCredRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [verifyCredRequest setHTTPMethod:@"POST"];
+    
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:headers];
+    [verifyCredRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:verifyCredRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                //CLS_LOG(@"Verify cred response %@", responseDict);
+                
+                if ([responseDict objectForKey:@"error"]) {
+                    CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                    callback(NO, responseDict);
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    callback(YES, responseDict);
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                CLS_LOG(@"Error. HTML: %@", html);
+                callback(NO, @{@"error": html});
+            }
+        });
+    }];
+
+}
+
+- (void) verifyCredWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+    
+    NSURL *verifyCredRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/facebook-signin.php", _apiRootUrl]];
+    NSMutableURLRequest *verifyCredRequest = [NSMutableURLRequest requestWithURL:verifyCredRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [verifyCredRequest setHTTPMethod:@"POST"];
+    NSDictionary *params = @{ @"accessToken": token };
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [verifyCredRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:verifyCredRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                //CLS_LOG(@"Verify cred response %@", responseDict);
+                if ([responseDict objectForKey:@"error"]) {
+                    CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                    
+                    callback(NO, responseDict);
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    callback(YES, responseDict);
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                CLS_LOG(@"Error. HTML: %@", html);
+                callback(NO, @{@"error": html});
+            }
+        });
+    }];
+}
+
 // all requests require a session ID instead of credentials
 // start here and get session with credentials
 - (void) getSessionWithCallback:(void (^)(void))callback {
     CLS_LOG(@"getting new session with id: %@", _tungId);
     if (!_tungId) {
+        CLS_LOG(@"Tung ID was null, re-establish cred");
         [self establishCred];
     }
     
@@ -1848,12 +1916,10 @@ static NSArray *colors;
                     CLS_LOG(@"error getting session: response: %@", responseDict);
                     dispatch_async(dispatch_get_main_queue(), ^{
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Unauthorized"]) {
-                            // more than likely this happens if an old password is restored from the icloud keychain
-                            // it's not an expired session but it's much easier to explain that way
-                            UIAlertView *unauthorizedAlert = [[UIAlertView alloc] initWithTitle:@"Session expired" message:@"Please sign in again." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                            unauthorizedAlert.tag = 99;
-                            [unauthorizedAlert show];
-                            
+                            // attempt to automatically sign back in or sign out
+                            [self handleUnauthorizedWithCallback:^{
+                                callback();
+                            }];
                         }
                     });
                 }
@@ -1874,6 +1940,81 @@ static NSArray *colors;
             });
         }
     }];
+}
+
+// if user's token expires, attempt to log them back in without bugging them.
+// this happens because a new token is issued on each sign-in.
+// so if user signed into Tung on a different device, their token here won't work.
+-(void) handleUnauthorizedWithCallback:(void (^)(void))callback {
+    
+    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
+    if (loggedUser && loggedUser.tung_id) {
+        
+        // signed up with twitter
+        if (loggedUser.twitter_id && [Twitter sharedInstance].session) {
+            
+            TWTROAuthSigning *oauthSigning = [[TWTROAuthSigning alloc] initWithAuthConfig:[Twitter sharedInstance].authConfig authSession:[Twitter sharedInstance].session];
+            
+            NSDictionary *authHeaders = [oauthSigning OAuthEchoHeadersToVerifyCredentials];
+            [self verifyCredWithTwitterOauthHeaders:authHeaders withCallback:^(BOOL success, NSDictionary *responseDict) {
+                // user exists
+                if (success && [responseDict objectForKey:@"sessionId"]) {
+                    CLS_LOG(@"recovered session with twitter - signed in");
+                    _sessionId = [responseDict objectForKey:@"sessionId"];
+                    _connectionAvailable = [NSNumber numberWithInt:1];
+                    
+                    NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                    CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
+                    if (lastDataChange.doubleValue > loggedUser.lastDataChange.doubleValue) {
+                        CLS_LOG(@"needs restore. ");
+                        [self restorePodcastDataSinceTime:loggedUser.lastDataChange];
+                    }
+                    
+                    // construct token of id and token together and save to keychain
+                    [TungCommonObjects deleteCredentials];
+                    NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
+                    NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
+                    [TungCommonObjects saveKeychainCred:tungCred];
+                    
+                    callback();
+                }
+            }];
+            return;
+        }
+        // signed up with facebook
+        else if (loggedUser.facebook_id && [FBSDKAccessToken currentAccessToken]) {
+            
+            NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
+            [self verifyCredWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {
+                if (success && [responseDict objectForKey:@"sessionId"]) {
+                    CLS_LOG(@"recovered session with facebook - signed in");
+                    _sessionId = [responseDict objectForKey:@"sessionId"];
+                    _connectionAvailable = [NSNumber numberWithInt:1];
+                    
+                    NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                    CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
+                    if (lastDataChange.doubleValue > loggedUser.lastDataChange.doubleValue) {
+                        CLS_LOG(@"needs restore. ");
+                        [self restorePodcastDataSinceTime:loggedUser.lastDataChange];
+                    }
+                    
+                    // construct token of id and token together and save to keychain
+                    [TungCommonObjects deleteCredentials];
+                    NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
+                    NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
+                    [TungCommonObjects saveKeychainCred:tungCred];
+                    
+                    callback();
+                }
+            }];
+            return;
+        }
+    }
+    
+	// if method hasn't returned... force user to sign out and sign in again
+    UIAlertView *unauthorizedAlert = [[UIAlertView alloc] initWithTitle:@"Session expired" message:@"Please sign in again." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+    unauthorizedAlert.tag = 99;
+    [unauthorizedAlert show];
 }
 
 -(void) killSessionForTesting {
@@ -2056,8 +2197,9 @@ static NSArray *colors;
                                 lastCollectionId = [pDict objectForKey:@"collectionId"];
                             	pEntity = [TungCommonObjects getEntityForPodcast:pDict save:YES];
                             }
-                            [TungCommonObjects getEntityForEpisode:eDict withPodcastEntity:pEntity save:YES];
+                            [TungCommonObjects getEntityForEpisode:eDict withPodcastEntity:pEntity save:NO];
                         }
+                        [TungCommonObjects saveContextWithReason:@"episode entities restored"];
                     }
                     CLS_LOG(@"got restore data for %lu podcasts and %lu episodes", (unsigned long)podcasts.count, (unsigned long)episodes.count);
 //                    CLS_LOG(@"- script duration: %@", [responseDict objectForKey:@"scriptDuration"]);
@@ -2138,9 +2280,7 @@ static NSArray *colors;
     
     SettingsEntity *settings = [TungCommonObjects settings];
     if (!settings.hasSeenNewEpisodesPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
-        UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"New Episodes" message:@"Tung can notify you when new episodes are released for podcasts you subscribe to, based on your preference for each podcast. Would you like to receive notifications?" delegate:self cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
-        [notifPermissionAlert setTag:20];
-        [notifPermissionAlert show];
+        [self promptForNotificationsForEpisodes];
     }
     
     NSURL *subscribeRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/subscribe.php", _apiRootUrl]];
@@ -3056,6 +3196,8 @@ static NSArray *colors;
     [self playerPause];
     _playQueue = [@[] mutableCopy];
     
+    [_syncProgressTimer invalidate];
+    
     //[self deleteLoggedInUserData];
     [TungCommonObjects removeAllUserData];
     [TungCommonObjects removePodcastAndEpisodeData];
@@ -3067,8 +3209,6 @@ static NSArray *colors;
     
     // twitter
     [[Twitter sharedInstance] logOut];
-    _twitterAccountToUse = nil; // TODO: remove
-    _twitterAccountStatus = @""; // TODO: remove
     
     // delete cred
     [TungCommonObjects deleteCredentials];
@@ -3285,6 +3425,19 @@ static NSArray *colors;
     if (alertView.tag == 99) {
         [self signOut];
     }
+}
+
+- (void) promptForNotificationsForEpisodes {
+    
+    UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"New Episodes" message:@"Tung can notify you when new episodes are released for podcasts you subscribe to, based on your preference for each podcast. Would you like to receive notifications?" delegate:self cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
+    [notifPermissionAlert setTag:20];
+    [notifPermissionAlert show];
+}
+- (void) promptForNotificationsForMentions {
+    
+    UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"User Mentions" message:@"Tung can notify you when someone mentions you in a comment, or when new episodes are released for podcasts you subscribe to. Would you like to receive notifications?" delegate:self cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
+    [notifPermissionAlert setTag:21];
+    [notifPermissionAlert show];
 }
 
 #pragma mark - handle actionsheet
@@ -3827,10 +3980,7 @@ static NSDateFormatter *dayDateFormatter = nil;
 }
 
 + (BOOL) hasGrantedNotificationPermissions {
-    UIUserNotificationSettings *notifSettings = [[UIApplication sharedApplication] currentUserNotificationSettings];
-    BOOL notifSettingsPermissions = (notifSettings.types == UIUserNotificationTypeAlert || notifSettings.types == UIUserNotificationTypeBadge);
-    NSLog(@"has granted notif permissions: %@", [NSNumber numberWithBool:notifSettingsPermissions]);
-    return notifSettingsPermissions;
+    return [[UIApplication sharedApplication] currentUserNotificationSettings].types;
 }
 
 @end

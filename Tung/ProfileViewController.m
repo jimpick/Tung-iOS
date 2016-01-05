@@ -225,6 +225,8 @@ CGFloat screenWidth;
     
 }
 
+NSTimer *promptTimer;
+
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     // scroll view
@@ -257,14 +259,12 @@ CGFloat screenWidth;
         [self requestPageData];
     }
     
-    // clear profile badge and adjust app badge
     SettingsEntity *settings = [TungCommonObjects settings];
     
     if (!settings.hasSeenMentionsPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
-        UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"User Mentions" message:@"Tung can notify you when someone mentions you in a comment, or when new episodes are released for podcasts you subscribe to. Would you like to receive notifications?" delegate:_tung cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
-        [notifPermissionAlert setTag:21];
-        [notifPermissionAlert show];
+        promptTimer = [NSTimer scheduledTimerWithTimeInterval:4 target:_tung selector:@selector(promptForNotificationsForMentions) userInfo:nil repeats:NO];
     }
+    // clear profile badge and adjust app badge
     if (settings.numProfileNotifications.integerValue > 0) {
         if ([UIApplication sharedApplication].applicationIconBadgeNumber > 0) {
             [UIApplication sharedApplication].applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - settings.numProfileNotifications.integerValue;
@@ -277,6 +277,7 @@ CGFloat screenWidth;
 - (void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     
+    [promptTimer invalidate];
     /*
     @try {
     	[self removeObserver:self forKeyPath:@"storiesView.requestStatus"];

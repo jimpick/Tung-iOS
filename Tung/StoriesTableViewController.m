@@ -1048,20 +1048,14 @@ NSInteger requestTries = 0;
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                             // get new session and re-request
                             CLS_LOG(@"SESSION EXPIRED");
-                            if (!_tung.tungId) {
-                                [_tung establishCred];
-                                CLS_LOG(@"--------- TUNG ID WAS NULL ----------");
-                            }
-                            [_tung getSessionWithCallback:^{
-                                [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:withCred];
-                            }];
+                            [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:YES];
+
                         }
                         else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Unauthorized"]) {
                             
-                            UIAlertView *unauthorizedAlert = [[UIAlertView alloc] initWithTitle:@"Unauthorized" message:@"Please try Signing in again." delegate:self cancelButtonTitle:nil otherButtonTitles:@"Sign out", nil];
-                            unauthorizedAlert.tag = 99;
-                            [unauthorizedAlert show];
-                            
+                            [_tung handleUnauthorizedWithCallback:^{
+                                [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:NO];
+                            }];
                         }
                         else {
                             [self endRefreshing];

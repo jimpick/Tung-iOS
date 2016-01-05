@@ -96,19 +96,23 @@ static NSString * const reuseIdentifier = @"artCell";
     
 }
 
+NSTimer *promptTimer;
+
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
     _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
     
-    // clear subscriptions badge and adjust app badge
+    
     SettingsEntity *settings = [TungCommonObjects settings];
+    
+    // prompt for notifications delay
     if (!settings.hasSeenNewEpisodesPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
-        UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"New Episodes" message:@"Tung can notify you when new episodes are released for podcasts you subscribe to, based on your preference for each podcast. Would you like to receive notifications?" delegate:_tung cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
-        [notifPermissionAlert setTag:20];
-        [notifPermissionAlert show];
+    	promptTimer = [NSTimer scheduledTimerWithTimeInterval:4 target:_tung selector:@selector(promptForNotificationsForEpisodes) userInfo:nil repeats:NO];
     }
+    
+    // clear subscriptions badge and adjust app badge
     if (settings.numPodcastNotifications.integerValue > 0) {
         if ([UIApplication sharedApplication].applicationIconBadgeNumber > 0) {
             [UIApplication sharedApplication].applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - settings.numPodcastNotifications.integerValue;
@@ -117,6 +121,13 @@ static NSString * const reuseIdentifier = @"artCell";
         [TungCommonObjects saveContextWithReason:@"adjust subscriptions badge number"];
     }
     
+}
+
+
+
+- (void) viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    [promptTimer invalidate];
 }
 
 - (void) viewDidDisappear:(BOOL)animated {
