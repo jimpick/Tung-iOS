@@ -148,6 +148,8 @@
         
         //[TungCommonObjects clearTempDirectory];
         
+        //NSLog(@"notification settings: %@", [[UIApplication sharedApplication] currentUserNotificationSettings]);
+        
     }
     return self;
 }
@@ -326,9 +328,6 @@
                     CLS_LOG(@"seeking to time: %f", secs);
                     [_trackInfo setObject:[NSNumber numberWithFloat:secs] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
                     [self setControlButtonStateToBuffering];
-                    /* TODO: if trackProgress is too far into the episode, player 
-                     will stall for a long time. Need to download episode then play.
-                     */
                     [_player seekToTime:time completionHandler:^(BOOL finished) {
                         CLS_LOG(@"finished seeking");
                         [self playerPlay];
@@ -543,7 +542,7 @@
 }
 
 - (void) playQueuedPodcast {
-    NSLog(@"playQueuedPodcast: %@",[NSThread callStackSymbols]);
+    
     if (_playQueue.count > 0) {
         
         [self stopClipPlayback];
@@ -1940,8 +1939,7 @@ static NSArray *colors;
                     
                     dispatch_async(dispatch_get_main_queue(), ^{
                         _sessionId = [responseDict objectForKey:@"sessionId"];
-                        CLS_LOG(@"got new session: %@", _sessionId);
-                        //CLS_LOG(@"got new session");
+                        //CLS_LOG(@"got new session: %@", _sessionId);
                         _connectionAvailable = [NSNumber numberWithInt:1];
                         // callback
                         callback();
@@ -1978,7 +1976,7 @@ static NSArray *colors;
 }
 
 // if user's token expires, attempt to log them back in without bugging them.
-// this happens because a new token is issued on each sign-in.
+// this happens because a new token is issued on each sign-in (signin != session).
 // so if user signed into Tung on a different device, their token here won't work.
 -(void) handleUnauthorizedWithCallback:(void (^)(void))callback {
     
@@ -2045,12 +2043,12 @@ static NSArray *colors;
             return;
         }
     }
-    
 	// if method hasn't returned... force user to sign out and sign in again
     UIAlertView *unauthorizedAlert = [[UIAlertView alloc] initWithTitle:@"Session expired" message:@"Please sign in again." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
     unauthorizedAlert.tag = 99;
     [unauthorizedAlert show];
 }
+
 
 -(void) killSessionForTesting {
     CLS_LOG(@"killing session...");
@@ -2469,7 +2467,7 @@ static NSArray *colors;
                    @"episodeTitle": episodeEntity.title
                    };
     }
-    CLS_LOG(@"recommend episode request with params: %@", params);
+    //CLS_LOG(@"recommend episode request with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [recommendPodcastRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -2501,7 +2499,7 @@ static NSArray *colors;
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    //CLS_LOG(@"%@", responseDict);
+                    CLS_LOG(@"successfully recommended episode");
                     if (!episodeEntity.id) {
                         // save episode id and shortlink
                         NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -2590,7 +2588,6 @@ static NSArray *colors;
 
 // SYNC TRACK PROGRESS WITH SERVER
 - (void) syncProgressFromTimer:(NSTimer *)timer {
-    NSLog(@"============ sync progress for now playing");
     [self syncProgressForEpisode:[timer userInfo]];
 }
 - (void) syncProgressForEpisode:(EpisodeEntity *)episodeEntity {
@@ -2651,7 +2648,7 @@ static NSArray *colors;
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    CLS_LOG(@"%@", responseDict);
+                    //CLS_LOG(@"%@", responseDict);
                     if (!episodeEntity.id) {
                         // save episode id and shortlink
                         NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -2679,7 +2676,7 @@ static NSArray *colors;
 
 // COMMENTS AND CLIPS
 - (void) postComment:(NSString*)comment atTime:(NSString*)timestamp onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback  {
-    CLS_LOG(@"post comment request");
+    //CLS_LOG(@"post comment request");
     NSURL *postCommentRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/new-comment.php", _apiRootUrl]];
     NSMutableURLRequest *postCommentRequest = [NSMutableURLRequest requestWithURL:postCommentRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [postCommentRequest setHTTPMethod:@"POST"];
@@ -2716,7 +2713,7 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                CLS_LOG(@"%@", responseDict);
+                //CLS_LOG(@"%@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
@@ -2763,7 +2760,7 @@ static NSArray *colors;
 }
 
 - (void) postClipWithComment:(NSString*)comment atTime:(NSString*)timestamp withDuration:(NSString *)duration onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback  {
-    CLS_LOG(@"post clip request");
+    //CLS_LOG(@"post clip request");
     NSURL *postClipRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/new-clip.php", _apiRootUrl]];
     NSMutableURLRequest *postClipRequest = [NSMutableURLRequest requestWithURL:postClipRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [postClipRequest setHTTPMethod:@"POST"];
@@ -2904,7 +2901,7 @@ static NSArray *colors;
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    CLS_LOG(@"successfully deleted event");
+                    CLS_LOG(@"successfully deleted story event");
                     callback(YES);
                 }
             }
@@ -3442,6 +3439,7 @@ static NSArray *colors;
         [TungCommonObjects saveContextWithReason:@"settings changed"];
         
         if (buttonIndex == 1) {
+            [[UIApplication sharedApplication] registerForRemoteNotifications];
             [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
         }
     }
@@ -3453,6 +3451,7 @@ static NSArray *colors;
         [TungCommonObjects saveContextWithReason:@"settings changed"];
         
         if (buttonIndex == 1) {
+            [[UIApplication sharedApplication] registerForRemoteNotifications];
             [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
         }
     }

@@ -26,5 +26,6 @@
                            newerThan:(NSNumber *)afterTime
                          orOlderThan:(NSNumber *)beforeTime;
 - (void) preloadAvatars;
+- (void) refreshFeed;
 
 @end

@@ -1072,7 +1072,7 @@ NSInteger requestTries = 0;
                         
                         
                         if (withCred) {
-                            CLS_LOG(@"got stories AND session in %f seconds.", fabs(requestDuration));
+                            CLS_LOG(@"got stories AND session in %f seconds. session Id: %@", fabs(requestDuration), [responseDict objectForKey:@"sessionId"]);
                             _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                             _tung.connectionAvailable = [NSNumber numberWithInt:1];
                             // check if data needs syncing

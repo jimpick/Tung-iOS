@@ -90,16 +90,21 @@ NSTimer *promptTimer;
     
     // prompt for notifications delay
     if (!settings.hasSeenNewEpisodesPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
-    	promptTimer = [NSTimer scheduledTimerWithTimeInterval:4 target:_tung selector:@selector(promptForNotificationsForEpisodes) userInfo:nil repeats:NO];
+    	promptTimer = [NSTimer scheduledTimerWithTimeInterval:3 target:_tung selector:@selector(promptForNotificationsForEpisodes) userInfo:nil repeats:NO];
     }
     
     // clear subscriptions badge and adjust app badge
     if (settings.numPodcastNotifications.integerValue > 0) {
+        NSInteger startingVal = settings.numPodcastNotifications.integerValue;
         if ([UIApplication sharedApplication].applicationIconBadgeNumber > 0) {
             [UIApplication sharedApplication].applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - settings.numPodcastNotifications.integerValue;
         }
         settings.numPodcastNotifications = [NSNumber numberWithInteger:0];
         [TungCommonObjects saveContextWithReason:@"adjust subscriptions badge number"];
+        // adjust app icon badge number
+        NSInteger newBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - startingVal;
+        newBadgeNumber = MAX(0, newBadgeNumber);
+        [[UIApplication sharedApplication] setApplicationIconBadgeNumber:newBadgeNumber];
     }
     
 }

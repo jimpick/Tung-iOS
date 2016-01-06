@@ -3163,7 +3163,7 @@
                                         <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="pyR-cj-pNH">
                                             <rect key="frame" x="0.0" y="0.0" width="166" height="166"/>
                                         </imageView>
-                                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="CMK-NY-3Nz" customClass="TungMiscView">
+                                        <view contentMode="scaleToFill" ambiguous="YES" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="CMK-NY-3Nz" customClass="TungMiscView">
                                             <rect key="frame" x="0.0" y="0.0" width="240" height="128"/>
                                             <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                                             <constraints>

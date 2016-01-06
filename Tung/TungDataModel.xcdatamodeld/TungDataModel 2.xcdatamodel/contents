@@ -53,7 +53,7 @@
         <attribute name="facebook_id" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="large_av_url" attributeType="String" syncable="YES"/>
         <attribute name="lastDataChange" optional="YES" attributeType="Double" defaultValueString="0" syncable="YES"/>
-        <attribute name="lastSeenNotification" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="lastSeenNotification" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
         <attribute name="location" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="name" attributeType="String" syncable="YES"/>
         <attribute name="small_av_url" attributeType="String" syncable="YES"/>

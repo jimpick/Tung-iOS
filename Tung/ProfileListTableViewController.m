@@ -18,6 +18,7 @@
 
 @property (nonatomic, assign) BOOL feedRefreshed;
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
+@property NSNumber *lastSeenNotification;
 
 @end
 
@@ -60,6 +61,12 @@ CGFloat screenWidth;
     
     // get feed
     if (_queryType) {
+        
+        if ([_queryType isEqualToString:@"Notifications"]) {
+            // establish last seen notification time
+            UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
+            _lastSeenNotification = loggedUser.lastSeenNotification;
+        }
         [self refreshFeed];
     }
 }
@@ -211,6 +218,11 @@ CGFloat screenWidth;
                         
                         CLS_LOG(@"got items. profileArray count: %lu", (unsigned long)[_profileArray count]);
                         [self preloadAvatars];
+                        
+                        // 1 second delay to set new lastSeenNotification
+                        if ([queryType isEqualToString:@"Notifications"]) {
+                            [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(markNotificationsAsSeen) userInfo:nil repeats:NO];
+                        }
                     });
                 }
             }
@@ -267,6 +279,18 @@ CGFloat screenWidth;
     }
 }
 
+// solely for the purpose of setting new lastSeenNotification property of UserEntity
+// only called if _queryType == 'Notifications'
+- (void) markNotificationsAsSeen {
+    
+    if (_profileArray && _profileArray.count) {
+        UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
+        NSNumber *mostRecent = [[_profileArray objectAtIndex:0] objectForKey:@"time_secs"];
+        loggedUser.lastSeenNotification = mostRecent;
+        _lastSeenNotification = mostRecent;
+        [TungCommonObjects saveContextWithReason:@"marking new notifications as \"seen\""];
+    }
+}
 
 - (void) tableCellButtonTapped:(id)sender {
     long tag = [sender tag];
@@ -353,7 +377,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     [profileCell.avatarButton addTarget:self action:@selector(tableCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     profileCell.avatarButton.tag = 100;
     
-    // sub label
+    // query type (sub label)
     if ([_queryType isEqualToString:@"Notifications"]) {
         
         profileCell.subLabelLeadingConstraint.constant = 30;
@@ -371,6 +395,14 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
         profileCell.iconView.color = [UIColor grayColor];
         [profileCell.iconView setNeedsDisplay];
         profileCell.subLabel.text = eventString;
+        
+        // background color
+        NSNumber *time_secs = [profileCell.profileDict objectForKey:@"time_secs"];
+        NSLog(@"lastSeenNotification: %@, time_secs: (%ld) %@", _lastSeenNotification, (long)indexPath.row, time_secs);
+        if (time_secs.doubleValue > _lastSeenNotification.doubleValue) {
+            profileCell.backgroundColor = [TungCommonObjects lightTungColor];
+        }
+        
     }
     else {
         

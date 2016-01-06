@@ -65,6 +65,9 @@
 // used for setting entity properties after new subscribe,
 // and also marking new episodes as "seen" to reset badge.
 -(void) markNewEpisodesAsSeen {
+    
+    SettingsEntity *settings = [TungCommonObjects settings];
+    
     if (_episodeArray && _episodeArray.count) {
         NSNumber *numNew = _podcastEntity.numNewEpisodes;
         _podcastEntity.numNewEpisodes = [NSNumber numberWithInt:0];
@@ -72,7 +75,6 @@
         NSDate *mostRecentEpisodeDate = [[_episodeArray objectAtIndex:0] objectForKey:@"pubDate"];
         _podcastEntity.mostRecentEpisodeDate = mostRecentEpisodeDate;
         _podcastEntity.mostRecentSeenEpisodeDate = mostRecentEpisodeDate;
-        SettingsEntity *settings = [TungCommonObjects settings];
         NSInteger numPodcastNotifications = settings.numPodcastNotifications.integerValue - numNew.integerValue;
         if (numPodcastNotifications < 0) numPodcastNotifications = 0;
         settings.numPodcastNotifications = [NSNumber numberWithInteger:numPodcastNotifications];
@@ -80,6 +82,7 @@
         
         [TungCommonObjects saveContextWithReason:@"marking new episodes as \"seen\""];
     }
+    [[UIApplication sharedApplication] setApplicationIconBadgeNumber:settings.numProfileNotifications.integerValue];
 }
 
 #pragma mark - Table view data source

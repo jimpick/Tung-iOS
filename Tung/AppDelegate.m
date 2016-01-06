@@ -10,6 +10,7 @@
 #import <Security/Security.h>
 #import "TungCommonObjects.h"
 #import "TungPodcast.h"
+#import "MainTabBarController.h"
 
 @implementation AppDelegate
 
@@ -69,6 +70,8 @@
                                     didFinishLaunchingWithOptions:launchOptions];
 }
 
+#pragma mark - Background fetch
+
 - (void) application:(UIApplication *)application performFetchWithCompletionHandler:(nonnull void (^)(UIBackgroundFetchResult))completionHandler {
     
     // get all subscribed podcasts and check for new episodes
@@ -84,7 +87,6 @@
     
     if (result.count > 0) {
         
-        BOOL hasNewEpisodes = NO;
         NSInteger podcastsWithNewEpisodes = 0;
         NSMutableArray *podcastsWithNewEpisodesNotify = [NSMutableArray array];
         BOOL newEpisodesPlural = NO; // used for forming string of new episode(s) alert
@@ -115,7 +117,6 @@
                     // check if episode is newer than entity's mostRecentEpisodeDate
                     if ([mostRecentForCompare compare:pubDate] == NSOrderedAscending) {
                         numNewEpisodes++;
-                        hasNewEpisodes = YES;
                         // set most recent episode date
                         if (!newMostRecentSet) {
                             podEntity.mostRecentEpisodeDate = pubDate;
@@ -134,43 +135,43 @@
                 [TungCommonObjects saveContextWithReason:@"updated most recent episode date for podcast entity"];
             }
         }
-        if (hasNewEpisodes) {
-            //NSLog(@"background fetch result: NEW episodes");
-            //NSLog(@"podcasts with new episodes: %@", podcastsWithNewEpisodes);
-            if (podcastsWithNewEpisodes > 0) {
-                
-                // update number of subscribed podcasts with new episodes
-                // in subscriptions badge:
-                [_tung setBadgeNumber:[NSNumber numberWithInteger:podcastsWithNewEpisodes] forBadge:_tung.subscriptionsBadge];
-                // and settings:
-                SettingsEntity *settings = [TungCommonObjects settings];
-                settings.numPodcastNotifications = [NSNumber numberWithInteger:podcastsWithNewEpisodes];
-                [TungCommonObjects saveContextWithReason:@"number of new podcast notifications changed"];
-                
-                // if we should notify user of new episodes, build notification message string and notify
-                if (podcastsWithNewEpisodesNotify.count > 0) {
-                    // build message string
-                    NSString *alertBody;
-                    if (podcastsWithNewEpisodesNotify.count == 1) {
-                        NSString *episodesPlural = [NSString stringWithFormat:@"%@", (newEpisodesPlural) ? @"new episodes" : @"a new episode"];
-                        alertBody = [NSString stringWithFormat:@"%@ has %@", [podcastsWithNewEpisodesNotify objectAtIndex:0], episodesPlural];
-                    }
-                    else if (podcastsWithNewEpisodesNotify.count == 2) {
-                        alertBody = [NSString stringWithFormat:@"%@ and %@ have new episodes", [podcastsWithNewEpisodesNotify objectAtIndex:0], [podcastsWithNewEpisodesNotify objectAtIndex:1]];
-                    }
-                    else {
-                        alertBody = [NSString stringWithFormat:@"%lu subscribed podcasts have new episodes", (unsigned long)podcastsWithNewEpisodesNotify.count];
-                    }
-                    _notif = [[UILocalNotification alloc] init];
-                    _notif.alertBody = alertBody;
-                    _notif.fireDate = [NSDate dateWithTimeIntervalSinceNow:0.0];
-                    _notif.timeZone = [[NSCalendar currentCalendar] timeZone];
-                    _notif.hasAction = YES;
-                    _notif.alertAction = @"Yes";
-                    _notif.applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber + podcastsWithNewEpisodesNotify.count;
-                    [[UIApplication sharedApplication] scheduleLocalNotification:_notif];
+        //NSLog(@"background fetch result: NEW episodes");
+        //NSLog(@"podcasts with new episodes: %@", podcastsWithNewEpisodes);
+        if (podcastsWithNewEpisodes > 0) {
+            
+            // update number of subscribed podcasts with new episodes
+            // in subscriptions badge:
+            [_tung setBadgeNumber:[NSNumber numberWithInteger:podcastsWithNewEpisodes] forBadge:_tung.subscriptionsBadge];
+            // and settings:
+            SettingsEntity *settings = [TungCommonObjects settings];
+            settings.numPodcastNotifications = [NSNumber numberWithInteger:podcastsWithNewEpisodes];
+            [TungCommonObjects saveContextWithReason:@"number of new podcast notifications changed"];
+            
+            // if we should notify user of new episodes, build notification message string and notify
+            if (podcastsWithNewEpisodesNotify.count > 0) {
+                // build message string
+                NSString *alertBody;
+                if (podcastsWithNewEpisodesNotify.count == 1) {
+                    NSString *episodesPlural = [NSString stringWithFormat:@"%@", (newEpisodesPlural) ? @"new episodes" : @"a new episode"];
+                    alertBody = [NSString stringWithFormat:@"%@ has %@", [podcastsWithNewEpisodesNotify objectAtIndex:0], episodesPlural];
                 }
-        	}
+                else if (podcastsWithNewEpisodesNotify.count == 2) {
+                    alertBody = [NSString stringWithFormat:@"%@ and %@ have new episodes", [podcastsWithNewEpisodesNotify objectAtIndex:0], [podcastsWithNewEpisodesNotify objectAtIndex:1]];
+                }
+                else {
+                    alertBody = [NSString stringWithFormat:@"%lu subscribed podcasts have new episodes", (unsigned long)podcastsWithNewEpisodesNotify.count];
+                }
+                _notif = [[UILocalNotification alloc] init];
+                _notif.alertBody = alertBody;
+                _notif.fireDate = [NSDate dateWithTimeIntervalSinceNow:0.0];
+                _notif.timeZone = [[NSCalendar currentCalendar] timeZone];
+                _notif.hasAction = YES;
+                _notif.alertAction = @"view";
+                _notif.userInfo = @{@"openTabIndex": [NSNumber numberWithInt:2]};
+                _notif.applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber + podcastsWithNewEpisodesNotify.count;
+                [[UIApplication sharedApplication] scheduleLocalNotification:_notif];
+            }
+            //NSLog(@"background fetch result: NEW episodes");
             completionHandler(UIBackgroundFetchResultNewData);
         }
         else {
@@ -179,27 +180,130 @@
         }
     }
     else {
-        //NSLog(@"background fetch result: no subscriptions");
         completionHandler(UIBackgroundFetchResultNoData);
     }
-    //NSLog(@"============================");
 }
+
+#pragma mark - Local Notifications
 
 - (void) application:(UIApplication *)application didReceiveLocalNotification:(UILocalNotification *)notification {
     
-    NSLog(@"did receive local notification: %@", [notification userInfo]);
+    //NSLog(@"did receive local notification: %@", [notification userInfo]);
+    
+    if ([[notification userInfo] objectForKey:@"openTabIndex"]) {
+        NSNumber *tabIndex = [[notification userInfo] objectForKey:@"openTabIndex"];
+        // open tab if app isn't in foreground
+        if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateActive) {
+            [self switchTabBarSelectionToTabIndex:tabIndex.integerValue];
+        }
+    }
+}
+
+- (void) switchTabBarSelectionToTabIndex:(NSInteger)tabIndex {
+    
+    MainTabBarController *tabCtrl = (MainTabBarController *)self.window.rootViewController;
+    // make sure it responds to selectTab:... could be WelcomeViewController
+    if ([tabCtrl respondsToSelector:@selector(selectTab:)]) {
+        tabCtrl.selectedIndex = 1;
+        UIButton *btn = [[UIButton alloc] init];
+        btn.tag = tabIndex;
+        [tabCtrl selectTab:btn];
+    }
+}
+
+#pragma mark - Remote Notifications
+
+- (void) application:(UIApplication *)application didRegisterForRemoteNotificationsWithDeviceToken:(NSData *)deviceToken {
+    
+    NSMutableString *tokenAsString = [[NSMutableString alloc] initWithCapacity:deviceToken.length * 2];
+    char *bytes = malloc(deviceToken.length);
+    [deviceToken getBytes:bytes length:deviceToken.length];
+    
+    for (NSUInteger i = 0; i < deviceToken.length; i++) {
+        char byte = bytes[i];
+        [tokenAsString appendFormat:@"%02hhX", byte];
+    }
+    free(bytes);
+    
+    //NSLog(@"remote notification token: %@", tokenAsString);
+    
+    [self postDeviceToken:tokenAsString];
+    
+}
+
+- (void) application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(nonnull NSError *)error {
+    
+    CLS_LOG(@"FAILED to register for remote notifications with error: %@", error);
 }
 
 - (void) application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo {
     
-    NSLog(@"did receive remote notification: %@", userInfo);
+    //NSLog(@"did receive remote notification: %@", userInfo);
+    
+    if ([[userInfo objectForKey:@"aps"] objectForKey:@"openTabIndex"]) {
+        NSNumber *tabIndex = [[userInfo objectForKey:@"aps"] objectForKey:@"openTabIndex"];
+        // open tab if app isn't in foreground
+        if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateActive) {
+        	[self switchTabBarSelectionToTabIndex:tabIndex.integerValue];
+        }
+        
+        // profile notification
+        if (tabIndex.integerValue == 3) {
+            
+            // increment badge number
+            NSNumber *badgeNumber = [[userInfo objectForKey:@"aps"] objectForKey:@"badge"];
+    		
+            SettingsEntity *settings = [TungCommonObjects settings];
+            NSNumber *profileNotifs = [NSNumber numberWithInteger:settings.numProfileNotifications.integerValue + badgeNumber.integerValue];
+            settings.numProfileNotifications = profileNotifs;
+            [TungCommonObjects saveContextWithReason:@"number of new podcast notifications changed"];
+            
+            [_tung setBadgeNumber:profileNotifs forBadge:_tung.profileBadge];
+        }
+    }
+    
 }
 
-/*
-- (NSUInteger)application:(UIApplication *)application supportedInterfaceOrientationsForWindow:(UIWindow *)window {
- 
+- (void) postDeviceToken:(NSString *)token {
+    NSURL *postDeviceTokenRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/post-device-token.php", _tung.apiRootUrl]];
+    NSMutableURLRequest *postDeviceTokenRequest = [NSMutableURLRequest requestWithURL:postDeviceTokenRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [postDeviceTokenRequest setHTTPMethod:@"POST"];
+    NSDictionary *params = @{@"sessionId":_tung.sessionId,
+                             @"deviceToken": token
+                             };
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [postDeviceTokenRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:postDeviceTokenRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                //CLS_LOG(@"%@", responseDict);
+                if ([responseDict objectForKey:@"error"]) {
+                    // session expired
+                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                        // get new session and re-request
+                        [_tung getSessionWithCallback:^{
+                            [self postDeviceToken:token];
+                        }];
+                    }
+                    else {
+                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                    }
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                CLS_LOG(@"Error. HTML: %@", html);
+            }
+        });
+    }];
 }
-*/
+
+
+#pragma mark - Changing state
 
 - (void)applicationWillResignActive:(UIApplication *)application
 {

@@ -240,8 +240,7 @@ NSTimer *promptTimer;
         _profileHeader.contentSizeSet = YES;
     }
     
-    // watch request status so we can update table header
-    //[self addObserver:self forKeyPath:@"storiesView.requestStatus" options:NSKeyValueObservingOptionNew context:nil];
+    // refresh based on flags
     if (_isLoggedInUser) {
         if (_tung.profileFeedNeedsRefresh.boolValue && _tung.profileNeedsRefresh.boolValue) {
             CLS_LOG(@"profile feed and data need refresh");
@@ -262,15 +261,22 @@ NSTimer *promptTimer;
     SettingsEntity *settings = [TungCommonObjects settings];
     
     if (!settings.hasSeenMentionsPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
-        promptTimer = [NSTimer scheduledTimerWithTimeInterval:4 target:_tung selector:@selector(promptForNotificationsForMentions) userInfo:nil repeats:NO];
+        promptTimer = [NSTimer scheduledTimerWithTimeInterval:3 target:_tung selector:@selector(promptForNotificationsForMentions) userInfo:nil repeats:NO];
     }
     // clear profile badge and adjust app badge
     if (settings.numProfileNotifications.integerValue > 0) {
+        [_notificationsView refreshFeed];
+        NSInteger startingVal = settings.numProfileNotifications.integerValue;
         if ([UIApplication sharedApplication].applicationIconBadgeNumber > 0) {
             [UIApplication sharedApplication].applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - settings.numProfileNotifications.integerValue;
         }
         settings.numProfileNotifications = [NSNumber numberWithInteger:0];
+        [_tung setBadgeNumber:[NSNumber numberWithInteger:0] forBadge:_tung.profileBadge];
         [TungCommonObjects saveContextWithReason:@"adjust subscriptions badge number"];
+        // adjust app icon badge number
+        NSInteger newBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - startingVal;
+        newBadgeNumber = MAX(0, newBadgeNumber);
+        [[UIApplication sharedApplication] setApplicationIconBadgeNumber:newBadgeNumber];
     }
 }
 
