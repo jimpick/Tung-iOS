@@ -12,16 +12,17 @@
 @implementation SignUpButton
 
 - (void)drawRect:(CGRect)rect {
-    
-    switch (_type) {
-            
-        case kSignUpTypeTwitter:
-            [TungPodcastStyleKit drawSignUpWithTwitterWithFrame:rect down:self.highlighted];
-            break;
-            
-        default:
-            [TungPodcastStyleKit drawSignUpWithFacebookWithFrame:rect down:self.highlighted];
-            break;
+    if (rect.size.width > 0) {
+        switch (_type) {
+                
+            case kSignUpTypeTwitter:
+                [TungPodcastStyleKit drawSignUpWithTwitterWithFrame:rect down:self.highlighted];
+                break;
+                
+            default:
+                [TungPodcastStyleKit drawSignUpWithFacebookWithFrame:rect down:self.highlighted];
+                break;
+        }
     }
 }
 

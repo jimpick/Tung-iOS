@@ -208,7 +208,11 @@
     // • No userInfo dictionary for this notification
     // • Audio streaming objects are invalidated (zombies)
     // • Handle this notification by fully reconfiguring audio
+    if ([[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayback error: nil]) {
+        [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
+    }
     if (_player) {
+        [self playerPause];
         [_player removeObserver:self forKeyPath:@"status"];
         [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
         [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:_player.currentItem];
@@ -216,6 +220,8 @@
         [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemFailedToPlayToEndTimeNotification object:_player.currentItem];
         [_player cancelPendingPrerolls];
         _player = nil;
+        _trackData = nil;
+        _trackDataConnection = nil;
     }
     [self checkForNowPlaying];
 }
@@ -229,12 +235,21 @@
 - (void) playerPlay {
     if (_player && _playQueue.count > 0) {
         _shouldStayPaused = NO;
-        [_player play];
-        [self setControlButtonStateToPause];
+        if (_npEpisodeEntity.trackPosition.floatValue == 1) {
+            // start over
+            [self seekToTime:CMTimeMake(0, 100)];
+        } else {
+            [_player play];
+            [self setControlButtonStateToPause];
+        }
     }
 }
 - (void) playerPause {
     if ([self isPlaying]) {
+        
+        float currentSecs = CMTimeGetSeconds(_player.currentTime);
+        NSLog(@"currentSecs: %f, total secs: %f", currentSecs, _totalSeconds);
+        
         [_player pause];
         _shouldStayPaused = YES;
         [self setControlButtonStateToPlay];
@@ -286,7 +301,10 @@
     if (_totalSeconds == 0) {
         CLS_LOG(@"determineTotalSeconds");
         // need to wait until player is playing to get duration or app freezes
-        if ([self isPlaying]) {
+        if ([self isPlaying] || (![self isPlaying] && _shouldStayPaused)) {
+            if ([self isPlaying]) {
+                [self setControlButtonStateToPause];
+            }
             _totalSeconds = CMTimeGetSeconds(_player.currentItem.asset.duration);
             [_trackInfo setObject:[NSNumber numberWithFloat:_totalSeconds] forKey:MPMediaItemPropertyPlaybackDuration];
             [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_trackInfo];
@@ -372,9 +390,8 @@
             }
             else if (_totalSeconds > 0) {
                 float currentSecs = CMTimeGetSeconds(_player.currentTime);
-                NSLog(@"currentSecs: %f, total secs: %f", currentSecs, _totalSeconds);
             	if (round(currentSecs) >= floor(_totalSeconds)) {
-                    NSLog(@"detected completed playback");
+                    CLS_LOG(@"detected completed playback");
                     [self completedPlayback];
                     return;
                 }
@@ -466,7 +483,11 @@
     [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_trackInfo];
     //[_player seekToTime:time];
     [_player seekToTime:time completionHandler:^(BOOL finished) {
-        if (!_shouldStayPaused) [self playerPlay];
+        if (!_shouldStayPaused) {
+            // avoid endless loop, do not use [self playerPlay];
+            [_player play];
+            [self setControlButtonStateToPause];
+        }
     }];
 }
 
@@ -685,16 +706,16 @@
         }*/
         return;
     }
-
+	
     [self playNextEpisode]; // ejects current episode
 }
 - (void) ejectCurrentEpisode {
+    CLS_LOG(@"ejecting current episode");
     if (_playQueue.count > 0) {
         if ([self isPlaying]) [_player pause];
         [self removeNowPlayingStatusFromAllEpisodes];
         //_npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:NO];
         [self savePositionForNowPlayingAndSync:YES];
-        CLS_LOG(@"ejected current episode");
         [_playQueue removeObjectAtIndex:0];
         _playFromTimestamp = nil;
     }
@@ -761,9 +782,10 @@
                 return;
             }
         }
-        CLS_LOG(@"episodes in both directions have been played. stopping");
-        [self setControlButtonStateToFauxDisabled];
-        [self ejectCurrentEpisode];
+        CLS_LOG(@"episodes in both directions have been played. allow player to stop");
+        
+        [self savePositionForNowPlayingAndSync:YES];
+        [self setControlButtonStateToPlay];
     }
 }
 
@@ -976,7 +998,6 @@ static NSString *episodeDirName = @"episodes";
         //CLS_LOG(@"[NSURLConnectionDataDelegate] connection did finish loading");
         [self processPendingRequests];
         
-        
         NSFileManager *fileManager = [[NSFileManager alloc] init];
         NSString *episodeDir = [NSTemporaryDirectory() stringByAppendingPathComponent:episodeDirName];
         NSError *error;
@@ -986,12 +1007,11 @@ static NSString *episodeDirName = @"episodes";
         NSString *episodeFilepath = [episodeDir stringByAppendingPathComponent:episodeFilename];
         
         if ([_trackData writeToFile:episodeFilepath options:0 error:&error]) {
-            //CMTime currentTime = _player.currentTime;
             CLS_LOG(@"-- saved podcast track in temp episode dir");
-            //AVPlayerItem *localPlayerItem = [[AVPlayerItem alloc] initWithURL:[NSURL fileURLWithPath:episodeFilepath]];
-            //[_player replaceCurrentItemWithPlayerItem:localPlayerItem];
-            //[_player seekToTime:currentTime];
             _fileIsLocal = YES;
+            // we can safely release these
+            _trackData = nil;
+            _trackDataConnection = nil;
         }
         else {
             CLS_LOG(@"ERROR: track did not save: %@", error);
@@ -1164,7 +1184,7 @@ UILabel *prototypeBadge;
 
 + (PodcastEntity *) getEntityForPodcast:(NSDictionary *)podcastDict save:(BOOL)save {
     
-    if (!podcastDict) {
+    if (!podcastDict || ![podcastDict objectForKey:@"collectionId"]) {
         CLS_LOG(@"get entity for podcast: ERROR: podcast dict was null");
         return nil;
     }
@@ -3350,10 +3370,8 @@ static NSArray *colors;
 // post tweet
 - (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url {
     
-    
     NSString *tweet = [NSString stringWithFormat:@"%@ %@", text, url];
-    
-    ;
+
     //TWTRSession *session = [TWTRSessionStore session];
     NSString *twitterID = [Twitter sharedInstance].sessionStore.session.userID;
     TWTRAPIClient *client = [[TWTRAPIClient alloc] initWithUserID:twitterID];

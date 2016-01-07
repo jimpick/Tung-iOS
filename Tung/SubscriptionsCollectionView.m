@@ -10,6 +10,8 @@
 #import "AppDelegate.h"
 #import "SubscriptionViewCell.h"
 #import "PodcastViewController.h"
+#import "KLCPopup.h"
+#import "BannerAlert.h"
 
 @interface SubscriptionsCollectionView () <NSFetchedResultsControllerDelegate>
 
@@ -20,18 +22,23 @@
 @property NSMutableArray *itemChanges;
 @property UISearchController *searchController;
 @property UIImageView *findPodcastsHere;
+@property BOOL editingNotifications;
+@property UIBarButtonItem *editAlertsBarButtonItem;
 
 @end
 
 @implementation SubscriptionsCollectionView
 
 static NSString * const reuseIdentifier = @"artCell";
+CGFloat screenWidth;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
     
     self.navigationItem.title = @"Subscriptions";
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
+    _editAlertsBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Alerts" style:UIBarButtonItemStylePlain target:self action:@selector(toggleEditNotifySettings)];
+    self.navigationItem.leftBarButtonItem = _editAlertsBarButtonItem;
     
     _tung = [TungCommonObjects establishTungObjects];
     _podcast = [TungPodcast new];
@@ -58,7 +65,7 @@ static NSString * const reuseIdentifier = @"artCell";
     }
 
     // set up collection view size based on screen size
-    CGFloat screenWidth = [[UIScreen mainScreen]bounds].size.width;
+    screenWidth = [[UIScreen mainScreen]bounds].size.width;
     
     CGFloat cellWidthAndHeight = (screenWidth - 2) / 3;
     CGSize cellSize = CGSizeMake(cellWidthAndHeight, cellWidthAndHeight);
@@ -85,12 +92,11 @@ NSTimer *promptTimer;
     _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
     
-    
     SettingsEntity *settings = [TungCommonObjects settings];
     
     // prompt for notifications delay
     if (!settings.hasSeenNewEpisodesPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
-    	promptTimer = [NSTimer scheduledTimerWithTimeInterval:3 target:_tung selector:@selector(promptForNotificationsForEpisodes) userInfo:nil repeats:NO];
+    	promptTimer = [NSTimer scheduledTimerWithTimeInterval:2 target:_tung selector:@selector(promptForNotificationsForEpisodes) userInfo:nil repeats:NO];
     }
     
     // clear subscriptions badge and adjust app badge
@@ -114,6 +120,7 @@ NSTimer *promptTimer;
 - (void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     [promptTimer invalidate];
+    if (_editingNotifications) [self toggleEditNotifySettings];
 }
 
 - (void) viewDidDisappear:(BOOL)animated {
@@ -124,7 +131,51 @@ NSTimer *promptTimer;
         [self dismissPodcastSearch];
     }*/
 }
+                                             
+#pragma mark - Editing notification stuff
+                                             
+- (void) toggleEditNotifySettings {
+ 
+    _editingNotifications = !_editingNotifications;
+    
+    if (_editingNotifications) {
+    	_editAlertsBarButtonItem.title = @"Done";
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleNotifyPrefChangedNotification:) name:@"notifyPrefChanged" object:nil];
+    } else {
+        [[NSNotificationCenter defaultCenter] removeObserver:self];
+    	_editAlertsBarButtonItem.title = @"Alerts";
+    }
+    
+    [self.collectionView performBatchUpdates:^{
+    	[self.collectionView reloadSections:[NSIndexSet indexSetWithIndex:0]];
+    } completion:nil];
+ 
+}
 
+- (void) handleNotifyPrefChangedNotification:(NSNotification *)notification {
+    
+    if (notification.userInfo[@"message"]) {
+        [self showBannerAlertForText:notification.userInfo[@"message"]];
+    }
+}
+
+- (void) showBannerAlertForText:(NSString *)text {
+    BannerAlert *bannerAlertView = [[BannerAlert alloc] init];
+    
+    [bannerAlertView sizeBannerAndSetText:text forWidth:screenWidth];
+    
+    //KLCPopupLayout layout = KLCPopupLayoutMake(KLCPopupHorizontalLayoutCenter, KLCPopupVerticalLayoutBottom);
+    
+    KLCPopup *bannerAlert = [KLCPopup popupWithContentView:bannerAlertView
+                                                   showType:KLCPopupShowTypeFadeIn
+                                                dismissType:KLCPopupDismissTypeFadeOut
+                                                   maskType:KLCPopupMaskTypeClear
+                                   dismissOnBackgroundTouch:NO
+                                      dismissOnContentTouch:NO];
+    
+    //[bannerAlert showWithLayout:layout duration:3];
+    [bannerAlert showWithDuration:3];
+}
 
 #pragma mark - tungObjects/tungPodcasts delegate methods
 
@@ -303,6 +354,8 @@ UILabel static *prototypeBadge;
     
     PodcastEntity *podcastEntity = [_resultsController objectAtIndexPath:indexPath];
     
+    cell.collectionId = podcastEntity.collectionId;
+    
     NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600 andCollectionId:podcastEntity.collectionId];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     
@@ -341,6 +394,19 @@ UILabel static *prototypeBadge;
     [cell.badge layoutIfNeeded];
     [cell.badge setNeedsDisplay];
     
+    // editing notification settings
+    cell.notifySwitch.onTintColor = podcastEntity.keyColor1;
+    cell.notifySwitch.on = podcastEntity.notifyOfNewEpisodes.boolValue;
+    [cell.switchBkgdView.layer setCornerRadius:17];
+    
+    if (_editingNotifications) {
+        cell.editView.hidden = NO;
+        cell.editView.alpha = 1;
+    } else {
+        cell.editView.hidden = YES;
+        cell.editView.alpha = 0;
+    }
+    
     return cell;
 }
 
@@ -360,6 +426,12 @@ UILabel static *prototypeBadge;
 }
 */
 - (void) collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
+    
+    if (_editingNotifications) {
+        [self toggleEditNotifySettings];
+        return;
+    }
+    
     
     PodcastEntity *podcastEntity = [_resultsController objectAtIndexPath:indexPath];
     // entity -> dict

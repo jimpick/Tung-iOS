@@ -76,10 +76,12 @@ CGFloat screenWidth;
     // Dispose of any resources that can be recreated.
 }
 
+// refresh feed by checking or newer items or getting all items
 - (void) refreshFeed {
     
     [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
         if (reachable) {
+            _tung.connectionAvailable = [NSNumber numberWithBool:YES];
         	// query users
             _feedRefreshed = YES;
             NSNumber *mostRecent;
@@ -104,7 +106,20 @@ CGFloat screenWidth;
         }
     }];
 }
--(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {    
+
+// for re-fetching the entire feed
+- (void) refetchFeed {
+    
+    if (_tung.connectionAvailable.boolValue) {
+        [self requestProfileListWithQuery:_queryType
+                                forTarget:_target_id
+                                newerThan:[NSNumber numberWithInt:0]
+                              orOlderThan:[NSNumber numberWithInt:0]];
+    }
+    
+}
+
+-(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
     if (alertView.tag == 49) [self refreshFeed]; // unreachable, retry
 }
 
@@ -221,6 +236,7 @@ CGFloat screenWidth;
                         
                         // 1 second delay to set new lastSeenNotification
                         if ([queryType isEqualToString:@"Notifications"]) {
+                            _tung.notificationsNeedRefresh = [NSNumber numberWithBool:NO];
                             [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(markNotificationsAsSeen) userInfo:nil repeats:NO];
                         }
                     });
@@ -398,9 +414,11 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
         
         // background color
         NSNumber *time_secs = [profileCell.profileDict objectForKey:@"time_secs"];
-        NSLog(@"lastSeenNotification: %@, time_secs: (%ld) %@", _lastSeenNotification, (long)indexPath.row, time_secs);
+        //NSLog(@"lastSeenNotification: %@, time_secs: (%ld) %@", _lastSeenNotification, (long)indexPath.row, time_secs);
         if (time_secs.doubleValue > _lastSeenNotification.doubleValue) {
             profileCell.backgroundColor = [TungCommonObjects lightTungColor];
+        } else {
+            profileCell.backgroundColor = [UIColor whiteColor];
         }
         
     }

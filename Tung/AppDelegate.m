@@ -259,6 +259,7 @@
             [TungCommonObjects saveContextWithReason:@"number of new podcast notifications changed"];
             
             [_tung setBadgeNumber:profileNotifs forBadge:_tung.profileBadge];
+            _tung.notificationsNeedRefresh = [NSNumber numberWithBool:YES];
         }
     }
     
@@ -300,6 +301,14 @@
             }
         });
     }];
+}
+
+
+#pragma mark - Misc
+
+- (void) applicationDidReceiveMemoryWarning:(UIApplication *)application {
+    
+    
 }
 
 

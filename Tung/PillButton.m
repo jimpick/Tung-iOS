@@ -12,22 +12,23 @@
 @implementation PillButton
 
 - (void)drawRect:(CGRect)rect {
-    
-    switch (_type) {
-            
-        case kPillTypeOnWhite:
-            [TungPodcastStyleKit drawTungButtonOnWhiteWithFrame:rect down:self.highlighted buttonText:_buttonText];
-            break;
-        case kPillTypeOnDark:
-            [TungPodcastStyleKit drawPillButtonOnDarkWithFrame:rect down:self.highlighted buttonText:_buttonText];
-            break;
-        case kPillTypeFollow:
-            [TungPodcastStyleKit drawFollowButtonWithFrame:rect on:_on down:self.highlighted];
-            break;
-            
-        default:
-            [TungPodcastStyleKit drawTungButtonOnWhiteWithFrame:rect down:self.highlighted buttonText:_buttonText];
-            break;
+    if (rect.size.width > 0) {
+        switch (_type) {
+                
+            case kPillTypeOnWhite:
+                [TungPodcastStyleKit drawTungButtonOnWhiteWithFrame:rect down:self.highlighted buttonText:_buttonText];
+                break;
+            case kPillTypeOnDark:
+                [TungPodcastStyleKit drawPillButtonOnDarkWithFrame:rect down:self.highlighted buttonText:_buttonText];
+                break;
+            case kPillTypeFollow:
+                [TungPodcastStyleKit drawFollowButtonWithFrame:rect on:_on down:self.highlighted];
+                break;
+                
+            default:
+                [TungPodcastStyleKit drawTungButtonOnWhiteWithFrame:rect down:self.highlighted buttonText:_buttonText];
+                break;
+        }
     }
 }
 

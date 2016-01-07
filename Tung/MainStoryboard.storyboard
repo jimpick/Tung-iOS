@@ -3193,6 +3193,72 @@
                                                 </mask>
                                             </variation>
                                         </view>
+                                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="UBU-Ni-hJl">
+                                            <rect key="frame" x="0.0" y="0.0" width="240" height="128"/>
+                                            <subviews>
+                                                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="6js-tL-gS1">
+                                                    <rect key="frame" x="0.0" y="0.0" width="240" height="128"/>
+                                                    <subviews>
+                                                        <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="db2-ii-uxU">
+                                                            <rect key="frame" x="-25" y="-15" width="51" height="31"/>
+                                                            <connections>
+                                                                <action selector="changeNotifySetting:" destination="En8-v9-cC3" eventType="valueChanged" id="f4D-v6-HFi"/>
+                                                            </connections>
+                                                        </switch>
+                                                    </subviews>
+                                                    <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                                    <constraints>
+                                                        <constraint firstItem="db2-ii-uxU" firstAttribute="leading" secondItem="6js-tL-gS1" secondAttribute="leading" constant="2" id="33I-cc-Irr"/>
+                                                        <constraint firstItem="db2-ii-uxU" firstAttribute="top" secondItem="6js-tL-gS1" secondAttribute="top" constant="2" id="XZb-8h-v1k"/>
+                                                        <constraint firstAttribute="width" constant="56" id="mTb-75-0cq">
+                                                            <variation key="widthClass=compact" constant="55"/>
+                                                        </constraint>
+                                                        <constraint firstAttribute="height" constant="36" id="uHK-e3-A5z">
+                                                            <variation key="widthClass=compact" constant="35"/>
+                                                        </constraint>
+                                                    </constraints>
+                                                    <variation key="default">
+                                                        <mask key="subviews">
+                                                            <exclude reference="db2-ii-uxU"/>
+                                                        </mask>
+                                                        <mask key="constraints">
+                                                            <exclude reference="mTb-75-0cq"/>
+                                                            <exclude reference="uHK-e3-A5z"/>
+                                                            <exclude reference="33I-cc-Irr"/>
+                                                            <exclude reference="XZb-8h-v1k"/>
+                                                        </mask>
+                                                    </variation>
+                                                    <variation key="widthClass=compact">
+                                                        <mask key="subviews">
+                                                            <include reference="db2-ii-uxU"/>
+                                                        </mask>
+                                                        <mask key="constraints">
+                                                            <include reference="mTb-75-0cq"/>
+                                                            <include reference="uHK-e3-A5z"/>
+                                                            <include reference="33I-cc-Irr"/>
+                                                            <include reference="XZb-8h-v1k"/>
+                                                        </mask>
+                                                    </variation>
+                                                </view>
+                                            </subviews>
+                                            <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.40000000000000002" colorSpace="custom" customColorSpace="sRGB"/>
+                                            <constraints>
+                                                <constraint firstItem="6js-tL-gS1" firstAttribute="centerY" secondItem="UBU-Ni-hJl" secondAttribute="centerY" id="Neo-IM-nG6"/>
+                                                <constraint firstItem="6js-tL-gS1" firstAttribute="centerX" secondItem="UBU-Ni-hJl" secondAttribute="centerX" id="Xzi-eU-bbe"/>
+                                            </constraints>
+                                            <variation key="default">
+                                                <mask key="constraints">
+                                                    <exclude reference="Neo-IM-nG6"/>
+                                                    <exclude reference="Xzi-eU-bbe"/>
+                                                </mask>
+                                            </variation>
+                                            <variation key="widthClass=compact">
+                                                <mask key="constraints">
+                                                    <include reference="Neo-IM-nG6"/>
+                                                    <include reference="Xzi-eU-bbe"/>
+                                                </mask>
+                                            </variation>
+                                        </view>
                                     </subviews>
                                     <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="calibratedWhite"/>
                                 </view>
@@ -3200,18 +3266,26 @@
                                     <constraint firstItem="CMK-NY-3Nz" firstAttribute="top" secondItem="En8-v9-cC3" secondAttribute="top" constant="6" id="E0x-fJ-R8f">
                                         <variation key="widthClass=compact" constant="4"/>
                                     </constraint>
+                                    <constraint firstItem="UBU-Ni-hJl" firstAttribute="leading" secondItem="En8-v9-cC3" secondAttribute="leading" id="L0H-Rk-A6i"/>
+                                    <constraint firstAttribute="bottom" secondItem="UBU-Ni-hJl" secondAttribute="bottom" id="LXB-UR-Sem"/>
                                     <constraint firstAttribute="trailing" secondItem="pyR-cj-pNH" secondAttribute="trailing" id="SkW-wP-Dkb"/>
                                     <constraint firstAttribute="trailing" secondItem="CMK-NY-3Nz" secondAttribute="trailing" constant="6" id="UiY-NU-DtV">
                                         <variation key="widthClass=compact" constant="6"/>
                                     </constraint>
                                     <constraint firstItem="CMK-NY-3Nz" firstAttribute="top" secondItem="En8-v9-cC3" secondAttribute="topMargin" id="dns-8A-E2J"/>
+                                    <constraint firstAttribute="trailing" secondItem="UBU-Ni-hJl" secondAttribute="trailing" id="huU-SJ-dHy"/>
                                     <constraint firstItem="CMK-NY-3Nz" firstAttribute="trailing" secondItem="En8-v9-cC3" secondAttribute="trailingMargin" id="mwP-g4-rDh"/>
                                     <constraint firstAttribute="bottom" secondItem="pyR-cj-pNH" secondAttribute="bottom" id="qxp-XP-DAG"/>
+                                    <constraint firstItem="UBU-Ni-hJl" firstAttribute="top" secondItem="En8-v9-cC3" secondAttribute="top" id="sXL-DY-xg8"/>
                                     <constraint firstItem="pyR-cj-pNH" firstAttribute="leading" secondItem="En8-v9-cC3" secondAttribute="leading" id="tQ2-Qg-dNJ"/>
                                     <constraint firstItem="pyR-cj-pNH" firstAttribute="top" secondItem="En8-v9-cC3" secondAttribute="top" id="x24-ZT-C3L"/>
                                 </constraints>
                                 <variation key="default">
                                     <mask key="constraints">
+                                        <exclude reference="L0H-Rk-A6i"/>
+                                        <exclude reference="LXB-UR-Sem"/>
+                                        <exclude reference="huU-SJ-dHy"/>
+                                        <exclude reference="sXL-DY-xg8"/>
                                         <exclude reference="E0x-fJ-R8f"/>
                                         <exclude reference="UiY-NU-DtV"/>
                                         <exclude reference="dns-8A-E2J"/>
@@ -3220,6 +3294,10 @@
                                 </variation>
                                 <variation key="widthClass=compact">
                                     <mask key="constraints">
+                                        <include reference="L0H-Rk-A6i"/>
+                                        <include reference="LXB-UR-Sem"/>
+                                        <include reference="huU-SJ-dHy"/>
+                                        <include reference="sXL-DY-xg8"/>
                                         <include reference="E0x-fJ-R8f"/>
                                         <include reference="UiY-NU-DtV"/>
                                         <exclude reference="dns-8A-E2J"/>
@@ -3230,6 +3308,9 @@
                                     <outlet property="artImageView" destination="pyR-cj-pNH" id="VWb-7p-s0Z"/>
                                     <outlet property="badge" destination="CMK-NY-3Nz" id="Hb1-MS-G1m"/>
                                     <outlet property="badgeWidthContstraint" destination="mas-Gd-xrA" id="bg8-VW-U3V"/>
+                                    <outlet property="editView" destination="UBU-Ni-hJl" id="aWb-cS-3Ih"/>
+                                    <outlet property="notifySwitch" destination="db2-ii-uxU" id="hbI-ZS-MaM"/>
+                                    <outlet property="switchBkgdView" destination="6js-tL-gS1" id="2wO-Kg-AVd"/>
                                 </connections>
                             </collectionViewCell>
                         </cells>

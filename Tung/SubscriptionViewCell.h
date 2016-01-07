@@ -14,5 +14,11 @@
 @property (strong, nonatomic) IBOutlet UIImageView *artImageView;
 @property (strong, nonatomic) IBOutlet TungMiscView *badge;
 @property (strong, nonatomic) IBOutlet NSLayoutConstraint *badgeWidthContstraint;
+@property (strong, nonatomic) IBOutlet UIView *editView;
+@property (strong, nonatomic) IBOutlet UISwitch *notifySwitch;
+@property (strong, nonatomic) NSNumber *collectionId;
+@property (strong, nonatomic) IBOutlet UIView *switchBkgdView;
+
+- (IBAction)changeNotifySetting:(id)sender;
 
 @end

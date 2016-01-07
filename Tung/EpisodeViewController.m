@@ -132,6 +132,15 @@ static NSArray *playbackRateStrings;
     _npControlsView.opacity = .4;
     _npControlsView.tintColor = [UIColor lightGrayColor];
     _npControlsView.hidden = YES;
+    // below set here so that default save icon isn't shown
+    _skipAheadBtn.type = kIconButtonTypeSkipAhead15;
+    _skipAheadBtn.color = [TungCommonObjects tungColor];
+    [_skipAheadBtn setNeedsDisplay];
+    [_skipAheadBtn addTarget:_tung action:@selector(skipAhead15) forControlEvents:UIControlEventTouchUpInside];
+    _skipBackBtn.type = kIconButtonTypeSkipBack15;
+    _skipBackBtn.color = [TungCommonObjects tungColor];
+    [_skipBackBtn setNeedsDisplay];
+    [_skipBackBtn addTarget:_tung action:@selector(skipBack15) forControlEvents:UIControlEventTouchUpInside];
     
     _timeElapsedLabel.hidden = YES;
     _skipAheadBtn.hidden = YES;
@@ -566,6 +575,11 @@ NSTimer *markAsSeenTimer;
             _headerView.largeButton.on = YES;
             [_headerView.largeButton setNeedsDisplay];
             [_episodesView.tableView reloadData];
+            
+            // ask if user wants to go to now playing
+            UIAlertView *goToNowPlaying = [[UIAlertView alloc] initWithTitle:@"Go to Now Playing?" message:nil delegate:self cancelButtonTitle:@"No" otherButtonTitles:@"OK", nil];
+            goToNowPlaying.tag = 5;
+            [goToNowPlaying show];
         }
     } else {
         UIAlertView *badXmlAlert = [[UIAlertView alloc] initWithTitle:@"Can't Play - No URL" message:@"Unfortunately, this feed is missing links to its content." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
@@ -656,10 +670,6 @@ NSTimer *markAsSeenTimer;
     }
 }
 
-#pragma mark Request page data
-
-
-
 #pragma mark Now Playing control view
 
 - (void) refreshRecommendStatus {
@@ -676,15 +686,6 @@ static CGRect buttonsScrollViewHomeRect;
 - (void) setUpNowPlayingControlView {
     _npControlsViewIsVisible = YES;
     //CLS_LOG(@"set up now playing control view");
-    _skipAheadBtn.type = kIconButtonTypeSkipAhead15;
-    _skipAheadBtn.color = [TungCommonObjects tungColor];
-    [_skipAheadBtn setNeedsDisplay];
-    [_skipAheadBtn addTarget:_tung action:@selector(skipAhead15) forControlEvents:UIControlEventTouchUpInside];
-    _skipBackBtn.type = kIconButtonTypeSkipBack15;
-    _skipBackBtn.color = [TungCommonObjects tungColor];
-    [_skipBackBtn setNeedsDisplay];
-    [_skipBackBtn addTarget:_tung action:@selector(skipBack15) forControlEvents:UIControlEventTouchUpInside];
-    
     if (!circleButtonDimension) circleButtonDimension = 45;
     
     // buttons scroll view
@@ -1943,6 +1944,15 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
     // reset recording prompt
     if (alertView.tag == 3) {
         if (buttonIndex == 0) [self resetRecording];
+    }
+    // go to now playing prompt
+    if (alertView.tag == 5 && buttonIndex) {
+        // select Now Playing tab
+        MainTabBarController *tabVC = (MainTabBarController *)self.parentViewController.parentViewController;
+        tabVC.selectedIndex = 1;
+        UIButton *btn = [[UIButton alloc] init];
+        btn.tag = 1;
+        [tabVC selectTab:btn];
     }
 }
 

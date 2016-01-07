@@ -13,7 +13,9 @@
 
 
 - (void)drawRect:(CGRect)rect {
-    [TungPodcastStyleKit drawClipProgressWithFrame:rect buttonText:_seconds arc:_arc];
+    if (rect.size.width > 0) {
+    	[TungPodcastStyleKit drawClipProgressWithFrame:rect buttonText:_seconds arc:_arc];
+    }
 }
 
 @end

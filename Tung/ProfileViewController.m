@@ -239,9 +239,11 @@ NSTimer *promptTimer;
         //CLS_LOG(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
         _profileHeader.contentSizeSet = YES;
     }
+    SettingsEntity *settings = [TungCommonObjects settings];
     
     // refresh based on flags
     if (_isLoggedInUser) {
+        // profile header view and activity feed
         if (_tung.profileFeedNeedsRefresh.boolValue && _tung.profileNeedsRefresh.boolValue) {
             CLS_LOG(@"profile feed and data need refresh");
             [self requestPageData];
@@ -254,29 +256,38 @@ NSTimer *promptTimer;
             CLS_LOG(@"profile data needs refresh");
             [self refreshProfile];
         }
+        // notifications
+        if (_tung.notificationsNeedRefresh.boolValue) {
+            //[_notificationsView.refreshControl beginRefreshing]; // doesn't seem to work
+            [_notificationsView refreshFeed];
+        }
+        // clear colored background on new notifications
+        else if (_notificationsView.profileArray.count > 0) {
+            [_notificationsView.tableView reloadData];
+        }
+        
+        // clear profile badge and adjust app badge
+        if (settings.numProfileNotifications.integerValue > 0) {
+            
+            NSInteger startingVal = settings.numProfileNotifications.integerValue;
+            if ([UIApplication sharedApplication].applicationIconBadgeNumber > 0) {
+                [UIApplication sharedApplication].applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - settings.numProfileNotifications.integerValue;
+            }
+            settings.numProfileNotifications = [NSNumber numberWithInteger:0];
+            [_tung setBadgeNumber:[NSNumber numberWithInteger:0] forBadge:_tung.profileBadge];
+            [TungCommonObjects saveContextWithReason:@"adjust subscriptions badge number"];
+            // adjust app icon badge number
+            NSInteger newBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - startingVal;
+            newBadgeNumber = MAX(0, newBadgeNumber);
+            [[UIApplication sharedApplication] setApplicationIconBadgeNumber:newBadgeNumber];
+        }
+        
     } else {
         [self requestPageData];
     }
     
-    SettingsEntity *settings = [TungCommonObjects settings];
-    
     if (!settings.hasSeenMentionsPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
-        promptTimer = [NSTimer scheduledTimerWithTimeInterval:3 target:_tung selector:@selector(promptForNotificationsForMentions) userInfo:nil repeats:NO];
-    }
-    // clear profile badge and adjust app badge
-    if (settings.numProfileNotifications.integerValue > 0) {
-        [_notificationsView refreshFeed];
-        NSInteger startingVal = settings.numProfileNotifications.integerValue;
-        if ([UIApplication sharedApplication].applicationIconBadgeNumber > 0) {
-            [UIApplication sharedApplication].applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - settings.numProfileNotifications.integerValue;
-        }
-        settings.numProfileNotifications = [NSNumber numberWithInteger:0];
-        [_tung setBadgeNumber:[NSNumber numberWithInteger:0] forBadge:_tung.profileBadge];
-        [TungCommonObjects saveContextWithReason:@"adjust subscriptions badge number"];
-        // adjust app icon badge number
-        NSInteger newBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - startingVal;
-        newBadgeNumber = MAX(0, newBadgeNumber);
-        [[UIApplication sharedApplication] setApplicationIconBadgeNumber:newBadgeNumber];
+        promptTimer = [NSTimer scheduledTimerWithTimeInterval:2 target:_tung selector:@selector(promptForNotificationsForMentions) userInfo:nil repeats:NO];
     }
 }
 

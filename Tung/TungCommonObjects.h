@@ -128,6 +128,7 @@
 @property (strong, nonatomic) NSNumber *feedNeedsRefresh;
 @property (strong, nonatomic) NSNumber *profileFeedNeedsRefresh;
 @property (strong, nonatomic) NSNumber *profileNeedsRefresh;
+@property (strong, nonatomic) NSNumber *notificationsNeedRefresh;
 
 // core data
 + (BOOL) saveContextWithReason:(NSString*)reason;

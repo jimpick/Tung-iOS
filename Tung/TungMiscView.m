@@ -29,34 +29,36 @@
 
 - (void)drawRect:(CGRect)rect {
     
-    switch (_type) {
-            
-        case kMiscViewTypePopupWithArrowLeft:
-            [TungPodcastStyleKit drawPopupWithArrowLeftWithFrame:rect];
-            break;
-        case kMiscViewTypePopupWithArrowRight:
-            [TungPodcastStyleKit drawPopupWithArrowRightWithFrame:rect];
-            break;
-        case kMiscViewTypeCommentBkgdMine:
-            [TungPodcastStyleKit drawCommentBkgdUserWithOuterFrame:rect];
-            break;
-        case kMiscViewTypeCommentBkgdTheirs:
-            [TungPodcastStyleKit drawCommentBkgdWithOuterFrame:rect];
-            break;
-        case kMiscViewTypeSolidCircle:
-            [TungPodcastStyleKit drawSolidCircleWithFrame:rect];
-            break;
-        case kMiscViewTypeEpisodeProgress:
-            [TungPodcastStyleKit drawEpisodeProgressWithOuterFrame:rect color:_color progress:_progress];
-            break;
-        case kMiscViewTypeSubscribeBadge:
-            [TungPodcastStyleKit drawLargeBadgeWithFrame:rect buttonText:_text];
-            break;
-        case kMiscViewTypeSmallBadge:
-            [TungPodcastStyleKit drawSmallBadgeWithFrame:rect buttonText:_text];
-            break;
-        default:
-            break;
+    if (rect.size.width > 0) {
+        switch (_type) {
+                
+            case kMiscViewTypePopupWithArrowLeft:
+                [TungPodcastStyleKit drawPopupWithArrowLeftWithFrame:rect];
+                break;
+            case kMiscViewTypePopupWithArrowRight:
+                [TungPodcastStyleKit drawPopupWithArrowRightWithFrame:rect];
+                break;
+            case kMiscViewTypeCommentBkgdMine:
+                [TungPodcastStyleKit drawCommentBkgdUserWithOuterFrame:rect];
+                break;
+            case kMiscViewTypeCommentBkgdTheirs:
+                [TungPodcastStyleKit drawCommentBkgdWithOuterFrame:rect];
+                break;
+            case kMiscViewTypeSolidCircle:
+                [TungPodcastStyleKit drawSolidCircleWithFrame:rect];
+                break;
+            case kMiscViewTypeEpisodeProgress:
+                [TungPodcastStyleKit drawEpisodeProgressWithOuterFrame:rect color:_color progress:_progress];
+                break;
+            case kMiscViewTypeSubscribeBadge:
+                [TungPodcastStyleKit drawLargeBadgeWithFrame:rect buttonText:_text];
+                break;
+            case kMiscViewTypeSmallBadge:
+                [TungPodcastStyleKit drawSmallBadgeWithFrame:rect buttonText:_text];
+                break;
+            default:
+                break;
+        }
     }
 }
 
