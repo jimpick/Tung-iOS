@@ -44,10 +44,10 @@ CGFloat screenWidth;
     self.navigationItem.title = _queryType;
     
     // table view
-    UIActivityIndicatorView *behindTable = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-    behindTable.alpha = 1;
-    [behindTable startAnimating];
-    self.tableView.backgroundView = behindTable;
+    UIActivityIndicatorView *spinnerBehindTable = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+    spinnerBehindTable.alpha = 1;
+    [spinnerBehindTable startAnimating];
+    self.tableView.backgroundView = spinnerBehindTable;
     self.tableView.backgroundColor = [TungCommonObjects bkgdGrayColor];
     self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
     self.tableView.separatorColor = [UIColor grayColor];

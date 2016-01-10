@@ -192,7 +192,9 @@
 
 // caching
 + (NSData*) retrieveLargeAvatarDataWithUrlString:(NSString *)urlString;
++ (void) replaceCachedLargeAvatarWithDataAtUrlString:(NSString *)urlString;
 + (NSData*) retrieveSmallAvatarDataWithUrlString:(NSString *)urlString;
++ (void) replaceCachedSmallAvatarWithDataAtUrlString:(NSString *)urlString;
 + (NSData*) retrieveAudioClipDataWithUrlString:(NSString *)urlString;
 + (NSData*) retrieveSSLPodcastArtDataWithUrlString:(NSString *)urlString;
 + (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;

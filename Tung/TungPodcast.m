@@ -214,13 +214,13 @@
                 //CLS_LOG(@"%@", _podcastArray);
                 [self preloadPodcastArtForArray:_podcastArray];
                 [self preloadFeedsWithLimit:1]; // preload feed of first result
-                [_searchTableViewController.tableView reloadData];
                 
             }
             else {
                 _noResults = YES;
-                //CLS_LOG(@"NO RESULTS");
+                _podcastArray = [NSMutableArray array];
             }
+            [_searchTableViewController.tableView reloadData];
         }
     }
     else if ([_podcastSearchResultData length] == 0 && error == nil) {
@@ -268,7 +268,7 @@ static NSDateFormatter *releaseDateFormatter = nil;
 #pragma mark - Table view data source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    return 1;
+    return 2;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
@@ -436,7 +436,7 @@ static NSString *cellIdentifier = @"PodcastResultCell";
 }
 
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
-    if (section == 1) {
+    if ((_podcastArray.count > 0 && section == 1) || (section == 1 && _noResults)) {
         return 92.0;
     }
     else {
@@ -444,6 +444,11 @@ static NSString *cellIdentifier = @"PodcastResultCell";
     }
 }
 
+- (void)tableView:(UITableView *)tableView willDisplayFooterView:(UIView *)view forSection:(NSInteger)section {
+    
+    view.backgroundColor = [TungCommonObjects bkgdGrayColor];
+    
+}
 
 #pragma mark - Preloading
 

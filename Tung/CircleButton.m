@@ -80,6 +80,10 @@
                 [TungPodcastStyleKit drawPlayButtonWithFrame:rect color:_color on:_on down:self.highlighted];
                 break;
                 
+            case kCircleTypeSupport:
+                [TungPodcastStyleKit drawSupportButtonWithFrame:rect down:self.highlighted];
+                break;
+                
             default:
                 [TungPodcastStyleKit drawClipButtonWithFrame:rect down:self.highlighted];
                 break;

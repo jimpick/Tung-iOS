@@ -37,6 +37,7 @@
 @property NSArray *currentFeed;
 
 - (void) playQueuedPodcast;
+- (void) resetPlayer;
 
 // not used
 - (NSString *) getPlayQueuePath;
@@ -163,7 +164,7 @@
     NSError *error = nil;
     NSArray *npResult = [appDelegate.managedObjectContext executeFetchRequest:npRequest error:&error];
     if (npResult.count > 0) {
-        //CLS_LOG(@"Found now playing episode");
+        CLS_LOG(@"Found now playing episode");
         _npEpisodeEntity = [npResult lastObject];
         NSURL *url = [NSURL URLWithString:_npEpisodeEntity.url];
         _playQueue = [@[url] mutableCopy];
@@ -173,7 +174,7 @@
         	[self setControlButtonStateToPlay];
         }
     } else {
-        //CLS_LOG(@"no episode playing yet");
+        CLS_LOG(@"no episode playing yet");
         _playQueue = [NSMutableArray array];
         [self setControlButtonStateToFauxDisabled];;
     }
@@ -247,8 +248,8 @@
 - (void) playerPause {
     if ([self isPlaying]) {
         
-        float currentSecs = CMTimeGetSeconds(_player.currentTime);
-        NSLog(@"currentSecs: %f, total secs: %f", currentSecs, _totalSeconds);
+        //float currentSecs = CMTimeGetSeconds(_player.currentTime);
+        //NSLog(@"currentSecs: %f, total secs: %f", currentSecs, _totalSeconds);
         
         [_player pause];
         _shouldStayPaused = YES;
@@ -329,6 +330,7 @@
                 break;
             case AVPlayerStatusReadyToPlay:
                 CLS_LOG(@"-- AVPlayer status: ready to play");
+                [self setControlButtonStateToBuffering];
                 // check for track progress
                 float secs = 0;
                 CMTime time;
@@ -345,10 +347,10 @@
                     
                     CLS_LOG(@"seeking to time: %f", secs);
                     [_trackInfo setObject:[NSNumber numberWithFloat:secs] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
-                    [self setControlButtonStateToBuffering];
                     [_player seekToTime:time completionHandler:^(BOOL finished) {
                         CLS_LOG(@"finished seeking");
                         [self playerPlay];
+                        if (_fileIsLocal) [self determineTotalSeconds];
                     }];
                 } else {
                     [_trackInfo setObject:[NSNumber numberWithFloat:0] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
@@ -356,8 +358,8 @@
                     if ([self isPlaying] && _fileIsLocal) {
                         CLS_LOG(@"play from beginning - already playing");
                         [self setControlButtonStateToPause];
+                        [self determineTotalSeconds];
                     } else {
-                        [self setControlButtonStateToBuffering];
                         CLS_LOG(@"play from beginning - with preroll");
                         [_player prerollAtRate:1.0 completionHandler:^(BOOL finished) {
                             CLS_LOG(@"-- finished preroll: %d", finished);
@@ -568,20 +570,7 @@
         
         [self stopClipPlayback];
         
-        _npViewSetupForCurrentEpisode = NO;
-        _shouldStayPaused = NO;
-        _totalSeconds = 0;
-        
-        // remove old player and observers
-        if (_player) {
-            [_player removeObserver:self forKeyPath:@"status"];
-            [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
-            [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:_player.currentItem];
-            [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemPlaybackStalledNotification object:_player.currentItem];
-            [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemFailedToPlayToEndTimeNotification object:_player.currentItem];
-            [_player cancelPendingPrerolls];
-            _player = nil;
-        }
+        [self resetPlayer];
         
         NSString *urlString = [NSString stringWithFormat:@"%@", [_playQueue objectAtIndex:0]];
         
@@ -626,16 +615,6 @@
         [_trackInfo setObject:_npEpisodeEntity.pubDate forKey:MPMediaItemPropertyReleaseDate];
         // not used: MPMediaItemPropertyAssetURL
         
-        // clear leftover connection data
-        if (_trackDataConnection) {
-            //CLS_LOG(@"clear connection data");
-            [_trackDataConnection cancel];
-            _trackDataConnection = nil;
-            _trackData = nil;
-            self.response = nil;
-        }
-        self.pendingRequests = [NSMutableArray array];
-        
         // set up new player item and player, observers
         NSURL *urlToPlay = [self getEpisodeUrl:[_playQueue objectAtIndex:0]];
         AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
@@ -656,10 +635,42 @@
         [self setControlButtonStateToBuffering];
         
         // now playing did change
+        /*
         if ([_ctrlBtnDelegate respondsToSelector:@selector(nowPlayingDidChange)])
         	[_ctrlBtnDelegate nowPlayingDidChange];
+        */
+        NSNotification *nowPlayingDidChangeNotif = [NSNotification notificationWithName:@"nowPlayingDidChange" object:nil userInfo:nil];
+        [[NSNotificationCenter defaultCenter] postNotification:nowPlayingDidChangeNotif];
     }
     //CLS_LOG(@"play queue: %@", _playQueue);
+}
+
+// removes observers, releases player related properties
+- (void) resetPlayer {
+    CLS_LOG(@"reset player ///////////////");
+    _npViewSetupForCurrentEpisode = NO;
+    CLS_LOG(@"_npViewSetupForCurrentEpisode = NO");
+    _shouldStayPaused = NO;
+    _totalSeconds = 0;
+    // remove old player and observers
+    if (_player) {
+        [_player removeObserver:self forKeyPath:@"status"];
+        [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:_player.currentItem];
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemPlaybackStalledNotification object:_player.currentItem];
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemFailedToPlayToEndTimeNotification object:_player.currentItem];
+        [_player cancelPendingPrerolls];
+        _player = nil;
+    }
+    // clear leftover connection data
+    if (_trackDataConnection) {
+        //CLS_LOG(@"clear connection data");
+        [_trackDataConnection cancel];
+        _trackDataConnection = nil;
+        _trackData = nil;
+        self.response = nil;
+    }
+    self.pendingRequests = [NSMutableArray array];
 }
 
 - (void) savePositionForNowPlayingAndSync:(BOOL)sync {
@@ -1167,7 +1178,7 @@ UILabel *prototypeBadge;
         NSError *savingError;
     	saved = [appDelegate.managedObjectContext save:&savingError];
         if (saved) {
-            CLS_LOG(@"** save context with reason: %@ :: Successfully saved", reason);
+            //CLS_LOG(@"** save context with reason: %@ :: Successfully saved", reason);
         } else {
             CLS_LOG(@"** save context with reason: %@ :: ERROR: %@", reason, savingError);
         }
@@ -1450,7 +1461,12 @@ static NSDateFormatter *ISODateInterpreter = nil;
 
 + (UserEntity *) saveUserWithDict:(NSDictionary *)userDict {
     
-    NSString *tungId = [[userDict objectForKey:@"_id"] objectForKey:@"$id"];
+    NSString *tungId;
+    if ([userDict objectForKey:@"_id"]) {
+    	tungId = [[userDict objectForKey:@"_id"] objectForKey:@"$id"];
+    } else {
+        tungId = [userDict objectForKey:@"tung_id"];
+    }
     //CLS_LOG(@"save user with dict: %@", userDict);
     UserEntity *userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:tungId];
     
@@ -1481,10 +1497,6 @@ static NSDateFormatter *ISODateInterpreter = nil;
         NSString *facebook_id = [userDict objectForKey:@"facebook_id"]; //ensure string
         userEntity.facebook_id = facebook_id;
     }
-    // we always set lastDataChange to 0, bc user entity will update before
-    // app gets a chance to compare lastDataChange times and restore data.
-    // lastDataChange only gets set as a property.
-    userEntity.lastDataChange = [NSNumber numberWithInt:0];
 
     [TungCommonObjects saveContextWithReason:@"save new user entity"];
     
@@ -1856,8 +1868,8 @@ static NSArray *colors;
     NSArray *components = [tungCred componentsSeparatedByString:@":"];
     _tungId = [components objectAtIndex:0];
     _tungToken = [components objectAtIndex:1];
-    CLS_LOG(@"id: %@", _tungId);
-    CLS_LOG(@"token: %@", _tungToken);
+    //CLS_LOG(@"id: %@", _tungId);
+    //CLS_LOG(@"token: %@", _tungToken);
 }
 
 - (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
@@ -3073,6 +3085,7 @@ static NSArray *colors;
     }];
 }
 
+
 - (void) updateUserWithDictionary:(NSDictionary *)userInfo withCallback:(void (^)(NSDictionary *jsonData))callback {
     CLS_LOG(@"update user with dictionary: %@", userInfo);
     
@@ -3246,9 +3259,11 @@ static NSArray *colors;
     CLS_LOG(@"--- signing out");
     
     [self playerPause];
-    _playQueue = [@[] mutableCopy];
-    
     [_syncProgressTimer invalidate];
+    _playQueue = [@[] mutableCopy];
+    _npEpisodeEntity = nil;
+    
+    [self resetPlayer];
     
     //[self deleteLoggedInUserData];
     [TungCommonObjects removeAllUserData];
@@ -3536,6 +3551,26 @@ static NSArray *colors;
     return nil;
 }
 
++ (void) replaceCachedLargeAvatarWithDataAtUrlString:(NSString *)urlString {
+    
+    NSString *largeAvatarsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"largeAvatars"];
+    NSError *error;
+    if ([[NSFileManager defaultManager] createDirectoryAtPath:largeAvatarsDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+        // large avatars use the user's Mongo ID as the filename in a pseudo "large" directory
+        NSString *filename = [urlString lastPathComponent];
+        NSString *filepath = [largeAvatarsDir stringByAppendingPathComponent:filename];
+        // delete old
+        if ([[NSFileManager defaultManager] fileExistsAtPath:filepath]) {
+            [[NSFileManager defaultManager] removeItemAtPath:filepath error:nil];
+        }
+        // save new
+        NSData *imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
+        [imageData writeToFile:filepath atomically:YES];
+        
+    }
+}
+
+
 + (NSData*) retrieveSmallAvatarDataWithUrlString:(NSString *)urlString {
     
     NSString *smallAvatarsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"smallAvatars"];
@@ -3554,6 +3589,25 @@ static NSArray *colors;
         return imageData;
     }
     return nil;
+}
+
++ (void) replaceCachedSmallAvatarWithDataAtUrlString:(NSString *)urlString {
+    
+    NSString *smallAvatarsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"smallAvatars"];
+    NSError *error;
+    if ([[NSFileManager defaultManager] createDirectoryAtPath:smallAvatarsDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+        // small avatars use the user's Mongo ID as the filename in a pseudo "small" directory
+        NSString *filename = [urlString lastPathComponent];
+        NSString *filepath = [smallAvatarsDir stringByAppendingPathComponent:filename];
+		// delete old
+        if ([[NSFileManager defaultManager] fileExistsAtPath:filepath]) {
+            [[NSFileManager defaultManager] removeItemAtPath:filepath error:nil];
+        }
+        // save new
+        NSData *imageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
+        [imageData writeToFile:filepath atomically:YES];
+
+    }
 }
 
 + (NSData*) retrieveAudioClipDataWithUrlString:(NSString *)urlString {

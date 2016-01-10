@@ -51,7 +51,7 @@
     [self.navigationController setNavigationBarHidden:NO];
     
     _signUpButton.type = kPillTypeOnWhite;
-    _signUpButton.buttonText = @"Sign-up!";
+    _signUpButton.buttonText = @"Finish";
     
     // terms notice
     NSString *path = [[NSBundle mainBundle] pathForResource:@"termsNotice" ofType:@"html"];

@@ -17,7 +17,6 @@
 @property (strong, nonatomic) NSIndexPath *focusedIndexPath;
 @property BOOL noResults;
 @property (strong, nonatomic) UINavigationController *navController;
-@property NSArray *keyColors;
 
 - (void) findEachEpisodesProgress;
 - (void) markNewEpisodesAsSeen;

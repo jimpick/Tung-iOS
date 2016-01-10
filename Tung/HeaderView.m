@@ -131,11 +131,9 @@ static NSDateFormatter *airDateFormatter = nil;
     
     // play button
     if (podcastEntity) {
-        //NSLog(@"set up header view for podcast");
-        self.largeButton.hidden = YES;
-    } else {
-        //NSLog(@"set up header view for episode entity %@", [TungCommonObjects entityToDict:episodeEntity]);
-        self.largeButton.hidden = NO;
+        self.largeButton.type = kCircleTypeSupport;
+    }
+    else {
         self.largeButton.type = kCircleTypePlay;
         if (episodeEntity.isNowPlaying.boolValue) {
             self.largeButton.on = YES;
@@ -143,6 +141,8 @@ static NSDateFormatter *airDateFormatter = nil;
             self.largeButton.on = NO;
         }
     }
+    
+    self.largeButton.hidden = NO;
     self.largeButton.color = keyColor2;
     [self.largeButton setNeedsDisplay];
     
@@ -171,15 +171,18 @@ static NSDateFormatter *airDateFormatter = nil;
     CGSize titleLabelSize = self.titleLabel.frame.size;
     self.titleLabel.preferredMaxLayoutWidth = titleLabelSize.width;
     [self.titleLabel sizeToFit];
+    NSLog(@"-- header view title label size: %@", NSStringFromCGRect(self.titleLabel.frame));
     
     CGSize subTitleLabelSize = self.subTitleLabel.frame.size;
     self.subTitleLabel.preferredMaxLayoutWidth = subTitleLabelSize.width;
     [self.subTitleLabel sizeToFit];
+    NSLog(@"-- subtitle label size: %@", NSStringFromCGRect(self.subTitleLabel.frame));
     
     CGFloat margin = 12;
     CGFloat maxDescWidth = vc.view.frame.size.width - margin - margin;
     self.descriptionLabel.preferredMaxLayoutWidth = maxDescWidth;
     [self.descriptionLabel sizeToFit];
+    NSLog(@"-- description label size: %@", NSStringFromCGRect(self.descriptionLabel.frame));
     
     // header height
     float height = margin + margin; // top and bottom margin
@@ -187,6 +190,7 @@ static NSDateFormatter *airDateFormatter = nil;
     height += self.subTitleLabel.frame.size.height; // label heights
     height += 16 + 62; // between label and sub btn, sub btn height
     height += self.descriptionLabel.frame.size.height + 7; // top margin and desc label height
+    NSLog(@"-- FINAL HEIGHT: %f", height);
     
     if (!self.isConstrained) {
         CGFloat topConstraint = 0;

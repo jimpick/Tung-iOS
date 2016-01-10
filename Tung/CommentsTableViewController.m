@@ -217,7 +217,7 @@ UILabel *prototypeLabel;
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
     
     UILabel *toCommentLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 25, screenWidth, 40)];
-    toCommentLabel.text = @"To comment, play this episode.\nThen tap 🔈 to to view Now Playing";
+    toCommentLabel.text = @"To comment, play this episode.";
     toCommentLabel.numberOfLines = 2;
     toCommentLabel.textColor = [UIColor lightGrayColor];
     toCommentLabel.textAlignment = NSTextAlignmentCenter;

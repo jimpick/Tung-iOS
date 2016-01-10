@@ -53,7 +53,6 @@
     _episodesView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodesView"];
     _episodesView.edgesForExtendedLayout = UIRectEdgeNone;
     _episodesView.podcastEntity = _podcastEntity; // for pushing episode view & track progress
-    _episodesView.keyColors = _headerView.keyColors;
     
     [self addChildViewController:_episodesView];
     [self.view addSubview:_episodesView.view];

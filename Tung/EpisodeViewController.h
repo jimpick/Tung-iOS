@@ -29,6 +29,7 @@
 @property (strong, nonatomic) IBOutlet UILabel *shareLabel;
 @property (strong, nonatomic) IBOutlet UIProgressView *progressBar;
 @property (strong, nonatomic) IBOutlet UIPageControl *pageControl;
+@property (strong, nonatomic) IBOutlet UIActivityIndicatorView *backgroundSpinner;
 
 @property (strong, nonatomic) EpisodeEntity *episodeEntity;
 @property (strong, nonatomic) NSString *focusedEventId;

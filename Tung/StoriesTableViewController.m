@@ -932,7 +932,7 @@ NSInteger requestTries = 0;
                              @"sessionId": _tung.sessionId,
                              @"story_id": _storyId
                              };
-    CLS_LOG(@"request for stories with params: %@", params);
+    //CLS_LOG(@"request for stories with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [storyRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -971,8 +971,8 @@ NSInteger requestTries = 0;
                         } else {
                             _noResults = YES;
                         }
-                        CLS_LOG(@"got story");
-                        CLS_LOG(@"%@", _storiesArray);
+                        //CLS_LOG(@"got story");
+                        //CLS_LOG(@"%@", _storiesArray);
                         [self.tableView reloadData];
                         
                         [self endRefreshing];

@@ -116,7 +116,7 @@ static NSString *cellIdentifier = @"EpisodeCell";
     
     // title
     episodeCell.episodeTitle.text = [episodeDict objectForKey:@"title"];
-    UIColor *keyColor = [_keyColors objectAtIndex:0];
+    UIColor *keyColor = _podcastEntity.keyColor1;
     episodeCell.episodeTitle.textColor = keyColor;
     // air date
     if (!airDateFormatter) {

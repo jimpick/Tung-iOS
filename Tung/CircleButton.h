@@ -24,7 +24,8 @@ typedef enum {
     kCircleTypeTextButton,
     kCircleTypeSpeed,
     kCircleTypeSave,
-    kCircleTypePlay
+    kCircleTypePlay,
+    kCircleTypeSupport
 } CircleButtonType;
 
 @interface CircleButton : UIButton

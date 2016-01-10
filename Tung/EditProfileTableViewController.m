@@ -32,6 +32,8 @@
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (nonatomic, assign) BOOL working;
 @property (strong, nonatomic) UserEntity *userEntity;
+@property BOOL formIsForSignup;
+@property BOOL formIsPristine;
 
 @end
 
@@ -52,6 +54,7 @@ static UIImage *iconRedX;
     // purpose
     if ([_purpose isEqualToString:@"signup"]) {
         // signup
+        _formIsForSignup = YES;
         self.navigationItem.titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"tungNavBarLogo.png"]];
         self.navigationItem.rightBarButtonItem.title = @"Next";
         self.navigationItem.leftBarButtonItem.title = @"Back";
@@ -61,12 +64,14 @@ static UIImage *iconRedX;
     } else {
         // edit profile
         self.navigationItem.title = @"Edit Profile";
-        self.navigationItem.rightBarButtonItem.title = @"Save";
         self.navigationItem.leftBarButtonItem.title = @"Cancel";
         _refreshAvatarBtn.hidden = NO;
         _profileData = [[_tung getLoggedInUserData] mutableCopy];
         _userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
         [self setAvatarFromExistingAvatar];
+        // for checking if we need to save
+        _formIsPristine = YES;
+        [self adjustRightBarButtonForFormState];
     }
     // fields array
     _fields = @[_field_username, _field_name, _field_email, _field_location, _field_bio, _field_url];
@@ -131,7 +136,7 @@ static UIImage *iconRedX;
     _field_url.inputAccessoryView = _keyboardToolbar;
     [_field_url addTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
     // bio - limit to MAX_BIO_CHARS
-    NSString *trimmedBio = @"";
+    NSString *trimmedBio;
     if ([[_profileData objectForKey:@"bio"] length] > MAX_BIO_CHARS) {
         trimmedBio = [[_profileData objectForKey:@"bio"] substringToIndex:MAX_BIO_CHARS];
     } else {
@@ -182,17 +187,15 @@ static UIImage *iconRedX;
 - (void) viewWillDisappear:(BOOL)animated {
     
     [super viewWillDisappear:YES];
-    @try {
-        [self removeObserver:self forKeyPath:@"tung.twitterAccountStatus"];
-    }
-    @catch (NSException *exception) {}
-    @finally {}
+
 }
 
 - (void) viewDidAppear:(BOOL)animated {
     
     _activeFieldIndex = 0;
-    [[_fields objectAtIndex:_activeFieldIndex] becomeFirstResponder];
+    if (_formIsForSignup) {
+    	[[_fields objectAtIndex:_activeFieldIndex] becomeFirstResponder];
+    }
 }
 
 - (BOOL)prefersStatusBarHidden
@@ -202,7 +205,7 @@ static UIImage *iconRedX;
 
 - (IBAction)leftBarItem:(id)sender {
     
-    if ([_purpose isEqualToString:@"signup"])
+    if (_formIsForSignup)
         [self performSegueWithIdentifier:@"unwindToWelcome" sender:self];
     else
         [self dismissViewControllerAnimated:YES completion:nil];
@@ -222,11 +225,26 @@ static UIImage *iconRedX;
         UIAlertView *errorsAlert = [[UIAlertView alloc] initWithTitle:@"Please correct the following" message:errorsString delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
         [errorsAlert show];
     } else {
-        if ([_purpose isEqualToString:@"signup"]) {
+        if (_formIsForSignup) {
             [self performSegueWithIdentifier:@"finishSignUp" sender:self];
         } else {
-            [self updateProfileData];
+            if (_formIsPristine) {
+                [self dismissViewControllerAnimated:YES completion:nil];
+            } else {
+            	[self updateProfileData];
+            }
         }
+    }
+}
+
+- (void) adjustRightBarButtonForFormState {
+    
+    if (_formIsForSignup) return;
+    
+    if (_formIsPristine) {
+    	self.navigationItem.rightBarButtonItem.title = @"Done";
+    } else {
+        self.navigationItem.rightBarButtonItem.title = @"Save";
     }
 }
 
@@ -379,10 +397,11 @@ static UIImage *iconRedX;
     [_avatarActivityIndicator startAnimating];
     _working = YES;
     
-    NSDictionary *userData = [_tung getLoggedInUserData];
-    if ([[userData objectForKey:@"facebook_id"] integerValue] > 0) {
+    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
+    
+    if (loggedUser.facebook_id) {
         // Facebook
-        NSString *avatarURL = [NSString stringWithFormat:@"https://graph.facebook.com/%@/picture?type=square&height=640&width=640", [userData objectForKey:@"facebook_id"]];
+        NSString *avatarURL = [NSString stringWithFormat:@"https://graph.facebook.com/%@/picture?type=square&height=640&width=640", loggedUser.facebook_id];
         
         [_profileData setObject:avatarURL forKey:@"avatarURL"];
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -394,17 +413,10 @@ static UIImage *iconRedX;
                 }
             }];
         });
-
     }
-    else if ([[userData objectForKey:@"twitter_id"] integerValue] > 0) {
+    else {
         // Twitter
-        if (_tung.twitterAccountToUse == NULL) {
-            [self addObserver:self forKeyPath:@"tungObjects.twitterAccountStatus" options:NSKeyValueObservingOptionNew context:nil];
-            [_tung establishTwitterAccount];
-        }
-        else {
-            [self getTwitterAvatarUrl];
-        }
+        [self getTwitterAvatar];
     }
 }
 
@@ -424,6 +436,7 @@ static UIImage *iconRedX;
     }
 }
 
+// OLD CODE not used
 - (void) getTwitterAvatarUrl {
     CLS_LOG(@"get twitter avatar url");
     ACAccountStore *accountStore = [[ACAccountStore alloc] init];
@@ -472,6 +485,52 @@ static UIImage *iconRedX;
             }
         }
     }];
+}
+
+- (void) getTwitterAvatar {
+    
+    //TWTRSession *session = [TWTRSessionStore session];
+    NSString *twitterID = [Twitter sharedInstance].sessionStore.session.userID;
+    TWTRAPIClient *client = [[TWTRAPIClient alloc] initWithUserID:twitterID];
+    
+    NSString *verifyCredEndpoint = @"https://api.twitter.com/1.1/account/verify_credentials.json";
+    NSError *clientError;
+    
+    NSURLRequest *request = [[[Twitter sharedInstance] APIClient] URLRequestWithMethod:@"GET" URL:verifyCredEndpoint parameters:nil error:&clientError];
+    
+    if (request) {
+        [client sendTwitterRequest:request completion:^(NSURLResponse *urlResponse, NSData *data, NSError *connectionError) {
+            NSError *error;
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            NSDictionary *accountData = jsonData;
+            if ([accountData objectForKey:@"errors"]) {
+                CLS_LOG(@"Errors: %@", [accountData objectForKey:@"errors"]);
+            }
+            else {
+                // make image big by removing "_normal"
+                NSMutableString *avatarURL = [[accountData objectForKey:@"profile_image_url"] mutableCopy];
+                NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(_normal)" options:0 error:nil];
+                [regex replaceMatchesInString:avatarURL options:0 range:NSMakeRange(0, [avatarURL length]) withTemplate:@""];
+                
+                CLS_LOG(@"profile dictionary: %@", _profileData);
+                
+                [_profileData setObject:avatarURL forKey:@"avatarURL"];
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self createAvatarSizesAndSetAvatarWithCallback:^(BOOL success) {
+                        if (success) {
+                            [self updateAvatar];
+                        } else {
+                            CLS_LOG(@"error creating avatar sizes");
+                        }
+                    }];
+                });
+            }
+        }];
+    }
+    else {
+        CLS_LOG(@"Error: %@", clientError);
+    }
+    
 }
 
 // posts new avatar images to server
@@ -545,11 +604,17 @@ static UIImage *iconRedX;
                     // set new values
                     [_profileData setObject:[[responseDict objectForKey:@"success"] objectForKey:@"small_av_url"] forKey:@"small_av_url"];
                     [_profileData setObject:[[responseDict objectForKey:@"success"] objectForKey:@"large_av_url"] forKey:@"large_av_url"];
+                    
+                    // replace old avatars in temp directory
+                    [TungCommonObjects replaceCachedLargeAvatarWithDataAtUrlString:[_profileData objectForKey:@"large_av_url"]];
+                    [TungCommonObjects replaceCachedSmallAvatarWithDataAtUrlString:[_profileData objectForKey:@"small_av_url"]];
                     // save
                     CLS_LOG(@"saving new profile data: %@", _profileData);
                     [TungCommonObjects saveUserWithDict:_profileData];
-                    // set "needs reload" flag
+                    // set flags
                     _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                    _tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
+                    _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES];
                 });
             }
         }
@@ -813,11 +878,16 @@ static UIImage *iconRedX;
 - (void)textFieldDidChange:(UITextField *)textField {
     // validate every keystroke
     [self performAppropriateValidationOnTextField:textField];
+    _formIsPristine = NO;
+    [self adjustRightBarButtonForFormState];
 }
 
 #pragma mark - text view delegate methods
 
 - (void)textViewDidChange:(UITextView *)textView {
+    _formIsPristine = NO;
+    [self adjustRightBarButtonForFormState];
+    
     if (textView.text.length <= MAX_BIO_CHARS && [_fieldErrors objectForKey:@"bio"]) {
         [_fieldErrors removeObjectForKey:@"bio"];
     }

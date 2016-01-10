@@ -24,6 +24,7 @@
 @property UIImageView *findPodcastsHere;
 @property BOOL editingNotifications;
 @property UIBarButtonItem *editAlertsBarButtonItem;
+@property BOOL noSubs;
 
 @end
 
@@ -336,10 +337,16 @@ NSTimer *promptTimer;
         _findPodcastsHere = [[UIImageView alloc] initWithImage:findPodcastsImage];
         CGRect imageRect = CGRectMake(self.view.bounds.size.width - 220, 6, 200, 173);
         _findPodcastsHere.frame = imageRect;
-        if (![_findPodcastsHere isDescendantOfView:self.view]) [self.view addSubview:_findPodcastsHere];
+        if (![_findPodcastsHere isDescendantOfView:self.view]) {
+        	[self.view addSubview:_findPodcastsHere];
+        }
+        
+        self.navigationItem.leftBarButtonItem = nil;
     }
     else {
         if ([_findPodcastsHere isDescendantOfView:self.view]) [_findPodcastsHere removeFromSuperview];
+        
+        self.navigationItem.leftBarButtonItem = _editAlertsBarButtonItem;
     }
     return sectionInfo.numberOfObjects;
 }

@@ -12,8 +12,8 @@
         <attribute name="pubDate" optional="YES" attributeType="Date" syncable="YES"/>
         <attribute name="shortlink" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="title" optional="YES" attributeType="String" syncable="YES"/>
-        <attribute name="trackPosition" optional="YES" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
-        <attribute name="trackProgress" optional="YES" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="trackPosition" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="trackProgress" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
         <attribute name="url" optional="YES" attributeType="String" syncable="YES"/>
         <relationship name="podcast" maxCount="1" deletionRule="Nullify" destinationEntity="PodcastEntity" inverseName="episodes" inverseEntity="PodcastEntity" syncable="YES"/>
     </entity>
@@ -34,8 +34,8 @@
         <attribute name="keyColor2Hex" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="mostRecentEpisodeDate" optional="YES" attributeType="Date" syncable="YES"/>
         <attribute name="mostRecentSeenEpisodeDate" optional="YES" attributeType="Date" syncable="YES"/>
-        <attribute name="notifyOfNewEpisodes" optional="YES" attributeType="Boolean" defaultValueString="YES" syncable="YES"/>
-        <attribute name="numNewEpisodes" optional="YES" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
+        <attribute name="notifyOfNewEpisodes" attributeType="Boolean" defaultValueString="YES" syncable="YES"/>
+        <attribute name="numNewEpisodes" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
         <attribute name="timeSubscribed" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
         <attribute name="website" optional="YES" attributeType="String" syncable="YES"/>
         <relationship name="episodes" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="EpisodeEntity" inverseName="podcast" inverseEntity="EpisodeEntity" syncable="YES"/>
@@ -52,7 +52,7 @@
         <attribute name="email" attributeType="String" syncable="YES"/>
         <attribute name="facebook_id" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="large_av_url" attributeType="String" syncable="YES"/>
-        <attribute name="lastDataChange" optional="YES" attributeType="Double" defaultValueString="0" syncable="YES"/>
+        <attribute name="lastDataChange" attributeType="Double" defaultValueString="0" syncable="YES"/>
         <attribute name="lastSeenNotification" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
         <attribute name="location" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="name" attributeType="String" syncable="YES"/>

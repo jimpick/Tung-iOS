@@ -38,6 +38,10 @@
     
     _tung = [TungCommonObjects establishTungObjects];
     
+    CGRect screenBounds = [[UIScreen mainScreen]bounds];
+    CGFloat screenWidth = screenBounds.size.width;
+    CGFloat screenHeight = screenBounds.size.height;
+    
     // set view controllers
     self.feedView = [self.storyboard instantiateViewControllerWithIdentifier:@"feedNavController"];
     self.nowPlayingView = [self.storyboard instantiateViewControllerWithIdentifier:@"npNavController"];
@@ -50,9 +54,6 @@
     self.tabBar.hidden = YES;
     UIToolbar *toolbar = [UIToolbar new];
     toolbar.translucent = NO;
-    CGRect screenBounds = [[UIScreen mainScreen]bounds];
-    CGFloat screenWidth = screenBounds.size.width;
-    CGFloat screenHeight = screenBounds.size.height;
     toolbar.frame = CGRectMake(0, screenHeight - 44, screenWidth, 44);
     //NSLog(@"toolbar frame: %@", NSStringFromCGRect(toolbar.frame));
     toolbar.clipsToBounds = YES;

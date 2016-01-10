@@ -2363,6 +2363,9 @@
                                     </mask>
                                 </variation>
                             </button>
+                            <activityIndicatorView opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="gray" translatesAutoresizingMaskIntoConstraints="NO" id="HDc-7T-4zr">
+                                <rect key="frame" x="-10" y="-10" width="20" height="20"/>
+                            </activityIndicatorView>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <constraints>
@@ -2377,8 +2380,10 @@
                             </constraint>
                             <constraint firstAttribute="bottomMargin" secondItem="4v1-zk-9hK" secondAttribute="bottom" constant="50" id="Mbx-VN-XG8"/>
                             <constraint firstAttribute="trailing" secondItem="iFL-30-I6w" secondAttribute="trailing" id="RAH-pt-9QW"/>
+                            <constraint firstItem="HDc-7T-4zr" firstAttribute="centerY" secondItem="szV-s8-ETY" secondAttribute="centerY" id="XDt-JG-Hw6"/>
+                            <constraint firstItem="HDc-7T-4zr" firstAttribute="centerX" secondItem="szV-s8-ETY" secondAttribute="centerX" id="fSU-9u-apL"/>
                             <constraint firstItem="voR-Bw-ZMk" firstAttribute="top" secondItem="iFL-30-I6w" secondAttribute="bottom" id="h23-8e-TiD">
-                                <variation key="widthClass=compact" constant="-102"/>
+                                <variation key="widthClass=compact" constant="-293"/>
                             </constraint>
                             <constraint firstItem="voR-Bw-ZMk" firstAttribute="top" secondItem="4v1-zk-9hK" secondAttribute="bottom" constant="6" id="qfK-ix-699">
                                 <variation key="widthClass=compact" constant="48"/>
@@ -2391,9 +2396,12 @@
                                 <exclude reference="Zst-Gi-PtM"/>
                                 <exclude reference="4v1-zk-9hK"/>
                                 <exclude reference="2tP-lL-9hK"/>
+                                <exclude reference="HDc-7T-4zr"/>
                             </mask>
                             <mask key="constraints">
                                 <exclude reference="rrU-9N-rBd"/>
+                                <exclude reference="XDt-JG-Hw6"/>
+                                <exclude reference="fSU-9u-apL"/>
                                 <exclude reference="5lr-MS-0H5"/>
                                 <exclude reference="Ef6-yr-Swi"/>
                                 <exclude reference="Mbx-VN-XG8"/>
@@ -2411,9 +2419,12 @@
                                 <include reference="Zst-Gi-PtM"/>
                                 <include reference="4v1-zk-9hK"/>
                                 <include reference="2tP-lL-9hK"/>
+                                <include reference="HDc-7T-4zr"/>
                             </mask>
                             <mask key="constraints">
                                 <include reference="rrU-9N-rBd"/>
+                                <include reference="XDt-JG-Hw6"/>
+                                <include reference="fSU-9u-apL"/>
                                 <include reference="5lr-MS-0H5"/>
                                 <include reference="Ef6-yr-Swi"/>
                                 <exclude reference="Mbx-VN-XG8"/>
@@ -2429,6 +2440,7 @@
                     <navigationItem key="navigationItem" id="nKC-Mq-Coh"/>
                     <simulatedToolbarMetrics key="simulatedBottomBarMetrics" translucent="NO"/>
                     <connections>
+                        <outlet property="backgroundSpinner" destination="HDc-7T-4zr" id="xJo-Kf-Trc"/>
                         <outlet property="buttonsScrollView" destination="UEf-bs-Whp" id="TFy-mv-3yf"/>
                         <outlet property="hideControlsButton" destination="RD4-Eq-fE3" id="aq6-19-k6B"/>
                         <outlet property="npControlsBottomLayoutConstraint" destination="h23-8e-TiD" id="qUf-pn-Jgv"/>
@@ -3193,10 +3205,10 @@
                                                 </mask>
                                             </variation>
                                         </view>
-                                        <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="UBU-Ni-hJl">
+                                        <view contentMode="scaleToFill" ambiguous="YES" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="UBU-Ni-hJl">
                                             <rect key="frame" x="0.0" y="0.0" width="240" height="128"/>
                                             <subviews>
-                                                <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="6js-tL-gS1">
+                                                <view contentMode="scaleToFill" ambiguous="YES" misplaced="YES" translatesAutoresizingMaskIntoConstraints="NO" id="6js-tL-gS1">
                                                     <rect key="frame" x="0.0" y="0.0" width="240" height="128"/>
                                                     <subviews>
                                                         <switch opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" contentHorizontalAlignment="center" contentVerticalAlignment="center" on="YES" translatesAutoresizingMaskIntoConstraints="NO" id="db2-ii-uxU">
@@ -3282,26 +3294,26 @@
                                 </constraints>
                                 <variation key="default">
                                     <mask key="constraints">
-                                        <exclude reference="L0H-Rk-A6i"/>
-                                        <exclude reference="LXB-UR-Sem"/>
-                                        <exclude reference="huU-SJ-dHy"/>
-                                        <exclude reference="sXL-DY-xg8"/>
                                         <exclude reference="E0x-fJ-R8f"/>
                                         <exclude reference="UiY-NU-DtV"/>
                                         <exclude reference="dns-8A-E2J"/>
                                         <exclude reference="mwP-g4-rDh"/>
+                                        <exclude reference="L0H-Rk-A6i"/>
+                                        <exclude reference="LXB-UR-Sem"/>
+                                        <exclude reference="huU-SJ-dHy"/>
+                                        <exclude reference="sXL-DY-xg8"/>
                                     </mask>
                                 </variation>
                                 <variation key="widthClass=compact">
                                     <mask key="constraints">
-                                        <include reference="L0H-Rk-A6i"/>
-                                        <include reference="LXB-UR-Sem"/>
-                                        <include reference="huU-SJ-dHy"/>
-                                        <include reference="sXL-DY-xg8"/>
                                         <include reference="E0x-fJ-R8f"/>
                                         <include reference="UiY-NU-DtV"/>
                                         <exclude reference="dns-8A-E2J"/>
                                         <exclude reference="mwP-g4-rDh"/>
+                                        <include reference="L0H-Rk-A6i"/>
+                                        <include reference="LXB-UR-Sem"/>
+                                        <include reference="huU-SJ-dHy"/>
+                                        <include reference="sXL-DY-xg8"/>
                                     </mask>
                                 </variation>
                                 <connections>
@@ -3332,6 +3344,6 @@
         <image name="tungSignInLogo.png" width="194" height="124"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="sbA-US-dCS"/>
+        <segue reference="09H-aj-Zdd"/>
     </inferredMetricsTieBreakers>
 </document>
