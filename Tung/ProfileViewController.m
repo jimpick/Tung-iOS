@@ -245,15 +245,15 @@ NSTimer *promptTimer;
     if (_isLoggedInUser) {
         // profile header view and activity feed
         if (_tung.profileFeedNeedsRefresh.boolValue && _tung.profileNeedsRefresh.boolValue) {
-            CLS_LOG(@"profile feed and data need refresh");
+            //CLS_LOG(@"profile feed and data need refresh");
             [self requestPageData];
         }
         else if (_tung.profileFeedNeedsRefresh.boolValue) {
-            CLS_LOG(@"profile feed needs refresh");
+            //CLS_LOG(@"profile feed needs refresh");
             [_storiesView refreshFeed:YES];
         }
         else if (_tung.profileNeedsRefresh.boolValue) {
-            CLS_LOG(@"profile data needs refresh");
+            //CLS_LOG(@"profile data needs refresh");
             [self refreshProfile];
         }
         // notifications
@@ -432,7 +432,7 @@ NSTimer *promptTimer;
             _profileSearchConnection = nil;
         }
         _profileSearchConnection = [[NSURLConnection alloc] initWithRequest:profileSearchRequest delegate:self];
-        CLS_LOG(@"search profiles for: %@", searchTerm);
+        //CLS_LOG(@"search profiles for: %@", searchTerm);
     }
 }
 
@@ -477,7 +477,7 @@ NSTimer *promptTimer;
                 
                 _profileSearchView.profileArray = [newUsers mutableCopy];
                 
-                CLS_LOG(@"got results: %lu", (unsigned long)_profileSearchView.profileArray.count);
+                //CLS_LOG(@"got results: %lu", (unsigned long)_profileSearchView.profileArray.count);
                 //CLS_LOG(@"%@", _profileArray);
                 [_profileSearchView preloadAvatars];
                 [_profileSearchView.tableView reloadData];
@@ -485,13 +485,14 @@ NSTimer *promptTimer;
             }
             else {
                 _profileSearchView.noResults = YES;
-                CLS_LOG(@"NO RESULTS");
+                _profileSearchView.profileArray = [NSMutableArray array];
+                //CLS_LOG(@"NO RESULTS");
                 [_profileSearchView.tableView reloadData];
             }
         }
     }
     else if ([_profileSearchResultData length] == 0 && error == nil) {
-        CLS_LOG(@"no response");
+        CLS_LOG(@"no response for profile search");
         
     }
     else if (error != nil) {
@@ -504,9 +505,11 @@ NSTimer *promptTimer;
 
 - (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
     CLS_LOG(@"connection failed: %@", error);
-    
+    /* this error pops up occaisionally, probably because of rapid requests.
+     makes user think something is wrong when it really isn't.
     UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
     [connectionErrorAlert show];
+     */
 }
 
 /* unused NSURLConnection delegate methods
@@ -713,17 +716,17 @@ NSTimer *sessionCheckTimer;
 }
 
 - (void) viewFollowers {
-    CLS_LOG(@"view followers");
+    //CLS_LOG(@"view followers");
     if ([[_profiledUserData objectForKey:@"followerCount"] integerValue] > 0)
     	[self pushProfileListForTargetId:_profiledUserId andQuery:@"Followers"];
 }
 - (void) viewFollowing {
-    CLS_LOG(@"view following");
+    //CLS_LOG(@"view following");
     if ([[_profiledUserData objectForKey:@"followingCount"] integerValue] > 0)
         [self pushProfileListForTargetId:_profiledUserId andQuery:@"Following"];
 }
 - (void) editProfile {
-    CLS_LOG(@"edit profile");
+    //CLS_LOG(@"edit profile");
     [self performSegueWithIdentifier:@"presentEditProfileView" sender:self];
 }
 

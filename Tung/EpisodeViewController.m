@@ -70,6 +70,7 @@
 @property BOOL totalTimeSet;
 @property BOOL isNowPlayingView;
 @property BOOL isFirstAppearance;
+@property BOOL nowPlayingControlsRevealed;
 
 - (void) switchViews:(id)sender;
 
@@ -96,18 +97,14 @@ UIActivityIndicatorView *backgroundSpinner;
     _tung = [TungCommonObjects establishTungObjects];
     _podcast = [TungPodcast new];
     
-    _backgroundSpinner.hidesWhenStopped = YES;
-    
     screenWidth = self.view.frame.size.width;
     screenHeight = self.view.frame.size.height;
     
     // is this for now playing?
     if (_episodeMiniDict || _episodeEntity) {
-        NSLog(@"VIEW DID LOAD (episode)");
         self.navigationItem.title = @"Episode";
     }
     else {
-        NSLog(@"VIEW DID LOAD (NOW PLAYING)");
         _isNowPlayingView = YES;
         self.navigationItem.title = @"Now Playing";
         _episodeEntity = _tung.npEpisodeEntity;
@@ -125,7 +122,6 @@ UIActivityIndicatorView *backgroundSpinner;
         _nothingPlayingLabel.text = @"Nothing is currently playing";
         _nothingPlayingLabel.textColor = [UIColor grayColor];
         _nothingPlayingLabel.textAlignment = NSTextAlignmentCenter;
-        _nothingPlayingLabel.hidden = YES;
     }
     
     // below set here so that default save icon isn't shown
@@ -322,16 +318,13 @@ UIActivityIndicatorView *backgroundSpinner;
 }
 
 - (void) viewWillAppear:(BOOL)animated {
-    NSLog(@"view will appear [%@]", [NSString stringWithFormat:_isNowPlayingView ? @"NOW PLAYING" : @"episode"]);
     [super viewWillAppear:animated];
     self.navigationController.navigationBar.translucent = NO;
     if (_isNowPlayingView) {
         [self updateTimeElapsedAndPosbar];
+        [self beginOnEnterFrame];
         if (!_tung.npViewSetupForCurrentEpisode) {
-            NSLog(@"NEEDED setup [%@]", [NSString stringWithFormat:_isNowPlayingView ? @"NOW PLAYING" : @"episode"]);
             [self setUpViewForWhateversPlaying];
-        } else {
-            NSLog(@"did not need setup [%@]", [NSString stringWithFormat:_isNowPlayingView ? @"NOW PLAYING" : @"episode"]);
         }
     }
 }
@@ -344,18 +337,13 @@ UIActivityIndicatorView *backgroundSpinner;
         
         _tung.ctrlBtnDelegate = self;
         _tung.viewController = self;
-		//if (!_tung.npViewSetupForCurrentEpisode) [self setUpViewForWhateversPlaying];
         
-        // prompt for notifications
-        SettingsEntity *settings = [TungCommonObjects settings];
-        if (!settings.hasSeenMentionsPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
-            UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"User Mentions" message:@"Tung can notify you when someone mentions you in a comment, or when new episodes are released for podcasts you subscribe to. Would you like to receive notifications?" delegate:_tung cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
-            [notifPermissionAlert setTag:21];
-            [notifPermissionAlert show];
+        if (!_nowPlayingControlsRevealed && _episodeEntity.isNowPlaying.boolValue) {
+            [NSTimer scheduledTimerWithTimeInterval:.2 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
         }
+        
     }
-    if (_episodeEntity && _episodeEntity.isNowPlaying.boolValue) {
-        [self beginOnEnterFrame];// now playing controls
+    else if (_episodeEntity.isNowPlaying.boolValue) {
         [NSTimer scheduledTimerWithTimeInterval:.2 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
     }
     
@@ -390,7 +378,6 @@ UIActivityIndicatorView *backgroundSpinner;
 }
 
 - (void) beginOnEnterFrame {
-    NSLog(@"begin on enter frame [%@]", [NSString stringWithFormat:_isNowPlayingView ? @"NOW PLAYING" : @"episode"]);
     [_onEnterFrame invalidate];
     _onEnterFrame = [CADisplayLink displayLinkWithTarget:self selector:@selector(updateView)];
     [_onEnterFrame addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
@@ -463,7 +450,6 @@ NSTimer *markAsSeenTimer;
 }
 
 -(void) nowPlayingDidChange {
-    CLS_LOG(@"NOW PLAYING DID CHANGE [%@]", [NSString stringWithFormat:_isNowPlayingView ? @"NOW PLAYING" : @"episode"]);
     
     if (_isNowPlayingView) {
         _episodeEntity = _tung.npEpisodeEntity;
@@ -479,7 +465,7 @@ NSTimer *markAsSeenTimer;
 
 // if something's playing, setup view for it, else set up for nothing playing
 - (void) setUpViewForWhateversPlaying {
-    NSLog(@"setup view for whatevers playing [%@]", [NSString stringWithFormat:_isNowPlayingView ? @"NOW PLAYING" : @"episode"]);
+    
     [_posbar setEnabled:NO];
     _posbar.value = 0;
     _totalTimeSet = NO;
@@ -488,7 +474,9 @@ NSTimer *markAsSeenTimer;
         
         // initialize views
         //CLS_LOG(@"setup view for now playing: %@", _tung.npEpisodeEntity.title);
-        _nothingPlayingLabel.hidden = YES;
+        if ([_nothingPlayingLabel isDescendantOfView:self.view]) {
+            [_nothingPlayingLabel removeFromSuperview];
+        }
         
         [self setUpViewForEpisode:_tung.npEpisodeEntity];
         
@@ -506,7 +494,6 @@ NSTimer *markAsSeenTimer;
         [self setUpViewForNothingPlaying];
     }
     _tung.npViewSetupForCurrentEpisode = YES;
-    CLS_LOG(@"_npViewSetupForCurrentEpisode = YES [%@]", [NSString stringWithFormat:_isNowPlayingView ? @"NOW PLAYING" : @"episode"]);
 
 }
 
@@ -514,8 +501,6 @@ NSTimer *markAsSeenTimer;
 - (void) setUpViewForNothingPlaying {
     
     if (![_nothingPlayingLabel isDescendantOfView:self.view]) [self.view addSubview:_nothingPlayingLabel];
-    _nothingPlayingLabel.hidden = NO;
-    _npControlsView.hidden = YES;
     _headerView.hidden = YES;
     _timeElapsedLabel.hidden = YES;
     _skipAheadBtn.hidden = YES;
@@ -528,8 +513,6 @@ NSTimer *markAsSeenTimer;
 }
 
 - (void) setUpViewForEpisode:(EpisodeEntity *)episodeEntity {
-    
-    NSLog(@"set up view for episode (should reload comments and episodes): %@ [%@]", episodeEntity.title, [NSString stringWithFormat:_isNowPlayingView ? @"NOW PLAYING" : @"episode"]);
     
     // set up header view
     [_headerView setUpHeaderViewForEpisode:episodeEntity orPodcast:nil];
@@ -587,8 +570,12 @@ NSTimer *markAsSeenTimer;
 }
 
 - (void) supportButtonTapped {
-    _urlToPass = [NSURL URLWithString:@"https://tung.fm/fundraising"];
-    [self performSegueWithIdentifier:@"presentWebView" sender:self];
+    if (_tung.connectionAvailable.boolValue) {
+        _urlToPass = [NSURL URLWithString:@"https://tung.fm/fundraising"];
+        [self performSegueWithIdentifier:@"presentWebView" sender:self];
+    } else {
+        [_podcast showNoConnectionAlert];
+    }
 }
 
 - (void) playEpisode {
@@ -609,12 +596,6 @@ NSTimer *markAsSeenTimer;
             
             [self revealNowPlayingControls];
             
-            /*
-            // ask if user wants to go to now playing
-            UIAlertView *goToNowPlaying = [[UIAlertView alloc] initWithTitle:@"Go to Now Playing?" message:nil delegate:self cancelButtonTitle:@"No" otherButtonTitles:@"OK", nil];
-            goToNowPlaying.tag = 5;
-            [goToNowPlaying show];
-             */
         }
     } else {
         UIAlertView *badXmlAlert = [[UIAlertView alloc] initWithTitle:@"Can't Play - No URL" message:@"Unfortunately, this feed is missing links to its content." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
@@ -894,13 +875,10 @@ static CGRect buttonsScrollViewHomeRect;
     [_npControlsView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_npControlsView attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     [_commentAndPostView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:commentAndPostViewHeight]];
     
-    [self refreshRecommendAndSubscribeStatus];
-    
 }
 
 - (void) revealNowPlayingControls {
     
-    // time elapsed
     _timeElapsedLabel.hidden = NO;
     _skipAheadBtn.hidden = NO;
     _skipBackBtn.hidden = NO;
@@ -918,6 +896,16 @@ static CGRect buttonsScrollViewHomeRect;
                          [self.view layoutIfNeeded];
                      }
                      completion:^(BOOL completed) {
+                         _nowPlayingControlsRevealed = YES;
+                         if (_isNowPlayingView) {
+                             // prompt for notifications
+                             SettingsEntity *settings = [TungCommonObjects settings];
+                             if (!settings.hasSeenMentionsPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
+                                 UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"User Mentions" message:@"Tung can notify you when someone mentions you in a comment, or when new episodes are released for podcasts you subscribe to. Would you like to receive notifications?" delegate:_tung cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
+                                 [notifPermissionAlert setTag:21];
+                                 [notifPermissionAlert show];
+                             }
+                         }
                      }];
     
 }
@@ -996,12 +984,16 @@ static CGRect buttonsScrollViewHomeRect;
 - (void) openPodcastWebsite {
     // open web browsing modal
     if (_episodeEntity.podcast.website.length) {
-        _urlToPass = [NSURL URLWithString:_episodeEntity.podcast.website];
-        [self performSegueWithIdentifier:@"presentWebView" sender:self];
+        if (_tung.connectionAvailable.boolValue) {
+            _urlToPass = [NSURL URLWithString:_episodeEntity.podcast.website];            
+            [self performSegueWithIdentifier:@"presentWebView" sender:self];
+        } else {
+            [_podcast showNoConnectionAlert];
+        }
     } else {
         CLS_LOG(@"no website");
         
-        UIAlertView *noWebsiteAlert = [[UIAlertView alloc] initWithTitle:@"Bummer" message:@"This podcast doesn't have a website in its feed." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+        UIAlertView *noWebsiteAlert = [[UIAlertView alloc] initWithTitle:@"Bummer" message:@"This podcast doesn't have a website url in its feed." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
         [noWebsiteAlert show];
     }
 }
@@ -1261,7 +1253,10 @@ static CGRect buttonsScrollViewHomeRect;
     // progress bar
     if (!_tung.fileIsLocal) {
         float buffered = _tung.trackData.length;
-        float progress = buffered / _tung.npEpisodeEntity.dataLength.floatValue;
+        float progress = 0;
+        if (buffered > 0) {
+            progress = buffered / _tung.npEpisodeEntity.dataLength.floatValue;
+        }
         //CLS_LOG(@"buffered: %f, total: %f, progress: %f", buffered, _tung.npEpisodeEntity.dataLength.floatValue, progress);
         _progressBar.progress = progress;
     } else {
@@ -1998,7 +1993,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
 }
 
 
-#pragma mark - Handle alerts/action sheets
+#pragma mark - Handle alerts / action sheets
 
 -(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
     CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
@@ -2006,15 +2001,6 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
     // reset recording prompt
     if (alertView.tag == 3) {
         if (buttonIndex == 0) [self resetRecording];
-    }
-    // go to now playing prompt
-    if (alertView.tag == 5 && buttonIndex) {
-        // select Now Playing tab
-        MainTabBarController *tabVC = (MainTabBarController *)self.parentViewController.parentViewController;
-        tabVC.selectedIndex = 1;
-        UIButton *btn = [[UIButton alloc] init];
-        btn.tag = 1;
-        [tabVC selectTab:btn];
     }
 }
 

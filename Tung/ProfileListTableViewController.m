@@ -55,12 +55,13 @@ CGFloat screenWidth;
     self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 0, 0);
     self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
     
-    // refresh control
-    self.refreshControl = [[UIRefreshControl alloc] init];
-    [self.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
     
     // get feed
     if (_queryType) {
+        
+        // refresh control
+        self.refreshControl = [[UIRefreshControl alloc] init];
+        [self.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
         
         if ([_queryType isEqualToString:@"Notifications"]) {
             // establish last seen notification time
@@ -117,10 +118,6 @@ CGFloat screenWidth;
                               orOlderThan:[NSNumber numberWithInt:0]];
     }
     
-}
-
--(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    if (alertView.tag == 49) [self refreshFeed]; // unreachable, retry
 }
 
 - (void) requestProfileListWithQuery:(NSString *)queryType
@@ -325,8 +322,7 @@ CGFloat screenWidth;
 - (void) pushProfileForUserAtIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
     
-    CLS_LOG(@"push profile of user: %@", [profileDict objectForKey:@"username"]);
-    // push profile
+    //CLS_LOG(@"push profile of user: %@", [profileDict objectForKey:@"username"]);
     
     ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
     profileView.profiledUserId = [profileDict objectForKey:@"id"];
@@ -343,6 +339,13 @@ CGFloat screenWidth;
     episodeView.focusedEventId = eventId;
     
     [_navController pushViewController:episodeView animated:YES];
+}
+
+- (void) showInviteFriendsPrompt {
+    UIAlertView *inviteFriendsPrompt = [[UIAlertView alloc] initWithTitle:@"Invite Friends" message:@"Enter a comma-separated list of friends’ emails whom you would like to invite." delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Send", nil];
+    inviteFriendsPrompt.alertViewStyle = UIAlertViewStylePlainTextInput;
+    inviteFriendsPrompt.tag = 59;
+    [inviteFriendsPrompt show];
 }
 
 
@@ -456,6 +459,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     return cell;
 }
 
+
 #pragma mark - Table view delegate methods
 
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
@@ -485,23 +489,64 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     
 }
 
--(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
+// FOOTER
+
+- (UIView *) footerViewWithMessage:(NSString *)message {
     
+    UIView *footerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 60.0)];
+    footerView.backgroundColor = [TungCommonObjects bkgdGrayColor];
+    float yPos = 15;
+    if (message.length > 0) {
+        yPos = 25;
+        // label
+        UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(0, 10, screenWidth, 20)];
+        label.text = message;
+        label.textColor = [UIColor grayColor];
+        label.textAlignment = NSTextAlignmentCenter;
+        [footerView addSubview:label];
+    }
+    // button
+    UIButton *inviteFriendsBtn = [UIButton buttonWithType:UIButtonTypeSystem];
+    [inviteFriendsBtn setTitle:@"Invite friends to Tung" forState:UIControlStateNormal];
+    [inviteFriendsBtn setTitleColor:[TungCommonObjects tungColor] forState:UIControlStateNormal];
+    [inviteFriendsBtn.titleLabel setFont:[UIFont boldSystemFontOfSize:15]];
+    [inviteFriendsBtn addTarget:self action:@selector(showInviteFriendsPrompt) forControlEvents:UIControlEventTouchUpInside];
+    [inviteFriendsBtn setFrame:CGRectMake(0, yPos, self.view.bounds.size.width, 30)];
+    [footerView addSubview:inviteFriendsBtn];
+    
+    return footerView;
+}
+
+- (UILabel *) labelWithMessageAndBottomMargin:(NSString *)message {
+    // label
+    UILabel *label = [[UILabel alloc] init];
+    label.text = [NSString stringWithFormat:@"%@\n", message];
+    label.textColor = [UIColor grayColor];
+    label.textAlignment = NSTextAlignmentCenter;
+    label.numberOfLines = 0;
+    return label;
+}
+
+-(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
+
     if (_noMoreItemsToGet && section == 1) {
-        UILabel *noMoreLabel = [[UILabel alloc] init];
-        NSString *thatsAll = ([_queryType isEqualToString:@"Notifications"]) ? @"That's everything.\n " : @"That's everyone.\n ";
-        noMoreLabel.text = thatsAll;
-        noMoreLabel.numberOfLines = 0;
-        noMoreLabel.textColor = [UIColor grayColor];
-        noMoreLabel.textAlignment = NSTextAlignmentCenter;
-        return noMoreLabel;
+        NSString *thatsAll = ([_queryType isEqualToString:@"Notifications"]) ? @"That's everything. " : @"That's everyone.";
+        if (!_queryType) {
+        	return [self footerViewWithMessage:thatsAll];
+        } else {
+            return [self labelWithMessageAndBottomMargin:thatsAll];
+        }
     }
     else if (_noResults && section == 1) {
-         UILabel *noResultsLabel = [[UILabel alloc] init];
-         noResultsLabel.text = @"No results.";
-         noResultsLabel.textColor = [UIColor grayColor];
-         noResultsLabel.textAlignment = NSTextAlignmentCenter;
-         return noResultsLabel;
+        NSString *message = @"No results.";
+        if (!_queryType) {
+        	return [self footerViewWithMessage:message];
+        } else {
+            return [self labelWithMessageAndBottomMargin:message];
+        }
+    }
+    else if (!_queryType) {
+        return [self footerViewWithMessage:@""];
     }
     else {
         _loadMoreIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
@@ -509,12 +554,37 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     }
 }
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
-    if (!_noMoreItemsToGet && section == 0)
+	if (!_queryType && section == 1) {
         return 60.0;
-    else if ((_noResults || _noMoreItemsToGet) && section == 1)
+    }
+    else if ((_noResults || _noMoreItemsToGet) && section == 1) {
         return 60.0;
-    else
+    }
+    else {
         return 0;
+    }
+}
+
+#pragma mark - handle alerts
+
+-(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
+    CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
+    // search prompt
+    if (alertView.tag == 49) [self refreshFeed]; // unreachable, retry
+    
+    if (alertView.tag == 59 && buttonIndex) { // invite friends request
+        NSString *friends = [[alertView textFieldAtIndex:0] text];
+        if (friends.length) {
+        	[_tung inviteFriends:friends];
+        } else {
+            UIAlertView *nothingEnteredAlert = [[UIAlertView alloc] initWithTitle:@"Nothing entered" message:@"Try again?" delegate:self cancelButtonTitle:@"No" otherButtonTitles:@"Yes", nil];
+            nothingEnteredAlert.tag = 58;
+            [nothingEnteredAlert show];
+        }
+    }
+    if (alertView.tag == 58 && buttonIndex) { // invite friends: nothing entered
+        [self showInviteFriendsPrompt];
+    }
 }
 
 #pragma mark - scroll view delegate methods

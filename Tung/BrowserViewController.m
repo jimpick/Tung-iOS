@@ -32,7 +32,7 @@
 - (void)viewDidLoad
 {
     
-    CLS_LOG(@"loaded browser view controller with url request: %@", _urlToNavigateTo);
+    //CLS_LOG(@"loaded browser view controller with url request: %@", _urlToNavigateTo);
     
     _tung = [TungCommonObjects establishTungObjects];
     
@@ -43,6 +43,10 @@
     _blurView.opacity = .4;
     _blurView.tintColor = [UIColor whiteColor];
     
+    if (!_urlToNavigateTo.scheme) { // url has no 'http' or 'https'
+        NSString *urlString = [NSString stringWithFormat:@"http://%@", _urlToNavigateTo];
+        _urlToNavigateTo = [NSURL URLWithString:urlString];
+    }
     // instantiate webview
     NSURLRequest *urlRequest = [NSURLRequest requestWithURL:_urlToNavigateTo];
     self.webView.delegate = self;

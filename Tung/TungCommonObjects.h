@@ -188,6 +188,7 @@
 - (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback;
 - (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback;
 - (void) followAllUsersFromId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+- (void) inviteFriends:(NSString *)friends;
 - (void) signOut;
 
 // caching

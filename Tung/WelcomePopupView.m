@@ -57,7 +57,7 @@
     
     _header2.text = @"Now Playing";
     _iconView2.type = kIconTypeNowPlaying;
-    _body2.text = @"Always has the episode that’s currently playing. Plus, you can record clips of it, comment on it, and recommend it.";
+    _body2.text = @"Always has what’s currently playing. You can record clips, comment, and recommend a podcast from here.";
     [_button2 setTitle:@"Next" forState:UIControlStateNormal];
     [_button2 addTarget:self action:@selector(nextPage) forControlEvents:UIControlEventTouchUpInside];
     _reverseIconView2.type = kIconTypeNowPlaying;
@@ -65,7 +65,7 @@
     
     _header3.text = @"Subscriptions";
     _iconView3.type = kIconTypeSubscribe;
-    _body3.text = @"This tab has all the podcasts you’ve subscribed to.";
+    _body3.text = @"All of the podcasts you’ve subscribed to.";
     [_button3 setTitle:@"Next" forState:UIControlStateNormal];
     [_button3 addTarget:self action:@selector(nextPage) forControlEvents:UIControlEventTouchUpInside];
     _reverseIconView3.type = kIconTypeSubscribe;
@@ -73,7 +73,7 @@
     
     _header4.text = @"Your Profile";
     _iconView4.type = kIconTypeProfile;
-    _body4.text = @"Notifications are here, and you can see all your activity that’s published in the feed.";
+    _body4.text = @"Has your notifications, all of your activity that’s published in the feed, and friend search.";
     [_button4 setTitle:@"Got it!" forState:UIControlStateNormal];
     [_button4 addTarget:self action:@selector(dismiss:) forControlEvents:UIControlEventTouchUpInside];
     _reverseIconView4.type = kIconTypeProfile;

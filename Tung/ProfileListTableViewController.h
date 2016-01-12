@@ -10,7 +10,7 @@
 
 @interface ProfileListTableViewController : UITableViewController <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, UIAlertViewDelegate>
 
-@property (strong, nonatomic) NSString *queryType;
+@property (strong, nonatomic) NSString *queryType; // default is search 
 @property (strong, nonatomic) NSString *target_id;
 
 

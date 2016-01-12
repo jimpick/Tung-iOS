@@ -164,20 +164,28 @@
     NSError *error = nil;
     NSArray *npResult = [appDelegate.managedObjectContext executeFetchRequest:npRequest error:&error];
     if (npResult.count > 0) {
-        CLS_LOG(@"Found now playing episode");
-        _npEpisodeEntity = [npResult lastObject];
-        NSURL *url = [NSURL URLWithString:_npEpisodeEntity.url];
-        _playQueue = [@[url] mutableCopy];
-        if ([self isPlaying]) {
-            [self setControlButtonStateToPause];
-        } else {
-        	[self setControlButtonStateToPlay];
+        EpisodeEntity *epEntity = [npResult lastObject];
+        
+        if (epEntity.title) {
+            _npEpisodeEntity = epEntity;
+            NSURL *url = [NSURL URLWithString:_npEpisodeEntity.url];
+            _playQueue = [@[url] mutableCopy];
+            if ([self isPlaying]) {
+                [self setControlButtonStateToPause];
+            } else {
+                [self setControlButtonStateToPlay];
+            }
+            return;
         }
-    } else {
-        CLS_LOG(@"no episode playing yet");
-        _playQueue = [NSMutableArray array];
-        [self setControlButtonStateToFauxDisabled];;
+        else {
+            [self removeNowPlayingStatusFromAllEpisodes];
+        }
     }
+    
+    // no episode playing yet
+    _playQueue = [NSMutableArray array];
+    [self setControlButtonStateToFauxDisabled];;
+    
 }
 
 #pragma mark - Audio session delegate methods
@@ -584,13 +592,13 @@
         [request setPredicate:predicate];
         NSArray *episodeResult = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
         if (episodeResult.count > 0) {
-            CLS_LOG(@"found and assigned now playing entity");
+            //CLS_LOG(@"found and assigned now playing entity");
             _npEpisodeEntity = [episodeResult lastObject];
         } else {
             /* create entity - case is next episode in feed is played. Episode entity may not have been
              created yet, but podcast entity would, so we get it from np episode entity. */
             // look up podcast entity
-            CLS_LOG(@"creating new entity for now playing entity");
+            //CLS_LOG(@"creating new entity for now playing entity");
             NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex];
             PodcastEntity *npPodcastEntity = _npEpisodeEntity.podcast;
             _npEpisodeEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:npPodcastEntity save:NO];
@@ -647,9 +655,8 @@
 
 // removes observers, releases player related properties
 - (void) resetPlayer {
-    CLS_LOG(@"reset player ///////////////");
+    //CLS_LOG(@"reset player ///////////////");
     _npViewSetupForCurrentEpisode = NO;
-    CLS_LOG(@"_npViewSetupForCurrentEpisode = NO");
     _shouldStayPaused = NO;
     _totalSeconds = 0;
     // remove old player and observers
@@ -667,7 +674,7 @@
         //CLS_LOG(@"clear connection data");
         [_trackDataConnection cancel];
         _trackDataConnection = nil;
-        _trackData = nil;
+        _trackData = [NSMutableData data];
         self.response = nil;
     }
     self.pendingRequests = [NSMutableArray array];
@@ -859,7 +866,7 @@
 // looks for local file, else returns url with custom scheme
 - (NSURL *) getEpisodeUrl:(NSURL *)url {
     
-    CLS_LOG(@"get episode url: %@", url);
+    //CLS_LOG(@"get episode url: %@", url);
     
     NSString *episodeDir = [NSTemporaryDirectory() stringByAppendingPathComponent:episodeDirName];
     NSError *error;
@@ -2112,6 +2119,12 @@ static NSArray *colors;
 
 
 - (void) addPodcast:(PodcastEntity *)podcastEntity orEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback  {
+    
+    if (!podcastEntity.collectionId) {
+        NSLog(@"add podcast entity null: %@", [TungCommonObjects entityToDict:podcastEntity]);
+        return;
+    }
+    
     CLS_LOG(@"add podcast/episode request");
     NSURL *addEpisodeRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/add-podcast.php", _apiRootUrl]];
     NSMutableURLRequest *addEpisodeRequest = [NSMutableURLRequest requestWithURL:addEpisodeRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
@@ -3253,7 +3266,49 @@ static NSArray *colors;
     }];
 }
 
-
+- (void) inviteFriends:(NSString *)friends {
+    CLS_LOG(@"send invite friends request");
+    NSURL *inviteFriendsRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/invite-friends.php", _apiRootUrl]];
+    NSMutableURLRequest *inviteFriendsRequest = [NSMutableURLRequest requestWithURL:inviteFriendsRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [inviteFriendsRequest setHTTPMethod:@"POST"];
+    NSDictionary *params = @{@"sessionId": _sessionId,
+                             @"friends": friends
+                             };
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [inviteFriendsRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:inviteFriendsRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                if ([responseDict objectForKey:@"error"]) {
+                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                        // get new session and re-request
+                        CLS_LOG(@"SESSION EXPIRED");
+                        [self getSessionWithCallback:^{
+                            [self inviteFriends:friends];
+                        }];
+                    } else {
+                    	CLS_LOG(@"Error inviting friends: %@", [responseDict objectForKey:@"error"]);
+                        UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Oops..." message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                        [errorAlert show];
+                    }
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    CLS_LOG(@"Successfully invited friends: %@", responseDict);
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                CLS_LOG(@"Error: %@", html);
+                UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"An error occurred" message:@"Sorry, something went wrong with your request" delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                [errorAlert show];
+            }
+        });
+    }];
+}
 
 -(void) signOut {
     CLS_LOG(@"--- signing out");

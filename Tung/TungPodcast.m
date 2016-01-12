@@ -416,14 +416,7 @@ static NSString *cellIdentifier = @"PodcastResultCell";
 }
 
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
-    if (_podcastArray.count > 0 && section == 1) {
-        UILabel *noMoreLabel = [[UILabel alloc] init];
-        noMoreLabel.text = @"That's everything.";
-        noMoreLabel.textColor = [UIColor grayColor];
-        noMoreLabel.textAlignment = NSTextAlignmentCenter;
-        return noMoreLabel;
-    }
-    else if (_noResults && section == 1) {
+    if (_noResults && section == 1) {
         UILabel *noResultsLabel = [[UILabel alloc] init];
         noResultsLabel.text = @"No results.";
         noResultsLabel.textColor = [UIColor grayColor];
@@ -436,7 +429,7 @@ static NSString *cellIdentifier = @"PodcastResultCell";
 }
 
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
-    if ((_podcastArray.count > 0 && section == 1) || (section == 1 && _noResults)) {
+    if (_noResults && section == 1) {
         return 92.0;
     }
     else {

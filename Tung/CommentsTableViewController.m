@@ -292,10 +292,10 @@ UILabel *prototypeLabel;
 -(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
     //CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
     
-    NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:_buttonPressIndexPath.row]];
-    
     // confirm delete comment
     if (alertView.tag == 59 && buttonIndex == 1) {
+        
+        NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:_buttonPressIndexPath.row]];
         
         NSString *eventId = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
         [_tung deleteStoryEventWithId:eventId withCallback:^(BOOL success) {
@@ -313,6 +313,8 @@ UILabel *prototypeLabel;
         }];
     }
     else if (alertView.tag == 49 && buttonIndex == 1) { // flag for moderation
+        
+        NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:_buttonPressIndexPath.row]];
         
         NSString *eventId = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
         [_tung flagCommentWithId:eventId];
@@ -394,10 +396,11 @@ UILabel *prototypeLabel;
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
                         NSArray *newComments = jsonData;
-                        CLS_LOG(@"new comments count: %lu", (unsigned long)newComments.count);
+                        //CLS_LOG(@"new comments count: %lu", (unsigned long)newComments.count);
                         
                         // end refreshing
                         [self endRefreshing];
+                        _commentsArray = [NSMutableArray array];
                         
                         // comments are sorted by timestamp, so we can't get newest/oldest by time_secs.
                         // commenting out for now until I can spend time on a better solution.
