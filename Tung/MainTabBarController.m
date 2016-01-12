@@ -108,6 +108,8 @@
     [self.view insertSubview:_tung.btn_player aboveSubview:self.view];
     [self.view insertSubview:_tung.btnActivityIndicator aboveSubview:_tung.btn_player];
     
+    [_tung checkForNowPlaying];
+    
     // custom tab bar badges
     CGFloat badgeY = screenHeight - 40;
     CGPoint subscriptionsBadgeCenter = CGPointMake(screenWidth * 0.76, badgeY);
@@ -171,8 +173,6 @@
     // pop to root if tapped the same controller twice
     if (self.selectedViewController == selectedViewController) {
         [(UINavigationController *)self.selectedViewController popToRootViewControllerAnimated:YES];
-        // dismiss search if active
-        [_tung dismissSearch];
     }
     [super setSelectedViewController:selectedViewController];
 }

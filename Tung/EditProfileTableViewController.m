@@ -114,33 +114,37 @@ static UIImage *iconRedX;
     [_keyboardToolbar setItems:@[_backBarItem, _fspace, _keyboardLabelBarItem, _fspace, _nextBarItem]];
     
     // set up fields and pre-load fields with profile data
-    //CLS_LOG(@"profile data: %@", _profileData);
-    _field_username.text = [_profileData objectForKey:@"username"];
+    CLS_LOG(@"profile data: %@", _profileData);
+    if ([_profileData objectForKey:@"username"] != [NSNull null]) _field_username.text = [_profileData objectForKey:@"username"];
     _field_username.delegate = self;
     _field_username.inputAccessoryView = _keyboardToolbar;
     [_field_username addTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
-    _field_name.text = [_profileData objectForKey:@"name"];
+    if ([_profileData objectForKey:@"name"] != [NSNull null]) _field_name.text = [_profileData objectForKey:@"name"];
     _field_name.delegate = self;
     _field_name.inputAccessoryView = _keyboardToolbar;
     [_field_name addTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
-    if ([_profileData objectForKey:@"email"]) _field_email.text = [_profileData objectForKey:@"email"];
+    if ([_profileData objectForKey:@"email"] != [NSNull null]) _field_email.text = [_profileData objectForKey:@"email"];
     _field_email.delegate = self;
     _field_email.inputAccessoryView = _keyboardToolbar;
     [_field_email addTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
-    _field_location.text = [_profileData objectForKey:@"location"];
+    if ([_profileData objectForKey:@"location"] != [NSNull null]) _field_location.text = [_profileData objectForKey:@"location"];
     _field_location.delegate = self;
     _field_location.inputAccessoryView = _keyboardToolbar;
     [_field_location addTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
-    _field_url.text = [_profileData objectForKey:@"url"];
+    if ([_profileData objectForKey:@"url"] != [NSNull null]) _field_url.text = [_profileData objectForKey:@"url"];
     _field_url.delegate = self;
     _field_url.inputAccessoryView = _keyboardToolbar;
     [_field_url addTarget:self action:@selector(textFieldDidChange:) forControlEvents:UIControlEventEditingChanged];
     // bio - limit to MAX_BIO_CHARS
     NSString *trimmedBio;
-    if ([[_profileData objectForKey:@"bio"] length] > MAX_BIO_CHARS) {
-        trimmedBio = [[_profileData objectForKey:@"bio"] substringToIndex:MAX_BIO_CHARS];
+    if ([_profileData objectForKey:@"bio"] != [NSNull null]) {
+        if ([[_profileData objectForKey:@"bio"] length] > MAX_BIO_CHARS) {
+            trimmedBio = [[_profileData objectForKey:@"bio"] substringToIndex:MAX_BIO_CHARS];
+        } else {
+            trimmedBio = [_profileData objectForKey:@"bio"];
+        }
     } else {
-        trimmedBio = [_profileData objectForKey:@"bio"];
+        trimmedBio = @"";
     }
     _field_bio.text = trimmedBio;
     _field_bio.delegate = self;

@@ -259,6 +259,7 @@ NSTimer *promptTimer;
         // notifications
         if (_tung.notificationsNeedRefresh.boolValue) {
             //[_notificationsView.refreshControl beginRefreshing]; // doesn't seem to work
+            //[_notificationsView.tableView setContentOffset:CGPointMake(0, -_notificationsView.refreshControl.frame.size.height) animated:YES];
             [_notificationsView refreshFeed];
         }
         // clear colored background on new notifications

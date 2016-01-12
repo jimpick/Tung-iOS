@@ -103,6 +103,7 @@ UIActivityIndicatorView *backgroundSpinner;
     // is this for now playing?
     if (_episodeMiniDict || _episodeEntity) {
         self.navigationItem.title = @"Episode";
+        self.view.backgroundColor = [UIColor whiteColor];
     }
     else {
         _isNowPlayingView = YES;
@@ -115,6 +116,8 @@ UIActivityIndicatorView *backgroundSpinner;
         
         //[self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:_episodeEntity.podcast.keyColor1 }];
         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
+        
+        self.view.backgroundColor = [TungCommonObjects bkgdGrayColor];
         
         // nothing playing?
         CGRect labelFrame = CGRectMake((screenWidth - 320)/2, (screenHeight - 64)/2, 320, 20);
@@ -182,8 +185,6 @@ UIActivityIndicatorView *backgroundSpinner;
     self.definesPresentationContext = YES;
     _podcast.navController = [self navigationController];
     _podcast.delegate = self;
-    
-    self.view.backgroundColor = [UIColor whiteColor];
     
     // views
     _npControlsView.opacity = .4;
@@ -274,11 +275,7 @@ UIActivityIndicatorView *backgroundSpinner;
     // listen for for nowPlayingDidChange
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(nowPlayingDidChange) name:@"nowPlayingDidChange" object:nil];
     
-    if (_isNowPlayingView) {
-    
-        _commentsView.isForNowPlaying = YES;
-    }
-    else {
+    if (!_isNowPlayingView) {
         
         // episode view pushed from EpisodesTableViewController
         if (_episodeEntity) {
@@ -332,6 +329,11 @@ UIActivityIndicatorView *backgroundSpinner;
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
+    if (_isFirstAppearance) {
+        [self setupNowPlayingControls];
+        _isFirstAppearance = NO;
+    }
+    
     // set up views
     if (_isNowPlayingView) {
         
@@ -345,11 +347,6 @@ UIActivityIndicatorView *backgroundSpinner;
     }
     else if (_episodeEntity.isNowPlaying.boolValue) {
         [NSTimer scheduledTimerWithTimeInterval:.2 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
-    }
-    
-    if (_isFirstAppearance) {
-        [self setupNowPlayingControls];
-        _isFirstAppearance = NO;
     }
     
 }
@@ -458,6 +455,7 @@ NSTimer *markAsSeenTimer;
         [self setPlaybackRateToOne];
     } else {
         [_episodesView.tableView reloadData];
+        [_commentsView.tableView reloadData];
     }
 }
 
@@ -472,6 +470,7 @@ NSTimer *markAsSeenTimer;
         
     if (_tung.npEpisodeEntity && _tung.npEpisodeEntity.title) {
         
+        self.view.backgroundColor = [UIColor whiteColor];
         // initialize views
         //CLS_LOG(@"setup view for now playing: %@", _tung.npEpisodeEntity.title);
         if ([_nothingPlayingLabel isDescendantOfView:self.view]) {
@@ -479,8 +478,6 @@ NSTimer *markAsSeenTimer;
         }
         
         [self setUpViewForEpisode:_tung.npEpisodeEntity];
-        
-        [self refreshRecommendAndSubscribeStatus];
         
         // scroll to main buttons
         [_buttonsScrollView scrollRectToVisible:buttonsScrollViewHomeRect animated:YES];
@@ -509,10 +506,13 @@ NSTimer *markAsSeenTimer;
     _descriptionView.view.hidden = YES;
     _episodesView.view.hidden = YES;
     _commentsView.view.hidden = YES;
+    self.view.backgroundColor = [TungCommonObjects bkgdGrayColor];
     
 }
 
 - (void) setUpViewForEpisode:(EpisodeEntity *)episodeEntity {
+    
+    //NSLog(@"set up view for episode: %@", [TungCommonObjects entityToDict:episodeEntity]);
     
     // set up header view
     [_headerView setUpHeaderViewForEpisode:episodeEntity orPodcast:nil];
@@ -526,6 +526,8 @@ NSTimer *markAsSeenTimer;
     } else {
     	[_headerView.largeButton addTarget:self action:@selector(playEpisode) forControlEvents:UIControlEventTouchUpInside];
     }
+    
+    [self refreshRecommendAndSubscribeStatus];
     
     // switcher
     _switcherBar.hidden = NO;
@@ -545,13 +547,14 @@ NSTimer *markAsSeenTimer;
     _episodesView.podcastEntity = episodeEntity.podcast;
     [_episodesView.tableView reloadData];
     
-    
-    if (episodeEntity.desc.length == 0) {
+    if (episodeEntity.desc.length == 0 || [episodeEntity.desc isEqualToString:@"No description"]) {
         // refresh description web view with description from feed
-        NSInteger feedIndex = [TungCommonObjects getIndexOfEpisodeWithUrl:episodeEntity.url inFeed:_episodesView.episodeArray];
+        NSInteger feedIndex = [TungCommonObjects getIndexOfEpisodeWithGUID:episodeEntity.guid inFeed:_episodesView.episodeArray];
         episodeEntity.desc = @"No description";
         if (feedIndex >= 0) {
             NSDictionary *epDict = [_episodesView.episodeArray objectAtIndex:feedIndex];
+            episodeEntity.dataLength = [NSNumber numberWithDouble:[[[[epDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"length"] doubleValue]];
+            
             NSString *desc = [TungCommonObjects findEpisodeDescriptionWithDict:epDict];
             
             if (desc.length > 0) {
@@ -693,7 +696,7 @@ NSTimer *markAsSeenTimer;
     // recommended status
     _recommendButton.recommended = _episodeEntity.isRecommended.boolValue;
     [_recommendButton setNeedsDisplay];
-    _recommendLabel.text = (_tung.npEpisodeEntity.isRecommended.boolValue) ? @"Recommended" : @"Recommend";
+    _recommendLabel.text = (_episodeEntity.isRecommended.boolValue) ? @"Recommended" : @"Recommend";
     
     // subscribe status
     _headerView.subscribeButton.subscribed = _episodeEntity.podcast.isSubscribed.boolValue;
@@ -874,6 +877,8 @@ static CGRect buttonsScrollViewHomeRect;
     [_npControlsView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_npControlsView attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [_npControlsView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_npControlsView attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     [_commentAndPostView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:commentAndPostViewHeight]];
+    
+    [self refreshRecommendAndSubscribeStatus];
     
 }
 
@@ -1254,8 +1259,8 @@ static CGRect buttonsScrollViewHomeRect;
     if (!_tung.fileIsLocal) {
         float buffered = _tung.trackData.length;
         float progress = 0;
-        if (buffered > 0) {
-            progress = buffered / _tung.npEpisodeEntity.dataLength.floatValue;
+        if (buffered > 0 && _tung.npEpisodeEntity.dataLength.doubleValue > 0) {
+            progress = buffered / _tung.npEpisodeEntity.dataLength.doubleValue;
         }
         //CLS_LOG(@"buffered: %f, total: %f, progress: %f", buffered, _tung.npEpisodeEntity.dataLength.floatValue, progress);
         _progressBar.progress = progress;

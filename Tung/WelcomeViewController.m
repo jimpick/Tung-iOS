@@ -200,8 +200,6 @@
                         UIViewController *feed = [self.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];
                         [self presentViewController:feed animated:YES completion:^{}];
                         
-                        [_tung checkForNowPlaying];
-                        
                     }
                     // user is new
                     else {
@@ -302,8 +300,6 @@
                                                      // show feed
                                                      UIViewController *feed = [self.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];
                                                      [self presentViewController:feed animated:YES completion:^{}];
-                                                     
-                                                     [_tung checkForNowPlaying];
                                                      
                                                  }
                                                  // user is new

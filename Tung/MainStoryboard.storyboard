@@ -2207,7 +2207,7 @@
                                     <constraint firstAttribute="centerX" secondItem="Erp-eo-HzV" secondAttribute="centerX" id="kg7-VU-OMY"/>
                                     <constraint firstAttribute="centerX" secondItem="qbb-m2-RZS" secondAttribute="centerX" id="nem-XL-SOE"/>
                                     <constraint firstAttribute="bottom" secondItem="SzR-2f-Vva" secondAttribute="bottom" constant="60" id="phi-pI-BEC">
-                                        <variation key="widthClass=compact" constant="158"/>
+                                        <variation key="widthClass=compact" constant="155"/>
                                     </constraint>
                                     <constraint firstAttribute="trailing" secondItem="IA2-qs-aia" secondAttribute="trailing" id="prK-Se-BHz"/>
                                     <constraint firstItem="3CZ-kK-RkQ" firstAttribute="top" secondItem="iFL-30-I6w" secondAttribute="top" constant="93" id="wEW-Kx-WCx">

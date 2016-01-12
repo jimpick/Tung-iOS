@@ -163,7 +163,7 @@
         // unreachable
         else {
             _tung.connectionAvailable = [NSNumber numberWithInt:0];
-            UIAlertView *noReachabilityAlert = [[UIAlertView alloc] initWithTitle:@"No Connection" message:@"tung requires an internet connection" delegate:self cancelButtonTitle:@"Retry" otherButtonTitles:nil];
+            UIAlertView *noReachabilityAlert = [[UIAlertView alloc] initWithTitle:@"No Connection" message:@"Tung requires an internet connection" delegate:self cancelButtonTitle:@"Retry" otherButtonTitles:nil];
             [noReachabilityAlert setTag:49];
             [noReachabilityAlert show];
         }

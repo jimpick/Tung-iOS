@@ -90,14 +90,15 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
 }
 
 - (void) refreshFeed:(BOOL)fullRefresh {
-    //CLS_LOG(@"refresh feed");
+    CLS_LOG(@"refresh feed");
     
     NSNumber *mostRecent;
     if (fullRefresh) {
         mostRecent = [NSNumber numberWithInt:0];
     } else {
         if (_storiesArray.count > 0) {
-            [self.refreshControl beginRefreshing];
+            //[self.refreshControl beginRefreshing];
+            //[self.tableView setContentOffset:CGPointMake(0, -self.refreshControl.frame.size.height) animated:YES];
             mostRecent = [[[_storiesArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
         } else { // if initial request timed out and they are trying again
             mostRecent = [NSNumber numberWithInt:0];
@@ -1069,7 +1070,7 @@ NSInteger requestTries = 0;
                         
                         NSTimeInterval requestDuration = [requestStarted timeIntervalSinceNow];
                         NSArray *newStories = [responseDict objectForKey:@"stories"];
-                        
+                        CLS_LOG(@"new stories count: %lu", (unsigned long)newStories.count);
                         
                         if (withCred) {
                             CLS_LOG(@"got stories AND session in %f seconds. session Id: %@", fabs(requestDuration), [responseDict objectForKey:@"sessionId"]);
@@ -1123,14 +1124,14 @@ NSInteger requestTries = 0;
                         else if ([beforeTime intValue] > 0) {
                             
                             if (newStories.count == 0) {
-                                CLS_LOG(@"no more stories to get");
+                                //CLS_LOG(@"no more stories to get");
                                 _reachedEndOfPosts = YES;
                                 // hide footer
                                 //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_storiesArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
                                 [self.tableView reloadData];
                                 
                             } else {
-                                CLS_LOG(@"\tgot stories older than: %@", beforeTime);
+                                //CLS_LOG(@"got stories older than: %@", beforeTime);
                                 int startingIndex = (int)_storiesArray.count;
                                 
                                 NSArray *newFeedArray = [_storiesArray arrayByAddingObjectsFromArray:[self processStories:newStories]];
@@ -1139,7 +1140,7 @@ NSInteger requestTries = 0;
                                 
                                 [UIView setAnimationsEnabled:NO];
                                 [self.tableView beginUpdates];
-                                for (int i = startingIndex-1; i < _storiesArray.count-1; i++) {
+                                for (int i = startingIndex; i < _storiesArray.count; i++) {
                                     [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
                                 }
                                 [self.tableView endUpdates];

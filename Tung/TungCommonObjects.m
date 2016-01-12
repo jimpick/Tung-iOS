@@ -49,6 +49,7 @@
 @property (nonatomic, strong) NSMutableArray *pendingRequests;
 @property (nonatomic, strong) NSDateFormatter *ISODateFormatter;
 @property (strong, nonatomic) NSTimer *syncProgressTimer;
+@property (strong, nonatomic) NSTimer *determineTotalSecondsTimer;
 
 @end
 
@@ -178,6 +179,7 @@
             return;
         }
         else {
+            NSLog(@"check for now playing - found 'half' entity: %@", [TungCommonObjects entityToDict:_npEpisodeEntity]);
             [self removeNowPlayingStatusFromAllEpisodes];
         }
     }
@@ -309,6 +311,7 @@
     
     if (_totalSeconds == 0) {
         CLS_LOG(@"determineTotalSeconds");
+        [_determineTotalSecondsTimer invalidate];
         // need to wait until player is playing to get duration or app freezes
         if ([self isPlaying] || (![self isPlaying] && _shouldStayPaused)) {
             if ([self isPlaying]) {
@@ -320,7 +323,7 @@
             CLS_LOG(@"determined total seconds: %f (%@)", _totalSeconds, [TungCommonObjects convertSecondsToTimeString:_totalSeconds]);
         }
         else {
-            [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:NO];
+            _determineTotalSecondsTimer = [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:NO];
         }
     }
 }
@@ -357,8 +360,10 @@
                     [_trackInfo setObject:[NSNumber numberWithFloat:secs] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
                     [_player seekToTime:time completionHandler:^(BOOL finished) {
                         CLS_LOG(@"finished seeking");
-                        [self playerPlay];
-                        if (_fileIsLocal) [self determineTotalSeconds];
+                        [_player play];
+                        if (_fileIsLocal) {
+                            [self determineTotalSeconds];
+                        }
                     }];
                 } else {
                     [_trackInfo setObject:[NSNumber numberWithFloat:0] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
@@ -496,17 +501,8 @@
         if (!_shouldStayPaused) {
             // avoid endless loop, do not use [self playerPlay];
             [_player play];
-            [self setControlButtonStateToPause];
         }
     }];
-}
-
-
-// for dismissing search from main tab bar by tapping icon
-- (void) dismissSearch {
-    if (_ctrlBtnDelegate && [_ctrlBtnDelegate respondsToSelector:@selector(dismissPodcastSearch)]) {
-        [_ctrlBtnDelegate dismissPodcastSearch];
-    }
 }
 
 - (void) queueAndPlaySelectedEpisode:(NSString *)urlString fromTimestamp:(NSString *)timestamp {
@@ -608,7 +604,9 @@
         [TungCommonObjects saveContextWithReason:@"now playing changed"];
         // find index of episode in current feed for prev/next track fns
         _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO]];
-        _currentFeedIndex = [TungCommonObjects getIndexOfEpisodeWithUrl:urlString inFeed:_currentFeed];
+        _currentFeedIndex = [TungCommonObjects getIndexOfEpisodeWithGUID:_npEpisodeEntity.guid inFeed:_currentFeed];
+        
+        //NSLog(@"now playing episode: %@", [TungCommonObjects entityToDict:_npEpisodeEntity]);
         
         // set now playing info center info
         NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:_npEpisodeEntity.podcast.artworkUrl600 andCollectionId:_npEpisodeEntity.collectionId];
@@ -659,6 +657,8 @@
     _npViewSetupForCurrentEpisode = NO;
     _shouldStayPaused = NO;
     _totalSeconds = 0;
+    
+    [_determineTotalSecondsTimer invalidate];
     // remove old player and observers
     if (_player) {
         [_player removeObserver:self forKeyPath:@"status"];
@@ -724,9 +724,9 @@
         }*/
         return;
     }
-	
     [self playNextEpisode]; // ejects current episode
 }
+
 - (void) ejectCurrentEpisode {
     CLS_LOG(@"ejecting current episode");
     if (_playQueue.count > 0) {
@@ -761,7 +761,7 @@
     // play manually queued episode
     if (_playQueue.count > 1) {
         [self ejectCurrentEpisode];
-        AudioServicesPlaySystemSound(1103); // play beep
+        //AudioServicesPlaySystemSound(1103); // play beep
         CLS_LOG(@"play next episode");
         [self playQueuedPodcast];
     }
@@ -778,7 +778,7 @@
             EpisodeEntity *epEntity = [TungCommonObjects getEntityForEpisode:epDict withPodcastEntity:_npEpisodeEntity.podcast save:NO];
             
             if (epEntity.trackPosition.floatValue == 0) {
-                CLS_LOG(@"newer episode hasn't been listened to yet, queue and play");
+                //CLS_LOG(@"newer episode hasn't been listened to yet, queue and play");
                 [self ejectCurrentEpisode];
                 _currentFeedIndex--;
                 [_playQueue insertObject:[NSURL URLWithString:epEntity.url] atIndex:0];
@@ -786,24 +786,8 @@
                 return;
             }
         }
-        // check if there is an older one
-        if (_currentFeedIndex + 1 < _currentFeed.count) {
-            NSDictionary *epDict = [_currentFeed objectAtIndex:_currentFeedIndex + 1];
-            EpisodeEntity *epEntity = [TungCommonObjects getEntityForEpisode:epDict withPodcastEntity:_npEpisodeEntity.podcast save:NO];
-            
-            if (epEntity.trackPosition.floatValue == 0) {
-                CLS_LOG(@"older episode hasn't been listened to yet, queue and play");
-                [self ejectCurrentEpisode];
-                _currentFeedIndex++;
-                [_playQueue insertObject:[NSURL URLWithString:epEntity.url] atIndex:0];
-                [self playQueuedPodcast];
-                return;
-            }
-        }
-        CLS_LOG(@"episodes in both directions have been played. allow player to stop");
-        
-        [self savePositionForNowPlayingAndSync:YES];
-        [self setControlButtonStateToPlay];
+        // if method hasn't returned, try to play the next older episode in feed
+        [self playNextOlderEpisodeInFeed];
     }
 }
 
@@ -823,7 +807,8 @@
  
         [self playQueuedPodcast];
     } else {
-        [self setControlButtonStateToFauxDisabled];
+        [self savePositionForNowPlayingAndSync:YES];
+        [self setControlButtonStateToPlay];
     }
 }
 
@@ -843,7 +828,8 @@
         
         [self playQueuedPodcast];
     } else {
-        [self setControlButtonStateToFauxDisabled];
+        [self savePositionForNowPlayingAndSync:YES];
+        [self setControlButtonStateToPlay];
     }
 }
 
@@ -1320,14 +1306,12 @@ UILabel *prototypeBadge;
         episodeEntity = [NSEntityDescription insertNewObjectForEntityForName:@"EpisodeEntity" inManagedObjectContext:appDelegate.managedObjectContext];
         
         episodeEntity.collectionId = podcastEntity.collectionId;
+        episodeEntity.guid = [episodeDict objectForKey:@"guid"];
     }
     
     episodeEntity.podcast = podcastEntity;
     
     // optional/variable properties
-    if ([episodeDict objectForKey:@"guid"]) {
-        episodeEntity.guid = [episodeDict objectForKey:@"guid"];
-    }
     if ([episodeDict objectForKey:@"itunes:image"]) {
         episodeEntity.episodeImageUrl = [[[episodeDict objectForKey:@"itunes:image"] objectForKey:@"el:attributes"] objectForKey:@"href"];
     }
@@ -1358,7 +1342,9 @@ UILabel *prototypeBadge;
     else if ([episodeDict objectForKey:@"enclosure"]) {
     	url = [[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
     }
-    else {
+    else if (!episodeEntity.url) {
+        //NSLog(@"episode dict missing url: %@", episodeDict);
+        //NSLog(@"%@",[NSThread callStackSymbols]);
         url = @"";
     }
     episodeEntity.url = url;
@@ -4128,11 +4114,11 @@ static NSDateFormatter *dayDateFormatter = nil;
 }
 
 
-+ (NSInteger) getIndexOfEpisodeWithUrl:(NSString *)urlString inFeed:(NSArray *)feed {
++ (NSInteger) getIndexOfEpisodeWithGUID:(NSString *)guid inFeed:(NSArray *)feed {
     NSInteger feedIndex = -1;
     for (int i = 0; i < feed.count; i++) {
-        NSString *url = [[[[feed objectAtIndex:i] objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
-        if ([url isEqualToString:urlString]) {
+        NSString *guidAtIndex = [[feed objectAtIndex:i] objectForKey:@"guid"];
+        if ([guidAtIndex isEqualToString:guid]) {
             feedIndex = i;
             break;
         }

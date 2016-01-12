@@ -88,7 +88,6 @@
 - (void) queueAndPlaySelectedEpisode:(NSString *)urlString fromTimestamp:(NSString *)timestamp;
 - (void) playUrl:(NSString *)urlString fromTimestamp:(NSString *)timestamp;
 - (void) playNextEpisode;
-- (void) dismissSearch;
 - (void) savePositionForNowPlayingAndSync:(BOOL)sync;
 - (BOOL) isPlaying;
 - (void) playerPlay;
@@ -222,7 +221,7 @@
 + (NSString *)timeElapsed: (NSString *)secondsString;
 + (NSString*) convertSecondsToTimeString:(CGFloat)totalSeconds;
 + (double) convertTimestampToSeconds:(NSString *)timestamp;
-+ (NSInteger) getIndexOfEpisodeWithUrl:(NSString *)urlString inFeed:(NSArray *)feed;
++ (NSInteger) getIndexOfEpisodeWithGUID:(NSString *)guid inFeed:(NSArray *)feed;
 + (BOOL) hasGrantedNotificationPermissions;
 
 @end

@@ -21,10 +21,10 @@
 @property NSMutableArray *sectionChanges;
 @property NSMutableArray *itemChanges;
 @property UISearchController *searchController;
-@property UIImageView *findPodcastsHere;
 @property BOOL editingNotifications;
 @property UIBarButtonItem *editAlertsBarButtonItem;
-@property BOOL noSubs;
+@property UILabel *noSubsLabel;
+@property UIImageView *findPodcastsHere;
 
 @end
 
@@ -82,7 +82,21 @@ CGFloat screenWidth;
     self.collectionView.collectionViewLayout = flowLayout;
     self.collectionView.scrollEnabled = YES;
     self.collectionView.backgroundColor = [TungCommonObjects bkgdGrayColor];
-    
+    // background view
+    _noSubsLabel = [[UILabel alloc] init];
+    _noSubsLabel.text = @"You haven't subscribed to\nany podcasts yet";
+    _noSubsLabel.numberOfLines = 2;
+    _noSubsLabel.textColor = [UIColor grayColor];
+    _noSubsLabel.textAlignment = NSTextAlignmentCenter;
+    self.collectionView.backgroundView = _noSubsLabel;
+    /*
+    UIImage *findPodcastsImage = [UIImage imageNamed:@"find-podcasts-here.png"];
+    _findPodcastsHere = [[UIImageView alloc] initWithImage:findPodcastsImage];
+    CGRect imageRect = CGRectMake(self.view.bounds.size.width - 220, 6, 200, 173);
+    _findPodcastsHere.frame = imageRect;
+    self.collectionView.backgroundView = _findPodcastsHere;
+    self.collectionView.backgroundView.contentMode = UIViewContentModeTopRight;
+    */
 }
 
 NSTimer *promptTimer;
@@ -327,25 +341,13 @@ NSTimer *promptTimer;
 
     id <NSFetchedResultsSectionInfo> sectionInfo = _resultsController.sections[section];
     if (sectionInfo.numberOfObjects == 0) {
-        /*
-        UILabel *noSubsLabel = [[UILabel alloc] init];
-        noSubsLabel.text = @"You haven't subscribed to any podcasts yet";
-        noSubsLabel.textColor = [UIColor grayColor];
-        noSubsLabel.textAlignment = NSTextAlignmentCenter;
-         */
-        UIImage *findPodcastsImage = [UIImage imageNamed:@"find-podcasts-here.png"];
-        _findPodcastsHere = [[UIImageView alloc] initWithImage:findPodcastsImage];
-        CGRect imageRect = CGRectMake(self.view.bounds.size.width - 220, 6, 200, 173);
-        _findPodcastsHere.frame = imageRect;
-        if (![_findPodcastsHere isDescendantOfView:self.view]) {
-        	[self.view addSubview:_findPodcastsHere];
-        }
-        
+        //_findPodcastsHere.hidden = NO;
+		self.collectionView.backgroundView = _noSubsLabel;
         self.navigationItem.leftBarButtonItem = nil;
     }
     else {
-        if ([_findPodcastsHere isDescendantOfView:self.view]) [_findPodcastsHere removeFromSuperview];
-        
+        //_findPodcastsHere.hidden = YES;
+        self.collectionView.backgroundView = nil;
         self.navigationItem.leftBarButtonItem = _editAlertsBarButtonItem;
     }
     return sectionInfo.numberOfObjects;

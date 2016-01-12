@@ -14,6 +14,7 @@
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property NSIndexPath *focusedIndexPath;
 @property NSIndexPath *buttonPressIndexPath;
+@property EpisodeEntity *episodeEntity;
 
 @end
 
@@ -229,7 +230,7 @@ UILabel *prototypeLabel;
         noMoreLabel.numberOfLines = 0;
         noMoreLabel.textColor = [UIColor grayColor];
         noMoreLabel.textAlignment = NSTextAlignmentCenter;
-        if (_isForNowPlaying) {
+        if (_episodeEntity.isNowPlaying.boolValue) {
         	return noMoreLabel;
         }
         UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 60)];
@@ -243,7 +244,7 @@ UILabel *prototypeLabel;
         noCommentsLabel.textColor = [UIColor grayColor];
         noCommentsLabel.textAlignment = NSTextAlignmentCenter;
         noCommentsLabel.font = [UIFont systemFontOfSize:15];
-        if (_isForNowPlaying) {
+        if (_episodeEntity.isNowPlaying.boolValue) {
             return noCommentsLabel;
         }
         UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 60)];
@@ -350,6 +351,7 @@ UILabel *prototypeLabel;
                             orOlderThan:(NSNumber *)beforeTime {
     
     self.requestStatus = @"initiated";
+    _episodeEntity = episodeEntity;
     
     NSURL *commentsURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/comments.php", _tung.apiRootUrl]];
     NSMutableURLRequest *feedRequest = [NSMutableURLRequest requestWithURL:commentsURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
