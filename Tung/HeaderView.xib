@@ -10,6 +10,7 @@
                 <outlet property="albumArt" destination="fLF-cu-77A" id="fpk-AL-TeK"/>
                 <outlet property="descriptionLabel" destination="sm5-bR-URW" id="RSn-xU-wnV"/>
                 <outlet property="largeButton" destination="4ma-BI-uyd" id="34o-Vs-bnY"/>
+                <outlet property="podcastButton" destination="XHZ-7O-BGO" id="sbn-GI-BDf"/>
                 <outlet property="subTitleLabel" destination="2Jl-63-wuU" id="iQ0-en-JxP"/>
                 <outlet property="subscribeButton" destination="4KU-bK-8sC" id="Yvf-QH-G5H"/>
                 <outlet property="titleLabel" destination="ect-QW-a9O" id="3Bi-6q-yMW"/>
@@ -75,12 +76,20 @@
                         <constraint firstAttribute="height" constant="62" id="iNP-R9-0BS"/>
                     </constraints>
                 </button>
+                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" adjustsImageWhenHighlighted="NO" adjustsImageWhenDisabled="NO" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="XHZ-7O-BGO">
+                    <rect key="frame" x="263" y="12" width="100" height="100"/>
+                    <constraints>
+                        <constraint firstAttribute="height" constant="100" id="BUd-Vt-5BD"/>
+                        <constraint firstAttribute="width" constant="100" id="GrR-Ot-pML"/>
+                    </constraints>
+                </button>
             </subviews>
             <color key="backgroundColor" red="0.56082421540000005" green="0.63564246889999998" blue="0.96741372349999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
             <constraints>
                 <constraint firstAttribute="trailing" secondItem="P4H-HX-XM9" secondAttribute="trailing" id="25o-Ws-Fhe"/>
                 <constraint firstItem="sm5-bR-URW" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="12" id="6h7-FS-8eI"/>
                 <constraint firstItem="fLF-cu-77A" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" constant="12" id="LDo-89-IUa"/>
+                <constraint firstItem="XHZ-7O-BGO" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="top" constant="12" id="XAu-pP-b93"/>
                 <constraint firstAttribute="trailing" secondItem="fLF-cu-77A" secondAttribute="trailing" constant="12" id="ZxX-Ey-bGM"/>
                 <constraint firstItem="2Jl-63-wuU" firstAttribute="top" secondItem="ect-QW-a9O" secondAttribute="bottom" constant="2" id="aer-km-FmU"/>
                 <constraint firstItem="ect-QW-a9O" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="12" id="eMD-lI-NnS"/>
@@ -93,6 +102,7 @@
                 <constraint firstItem="4KU-bK-8sC" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="12" id="p8E-jB-dKG"/>
                 <constraint firstAttribute="trailing" secondItem="sm5-bR-URW" secondAttribute="trailing" constant="12" id="pkP-2u-uNB"/>
                 <constraint firstItem="2Jl-63-wuU" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="12" id="qYr-Fd-TrT"/>
+                <constraint firstAttribute="trailing" secondItem="XHZ-7O-BGO" secondAttribute="trailing" constant="12" id="rYa-2t-5eH"/>
                 <constraint firstItem="fLF-cu-77A" firstAttribute="leading" secondItem="2Jl-63-wuU" secondAttribute="trailing" constant="12" id="s2B-KR-TwK"/>
                 <constraint firstItem="fLF-cu-77A" firstAttribute="leading" secondItem="ect-QW-a9O" secondAttribute="trailing" constant="12" id="s4c-fy-VAS"/>
             </constraints>

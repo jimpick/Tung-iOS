@@ -7,8 +7,10 @@
 //
 
 #import "DescriptionWebViewController.h"
+#import "BrowserViewController.h"
 
 @interface DescriptionWebViewController ()
+@property NSURL *urlToPass;
 
 @end
 
@@ -16,10 +18,16 @@
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    // Do any additional setup after loading the view.
+    
+    self.navigationItem.title = @"Podcast Description";
     
     _webView.opaque = NO;
     _webView.backgroundColor = [UIColor whiteColor];
+    _webView.delegate = self;
+    
+    if (_stringToLoad) {
+        [_webView loadHTMLString:_stringToLoad baseURL:[NSURL URLWithString:@"desc"]];
+    }
 }
 
 - (void)didReceiveMemoryWarning {
@@ -27,14 +35,40 @@
     // Dispose of any resources that can be recreated.
 }
 
-/*
+#pragma mark - UIWebView delegate methods
+
+-(BOOL) webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
+    
+    if ([request.URL.scheme isEqualToString:@"file"]) {
+        return YES;
+        
+    } else {
+        
+        // open web browsing modal
+        _urlToPass = request.URL;
+        [self performSegueWithIdentifier:@"presentWebView" sender:self];
+        
+        return NO;
+    }
+}
+
+- (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error
+{
+    NSLog(@"web view did fail with error: %@", error);
+}
+
 #pragma mark - Navigation
 
-// In a storyboard-based application, you will often want to do a little preparation before navigation
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    // Get the new view controller using [segue destinationViewController].
-    // Pass the selected object to the new view controller.
+    
+    UINavigationController *destination = segue.destinationViewController;
+    
+    if ([[segue identifier] isEqualToString:@"presentWebView"]) {
+        BrowserViewController *browserViewController = (BrowserViewController *)destination;
+        [browserViewController setValue:_urlToPass forKey:@"urlToNavigateTo"];
+    }
+    
 }
-*/
+
 
 @end

@@ -198,6 +198,7 @@
 + (NSData*) retrieveAudioClipDataWithUrlString:(NSString *)urlString;
 + (NSData*) retrieveSSLPodcastArtDataWithUrlString:(NSString *)urlString;
 + (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
++ (NSString *) getPodcastArtPathWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (NSURL *) getClipFileURL;
 + (NSString *) getAlbumArtFilenameFromUrlString:(NSString *)artURLString;
 

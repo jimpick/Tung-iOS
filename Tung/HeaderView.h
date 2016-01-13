@@ -19,6 +19,7 @@
 @property (strong, nonatomic) IBOutlet CircleButton *subscribeButton;
 @property (strong, nonatomic) IBOutlet UILabel *descriptionLabel;
 @property (strong, nonatomic) IBOutlet CircleButton *largeButton;
+@property (strong, nonatomic) IBOutlet UIButton *podcastButton;
 @property NSLayoutConstraint *heightConstraint;
 @property NSArray *keyColors;
 @property BOOL isConstrained;

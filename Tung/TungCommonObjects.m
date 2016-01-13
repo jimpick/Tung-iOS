@@ -179,7 +179,7 @@
             return;
         }
         else {
-            NSLog(@"check for now playing - found 'half' entity: %@", [TungCommonObjects entityToDict:_npEpisodeEntity]);
+            //NSLog(@"check for now playing - found 'half' entity: %@", [TungCommonObjects entityToDict:_npEpisodeEntity]);
             [self removeNowPlayingStatusFromAllEpisodes];
         }
     }
@@ -3713,6 +3713,23 @@ static NSArray *colors;
         return artImageData;
     }
     return nil;
+}
+
++ (NSString *) getPodcastArtPathWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId {
+    
+    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
+    NSError *error;
+    if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
+        
+        NSString *extension = [[urlString lastPathComponent] pathExtension];
+        if (!extension) extension = @"jpg";
+        NSString *artFilename = [NSString stringWithFormat:@"%@.%@", collectionId, extension];
+        NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
+        return artFilepath;
+        
+    } else {
+        return nil;
+    }
 }
 
 + (NSURL *) getClipFileURL {

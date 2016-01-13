@@ -1818,7 +1818,7 @@
         <!--Description Web View Controller-->
         <scene sceneID="jJ3-K5-Q8J">
             <objects>
-                <viewController storyboardIdentifier="descWebView" automaticallyAdjustsScrollViewInsets="NO" id="Ed5-1A-CAv" customClass="DescriptionWebViewController" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="descWebView" id="Ed5-1A-CAv" customClass="DescriptionWebViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="HrI-j0-DDt"/>
                         <viewControllerLayoutGuide type="bottom" id="UlX-T5-4hQ"/>
@@ -1836,6 +1836,9 @@
                         <constraints>
                             <constraint firstAttribute="trailing" secondItem="4vv-VJ-ozp" secondAttribute="trailing" id="68E-rs-fmx"/>
                             <constraint firstItem="4vv-VJ-ozp" firstAttribute="top" secondItem="rxC-xa-NQh" secondAttribute="top" id="Wfj-bw-FwE"/>
+                            <constraint firstItem="4vv-VJ-ozp" firstAttribute="bottom" secondItem="rxC-xa-NQh" secondAttribute="bottomMargin" id="iKl-1G-eCU">
+                                <variation key="widthClass=compact" constant="5"/>
+                            </constraint>
                             <constraint firstItem="UlX-T5-4hQ" firstAttribute="top" secondItem="4vv-VJ-ozp" secondAttribute="bottom" id="jVC-Ej-inG"/>
                             <constraint firstItem="4vv-VJ-ozp" firstAttribute="leading" secondItem="rxC-xa-NQh" secondAttribute="leading" id="wbU-YY-kzN"/>
                         </constraints>
@@ -1844,10 +1847,11 @@
                                 <exclude reference="4vv-VJ-ozp"/>
                             </mask>
                             <mask key="constraints">
-                                <exclude reference="jVC-Ej-inG"/>
                                 <exclude reference="68E-rs-fmx"/>
                                 <exclude reference="Wfj-bw-FwE"/>
+                                <exclude reference="iKl-1G-eCU"/>
                                 <exclude reference="wbU-YY-kzN"/>
+                                <exclude reference="jVC-Ej-inG"/>
                             </mask>
                         </variation>
                         <variation key="widthClass=compact">
@@ -1855,21 +1859,24 @@
                                 <include reference="4vv-VJ-ozp"/>
                             </mask>
                             <mask key="constraints">
-                                <include reference="jVC-Ej-inG"/>
                                 <include reference="68E-rs-fmx"/>
                                 <include reference="Wfj-bw-FwE"/>
+                                <include reference="iKl-1G-eCU"/>
                                 <include reference="wbU-YY-kzN"/>
+                                <exclude reference="jVC-Ej-inG"/>
                             </mask>
                         </variation>
                     </view>
                     <extendedEdge key="edgesForExtendedLayout"/>
+                    <nil key="simulatedBottomBarMetrics"/>
                     <connections>
                         <outlet property="webView" destination="4vv-VJ-ozp" id="oKn-da-Das"/>
+                        <segue destination="wD7-6S-Iws" kind="presentation" identifier="presentWebView" id="dk8-9Y-zcj"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="qYq-I6-wIs" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2760" y="804"/>
+            <point key="canvasLocation" x="2808" y="804"/>
         </scene>
         <!--Table View Controller-->
         <scene sceneID="5e7-Wc-JQf">
@@ -3344,6 +3351,6 @@
         <image name="tungSignInLogo.png" width="194" height="124"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="09H-aj-Zdd"/>
+        <segue reference="dk8-9Y-zcj"/>
     </inferredMetricsTieBreakers>
 </document>

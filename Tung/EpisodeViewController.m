@@ -527,6 +527,8 @@ NSTimer *markAsSeenTimer;
     	[_headerView.largeButton addTarget:self action:@selector(playEpisode) forControlEvents:UIControlEventTouchUpInside];
     }
     
+    [_headerView.podcastButton addTarget:self action:@selector(pushPodcastDescription) forControlEvents:UIControlEventTouchUpInside];
+    
     [self refreshRecommendAndSubscribeStatus];
     
     // switcher
@@ -547,6 +549,7 @@ NSTimer *markAsSeenTimer;
     _episodesView.podcastEntity = episodeEntity.podcast;
     [_episodesView.tableView reloadData];
     
+    // episode description
     if (episodeEntity.desc.length == 0 || [episodeEntity.desc isEqualToString:@"No description"]) {
         // refresh description web view with description from feed
         NSInteger feedIndex = [TungCommonObjects getIndexOfEpisodeWithGUID:episodeEntity.guid inFeed:_episodesView.episodeArray];
@@ -563,6 +566,11 @@ NSTimer *markAsSeenTimer;
         }
     }
     [self loadDescriptionWebViewStringForEntity:episodeEntity];
+    
+    // podcast description
+    if (!episodeEntity.podcast.desc || episodeEntity.podcast.desc.length == 0) {
+        episodeEntity.podcast.desc = [[feedDict objectForKey:@"channel"] objectForKey:@"description"];
+    }
     
     // scroll to episode row if it's playing
     if (_isNowPlayingView) {
@@ -638,12 +646,13 @@ NSTimer *markAsSeenTimer;
 }
 
 
-#pragma mark Description web view
+#pragma mark Description web views
 
+// uses this view as its webview delegate
 - (void) loadDescriptionWebViewStringForEntity:(EpisodeEntity *)episodeEntity {
     // description style
     NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:episodeEntity.podcast.keyColor1];
-    NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:4px 13px; color:#666; font: .9em/1.4em -apple-system, Helvetica; } a { color:%@; } img { max-width:100%%; height:auto; } .endOfFile { margin:40px auto 20px; clear:both; width:60px; height:auto; display:block }</style>\n", keyColor1HexString];
+    NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:4px 13px; color:#666; font: .9em/1.4em -apple-system, Helvetica; } a { color:%@; } img { max-width:100%%; height:auto; } .endOfFile { margin:40px auto 30px; clear:both; width:60px; height:auto; display:block }</style>\n", keyColor1HexString];
     // description script:
     NSString *scriptPath = [[NSBundle mainBundle] pathForResource:@"description" ofType:@"js"];
     NSURL *scriptUrl = [NSURL fileURLWithPath:scriptPath];
@@ -654,7 +663,29 @@ NSTimer *markAsSeenTimer;
     NSString *tungEndOfFileImg = [NSString stringWithFormat:@"<img class=\"endOfFile\" src=\"%@\">", tungEndOfFileLogoUrl];
     // description
     NSString *webViewString = [NSString stringWithFormat:@"%@%@%@%@", style, script, episodeEntity.desc, tungEndOfFileImg];
+    //NSLog(@"webViewString: %@", webViewString);
     [_descriptionView.webView loadHTMLString:webViewString baseURL:[NSURL URLWithString:@"desc"]];
+}
+
+// pushes a new view which uses its own webview delegate
+- (void) pushPodcastDescription {
+    // podcast description style: DIFFERENT than above
+    NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:_episodeEntity.podcast.keyColor1];
+    NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:0; color:#666; font: .9em/1.4em -apple-system, Helvetica; } a { color:%@; } img { max-width:100%%; height:auto; } .podcastArt { width:100%%; height:auto; display:block } div { padding:10px 13px 30px 13px; }</style>\n", keyColor1HexString];
+    // description script:
+    NSString *scriptPath = [[NSBundle mainBundle] pathForResource:@"description" ofType:@"js"];
+    NSURL *scriptUrl = [NSURL fileURLWithPath:scriptPath];
+    NSString *script = [NSString stringWithFormat:@"<script type=\"text/javascript\" src=\"%@\"></script>\n", scriptUrl.path];
+    // album art
+    NSString *podcastArtPath = [TungCommonObjects getPodcastArtPathWithUrlString:_episodeEntity.podcast.artworkUrl600 andCollectionId:_episodeEntity.collectionId];
+    NSURL *podcastArtUrl = [NSURL fileURLWithPath:podcastArtPath];
+    NSString *podcastArtImg = [NSString stringWithFormat:@"<img class=\"podcastArt\" src=\"%@\">", podcastArtUrl];
+    // description
+    NSString *webViewString = [NSString stringWithFormat:@"%@%@%@<div><h3>%@</h3>%@</div>", style, script, podcastArtImg, _episodeEntity.podcast.collectionName, _episodeEntity.podcast.desc];
+    //NSLog(@"webViewString: %@", webViewString);
+    DescriptionWebViewController *descView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"descWebView"];
+    descView.stringToLoad = webViewString;
+    [self.navigationController pushViewController:descView animated:YES];
 }
 
 #pragma mark Subscribing
