@@ -1196,9 +1196,9 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
 				PRODUCT_NAME = tung;
-				PROVISIONING_PROFILE = "";
+				PROVISIONING_PROFILE = "718fb24a-5793-474c-92e2-c66542da4d16";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -1220,9 +1220,9 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
 				PRODUCT_NAME = tung;
-				PROVISIONING_PROFILE = "";
+				PROVISIONING_PROFILE = "718fb24a-5793-474c-92e2-c66542da4d16";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
