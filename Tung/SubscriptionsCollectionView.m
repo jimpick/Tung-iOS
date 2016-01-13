@@ -10,8 +10,6 @@
 #import "AppDelegate.h"
 #import "SubscriptionViewCell.h"
 #import "PodcastViewController.h"
-#import "KLCPopup.h"
-#import "BannerAlert.h"
 
 @interface SubscriptionsCollectionView () <NSFetchedResultsControllerDelegate>
 
@@ -170,26 +168,8 @@ NSTimer *promptTimer;
 - (void) handleNotifyPrefChangedNotification:(NSNotification *)notification {
     
     if (notification.userInfo[@"message"]) {
-        [self showBannerAlertForText:notification.userInfo[@"message"]];
+        [TungCommonObjects showBannerAlertForText:notification.userInfo[@"message"] andWidth:screenWidth];
     }
-}
-
-- (void) showBannerAlertForText:(NSString *)text {
-    BannerAlert *bannerAlertView = [[BannerAlert alloc] init];
-    
-    [bannerAlertView sizeBannerAndSetText:text forWidth:screenWidth];
-    
-    //KLCPopupLayout layout = KLCPopupLayoutMake(KLCPopupHorizontalLayoutCenter, KLCPopupVerticalLayoutBottom);
-    
-    KLCPopup *bannerAlert = [KLCPopup popupWithContentView:bannerAlertView
-                                                   showType:KLCPopupShowTypeFadeIn
-                                                dismissType:KLCPopupDismissTypeFadeOut
-                                                   maskType:KLCPopupMaskTypeClear
-                                   dismissOnBackgroundTouch:NO
-                                      dismissOnContentTouch:NO];
-    
-    //[bannerAlert showWithLayout:layout duration:3];
-    [bannerAlert showWithDuration:3];
 }
 
 #pragma mark - tungObjects/tungPodcasts delegate methods

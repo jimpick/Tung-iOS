@@ -669,23 +669,8 @@ NSTimer *markAsSeenTimer;
 
 // pushes a new view which uses its own webview delegate
 - (void) pushPodcastDescription {
-    // podcast description style: DIFFERENT than above
-    NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:_episodeEntity.podcast.keyColor1];
-    NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:0; color:#666; font: .9em/1.4em -apple-system, Helvetica; } a { color:%@; } img { max-width:100%%; height:auto; } .podcastArt { width:100%%; height:auto; display:block } div { padding:10px 13px 30px 13px; }</style>\n", keyColor1HexString];
-    // description script:
-    NSString *scriptPath = [[NSBundle mainBundle] pathForResource:@"description" ofType:@"js"];
-    NSURL *scriptUrl = [NSURL fileURLWithPath:scriptPath];
-    NSString *script = [NSString stringWithFormat:@"<script type=\"text/javascript\" src=\"%@\"></script>\n", scriptUrl.path];
-    // album art
-    NSString *podcastArtPath = [TungCommonObjects getPodcastArtPathWithUrlString:_episodeEntity.podcast.artworkUrl600 andCollectionId:_episodeEntity.collectionId];
-    NSURL *podcastArtUrl = [NSURL fileURLWithPath:podcastArtPath];
-    NSString *podcastArtImg = [NSString stringWithFormat:@"<img class=\"podcastArt\" src=\"%@\">", podcastArtUrl];
-    // description
-    NSString *webViewString = [NSString stringWithFormat:@"%@%@%@<div><h3>%@</h3>%@</div>", style, script, podcastArtImg, _episodeEntity.podcast.collectionName, _episodeEntity.podcast.desc];
-    //NSLog(@"webViewString: %@", webViewString);
-    DescriptionWebViewController *descView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"descWebView"];
-    descView.stringToLoad = webViewString;
-    [self.navigationController pushViewController:descView animated:YES];
+    
+    [_podcast pushPodcastDescriptionForEntity:_episodeEntity.podcast];
 }
 
 #pragma mark Subscribing

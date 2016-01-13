@@ -86,7 +86,7 @@ CGFloat screenWidth;
         _profileSearchView.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero];
         _profileSearchView.tableView.backgroundView = nil;
         _profileSearchView.navController = [self navigationController];
-
+        _profileSearchView.profileArray = [NSMutableArray array];
         
         _searchController = [[UISearchController alloc] initWithSearchResultsController:_profileSearchView];
         _searchController.delegate = self;
@@ -346,6 +346,13 @@ NSTimer *promptTimer;
     
     [_searchController.searchBar becomeFirstResponder];
     
+    [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(reloadSearchTable) userInfo:nil repeats:NO];
+    
+}
+
+- (void) reloadSearchTable {
+    NSLog(@"reload search table");
+    [_profileSearchView.tableView reloadData];
 }
 
 -(void) dismissProfileSearch {
@@ -508,8 +515,8 @@ NSTimer *promptTimer;
     CLS_LOG(@"connection failed: %@", error);
     /* this error pops up occaisionally, probably because of rapid requests.
      makes user think something is wrong when it really isn't.
-    UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-    [connectionErrorAlert show];
+     
+     [TungCommonObjects showConnectionErrorAlertForError:error];
      */
 }
 
@@ -784,7 +791,8 @@ NSTimer *sessionCheckTimer;
 }
 
 - (void) confirmSignOut {
-    UIActionSheet *signOutSheet = [[UIActionSheet alloc] initWithTitle:[NSString stringWithFormat:@"You are running v%@ of tung.", _tung.tung_version] delegate:_tung cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Sign out" otherButtonTitles:nil];
+    NSString *version = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
+    UIActionSheet *signOutSheet = [[UIActionSheet alloc] initWithTitle:[NSString stringWithFormat:@"You are running v %@ of tung.", version] delegate:_tung cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Sign out" otherButtonTitles:nil];
     [signOutSheet setTag:99];
     [signOutSheet showFromToolbar:self.navigationController.toolbar];
 }

@@ -13,6 +13,7 @@
 #import "EpisodeCell.h"
 #import "PodcastViewController.h"
 #import "EpisodeViewController.h"
+#import "DescriptionWebViewController.h"
 
 @interface TungPodcast()
 
@@ -238,9 +239,8 @@
     
     /* this error pops up occaisionally, probably because of rapid requests.
      makes user think something is wrong when it really isn't.
-    UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-    //self.tableView.backgroundView = nil;
-    [connectionErrorAlert show];
+     
+     [TungCommonObjects showConnectionErrorAlertForError:error];
     */
 }
 
@@ -463,6 +463,30 @@ static NSString *cellIdentifier = @"PodcastResultCell";
     }
 }
 
+#pragma mark - misc
+
+// pushes a new view with webview description of podcast
+- (void) pushPodcastDescriptionForEntity:(PodcastEntity *)podcastEntity {
+    // podcast description style: DIFFERENT than above
+    NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:podcastEntity.keyColor1];
+    NSString *keyColor2HexString = [TungCommonObjects UIColorToHexString:podcastEntity.keyColor2];
+    NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:0; color:#666; font: .9em/1.4em -apple-system, Helvetica; } a { color:%@; } img { max-width:100%%; height:auto; } .podcastArt { width:100%%; height:auto; display:block } .header { color:%@; font-weight:300; } div { padding:10px 13px 30px 13px; }</style>\n", keyColor1HexString, keyColor2HexString];
+    // description script:
+    NSString *scriptPath = [[NSBundle mainBundle] pathForResource:@"description" ofType:@"js"];
+    NSURL *scriptUrl = [NSURL fileURLWithPath:scriptPath];
+    NSString *script = [NSString stringWithFormat:@"<script type=\"text/javascript\" src=\"%@\"></script>\n", scriptUrl.path];
+    // album art
+    NSString *podcastArtPath = [TungCommonObjects getPodcastArtPathWithUrlString:podcastEntity.artworkUrl600 andCollectionId:podcastEntity.collectionId];
+    NSURL *podcastArtUrl = [NSURL fileURLWithPath:podcastArtPath];
+    NSString *podcastArtImg = [NSString stringWithFormat:@"<img class=\"podcastArt\" src=\"%@\">", podcastArtUrl];
+    // description
+    NSString *webViewString = [NSString stringWithFormat:@"%@%@%@<div><h2 class=\"header\">%@</h2>%@</div>", style, script, podcastArtImg, podcastEntity.collectionName, podcastEntity.desc];
+    //NSLog(@"webViewString: %@", webViewString);
+    DescriptionWebViewController *descView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"descWebView"];
+    descView.stringToLoad = webViewString;
+    [_navController pushViewController:descView animated:YES];
+}
+
 #pragma mark - preloading, caching and converting feeds
 
 
@@ -474,7 +498,6 @@ static NSString *feedDictsDirName = @"feedDicts";
 
 + (void) cacheFeed:(NSDictionary *)feed forEntity:(PodcastEntity *)entity {
     
-    CLS_LOG(@"cache feed for entity");
     NSString *feedDir = [NSTemporaryDirectory() stringByAppendingPathComponent:feedDictsDirName];
     NSError *error;
     if ([[NSFileManager defaultManager] createDirectoryAtPath:feedDir withIntermediateDirectories:YES attributes:nil error:&error]) {
@@ -558,7 +581,7 @@ static NSString *feedDictsDirName = @"feedDicts";
     for (int i = 0; i < maxNumToPreload; i++) {
         
         [_feedPreloadQueue addOperationWithBlock:^{
-            CLS_LOG(@"** preload feed at index: %d", i);
+            //CLS_LOG(@"** preload feed at index: %d", i);
             PodcastEntity *podEntity = [TungCommonObjects getEntityForPodcast:[podcastArrayCopy objectAtIndex:i] save:NO];
             NSDictionary *feedDict = [TungPodcast requestAndConvertPodcastFeedDataWithFeedUrl:podEntity.feedUrl];
             [TungPodcast cacheFeed:feedDict forEntity:podEntity];

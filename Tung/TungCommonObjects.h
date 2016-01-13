@@ -55,11 +55,8 @@
 @property (strong, nonatomic) NSString *tungToken;
 @property (strong, nonatomic) NSString *sessionId;
 @property NSNumber *connectionAvailable;
-// root info
-@property (strong, nonatomic) NSString *tung_version;
 @property (nonatomic, retain) NSString *tungSiteRootUrl;
 @property (nonatomic, retain) NSString *apiRootUrl;
-@property (nonatomic, retain) NSString *twitterApiRootUrl;
 // player
 @property EpisodeEntity *npEpisodeEntity;
 @property (strong, nonatomic) UIButton *btn_player;
@@ -118,10 +115,6 @@
 
 // facebook
 - (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity;
-
-// alerts
-- (void) promptForNotificationsForEpisodes;
-- (void) promptForNotificationsForMentions;
 
 // flags
 @property (strong, nonatomic) NSNumber *feedNeedsRefresh;
@@ -189,6 +182,12 @@
 - (void) followAllUsersFromId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) inviteFriends:(NSString *)friends;
 - (void) signOut;
+
+// alerts
+- (void) promptForNotificationsForEpisodes;
+- (void) promptForNotificationsForMentions;
++ (void) showConnectionErrorAlertForError:(NSError *)error;
++ (void) showBannerAlertForText:(NSString *)text andWidth:(CGFloat)screenWidth;
 
 // caching
 + (NSData*) retrieveLargeAvatarDataWithUrlString:(NSString *)urlString;

@@ -39,6 +39,7 @@
     self.navigationItem.rightBarButtonItem = nil;
     
     _podcast = [TungPodcast new];
+    _podcast.navController = [self navigationController];
     //NSLog(@"podcast dict: %@", _podcastDict);
     
     // get podcast entity
@@ -146,13 +147,19 @@
     
     [_headerView sizeAndConstrainHeaderViewInViewController:self];
     [_headerView.subscribeButton addTarget:self action:@selector(subscribeToPodcastViaSender:) forControlEvents:UIControlEventTouchUpInside];
+    [_headerView.podcastButton addTarget:self action:@selector(pushPodcastDescription) forControlEvents:UIControlEventTouchUpInside];
     
     [_episodesView.tableView reloadData];
     
     if (_focusedGUID) {
         [_episodesView.tableView scrollToRowAtIndexPath:_episodesView.focusedIndexPath atScrollPosition:UITableViewScrollPositionMiddle animated:YES];
     }
+}
 
+// pushes a new view which uses its own webview delegate
+- (void) pushPodcastDescription {
+    
+    [_podcast pushPodcastDescriptionForEntity:_podcastEntity];
 }
 
 #pragma mark Subscribing

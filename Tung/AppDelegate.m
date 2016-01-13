@@ -46,14 +46,10 @@
         NSString *creationDate = attributes[(__bridge id)kSecAttrCreationDate];
         CLS_LOG(@"Credentials found. Created on: %@", creationDate);
         isLoggedIn = YES;
-    } else {
-        CLS_LOG(@"No cred found. Code: %ld", (long)results);
     }
     
     // delete keychain value for cred
     //[TungCommonObjects deleteCredentials];
-    
-    //isLoggedIn = NO; // DEV ONLY
     
     // depending on if they have cred or not, show appropriate screen
     NSString *storyboardId = isLoggedIn ? @"authenticated" : @"welcome";
@@ -226,6 +222,8 @@
     free(bytes);
     
     //NSLog(@"remote notification token: %@", tokenAsString);
+    //UIAlertView *tokenAlert = [[UIAlertView alloc] initWithTitle:@"Device token" message:tokenAsString delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+    //[tokenAlert show];
     
     [self postDeviceToken:tokenAsString];
     

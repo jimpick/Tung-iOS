@@ -259,9 +259,7 @@ CGFloat screenWidth;
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self endRefreshing];
                 
-                UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                self.tableView.backgroundView = nil;
-                [connectionErrorAlert show];
+                [TungCommonObjects showConnectionErrorAlertForError:error];
             });
         }
     }];
@@ -545,7 +543,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
             return [self labelWithMessageAndBottomMargin:message];
         }
     }
-    else if (!_queryType) {
+    else if (!_queryType && section == 1) {
         return [self footerViewWithMessage:@""];
     }
     else {

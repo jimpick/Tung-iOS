@@ -1002,9 +1002,7 @@ NSInteger requestTries = 0;
                 else {
                     [self endRefreshing];
                     
-                    UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                    self.tableView.backgroundView = nil;
-                    [connectionErrorAlert show];
+                    [TungCommonObjects showConnectionErrorAlertForError:error];
                 }
             });
         }
@@ -1070,7 +1068,7 @@ NSInteger requestTries = 0;
                         
                         NSTimeInterval requestDuration = [requestStarted timeIntervalSinceNow];
                         NSArray *newStories = [responseDict objectForKey:@"stories"];
-                        CLS_LOG(@"new stories count: %lu", (unsigned long)newStories.count);
+                        //CLS_LOG(@"new stories count: %lu", (unsigned long)newStories.count);
                         
                         if (withCred) {
                             CLS_LOG(@"got stories AND session in %f seconds. session Id: %@", fabs(requestDuration), [responseDict objectForKey:@"sessionId"]);
@@ -1103,7 +1101,7 @@ NSInteger requestTries = 0;
                         // pull refresh
                         if ([afterTime intValue] > 0) {
                             if (newStories.count > 0) {
-                                CLS_LOG(@"\tgot stories newer than: %@", afterTime);
+                                //CLS_LOG(@"got stories newer than: %@", afterTime);
                                 [self stopClipPlayback];
                                 NSArray *newItems = [self processStories:newStories];
                                 NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
@@ -1209,9 +1207,7 @@ NSInteger requestTries = 0;
                 else {
                     [self endRefreshing];
                     
-                    UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                    self.tableView.backgroundView = nil;
-                    [connectionErrorAlert show];
+                    [TungCommonObjects showConnectionErrorAlertForError:error];
                 }
             });
         }

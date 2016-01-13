@@ -315,7 +315,7 @@ static UIImage *iconRedX;
 }
 
 - (void) createAvatarSizesAndSetAvatarWithCallback:(void (^)(BOOL success))callback {
-    CLS_LOG(@"create avatar sizes and set avatar with callback");
+    //CLS_LOG(@"create avatar sizes and set avatar with callback");
     // Avatar
     NSData *dataToResize = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: [_profileData objectForKey:@"avatarURL"]]];
     UIImage *imageToResize = [[UIImage alloc] initWithData:dataToResize];
@@ -424,72 +424,6 @@ static UIImage *iconRedX;
     }
 }
 
-// wait for twitter account to be established, then request avatar url
--(void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context
-{
-    //CLS_LOG(@"----- value changed for key: %@, change: %@", keyPath, change);
-    
-    if ([keyPath isEqualToString:@"tung.twitterAccountStatus"]) {
-        if ([_tung.twitterAccountStatus isEqualToString:@"failed"]) {
-            [_avatarActivityIndicator stopAnimating];
-            _working = NO;
-        }
-        else if ([_tung.twitterAccountStatus isEqualToString:@"success"]) {
-            [self getTwitterAvatarUrl];
-        }
-    }
-}
-
-// OLD CODE not used
-- (void) getTwitterAvatarUrl {
-    CLS_LOG(@"get twitter avatar url");
-    ACAccountStore *accountStore = [[ACAccountStore alloc] init];
-    NSURL *requestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@account/verify_credentials.json", _tung.twitterApiRootUrl]];
-    SLRequest *getAvatarRequest = [SLRequest requestForServiceType:SLServiceTypeTwitter requestMethod:SLRequestMethodGET URL:requestURL parameters:nil];
-    getAvatarRequest.account = _tung.twitterAccountToUse;
-    
-    [getAvatarRequest performRequestWithHandler:^(NSData *responseData, NSHTTPURLResponse *urlResponse, NSError *error) {
-        //CLS_LOG(@"	Twitter HTTP response: %li", (long)[urlResponse statusCode]);
-        //NSString *html = [[NSString alloc] initWithData:responseData encoding:NSUTF8StringEncoding];
-        //CLS_LOG(@"HTML: %@", html);
-        if (error != nil) CLS_LOG(@"Error: %@", error);
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:responseData options:NSJSONReadingAllowFragments error:&error];
-        if (jsonData != nil && error == nil) {
-            NSDictionary *accountData = jsonData;
-            //CLS_LOG(@"%@", accountData);
-            if ([accountData objectForKey:@"errors"]) {
-                CLS_LOG(@"Errors: %@", [accountData objectForKey:@"errors"]);
-                error = nil;
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [_avatarActivityIndicator stopAnimating];
-                    [accountStore renewCredentialsForAccount:_tung.twitterAccountToUse completion:^(ACAccountCredentialRenewResult renewResult, NSError *error) {
-                        _working = NO;
-                    }];
-                });
-            } else {
-                // make image big by removing "_normal"
-                NSMutableString *avatarURL = [[accountData objectForKey:@"profile_image_url"] mutableCopy];
-                NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(_normal)" options:0 error:nil];
-                [regex replaceMatchesInString:avatarURL options:0 range:NSMakeRange(0, [avatarURL length]) withTemplate:@""];
-                
-                CLS_LOG(@"profile dictionary: %@", _profileData);
-                
-                [_profileData setObject:avatarURL forKey:@"avatarURL"];
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self createAvatarSizesAndSetAvatarWithCallback:^(BOOL success) {
-                        if (success) {
-                            [self updateAvatar];
-                        } else {
-                            CLS_LOG(@"error creating avatar sizes");
-                        }
-                    }];
-                });
-
-            }
-        }
-    }];
-}
 
 - (void) getTwitterAvatar {
     
@@ -516,7 +450,7 @@ static UIImage *iconRedX;
                 NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"(_normal)" options:0 error:nil];
                 [regex replaceMatchesInString:avatarURL options:0 range:NSMakeRange(0, [avatarURL length]) withTemplate:@""];
                 
-                CLS_LOG(@"profile dictionary: %@", _profileData);
+                //CLS_LOG(@"profile dictionary: %@", _profileData);
                 
                 [_profileData setObject:avatarURL forKey:@"avatarURL"];
                 dispatch_async(dispatch_get_main_queue(), ^{

@@ -502,8 +502,7 @@ UILabel *prototypeLabel;
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self endRefreshing];
                 
-                UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                [connectionErrorAlert show];
+                [TungCommonObjects showConnectionErrorAlertForError:error];
             });
         }
     }];

@@ -57,6 +57,8 @@
 + (NSDictionary *) requestAndConvertPodcastFeedDataWithFeedUrl:(NSString *)feedUrl;
 + (NSArray *) extractFeedArrayFromFeedDict:(NSDictionary *)feedDict;
 
+- (void) pushPodcastDescriptionForEntity:(PodcastEntity *)podcastEntity;
+
 - (void) preloadPodcastArtForArray:(NSArray*)itemArray;
 - (void) preloadFeedsWithLimit:(NSUInteger)limit;
 - (void) showNoConnectionAlert;

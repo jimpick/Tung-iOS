@@ -27,6 +27,8 @@
 #import "CCColorCube.h"
 #import "TungPodcast.h"
 #import <CommonCrypto/CommonDigest.h>
+#import "KLCPopup.h"
+#import "BannerAlert.h"
 
 #import <MobileCoreServices/MobileCoreServices.h> // for AVURLAsset resource loading
 
@@ -68,7 +70,6 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        _tung_version = @"0.3.0";
         //_apiRootUrl = @"https://api.tung.fm/";
         _apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
@@ -1207,7 +1208,7 @@ UILabel *prototypeBadge;
         podcastEntity = [result lastObject];
     } else {
         // new entity
-        CLS_LOG(@"creating new podcast entity for %@", [podcastDict objectForKey:@"collectionId"]);
+        //CLS_LOG(@"creating new podcast entity for %@", [podcastDict objectForKey:@"collectionId"]);
         podcastEntity = [NSEntityDescription insertNewObjectForEntityForName:@"PodcastEntity" inManagedObjectContext:appDelegate.managedObjectContext];
         id collectionIdId = [podcastDict objectForKey:@"collectionId"];
         NSNumber *collectionId;
@@ -1993,8 +1994,7 @@ static NSArray *colors;
         } else {
             dispatch_async(dispatch_get_main_queue(), ^{
                 // _tableView.backgroundView = nil;
-                UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                [connectionErrorAlert show];
+                [TungCommonObjects showConnectionErrorAlertForError:error];
             });
         }
     }];
@@ -3049,7 +3049,7 @@ static NSArray *colors;
 
 
 - (void) getProfileDataForUser:(NSString *)target_id withCallback:(void (^)(NSDictionary *jsonData))callback {
-    CLS_LOG(@"getting user profile data for id: %@", target_id);
+    //CLS_LOG(@"getting user profile data for id: %@", target_id);
     NSURL *getProfileDataRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/profile.php", _apiRootUrl]];
     NSMutableURLRequest *getProfileDataRequest = [NSMutableURLRequest requestWithURL:getProfileDataRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [getProfileDataRequest setHTTPMethod:@"POST"];
@@ -3086,7 +3086,7 @@ static NSArray *colors;
 
 
 - (void) updateUserWithDictionary:(NSDictionary *)userInfo withCallback:(void (^)(NSDictionary *jsonData))callback {
-    CLS_LOG(@"update user with dictionary: %@", userInfo);
+    //CLS_LOG(@"update user with dictionary: %@", userInfo);
     
     NSURL *updateUserRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/update-user.php", _apiRootUrl]];
     NSMutableURLRequest *updateUserRequest = [NSMutableURLRequest requestWithURL:updateUserRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
@@ -3131,7 +3131,7 @@ static NSArray *colors;
 }
 
 - (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback {
-    CLS_LOG(@"follow user with id: %@", target_id);
+    //CLS_LOG(@"follow user with id: %@", target_id);
     NSURL *followUserRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/follow.php", _apiRootUrl]];
     NSMutableURLRequest *followUserRequest = [NSMutableURLRequest requestWithURL:followUserRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [followUserRequest setHTTPMethod:@"POST"];
@@ -3175,7 +3175,7 @@ static NSArray *colors;
     
 }
 - (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback {
-    CLS_LOG(@"UN-follow user with id: %@", target_id);
+    //CLS_LOG(@"UN-follow user with id: %@", target_id);
     NSURL *unfollowUserRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/unfollow.php", _apiRootUrl]];
     NSMutableURLRequest *unfollowUserRequest = [NSMutableURLRequest requestWithURL:unfollowUserRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [unfollowUserRequest setHTTPMethod:@"POST"];
@@ -3342,7 +3342,7 @@ static NSArray *colors;
     [_viewController presentViewController:welcome animated:YES completion:^{}];
 }
 
-#pragma mark Twitter
+#pragma mark Old Twitter Code (not used)
 
 - (void) establishTwitterAccount {
     CLS_LOG(@"establish twitter account");
@@ -3495,7 +3495,7 @@ static NSArray *colors;
 }
 
 
-#pragma mark - handle alerts
+#pragma mark - alerts
 
 -(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
     CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
@@ -3546,6 +3546,32 @@ static NSArray *colors;
     UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"User Mentions" message:@"Tung can notify you when someone mentions you in a comment, or when new episodes are released for podcasts you subscribe to. Would you like to receive notifications?" delegate:self cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
     [notifPermissionAlert setTag:21];
     [notifPermissionAlert show];
+}
+
++ (void) showConnectionErrorAlertForError:(NSError *)error {
+    
+    CLS_LOG(@"show connection error: \n%@",[NSThread callStackSymbols]);
+    
+    UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+    [connectionErrorAlert show];
+}
+
++ (void) showBannerAlertForText:(NSString *)text andWidth:(CGFloat)screenWidth {
+    BannerAlert *bannerAlertView = [[BannerAlert alloc] init];
+    
+    [bannerAlertView sizeBannerAndSetText:text forWidth:screenWidth];
+    
+    //KLCPopupLayout layout = KLCPopupLayoutMake(KLCPopupHorizontalLayoutCenter, KLCPopupVerticalLayoutBottom);
+    
+    KLCPopup *bannerAlert = [KLCPopup popupWithContentView:bannerAlertView
+                                                  showType:KLCPopupShowTypeFadeIn
+                                               dismissType:KLCPopupDismissTypeFadeOut
+                                                  maskType:KLCPopupMaskTypeClear
+                                  dismissOnBackgroundTouch:NO
+                                     dismissOnContentTouch:NO];
+    
+    //[bannerAlert showWithLayout:layout duration:3];
+    [bannerAlert showWithDuration:3];
 }
 
 #pragma mark - handle actionsheet
