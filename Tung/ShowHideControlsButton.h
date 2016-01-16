@@ -16,5 +16,6 @@ typedef enum {
 @interface ShowHideControlsButton : UIButton
 
 @property ShowHideButtonType type;
+@property UIViewController *viewController;
 
 @end

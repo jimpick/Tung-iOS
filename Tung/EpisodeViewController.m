@@ -70,7 +70,6 @@
 @property BOOL totalTimeSet;
 @property BOOL isNowPlayingView;
 @property BOOL isFirstAppearance;
-@property BOOL nowPlayingControlsRevealed;
 
 - (void) switchViews:(id)sender;
 
@@ -127,7 +126,7 @@ UIActivityIndicatorView *backgroundSpinner;
         _nothingPlayingLabel.textAlignment = NSTextAlignmentCenter;
     }
     
-    // below set here so that default save icon isn't shown
+    // now playing controls
     _skipAheadBtn.type = kIconButtonTypeSkipAhead15;
     _skipAheadBtn.color = [TungCommonObjects tungColor];
     [_skipAheadBtn setNeedsDisplay];
@@ -145,12 +144,11 @@ UIActivityIndicatorView *backgroundSpinner;
     _skipBackBtn.hidden = YES;
     _skipBackBtn.alpha = 0;
     
-    // show/hide button
     _hideControlsButton.type = kShowHideButtonTypeHide;
+    _hideControlsButton.viewController = self;
     _showControlsButton.type = kShowHideButtonTypeShow;
     _showControlsButton.hidden = YES;
     
-    // posbar
     [_posbar setThumbImage:[UIImage imageNamed:@"posbar-thumb.png"] forState:UIControlStateNormal];
     _posbar.minimumTrackTintColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0]; // .5
     _posbar.maximumTrackTintColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:0]; // .2
@@ -226,10 +224,10 @@ UIActivityIndicatorView *backgroundSpinner;
     _descriptionView = [self.storyboard instantiateViewControllerWithIdentifier:@"descWebView"];
     _descriptionView.edgesForExtendedLayout = UIRectEdgeNone;
     [self addChildViewController:_descriptionView];
-    [self.view addSubview:_descriptionView.view];
+    [self.view insertSubview:_descriptionView.view belowSubview:_npControlsView];
     _descriptionView.webView.delegate = self;
     _descriptionView.view.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:-64]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
@@ -238,7 +236,7 @@ UIActivityIndicatorView *backgroundSpinner;
     _commentsView = [self.storyboard instantiateViewControllerWithIdentifier:@"commentsTableView"];
     _commentsView.edgesForExtendedLayout = UIRectEdgeNone;
     [self addChildViewController:_commentsView];
-    [self.view addSubview:_commentsView.view];
+    [self.view insertSubview:_commentsView.view belowSubview:_npControlsView];
     _commentsView.navController = self.navigationController;
     _commentsView.refreshControl = [UIRefreshControl new];
     [_commentsView.refreshControl addTarget:self action:@selector(refreshComments:) forControlEvents:UIControlEventValueChanged];
@@ -260,7 +258,7 @@ UIActivityIndicatorView *backgroundSpinner;
     _episodesView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodesView"];
     _episodesView.edgesForExtendedLayout = UIRectEdgeNone;
     [self addChildViewController:_episodesView];
-    [self.view addSubview:_episodesView.view];
+    [self.view insertSubview:_episodesView.view belowSubview:_npControlsView];
     _episodesView.navController = self.navigationController;
     _episodesView.refreshControl = [UIRefreshControl new];
     [_episodesView.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
@@ -340,7 +338,7 @@ UIActivityIndicatorView *backgroundSpinner;
         _tung.ctrlBtnDelegate = self;
         _tung.viewController = self;
         
-        if (!_nowPlayingControlsRevealed && _episodeEntity.isNowPlaying.boolValue) {
+        if (_npControlsBottomLayoutConstraint.constant < closedConstraint && _episodeEntity.isNowPlaying.boolValue) {
             [NSTimer scheduledTimerWithTimeInterval:.2 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
         }
         
@@ -577,6 +575,10 @@ NSTimer *markAsSeenTimer;
         NSIndexPath *activeRow = [NSIndexPath indexPathForItem:_tung.currentFeedIndex inSection:0];
         [_episodesView.tableView scrollToRowAtIndexPath:activeRow atScrollPosition:UITableViewScrollPositionTop animated:YES];
     }
+    
+    // now playing controls
+    _timeElapsedLabel.text = [TungCommonObjects convertSecondsToTimeString:_episodeEntity.trackProgress.doubleValue];
+    _posbar.value = _episodeEntity.trackPosition.floatValue;
 
 }
 
@@ -604,9 +606,6 @@ NSTimer *markAsSeenTimer;
             _headerView.largeButton.on = YES;
             [_headerView.largeButton setNeedsDisplay];
             [_episodesView.tableView reloadData];
-            
-            [self revealNowPlayingControls];
-            
         }
     } else {
         UIAlertView *badXmlAlert = [[UIAlertView alloc] initWithTitle:@"Can't Play - No URL" message:@"Unfortunately, this feed is missing links to its content." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
@@ -917,7 +916,6 @@ static CGRect buttonsScrollViewHomeRect;
                          [self.view layoutIfNeeded];
                      }
                      completion:^(BOOL completed) {
-                         _nowPlayingControlsRevealed = YES;
                          if (_isNowPlayingView) {
                              // prompt for notifications
                              SettingsEntity *settings = [TungCommonObjects settings];
@@ -1552,6 +1550,8 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
                      }];
     
 }
+
+#pragma mark - Touch methods
 
 
 - (IBAction)touchDownInShowHideControlsButton:(id)sender {

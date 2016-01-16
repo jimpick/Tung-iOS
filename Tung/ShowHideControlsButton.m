@@ -29,19 +29,11 @@
     }
     
 }
-/*
-- (void)touchesBegan:(NSSet *)touches withEvent:(UIEvent *)event {
-    // forward touch events (for hide controls button) to NowPlayingControlView
-    [self.nextResponder touchesBegan:touches withEvent:event];
-    // forward touch events (for show controls button) directly to view controller
-    [[self.nextResponder nextResponder] touchesBegan:touches withEvent:event];
-    
-}
-*/
+
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
     
     // forward touch events to NowPlayingControlView
-    [self.nextResponder touchesMoved:touches withEvent:event];
+    [_viewController touchesMoved:touches withEvent:event];
     
 }
 

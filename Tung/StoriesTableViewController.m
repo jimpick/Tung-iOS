@@ -142,6 +142,401 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     [_navController pushViewController:episodeView animated:YES];
 }
 
+#pragma mark - Requests
+
+NSInteger requestTries = 0;
+
+// single story request
+- (void) getStory {
+    requestTries++;
+    NSURL *storyURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/one-story.php", _tung.apiRootUrl]];
+    NSMutableURLRequest *storyRequest = [NSMutableURLRequest requestWithURL:storyURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [storyRequest setHTTPMethod:@"POST"];
+    NSDictionary *params = @{
+                             @"sessionId": _tung.sessionId,
+                             @"story_id": _storyId
+                             };
+    //CLS_LOG(@"request for stories with params: %@", params);
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [storyRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:storyRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            //CLS_LOG(@"got response: %@", jsonData);
+            if (jsonData != nil && error == nil) {
+                if ([jsonData isKindOfClass:[NSDictionary class]]) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        dispatch_async(dispatch_get_main_queue(), ^{
+                            if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                                // get new session and re-request
+                                CLS_LOG(@"SESSION EXPIRED");
+                                [_tung getSessionWithCallback:^{
+                                    [self getStory];
+                                }];
+                            } else {
+                                [self endRefreshing];
+                                // other error - alert user
+                                UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                                [errorAlert show];
+                            }
+                        });
+                    }
+                }
+                else if ([jsonData isKindOfClass:[NSArray class]]) {
+                    
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        
+                        NSArray *newStories = jsonData;
+                        if (newStories.count > 0) {
+                            _storiesArray = [self processStories:newStories];
+                            _noResults = NO;
+                        } else {
+                            _noResults = YES;
+                        }
+                        //CLS_LOG(@"got story");
+                        //CLS_LOG(@"%@", _storiesArray);
+                        [self.tableView reloadData];
+                        
+                        [self endRefreshing];
+                        
+                    });
+                }
+            }
+            // errors
+            else if (error != nil) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self endRefreshing];
+                });
+                CLS_LOG(@"Error: %@", error);
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                CLS_LOG(@"HTML: %@", html);
+            }
+        }
+        // connection error
+        else {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                
+                if (requestTries < 3) {
+                    CLS_LOG(@"request %ld failed, trying again", (long)requestTries);
+                    [self getStory];
+                }
+                else {
+                    [self endRefreshing];
+                    
+                    [TungCommonObjects showConnectionErrorAlertForError:error];
+                }
+            });
+        }
+    }];
+}
+
+
+// feed request
+-(void) requestPostsNewerThan:(NSNumber *)afterTime
+                  orOlderThan:(NSNumber *)beforeTime
+                     fromUser:(NSString *)user_id
+                     withCred:(BOOL)withCred {
+    
+    requestTries++;
+    self.requestStatus = @"initiated";
+    NSDate *requestStarted = [NSDate date];
+    
+    NSURL *feedURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/feed.php", _tung.apiRootUrl]];
+    NSMutableURLRequest *feedRequest = [NSMutableURLRequest requestWithURL:feedURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [feedRequest setHTTPMethod:@"POST"];
+    NSMutableDictionary *params = [@{@"sessionId": _tung.sessionId,
+                                     @"newerThan": afterTime,
+                                     @"olderThan": beforeTime,
+                                     @"profiled_user_id": user_id
+                                     } mutableCopy];
+    if (withCred) {
+        NSDictionary *credParams = @{@"tung_id": _tung.tungId,
+                                     @"token": _tung.tungToken
+                                     };
+        [params addEntriesFromDictionary:credParams];
+    }
+    //CLS_LOG(@"request for stories with params: %@", params);
+    
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [feedRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:feedRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                requestTries = 0;
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            CLS_LOG(@"SESSION EXPIRED");
+                            [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:YES];
+                            
+                        }
+                        else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Unauthorized"]) {
+                            [_tung handleUnauthorizedWithCallback:^{
+                                [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:NO];
+                            }];
+                        }
+                        else {
+                            [self endRefreshing];
+                            self.requestStatus = @"finished";
+                            // other error - alert user
+                            UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                            [errorAlert show];
+                        }
+                    }
+                    else if ([responseDict objectForKey:@"success"]) {
+                        
+                        NSTimeInterval requestDuration = [requestStarted timeIntervalSinceNow];
+                        NSArray *newStories = [responseDict objectForKey:@"stories"];
+                        //CLS_LOG(@"new stories count: %lu", (unsigned long)newStories.count);
+                        
+                        if (withCred) {
+                            
+                            CLS_LOG(@"got stories AND session in %f seconds. session Id: %@", fabs(requestDuration), [responseDict objectForKey:@"sessionId"]);
+                            _tung.sessionId = [responseDict objectForKey:@"sessionId"];
+                            _tung.connectionAvailable = [NSNumber numberWithInt:1];
+                            // check if data needs syncing
+                            UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
+                            NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                            if (loggedUser) {
+                                CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
+                                if (lastDataChange.doubleValue > loggedUser.lastDataChange.doubleValue) {
+                                    CLS_LOG(@"needs restore. ");
+                                    [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
+                                }
+                            } else {
+                                // no logged in user data - save with data from request
+                                CLS_LOG(@"no logged in user data... save new entity and restore data");
+                                UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
+                                
+                                // we don't have local data to compare, so we just restore
+                                [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
+                            }
+                        }
+                        else {
+                            
+                            CLS_LOG(@"got stories in %f seconds.", fabs(requestDuration));
+                        }
+                        
+                        [self endRefreshing];
+                        
+                        // pull refresh
+                        if ([afterTime intValue] > 0) {
+                            if (newStories.count > 0) {
+                                //CLS_LOG(@"got stories newer than: %@", afterTime);
+                                [self stopClipPlayback];
+                                NSArray *newItems = [self processStories:newStories];
+                                NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
+                                _storiesArray = [newFeedArray mutableCopy];
+                                
+                                [UIView setAnimationsEnabled:NO];
+                                [self.tableView beginUpdates];
+                                for (NSInteger i = 0; i < newStories.count; i++) {
+                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                                }
+                                [self.tableView endUpdates];
+                                [UIView setAnimationsEnabled:YES];
+                                
+                                [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
+                            }
+                        }
+                        // auto-loaded posts as user scrolls down
+                        else if ([beforeTime intValue] > 0) {
+                            
+                            if (newStories.count == 0) {
+                                //CLS_LOG(@"no more stories to get");
+                                _reachedEndOfPosts = YES;
+                                // hide footer
+                                //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_storiesArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
+                                [self.tableView reloadData];
+                                
+                            } else {
+                                //CLS_LOG(@"got stories older than: %@", beforeTime);
+                                int startingIndex = (int)_storiesArray.count;
+                                
+                                NSArray *newFeedArray = [_storiesArray arrayByAddingObjectsFromArray:[self processStories:newStories]];
+                                _storiesArray = [newFeedArray mutableCopy];
+                                newFeedArray = nil;
+                                
+                                [UIView setAnimationsEnabled:NO];
+                                [self.tableView beginUpdates];
+                                for (int i = startingIndex; i < _storiesArray.count; i++) {
+                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                                }
+                                [self.tableView endUpdates];
+                                [UIView setAnimationsEnabled:YES];
+                                
+                                
+                            }
+                        }
+                        // initial request
+                        else {
+                            //CLS_LOG(@"%@", newStories);
+                            if (newStories.count > 0) {
+                                _storiesArray = [self processStories:newStories];
+                                _noResults = NO;
+                            } else {
+                                _noResults = YES;
+                            }
+                            
+                            [self.tableView reloadData];
+                            
+                            // welcome tutorial
+                            SettingsEntity *settings = [TungCommonObjects settings];
+                            if (!settings.hasSeenWelcomePopup.boolValue) {
+                                [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(showWelcomePopup) userInfo:nil repeats:NO];
+                            }
+                        }
+                        
+                        // feed is now refreshed
+                        self.requestStatus = @"finished";
+                        
+                        if (_profiledUserId.length && [_profiledUserId isEqualToString:_tung.tungId]) {
+                            // profile feed has been refreshed
+                            _tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:NO];
+                        }
+                        else if (!_profiledUserId.length && !_storyId) {
+                            // main feed page has been refreshed
+                            _tung.feedNeedsRefresh = [NSNumber numberWithBool:NO];
+                        }
+                    }
+                }
+                // errors
+                else if ([data length] == 0 && error == nil) {
+                    CLS_LOG(@"no response");
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self endRefreshing];
+                    });
+                }
+                else if (error != nil) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self endRefreshing];
+                    });
+                    CLS_LOG(@"Error: %@", error);
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    CLS_LOG(@"HTML: %@", html);
+                }
+                
+            });
+        }
+        // connection error
+        else {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (requestTries < 3) {
+                    [TungCommonObjects showBannerAlertForText:[NSString stringWithFormat:@"request %ld failed, trying again", (long)requestTries] andWidth:screenWidth];
+                    
+                    CLS_LOG(@"request %ld failed, trying again", (long)requestTries);
+                    [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:withCred];
+                }
+                else {
+                    [self endRefreshing];
+                    
+                    [TungCommonObjects showConnectionErrorAlertForError:error];
+                }
+            });
+        }
+    }];
+}
+
+- (void) endRefreshing {
+    _requestingMore = NO;
+    self.requestStatus = @"finished";
+    _loadMoreIndicator.alpha = 0;
+    [self.refreshControl endRefreshing];
+    self.tableView.backgroundView = nil;
+}
+
+// break events apart from story and into their own array items in _storiesArray,
+// while we're at it, preload avatars, album art and clips.
+- (NSMutableArray *) processStories:(NSArray *)stories {
+    
+    NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
+    preloadQueue.maxConcurrentOperationCount = 3;
+    
+    // process stories
+    NSMutableArray *results = [NSMutableArray new];
+    for (int i = 0; i < stories.count; i++) {
+        
+        NSMutableArray *storyArray = [NSMutableArray new];
+        NSMutableDictionary *dict = [[stories objectAtIndex:i] mutableCopy];
+        UIColor *keyColor = [TungCommonObjects colorFromHexString:[[dict objectForKey:@"episode"] objectForKey:@"keyColor1Hex"]];
+        [dict setObject:keyColor forKey:@"keyColor"];
+        NSArray *events = [dict objectForKey:@"events"];
+        NSString *username = [[dict objectForKey:@"user"] objectForKey:@"username"];
+        NSString *episodeShortlink = [[dict objectForKey:@"episode"] objectForKey:@"shortlink"];
+        NSString *episodeLink = [NSString stringWithFormat:@"%@e/%@", _tung.tungSiteRootUrl, episodeShortlink];
+        [dict setObject:episodeLink forKey:@"episodeLink"];
+        NSString *storyLink = [NSString stringWithFormat:@"%@e/%@/%@", _tung.tungSiteRootUrl, episodeShortlink, username];
+        [dict setObject:storyLink forKey:@"storyLink"];
+        [storyArray addObject:dict];
+        
+        // preload avatar and album art
+        [preloadQueue addOperationWithBlock:^{
+            // avatar
+            NSString *avatarURLString = [[dict objectForKey:@"user"] objectForKey:@"small_av_url"];
+            [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avatarURLString];
+            // album art
+            NSString *artURLString = [[dict objectForKey:@"episode"] objectForKey:@"artworkUrlSSL"];
+            [TungCommonObjects retrieveSSLPodcastArtDataWithUrlString:artURLString];
+        }];
+        
+        int eventLimit = 5;
+        if (_storyId) eventLimit = 100;
+        
+        for (int e = 0; e < events.count; e++) {
+            
+            NSMutableDictionary *eventDict = [[events objectAtIndex:e] mutableCopy];
+            [eventDict setObject:keyColor forKey:@"keyColor"];
+            NSString *type = [eventDict objectForKey:@"type"];
+            // preload clip
+            if ([type isEqualToString:@"clip"]) {
+                [preloadQueue addOperationWithBlock:^{
+                    NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
+                    [TungCommonObjects retrieveAudioClipDataWithUrlString:clipURLString];
+                }];
+            }
+            if (e < eventLimit) {
+                [storyArray addObject:eventDict];
+            } else {
+                break;
+            }
+        }
+        [dict removeObjectForKey:@"events"];
+        NSNumber *moreEvents = [NSNumber numberWithBool:events.count > 5];
+        NSDictionary *footerDict = [NSDictionary dictionaryWithObjects:@[keyColor,
+                                                                         moreEvents]
+                                                               forKeys:@[@"keyColor",
+                                                                         @"moreEvents"]];
+        [storyArray addObject:footerDict];
+        [results addObject:storyArray];
+        
+    }
+    return results;
+}
+
+- (void) showWelcomePopup {
+    
+    WelcomePopupView *popupView = [[WelcomePopupView alloc] initWithFrame:CGRectMake(0,0,230,270)];
+    
+    KLCPopup *welcomePopup = [KLCPopup popupWithContentView:popupView
+                                                   showType:KLCPopupShowTypeGrowIn
+                                                dismissType:KLCPopupDismissTypeShrinkOut
+                                                   maskType:KLCPopupMaskTypeClear
+                                   dismissOnBackgroundTouch:NO
+                                      dismissOnContentTouch:NO];
+    
+    welcomePopup.didFinishShowingCompletion = ^{
+        [popupView setContentSize];
+    };
+    [welcomePopup show];
+}
+
 #pragma mark - Table view data source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView
@@ -917,394 +1312,6 @@ CGFloat labelWidth = 0;
 }
 -(void) audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag {
     [self stopClipPlayback];
-}
-
-#pragma mark - Requests
-
-NSInteger requestTries = 0;
-
-// single story request
-- (void) getStory {
-    requestTries++;
-    NSURL *storyURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/one-story.php", _tung.apiRootUrl]];
-    NSMutableURLRequest *storyRequest = [NSMutableURLRequest requestWithURL:storyURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
-    [storyRequest setHTTPMethod:@"POST"];
-    NSDictionary *params = @{
-                             @"sessionId": _tung.sessionId,
-                             @"story_id": _storyId
-                             };
-    //CLS_LOG(@"request for stories with params: %@", params);
-    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
-    [storyRequest setHTTPBody:serializedParams];
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    [NSURLConnection sendAsynchronousRequest:storyRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        if (error == nil) {
-            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-            //CLS_LOG(@"got response: %@", jsonData);
-            if (jsonData != nil && error == nil) {
-                if ([jsonData isKindOfClass:[NSDictionary class]]) {
-                    NSDictionary *responseDict = jsonData;
-                    if ([responseDict objectForKey:@"error"]) {
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                                // get new session and re-request
-                                CLS_LOG(@"SESSION EXPIRED");
-                                [_tung getSessionWithCallback:^{
-                                    [self getStory];
-                                }];
-                            } else {
-                                [self endRefreshing];
-                                // other error - alert user
-                                UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                                [errorAlert show];
-                            }
-                        });
-                    }
-                }
-                else if ([jsonData isKindOfClass:[NSArray class]]) {
-                    
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        
-                        NSArray *newStories = jsonData;
-                        if (newStories.count > 0) {
-                            _storiesArray = [self processStories:newStories];
-                            _noResults = NO;
-                        } else {
-                            _noResults = YES;
-                        }
-                        //CLS_LOG(@"got story");
-                        //CLS_LOG(@"%@", _storiesArray);
-                        [self.tableView reloadData];
-                        
-                        [self endRefreshing];
-                        
-                    });
-                }
-            }
-            // errors
-            else if (error != nil) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    [self endRefreshing];
-                });
-                CLS_LOG(@"Error: %@", error);
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"HTML: %@", html);
-            }
-        }
-        // connection error
-        else {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                
-                if (requestTries < 3) {
-                    CLS_LOG(@"request %ld failed, trying again", (long)requestTries);
-                    [self getStory];
-                }
-                else {
-                    [self endRefreshing];
-                    
-                    [TungCommonObjects showConnectionErrorAlertForError:error];
-                }
-            });
-        }
-    }];
-}
-
-
-// feed request
--(void) requestPostsNewerThan:(NSNumber *)afterTime
-                  orOlderThan:(NSNumber *)beforeTime
-                     fromUser:(NSString *)user_id
-                     withCred:(BOOL)withCred {
-    requestTries++;
-    self.requestStatus = @"initiated";
-    NSDate *requestStarted = [NSDate date];
-
-    NSURL *feedURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/feed.php", _tung.apiRootUrl]];
-    NSMutableURLRequest *feedRequest = [NSMutableURLRequest requestWithURL:feedURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
-    [feedRequest setHTTPMethod:@"POST"];
-    NSMutableDictionary *params = [@{@"sessionId": _tung.sessionId,
-                                     @"newerThan": afterTime,
-                                     @"olderThan": beforeTime,
-                                     @"profiled_user_id": user_id
-                                     } mutableCopy];
-    if (withCred) {
-        NSDictionary *credParams = @{@"tung_id": _tung.tungId,
-                                     @"token": _tung.tungToken
-                                     };
-        [params addEntriesFromDictionary:credParams];
-    }
-    //CLS_LOG(@"request for stories with params: %@", params);
-    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
-    [feedRequest setHTTPBody:serializedParams];
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    [NSURLConnection sendAsynchronousRequest:feedRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        if (error == nil) {
-            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-            dispatch_async(dispatch_get_main_queue(), ^{
-                if (jsonData != nil && error == nil) {
-                    NSDictionary *responseDict = jsonData;
-                    if ([responseDict objectForKey:@"error"]) {
-                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                            // get new session and re-request
-                            CLS_LOG(@"SESSION EXPIRED");
-                            [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:YES];
-
-                        }
-                        else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Unauthorized"]) {
-                            
-                            [_tung handleUnauthorizedWithCallback:^{
-                                [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:NO];
-                            }];
-                        }
-                        else {
-                            [self endRefreshing];
-                            self.requestStatus = @"finished";
-                            // other error - alert user
-                            UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                            [errorAlert show];
-                        }
-                    }
-                    else if ([responseDict objectForKey:@"success"]) {
-                        
-                        NSTimeInterval requestDuration = [requestStarted timeIntervalSinceNow];
-                        NSArray *newStories = [responseDict objectForKey:@"stories"];
-                        //CLS_LOG(@"new stories count: %lu", (unsigned long)newStories.count);
-                        
-                        if (withCred) {
-                            CLS_LOG(@"got stories AND session in %f seconds. session Id: %@", fabs(requestDuration), [responseDict objectForKey:@"sessionId"]);
-                            _tung.sessionId = [responseDict objectForKey:@"sessionId"];
-                            _tung.connectionAvailable = [NSNumber numberWithInt:1];
-                            // check if data needs syncing
-                            UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
-                            NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                            if (loggedUser) {
-                                CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
-                                if (lastDataChange.doubleValue > loggedUser.lastDataChange.doubleValue) {
-                                    CLS_LOG(@"needs restore. ");
-                                    [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
-                                }
-                            } else {
-                                // no logged in user data - save with data from request
-                                CLS_LOG(@"no logged in user data... save new entity and restore data");
-                                UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
-                                
-                                // we don't have local data to compare, so we just restore
-                                [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
-                            }
-                        }
-                        else {
-                            CLS_LOG(@"got stories in %f seconds.", fabs(requestDuration));
-                        }
-                        
-                        [self endRefreshing];
-                            
-                        // pull refresh
-                        if ([afterTime intValue] > 0) {
-                            if (newStories.count > 0) {
-                                //CLS_LOG(@"got stories newer than: %@", afterTime);
-                                [self stopClipPlayback];
-                                NSArray *newItems = [self processStories:newStories];
-                                NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
-                                _storiesArray = [newFeedArray mutableCopy];
-                                
-                                [UIView setAnimationsEnabled:NO];
-                                [self.tableView beginUpdates];
-                                for (NSInteger i = 0; i < newStories.count; i++) {
-                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
-                                }
-                                [self.tableView endUpdates];
-                                [UIView setAnimationsEnabled:YES];
-                                
-                                [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
-                            }
-                        }
-                        // auto-loaded posts as user scrolls down
-                        else if ([beforeTime intValue] > 0) {
-                            
-                            if (newStories.count == 0) {
-                                //CLS_LOG(@"no more stories to get");
-                                _reachedEndOfPosts = YES;
-                                // hide footer
-                                //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_storiesArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
-                                [self.tableView reloadData];
-                                
-                            } else {
-                                //CLS_LOG(@"got stories older than: %@", beforeTime);
-                                int startingIndex = (int)_storiesArray.count;
-                                
-                                NSArray *newFeedArray = [_storiesArray arrayByAddingObjectsFromArray:[self processStories:newStories]];
-                                _storiesArray = [newFeedArray mutableCopy];
-                                newFeedArray = nil;
-                                
-                                [UIView setAnimationsEnabled:NO];
-                                [self.tableView beginUpdates];
-                                for (int i = startingIndex; i < _storiesArray.count; i++) {
-                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
-                                }
-                                [self.tableView endUpdates];
-                                [UIView setAnimationsEnabled:YES];
-                                
-                                
-                            }
-                        }
-                        // initial request
-                        else {
-                            //CLS_LOG(@"%@", newStories);
-                            if (newStories.count > 0) {
-                            	_storiesArray = [self processStories:newStories];
-                                _noResults = NO;
-                            } else {
-                                _noResults = YES;
-                            }
-                            
-                            [self.tableView reloadData];
-                            
-                            // welcome tutorial
-                            SettingsEntity *settings = [TungCommonObjects settings];
-                            if (!settings.hasSeenWelcomePopup.boolValue) {
-                            	[NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(showWelcomePopup) userInfo:nil repeats:NO];
-                            }
-                        }
-                        
-                        // feed is now refreshed
-                        self.requestStatus = @"finished";
-                        
-                        if (_profiledUserId.length && [_profiledUserId isEqualToString:_tung.tungId]) {
-                            // profile feed has been refreshed
-                            _tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:NO];
-                        }
-                        else if (!_profiledUserId.length && !_storyId) {
-                            // main feed page has been refreshed
-                            _tung.feedNeedsRefresh = [NSNumber numberWithBool:NO];
-                        }
-                    }
-                }
-                // errors
-                else if ([data length] == 0 && error == nil) {
-                    CLS_LOG(@"no response");
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        [self endRefreshing];
-                    });
-                }
-                else if (error != nil) {
-                    dispatch_async(dispatch_get_main_queue(), ^{
-                        [self endRefreshing];
-                    });
-                    CLS_LOG(@"Error: %@", error);
-                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                    CLS_LOG(@"HTML: %@", html);
-                }
-                
-            });
-        }
-        // connection error
-        else {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                if (requestTries < 3) {
-                    CLS_LOG(@"request %ld failed, trying again", (long)requestTries);
-                    [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:withCred];
-                }
-                else {
-                    [self endRefreshing];
-                    
-                    [TungCommonObjects showConnectionErrorAlertForError:error];
-                }
-            });
-        }
-    }];
-}
-
-- (void) endRefreshing {
-    _requestingMore = NO;
-    self.requestStatus = @"finished";
-    _loadMoreIndicator.alpha = 0;
-    [self.refreshControl endRefreshing];
-    self.tableView.backgroundView = nil;
-}
-
-// break events apart from story and into their own array items in _storiesArray,
-// while we're at it, preload avatars, album art and clips.
-- (NSMutableArray *) processStories:(NSArray *)stories {
-    
-    NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
-    preloadQueue.maxConcurrentOperationCount = 3;
-    
-    // process stories
-    NSMutableArray *results = [NSMutableArray new];
-    for (int i = 0; i < stories.count; i++) {
-
-        NSMutableArray *storyArray = [NSMutableArray new];
-        NSMutableDictionary *dict = [[stories objectAtIndex:i] mutableCopy];
-        UIColor *keyColor = [TungCommonObjects colorFromHexString:[[dict objectForKey:@"episode"] objectForKey:@"keyColor1Hex"]];
-        [dict setObject:keyColor forKey:@"keyColor"];
-        NSArray *events = [dict objectForKey:@"events"];
-        NSString *username = [[dict objectForKey:@"user"] objectForKey:@"username"];
-        NSString *episodeShortlink = [[dict objectForKey:@"episode"] objectForKey:@"shortlink"];
-        NSString *episodeLink = [NSString stringWithFormat:@"%@e/%@", _tung.tungSiteRootUrl, episodeShortlink];
-        [dict setObject:episodeLink forKey:@"episodeLink"];
-        NSString *storyLink = [NSString stringWithFormat:@"%@e/%@/%@", _tung.tungSiteRootUrl, episodeShortlink, username];
-        [dict setObject:storyLink forKey:@"storyLink"];
-        [storyArray addObject:dict];
-        
-        // preload avatar and album art
-        [preloadQueue addOperationWithBlock:^{
-            // avatar
-            NSString *avatarURLString = [[dict objectForKey:@"user"] objectForKey:@"small_av_url"];
-            [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avatarURLString];
-            // album art
-            NSString *artURLString = [[dict objectForKey:@"episode"] objectForKey:@"artworkUrlSSL"];
-            [TungCommonObjects retrieveSSLPodcastArtDataWithUrlString:artURLString];
-        }];
-        
-        int eventLimit = 5;
-        if (_storyId) eventLimit = 100;
-        
-        for (int e = 0; e < events.count; e++) {
-            
-            NSMutableDictionary *eventDict = [[events objectAtIndex:e] mutableCopy];
-            [eventDict setObject:keyColor forKey:@"keyColor"];
-            NSString *type = [eventDict objectForKey:@"type"];
-            // preload clip
-            if ([type isEqualToString:@"clip"]) {
-                [preloadQueue addOperationWithBlock:^{
-                    NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
-                    [TungCommonObjects retrieveAudioClipDataWithUrlString:clipURLString];
-                }];
-            }
-            if (e < eventLimit) {
-                [storyArray addObject:eventDict];
-            } else {
-                break;
-            }
-        }
-        [dict removeObjectForKey:@"events"];
-        NSNumber *moreEvents = [NSNumber numberWithBool:events.count > 5];
-        NSDictionary *footerDict = [NSDictionary dictionaryWithObjects:@[keyColor,
-                                                                         moreEvents]
-                                                               forKeys:@[@"keyColor",
-                                                                         @"moreEvents"]];
-        [storyArray addObject:footerDict];
-        [results addObject:storyArray];
-
-    }
-    return results;
-}
-
-- (void) showWelcomePopup {
-    
-    WelcomePopupView *popupView = [[WelcomePopupView alloc] initWithFrame:CGRectMake(0,0,230,270)];
-    
-    KLCPopup *welcomePopup = [KLCPopup popupWithContentView:popupView
-                                                   showType:KLCPopupShowTypeGrowIn
-                                                dismissType:KLCPopupDismissTypeShrinkOut
-                                                   maskType:KLCPopupMaskTypeClear
-                                   dismissOnBackgroundTouch:NO
-                                      dismissOnContentTouch:NO];
-    
-    welcomePopup.didFinishShowingCompletion = ^{
-        [popupView setContentSize];
-    };
-    [welcomePopup show];
 }
 
 #pragma mark - scroll view delegate methods

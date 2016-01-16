@@ -70,8 +70,8 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        _apiRootUrl = @"https://api.tung.fm/";
-        //_apiRootUrl = @"https://staging-api.tung.fm/";
+        //_apiRootUrl = @"https://api.tung.fm/";
+        _apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
@@ -202,14 +202,19 @@
         case AVAudioSessionInterruptionTypeBegan:{
             // • Audio has stopped, already inactive
             // • Change state of UI, etc., to reflect non-playing state
-            [self playerPause];
+            
+            // below: nearly the same as playerPause but without _shouldStayPaused
+            [_player pause];
+            [self setControlButtonStateToPlay];
+            [self savePositionForNowPlayingAndSync:YES];
+
         } break;
         case AVAudioSessionInterruptionTypeEnded:{
             // • Make session active
             // • Update user interface
             // • AVAudioSessionInterruptionOptionShouldResume option
             if (interruptionOption.unsignedIntegerValue == AVAudioSessionInterruptionOptionShouldResume) {
-                [self playerPlay];
+                if (!_shouldStayPaused) [self playerPlay];
             }
         } break;
         default:
@@ -1017,6 +1022,7 @@ static NSString *episodeDirName = @"episodes";
             // we can safely release these
             _trackData = nil;
             _trackDataConnection = nil;
+            [self determineTotalSeconds];
         }
         else {
             CLS_LOG(@"ERROR: track did not save: %@", error);
@@ -1939,6 +1945,7 @@ static NSArray *colors;
 // start here and get session with credentials
 - (void) getSessionWithCallback:(void (^)(void))callback {
     CLS_LOG(@"getting new session with id: %@", _tungId);
+
     if (!_tungId) {
         CLS_LOG(@"Tung ID was null, re-establish cred");
         [self establishCred];
@@ -3566,7 +3573,7 @@ static NSArray *colors;
     KLCPopup *bannerAlert = [KLCPopup popupWithContentView:bannerAlertView
                                                   showType:KLCPopupShowTypeFadeIn
                                                dismissType:KLCPopupDismissTypeFadeOut
-                                                  maskType:KLCPopupMaskTypeClear
+                                                  maskType:KLCPopupMaskTypeDimmed
                                   dismissOnBackgroundTouch:NO
                                      dismissOnContentTouch:NO];
     

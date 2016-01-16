@@ -19,7 +19,6 @@
 		7D0FAA0C1C3DDA8300235A9A /* BannerAlert.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D0FAA0B1C3DDA8300235A9A /* BannerAlert.m */; };
 		7D12A4ED1A01308700A9A004 /* IconButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D12A4EC1A01308700A9A004 /* IconButton.m */; };
 		7D12A4F91A01A08700A9A004 /* ProfileNavigationController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D12A4F81A01A08700A9A004 /* ProfileNavigationController.m */; };
-		7D12D5C61B17429E00532FC0 /* NowPlayingControlView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D12D5C51B17429E00532FC0 /* NowPlayingControlView.m */; };
 		7D1341E319251EB900B95C66 /* SignUpNavController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D1341E219251EB900B95C66 /* SignUpNavController.m */; };
 		7D1341E9192530AC00B95C66 /* FinishSignUpController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D1341E8192530AC00B95C66 /* FinishSignUpController.m */; };
 		7D1341EB192535B000B95C66 /* termsNotice.html in Resources */ = {isa = PBXBuildFile; fileRef = 7D1341EA192535B000B95C66 /* termsNotice.html */; };
@@ -214,8 +213,6 @@
 		7D12A4EC1A01308700A9A004 /* IconButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IconButton.m; sourceTree = "<group>"; };
 		7D12A4F71A01A08700A9A004 /* ProfileNavigationController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProfileNavigationController.h; sourceTree = "<group>"; };
 		7D12A4F81A01A08700A9A004 /* ProfileNavigationController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProfileNavigationController.m; sourceTree = "<group>"; };
-		7D12D5C41B17429E00532FC0 /* NowPlayingControlView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = NowPlayingControlView.h; sourceTree = "<group>"; };
-		7D12D5C51B17429E00532FC0 /* NowPlayingControlView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = NowPlayingControlView.m; sourceTree = "<group>"; };
 		7D1341E119251EB900B95C66 /* SignUpNavController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SignUpNavController.h; sourceTree = "<group>"; };
 		7D1341E219251EB900B95C66 /* SignUpNavController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignUpNavController.m; sourceTree = "<group>"; };
 		7D1341E7192530AC00B95C66 /* FinishSignUpController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FinishSignUpController.h; sourceTree = "<group>"; };
@@ -288,7 +285,7 @@
 		7D5BC1B91A547E5D008C008D /* tabBar-search-inactive@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tabBar-search-inactive@2x.png"; sourceTree = "<group>"; };
 		7D61889419F18FC600F414C2 /* EditProfileTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EditProfileTableViewController.h; sourceTree = "<group>"; };
 		7D61889519F18FC600F414C2 /* EditProfileTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EditProfileTableViewController.m; sourceTree = "<group>"; };
-		7D61F91818A1EB2F00710CA7 /* tung.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tung.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7D61F91818A1EB2F00710CA7 /* tung beta.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "tung beta.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7D61F91B18A1EB2F00710CA7 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		7D61F91D18A1EB2F00710CA7 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		7D61F91F18A1EB2F00710CA7 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -500,7 +497,7 @@
 		7D61F91918A1EB2F00710CA7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				7D61F91818A1EB2F00710CA7 /* tung.app */,
+				7D61F91818A1EB2F00710CA7 /* tung beta.app */,
 				7D61F93818A1EB2F00710CA7 /* TungTests.xctest */,
 			);
 			name = Products;
@@ -537,99 +534,99 @@
 		7D61F92318A1EB2F00710CA7 /* Tung */ = {
 			isa = PBXGroup;
 			children = (
-				7D61F95018A1ED4700710CA7 /* MainStoryboard.storyboard */,
-				7D80C77218E7727E00D1BB63 /* tung.entitlements */,
 				7D61F92C18A1EB2F00710CA7 /* AppDelegate.h */,
 				7D61F92D18A1EB2F00710CA7 /* AppDelegate.m */,
-				7D3B735819227F92005413F1 /* WelcomeViewController.h */,
-				7D3B735919227F92005413F1 /* WelcomeViewController.m */,
-				7D1341E119251EB900B95C66 /* SignUpNavController.h */,
-				7D1341E219251EB900B95C66 /* SignUpNavController.m */,
-				7D61889419F18FC600F414C2 /* EditProfileTableViewController.h */,
-				7D61889519F18FC600F414C2 /* EditProfileTableViewController.m */,
-				7D1341E7192530AC00B95C66 /* FinishSignUpController.h */,
-				7D1341E8192530AC00B95C66 /* FinishSignUpController.m */,
-				7DF5664E199D4B56003176C1 /* BrowserViewController.h */,
-				7DF5664F199D4B56003176C1 /* BrowserViewController.m */,
-				7D61F93218A1EB2F00710CA7 /* Images.xcassets */,
-				7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */,
-				7D63675E1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.h */,
-				7D63675F1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.m */,
-				7D6367601BEBD5E40040C52C /* PodcastEntity.h */,
-				7D6367611BEBD5E40040C52C /* PodcastEntity.m */,
-				7D6367581BEBC8E70040C52C /* UserEntity+CoreDataProperties.h */,
-				7D6367591BEBC8E70040C52C /* UserEntity+CoreDataProperties.m */,
-				7D63675A1BEBC8E70040C52C /* UserEntity.h */,
-				7D63675B1BEBC8E70040C52C /* UserEntity.m */,
-				7D07B6E41BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.h */,
-				7D07B6E51BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m */,
-				7D07B6E61BE4F657008F4CC7 /* SettingsEntity.h */,
-				7D07B6E71BE4F657008F4CC7 /* SettingsEntity.m */,
-				7DF9F4AC1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.h */,
-				7DF9F4AD1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.m */,
-				7DF997A41BC6F645004FD994 /* EpisodeEntity.h */,
-				7DF997A51BC6F645004FD994 /* EpisodeEntity.m */,
-				7D5BC1A51A546A61008C008D /* MainTabBarController.h */,
-				7D5BC1A61A546A61008C008D /* MainTabBarController.m */,
-				7DA76A511B4F401500F1A9F4 /* TungNavController.h */,
-				7DA76A521B4F401500F1A9F4 /* TungNavController.m */,
-				7D4F352B1AB797FF0090EE81 /* FeedViewController.h */,
-				7D4F352C1AB797FF0090EE81 /* FeedViewController.m */,
-				7D4C79EE1BE0FC8A0061816B /* StoriesTableViewController.h */,
-				7D4C79EC1BE0FC5A0061816B /* StoriesTableViewController.m */,
-				7DA2124A1AFA8A7F00C619F9 /* EpisodeViewController.h */,
-				7DA2124B1AFA8A7F00C619F9 /* EpisodeViewController.m */,
-				7DC58A8C1AEFF125000DBAF8 /* PodcastViewController.h */,
-				7DC58A8D1AEFF125000DBAF8 /* PodcastViewController.m */,
-				7D6D55E91B66A06000DFF759 /* EpisodesTableViewController.h */,
-				7D6D55EA1B66A06000DFF759 /* EpisodesTableViewController.m */,
-				7DE225031BD01ECB00384F62 /* CommentsTableViewController.h */,
-				7DE225011BD01EBC00384F62 /* CommentsTableViewController.m */,
-				7D63F80E1AF6CBCC00765289 /* HeaderView.h */,
-				7D63F80F1AF6CBCC00765289 /* HeaderView.m */,
-				7D63F80C1AF6CBA100765289 /* HeaderView.xib */,
-				7DB6A1B11BFE0F2B0057D337 /* WelcomePopupView.h */,
-				7DB6A1B21BFE0F2B0057D337 /* WelcomePopupView.m */,
-				7DB6A1B81BFE2E7C0057D337 /* WelcomePopupView.xib */,
 				7D0FAA0A1C3DDA8300235A9A /* BannerAlert.h */,
 				7D0FAA0B1C3DDA8300235A9A /* BannerAlert.m */,
-				7DDC9BEB1B67DAB7005E4E52 /* DescriptionWebViewController.h */,
-				7DDC9BEC1B67DAB7005E4E52 /* DescriptionWebViewController.m */,
+				7DF5664E199D4B56003176C1 /* BrowserViewController.h */,
+				7DF5664F199D4B56003176C1 /* BrowserViewController.m */,
 				7DE4B1BC1B726D6C00C02BE2 /* CommentAndPostView.h */,
 				7DE4B1BD1B726D6C00C02BE2 /* CommentAndPostView.m */,
 				7DE4B1BF1B726D9800C02BE2 /* CommentAndPostView.xib */,
-				7DF2FACC1AF3ACCD004C66E6 /* SubscriptionsCollectionView.h */,
-				7DF2FACD1AF3ACCD004C66E6 /* SubscriptionsCollectionView.m */,
-				7DF2FACF1AF3BE3F004C66E6 /* SubscriptionViewCell.h */,
-				7DF2FAD01AF3BE3F004C66E6 /* SubscriptionViewCell.m */,
-				7DE094A11BC1D2F4005B596D /* ProfileViewController.h */,
-				7DE094A21BC1D2F4005B596D /* ProfileViewController.m */,
+				7D1F0B641BD12CEF001C9A9D /* CommentCell.h */,
+				7D1F0B651BD12CEF001C9A9D /* CommentCell.m */,
+				7DFDAC351BD7412C002D9F7A /* CommentCellMine.h */,
+				7DFDAC361BD7413E002D9F7A /* CommentCellMine.m */,
+				7DE225031BD01ECB00384F62 /* CommentsTableViewController.h */,
+				7DE225011BD01EBC00384F62 /* CommentsTableViewController.m */,
+				7DDC9BEB1B67DAB7005E4E52 /* DescriptionWebViewController.h */,
+				7DDC9BEC1B67DAB7005E4E52 /* DescriptionWebViewController.m */,
+				7D61889419F18FC600F414C2 /* EditProfileTableViewController.h */,
+				7D61889519F18FC600F414C2 /* EditProfileTableViewController.m */,
+				7DE99BD41ACE3F02007A154F /* EpisodeCell.h */,
+				7DE99BD51ACE3F02007A154F /* EpisodeCell.m */,
+				7DF997A41BC6F645004FD994 /* EpisodeEntity.h */,
+				7DF997A51BC6F645004FD994 /* EpisodeEntity.m */,
+				7DF9F4AC1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.h */,
+				7DF9F4AD1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.m */,
+				7D6D55E91B66A06000DFF759 /* EpisodesTableViewController.h */,
+				7D6D55EA1B66A06000DFF759 /* EpisodesTableViewController.m */,
+				7DA2124A1AFA8A7F00C619F9 /* EpisodeViewController.h */,
+				7DA2124B1AFA8A7F00C619F9 /* EpisodeViewController.m */,
+				7D4F352B1AB797FF0090EE81 /* FeedViewController.h */,
+				7D4F352C1AB797FF0090EE81 /* FeedViewController.m */,
+				7D1341E7192530AC00B95C66 /* FinishSignUpController.h */,
+				7D1341E8192530AC00B95C66 /* FinishSignUpController.m */,
+				7DCAC60019FEF81A004B6182 /* FollowersCell.h */,
+				7DCAC60119FEF81A004B6182 /* FollowersCell.m */,
+				7D63F80E1AF6CBCC00765289 /* HeaderView.h */,
+				7D63F80F1AF6CBCC00765289 /* HeaderView.m */,
+				7D63F80C1AF6CBA100765289 /* HeaderView.xib */,
+				7D61F93218A1EB2F00710CA7 /* Images.xcassets */,
+				7D61F95018A1ED4700710CA7 /* MainStoryboard.storyboard */,
+				7D5BC1A51A546A61008C008D /* MainTabBarController.h */,
+				7D5BC1A61A546A61008C008D /* MainTabBarController.m */,
+				7D6367601BEBD5E40040C52C /* PodcastEntity.h */,
+				7D6367611BEBD5E40040C52C /* PodcastEntity.m */,
+				7D63675E1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.h */,
+				7D63675F1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.m */,
+				7D4F35311AB894560090EE81 /* PodcastResultCell.h */,
+				7D4F35321AB894560090EE81 /* PodcastResultCell.m */,
+				7DC58A8C1AEFF125000DBAF8 /* PodcastViewController.h */,
+				7DC58A8D1AEFF125000DBAF8 /* PodcastViewController.m */,
 				7DE0949C1BC1C20F005B596D /* ProfileHeaderView.h */,
 				7DE0949D1BC1C20F005B596D /* ProfileHeaderView.m */,
 				7DE0949F1BC1C238005B596D /* ProfileHeaderView.xib */,
+				7D4B25981A0AE6B20035FD35 /* ProfileListCell.h */,
+				7D4B25991A0AE6B20035FD35 /* ProfileListCell.m */,
 				7D6459911A083DBA00BAC445 /* ProfileListTableViewController.h */,
 				7D6459921A083DBA00BAC445 /* ProfileListTableViewController.m */,
-				7D14077A1BBEB86D00BD4F89 /* StoryHeaderCell.h */,
-				7D14077B1BBEB86D00BD4F89 /* StoryHeaderCell.m */,
+				7D12A4F71A01A08700A9A004 /* ProfileNavigationController.h */,
+				7D12A4F81A01A08700A9A004 /* ProfileNavigationController.m */,
+				7DE094A11BC1D2F4005B596D /* ProfileViewController.h */,
+				7DE094A21BC1D2F4005B596D /* ProfileViewController.m */,
+				7D07B6E61BE4F657008F4CC7 /* SettingsEntity.h */,
+				7D07B6E71BE4F657008F4CC7 /* SettingsEntity.m */,
+				7D07B6E41BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.h */,
+				7D07B6E51BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m */,
+				7D1341E119251EB900B95C66 /* SignUpNavController.h */,
+				7D1341E219251EB900B95C66 /* SignUpNavController.m */,
+				7D4C79EE1BE0FC8A0061816B /* StoriesTableViewController.h */,
+				7D4C79EC1BE0FC5A0061816B /* StoriesTableViewController.m */,
 				7D1407741BBE3D5D00BD4F89 /* StoryEventCell.h */,
 				7D1407751BBE3D5D00BD4F89 /* StoryEventCell.m */,
 				7D1407771BBEB83500BD4F89 /* StoryFooterCell.h */,
 				7D1407781BBEB83500BD4F89 /* StoryFooterCell.m */,
-				7D4F35311AB894560090EE81 /* PodcastResultCell.h */,
-				7D4F35321AB894560090EE81 /* PodcastResultCell.m */,
-				7DE99BD41ACE3F02007A154F /* EpisodeCell.h */,
-				7DE99BD51ACE3F02007A154F /* EpisodeCell.m */,
-				7D4B25981A0AE6B20035FD35 /* ProfileListCell.h */,
-				7D4B25991A0AE6B20035FD35 /* ProfileListCell.m */,
-				7DCAC60019FEF81A004B6182 /* FollowersCell.h */,
-				7DCAC60119FEF81A004B6182 /* FollowersCell.m */,
-				7DFDAC351BD7412C002D9F7A /* CommentCellMine.h */,
-				7DFDAC361BD7413E002D9F7A /* CommentCellMine.m */,
-				7D1F0B641BD12CEF001C9A9D /* CommentCell.h */,
-				7D1F0B651BD12CEF001C9A9D /* CommentCell.m */,
-				7D12A4F71A01A08700A9A004 /* ProfileNavigationController.h */,
-				7D12A4F81A01A08700A9A004 /* ProfileNavigationController.m */,
+				7D14077A1BBEB86D00BD4F89 /* StoryHeaderCell.h */,
+				7D14077B1BBEB86D00BD4F89 /* StoryHeaderCell.m */,
+				7DF2FACC1AF3ACCD004C66E6 /* SubscriptionsCollectionView.h */,
+				7DF2FACD1AF3ACCD004C66E6 /* SubscriptionsCollectionView.m */,
+				7DF2FACF1AF3BE3F004C66E6 /* SubscriptionViewCell.h */,
+				7DF2FAD01AF3BE3F004C66E6 /* SubscriptionViewCell.m */,
 				7D61F92418A1EB2F00710CA7 /* Supporting Files */,
+				7D80C77218E7727E00D1BB63 /* tung.entitlements */,
+				7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */,
+				7DA76A511B4F401500F1A9F4 /* TungNavController.h */,
+				7DA76A521B4F401500F1A9F4 /* TungNavController.m */,
+				7D63675A1BEBC8E70040C52C /* UserEntity.h */,
+				7D63675B1BEBC8E70040C52C /* UserEntity.m */,
+				7D6367581BEBC8E70040C52C /* UserEntity+CoreDataProperties.h */,
+				7D6367591BEBC8E70040C52C /* UserEntity+CoreDataProperties.m */,
+				7DB6A1B11BFE0F2B0057D337 /* WelcomePopupView.h */,
+				7DB6A1B21BFE0F2B0057D337 /* WelcomePopupView.m */,
+				7DB6A1B81BFE2E7C0057D337 /* WelcomePopupView.xib */,
+				7D3B735819227F92005413F1 /* WelcomeViewController.h */,
+				7D3B735919227F92005413F1 /* WelcomeViewController.m */,
 			);
 			path = Tung;
 			sourceTree = "<group>";
@@ -655,8 +652,6 @@
 				7DF9823B1BB42B6A00D76B9F /* PillButton.m */,
 				7DF9F4A91BDAAEB100D33FD6 /* SignUpButton.h */,
 				7DF9F4AA1BDAAEB100D33FD6 /* SignUpButton.m */,
-				7D12D5C41B17429E00532FC0 /* NowPlayingControlView.h */,
-				7D12D5C51B17429E00532FC0 /* NowPlayingControlView.m */,
 				7DA5ED481B548882007BD424 /* FXBlurView.h */,
 				7DA5ED491B548882007BD424 /* FXBlurView.m */,
 				7DB6A1AE1BFE0EB20057D337 /* KLCPopup.h */,
@@ -811,7 +806,7 @@
 			);
 			name = Tung;
 			productName = Tung;
-			productReference = 7D61F91818A1EB2F00710CA7 /* tung.app */;
+			productReference = 7D61F91818A1EB2F00710CA7 /* tung beta.app */;
 			productType = "com.apple.product-type.application";
 		};
 		7D61F93718A1EB2F00710CA7 /* TungTests */ = {
@@ -1007,7 +1002,6 @@
 				7DB6A1AD1BFD54040057D337 /* TungMiscView.m in Sources */,
 				7D4C79ED1BE0FC5A0061816B /* StoriesTableViewController.m in Sources */,
 				7DFDAC371BD7413E002D9F7A /* CommentCellMine.m in Sources */,
-				7D12D5C61B17429E00532FC0 /* NowPlayingControlView.m in Sources */,
 				7DE0949E1BC1C20F005B596D /* ProfileHeaderView.m in Sources */,
 				7DA2124C1AFA8A7F00C619F9 /* EpisodeViewController.m in Sources */,
 				7D64376A1BAB58B800766BB4 /* IconView.m in Sources */,
@@ -1196,9 +1190,9 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
-				PRODUCT_NAME = tung;
-				PROVISIONING_PROFILE = "718fb24a-5793-474c-92e2-c66542da4d16";
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
+				PRODUCT_NAME = "tung beta";
+				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -1220,9 +1214,9 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
-				PRODUCT_NAME = tung;
-				PROVISIONING_PROFILE = "718fb24a-5793-474c-92e2-c66542da4d16";
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
+				PRODUCT_NAME = "tung beta";
+				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
