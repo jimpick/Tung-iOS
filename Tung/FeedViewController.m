@@ -90,6 +90,18 @@
     
     _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
+	
+}
+
+- (void) viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    
+    // if feed hasn't been fetched in the last 5 minutes
+    SettingsEntity *settings = [TungCommonObjects settings];
+    NSTimeInterval now_secs = [[NSDate date] timeIntervalSince1970];
+    if ((settings.feedLastFetched.doubleValue + 300) < now_secs) {
+        _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
+    }
     
     // let's get retarded in here
     if (_tung.feedNeedsRefresh.boolValue) {

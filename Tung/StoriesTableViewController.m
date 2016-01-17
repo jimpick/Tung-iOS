@@ -95,10 +95,15 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     NSNumber *mostRecent;
     if (fullRefresh) {
         mostRecent = [NSNumber numberWithInt:0];
+        
+        if (_storiesArray.count > 0) {
+            // "fake" refresh
+            [self.refreshControl beginRefreshing];
+            [self.tableView setContentOffset:CGPointMake(0, - (self.refreshControl.frame.size.height * 2)) animated:YES];
+        }
     } else {
         if (_storiesArray.count > 0) {
-            //[self.refreshControl beginRefreshing];
-            //[self.tableView setContentOffset:CGPointMake(0, -self.refreshControl.frame.size.height) animated:YES];
+            
             mostRecent = [[[_storiesArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
         } else { // if initial request timed out and they are trying again
             mostRecent = [NSNumber numberWithInt:0];
@@ -295,6 +300,13 @@ NSInteger requestTries = 0;
                         NSTimeInterval requestDuration = [requestStarted timeIntervalSinceNow];
                         NSArray *newStories = [responseDict objectForKey:@"stories"];
                         //CLS_LOG(@"new stories count: %lu", (unsigned long)newStories.count);
+                        
+                        // if this is for the main feed, set feedLastFetched date (seconds)
+                        if (user_id.length == 0) {
+                            SettingsEntity *settings = [TungCommonObjects settings];
+                            settings.feedLastFetched = [NSNumber numberWithDouble:[[NSDate date] timeIntervalSince1970]];
+                            [TungCommonObjects saveContextWithReason:@"set feedLastFetched"];
+                        }
                         
                         if (withCred) {
                             

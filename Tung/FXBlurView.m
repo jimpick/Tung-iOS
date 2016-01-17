@@ -338,7 +338,6 @@
     }
     free(methods);
 
-    NSLog(@"FXBLUR VIEW INSERT OPACITY SUBVIEW");
     // opacity
     _opacityView = [[UIView alloc] initWithFrame:[self bounds]];
     _opacityView.translatesAutoresizingMaskIntoConstraints = NO;

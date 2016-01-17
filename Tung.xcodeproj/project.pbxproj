@@ -233,6 +233,7 @@
 		7D282C7A1AF29D3400495E74 /* TungPodcastStyleKit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TungPodcastStyleKit.h; sourceTree = "<group>"; };
 		7D282C7B1AF29D3400495E74 /* TungPodcastStyleKit.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TungPodcastStyleKit.m; sourceTree = "<group>"; };
 		7D282C871AF2C89F00495E74 /* TungDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = TungDataModel.xcdatamodel; sourceTree = "<group>"; };
+		7D2CF0611C4C1A9F0008D112 /* TungDataModel 3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TungDataModel 3.xcdatamodel"; sourceTree = "<group>"; };
 		7D3B735819227F92005413F1 /* WelcomeViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WelcomeViewController.h; sourceTree = "<group>"; };
 		7D3B735919227F92005413F1 /* WelcomeViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WelcomeViewController.m; sourceTree = "<group>"; };
 		7D4336861926C65600CBC02E /* UINavigationBarNextIndicatorDefault@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "UINavigationBarNextIndicatorDefault@2x.png"; sourceTree = "<group>"; };
@@ -1299,10 +1300,11 @@
 		7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				7D2CF0611C4C1A9F0008D112 /* TungDataModel 3.xcdatamodel */,
 				7DDD164E1C2DEDEE004D5193 /* TungDataModel 2.xcdatamodel */,
 				7D282C871AF2C89F00495E74 /* TungDataModel.xcdatamodel */,
 			);
-			currentVersion = 7DDD164E1C2DEDEE004D5193 /* TungDataModel 2.xcdatamodel */;
+			currentVersion = 7D2CF0611C4C1A9F0008D112 /* TungDataModel 3.xcdatamodel */;
 			path = TungDataModel.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;
