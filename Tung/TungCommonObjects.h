@@ -106,6 +106,9 @@
 @property (nonatomic, strong) AVAudioPlayer *clipPlayer;
 - (void) stopClipPlayback;
 
+// feed related
+- (void) checkFeedLastFetchedTime;
+
 // twitter
 @property (nonatomic, strong) NSArray *arrayOfTwitterAccounts;
 @property (nonatomic, strong) ACAccount *twitterAccountToUse;
@@ -155,6 +158,7 @@
 
 // requests
 - (void) establishCred;
+- (void) checkConnectionStatus;
 - (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) verifyCredWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) getSessionWithCallback:(void (^)(void))callback;
@@ -187,6 +191,7 @@
 - (void) promptForNotificationsForEpisodes;
 - (void) promptForNotificationsForMentions;
 + (void) showConnectionErrorAlertForError:(NSError *)error;
++ (void) showNoConnectionAlert;
 + (void) showBannerAlertForText:(NSString *)text andWidth:(CGFloat)screenWidth;
 
 // caching

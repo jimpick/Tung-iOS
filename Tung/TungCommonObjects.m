@@ -1167,6 +1167,17 @@ UILabel *prototypeBadge;
     [badge setNeedsDisplay];
 }
 
+#pragma mark - feed related
+
+- (void) checkFeedLastFetchedTime {
+    // if feed hasn't been fetched in the last 5 minutes
+    SettingsEntity *settings = [TungCommonObjects settings];
+    NSTimeInterval now_secs = [[NSDate date] timeIntervalSince1970];
+    if ((settings.feedLastFetched.doubleValue + 300) < now_secs) {
+        _feedNeedsRefresh = [NSNumber numberWithBool:YES];
+    }
+}
+
 #pragma mark - core data related
 
 + (BOOL) saveContextWithReason:(NSString*)reason {
@@ -1870,6 +1881,19 @@ static NSArray *colors;
     _tungToken = [components objectAtIndex:1];
     //CLS_LOG(@"id: %@", _tungId);
     //CLS_LOG(@"token: %@", _tungToken);
+}
+
+- (void) checkConnectionStatus {
+    [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
+        if (reachable) {
+            _connectionAvailable = [NSNumber numberWithBool:YES];
+        }
+        else {
+            // unreachable
+            _connectionAvailable = [NSNumber numberWithBool:NO];
+            [TungCommonObjects showNoConnectionAlert];
+        }
+    }];
 }
 
 - (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
@@ -3557,10 +3581,16 @@ static NSArray *colors;
 
 + (void) showConnectionErrorAlertForError:(NSError *)error {
     
-    CLS_LOG(@"show connection error: \n%@",[NSThread callStackSymbols]);
+    //CLS_LOG(@"show connection error: \n%@",[NSThread callStackSymbols]);
     
     UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
     [connectionErrorAlert show];
+}
+
++ (void) showNoConnectionAlert {
+    
+    UIAlertView *noReachabilityAlert = [[UIAlertView alloc] initWithTitle:@"No Connection" message:@"Tung requires an internet connection" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+    [noReachabilityAlert show];
 }
 
 + (void) showBannerAlertForText:(NSString *)text andWidth:(CGFloat)screenWidth {

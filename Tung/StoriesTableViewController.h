@@ -50,8 +50,9 @@
 - (void) setActiveClipCellReference;
 
 // feed related methods
-- (void) refreshFeed:(BOOL)fullRefresh;
+- (void) refreshFeed;
 - (void) getSessionAndFeed;
+- (void) endRefreshing;
 - (void) configureHeaderCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) configureEventCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
 - (void) configureFooterCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;

@@ -80,32 +80,21 @@ CGFloat screenWidth;
 // refresh feed by checking or newer items or getting all items
 - (void) refreshFeed {
     
-    [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
-        if (reachable) {
-            _tung.connectionAvailable = [NSNumber numberWithBool:YES];
-        	// query users
-            _feedRefreshed = YES;
-            NSNumber *mostRecent;
-            if (_profileArray.count > 0) {
-                //CLS_LOG(@"profile list: refresh feed");
-                [self.refreshControl beginRefreshing];
-                mostRecent = [[_profileArray objectAtIndex:0] objectForKey:@"time_secs"];
-            } else {
-                //CLS_LOG(@"profile list: get feed");
-                mostRecent = [NSNumber numberWithInt:0];
-            }
-            [self requestProfileListWithQuery:_queryType
-                                           forTarget:_target_id
-                                           newerThan:mostRecent
-                                         orOlderThan:[NSNumber numberWithInt:0]];
-        }
-        // unreachable
-        else {
-            UIAlertView *noReachabilityAlert = [[UIAlertView alloc] initWithTitle:@"No Connection" message:@"tung requires an internet connection" delegate:self cancelButtonTitle:@"Retry" otherButtonTitles:nil];
-            [noReachabilityAlert setTag:49];
-            [noReachabilityAlert show];
-        }
-    }];
+    // query users
+    _feedRefreshed = YES;
+    NSNumber *mostRecent;
+    if (_profileArray.count > 0) {
+        //CLS_LOG(@"profile list: refresh feed");
+        [self.refreshControl beginRefreshing];
+        mostRecent = [[_profileArray objectAtIndex:0] objectForKey:@"time_secs"];
+    } else {
+        //CLS_LOG(@"profile list: get feed");
+        mostRecent = [NSNumber numberWithInt:0];
+    }
+    [self requestProfileListWithQuery:_queryType
+                            forTarget:_target_id
+                            newerThan:mostRecent
+                          orOlderThan:[NSNumber numberWithInt:0]];
 }
 
 // for re-fetching the entire feed
@@ -259,7 +248,7 @@ CGFloat screenWidth;
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self endRefreshing];
                 
-                [TungCommonObjects showConnectionErrorAlertForError:error];
+                //[TungCommonObjects showConnectionErrorAlertForError:error];
             });
         }
     }];
@@ -567,8 +556,6 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
 
 -(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
     CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
-    // search prompt
-    if (alertView.tag == 49) [self refreshFeed]; // unreachable, retry
     
     if (alertView.tag == 59 && buttonIndex) { // invite friends request
         NSString *friends = [[alertView textFieldAtIndex:0] text];

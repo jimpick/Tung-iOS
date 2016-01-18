@@ -331,11 +331,11 @@
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-    CLS_LOG(@"Application did become active");
+    //CLS_LOG(@"Application did become active");
     [_tung checkForNowPlaying];
+    // if feed hasn't been fetched in the last 5 minutes
+    [_tung checkFeedLastFetchedTime];
     
-    
-    // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
 }
 
 - (void)applicationWillTerminate:(UIApplication *)application

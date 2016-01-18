@@ -55,6 +55,7 @@
 - (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error
 {
     NSLog(@"web view did fail with error: %@", error);
+    
 }
 
 #pragma mark - Navigation

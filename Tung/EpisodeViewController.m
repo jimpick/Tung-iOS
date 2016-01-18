@@ -72,6 +72,7 @@
 @property BOOL isFirstAppearance;
 
 - (void) switchViews:(id)sender;
+- (void) switchToViewAtIndex:(NSInteger)index;
 
 @end
 
@@ -190,7 +191,7 @@ UIActivityIndicatorView *backgroundSpinner;
     
     // header view
     _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 64, screenWidth, defaultHeaderHeight)];
-    [self.view addSubview:_headerView];
+    [self.view insertSubview:_headerView belowSubview:_npControlsView];
     _headerView.hidden = YES;
     
     // switcher bar
@@ -209,7 +210,7 @@ UIActivityIndicatorView *backgroundSpinner;
     UIBarButtonItem *switcherBarItem = [[UIBarButtonItem alloc] initWithCustomView:(UIView *)_switcher];
     UIBarButtonItem *flexSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
     [_switcherBar setItems:@[flexSpace, switcherBarItem, flexSpace] animated:NO];
-    [self.view addSubview:_switcherBar];
+    [self.view insertSubview:_switcherBar belowSubview:_npControlsView];
     _switcherBar.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_headerView attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
     [_switcherBar addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:44]];
@@ -224,10 +225,10 @@ UIActivityIndicatorView *backgroundSpinner;
     _descriptionView = [self.storyboard instantiateViewControllerWithIdentifier:@"descWebView"];
     _descriptionView.edgesForExtendedLayout = UIRectEdgeNone;
     [self addChildViewController:_descriptionView];
-    [self.view insertSubview:_descriptionView.view belowSubview:_npControlsView];
+    [self.view insertSubview:_descriptionView.view atIndex:1];
     _descriptionView.webView.delegate = self;
     _descriptionView.view.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:-64]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
@@ -236,7 +237,7 @@ UIActivityIndicatorView *backgroundSpinner;
     _commentsView = [self.storyboard instantiateViewControllerWithIdentifier:@"commentsTableView"];
     _commentsView.edgesForExtendedLayout = UIRectEdgeNone;
     [self addChildViewController:_commentsView];
-    [self.view insertSubview:_commentsView.view belowSubview:_npControlsView];
+    [self.view insertSubview:_commentsView.view atIndex:1];
     _commentsView.navController = self.navigationController;
     _commentsView.refreshControl = [UIRefreshControl new];
     [_commentsView.refreshControl addTarget:self action:@selector(refreshComments:) forControlEvents:UIControlEventValueChanged];
@@ -258,7 +259,7 @@ UIActivityIndicatorView *backgroundSpinner;
     _episodesView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodesView"];
     _episodesView.edgesForExtendedLayout = UIRectEdgeNone;
     [self addChildViewController:_episodesView];
-    [self.view insertSubview:_episodesView.view belowSubview:_npControlsView];
+    [self.view insertSubview:_episodesView.view atIndex:1];
     _episodesView.navController = self.navigationController;
     _episodesView.refreshControl = [UIRefreshControl new];
     [_episodesView.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
@@ -407,6 +408,12 @@ NSTimer *markAsSeenTimer;
     _switcherIndex = switcher.selectedSegmentIndex;
 }
 
+- (void) switchToViewAtIndex:(NSInteger)index {
+    
+    [_switcher setSelectedSegmentIndex:index];
+    [self switchViews:_switcher];
+}
+
 #pragma mark - tungObjects/tungPodcasts delegate methods
 
 
@@ -453,7 +460,11 @@ NSTimer *markAsSeenTimer;
         [self setPlaybackRateToOne];
     } else {
         [_episodesView.tableView reloadData];
-        [_commentsView.tableView reloadData];
+        [_commentsView.tableView reloadData]; // for footer message change
+        
+        if (_episodeEntity.isNowPlaying.boolValue) {
+            [self revealNowPlayingControls];
+        }
     }
 }
 
@@ -531,8 +542,7 @@ NSTimer *markAsSeenTimer;
     
     // switcher
     _switcherBar.hidden = NO;
-    [_switcher setSelectedSegmentIndex:_switcherIndex];
-    [self switchViews:_switcher];
+    [self switchToViewAtIndex:_switcherIndex];
     _switcher.tintColor = episodeEntity.podcast.keyColor2;
     
     // COMMENTS
@@ -1886,11 +1896,13 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
             [_commentAndPostView.postButton setEnabled:YES];
             [TungCommonObjects fadeInView:_commentAndPostView.cancelButton];
             if (success) {
+                
+                [self switchToViewAtIndex:1];
                 [self refreshComments:YES];
+                
                 _commentAndPostView.commentTextView.text = @"";
                 [self toggleNewComment];
                 
-
                 NSString *username = [[_tung getLoggedInUserData] objectForKey:@"username"];
                 NSString *link = [NSString stringWithFormat:@"%@s/%@/%@", _tung.tungSiteRootUrl, _tung.npEpisodeEntity.shortlink, username];
                 // tweet?
@@ -1920,6 +1932,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
             [_commentAndPostView.postButton setEnabled:YES];
             if (success) {
                 if (text.length > 0) {
+                    [self switchToViewAtIndex:1];
                 	[self refreshComments:YES];
                 }
                 _clipHasPosted = YES;

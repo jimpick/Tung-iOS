@@ -97,11 +97,7 @@
     [super viewDidAppear:animated];
     
     // if feed hasn't been fetched in the last 5 minutes
-    SettingsEntity *settings = [TungCommonObjects settings];
-    NSTimeInterval now_secs = [[NSDate date] timeIntervalSince1970];
-    if ((settings.feedLastFetched.doubleValue + 300) < now_secs) {
-        _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
-    }
+    [_tung checkFeedLastFetchedTime];
     
     // let's get retarded in here
     if (_tung.feedNeedsRefresh.boolValue) {
@@ -163,9 +159,11 @@
     
     [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
         if (reachable) {
+            
+            _tung.connectionAvailable = [NSNumber numberWithBool:YES];
             // refresh feed
             if (_tung.sessionId && _tung.sessionId.length > 0) {
-                [_storiesView refreshFeed:YES];
+                [_storiesView refreshFeed];
             }
             // get missing data or get session and feed
             else {
@@ -174,10 +172,9 @@
         }
         // unreachable
         else {
-            _tung.connectionAvailable = [NSNumber numberWithInt:0];
-            UIAlertView *noReachabilityAlert = [[UIAlertView alloc] initWithTitle:@"No Connection" message:@"Tung requires an internet connection" delegate:self cancelButtonTitle:@"Retry" otherButtonTitles:nil];
-            [noReachabilityAlert setTag:49];
-            [noReachabilityAlert show];
+            _tung.connectionAvailable = [NSNumber numberWithBool:NO];
+            [TungCommonObjects showNoConnectionAlert];
+            [_storiesView endRefreshing];
         }
     }];
 }

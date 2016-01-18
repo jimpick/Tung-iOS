@@ -250,7 +250,7 @@ NSTimer *promptTimer;
         }
         else if (_tung.profileFeedNeedsRefresh.boolValue) {
             //CLS_LOG(@"profile feed needs refresh");
-            [_storiesView refreshFeed:YES];
+            [_storiesView refreshFeed];
         }
         else if (_tung.profileNeedsRefresh.boolValue) {
             //CLS_LOG(@"profile data needs refresh");
@@ -541,66 +541,78 @@ NSTimer *sessionCheckTimer;
     }
     [sessionCheckTimer invalidate];
     sessionCheckTimer = nil;
+    [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
+        if (reachable) {
+            _tung.connectionAvailable = [NSNumber numberWithBool:YES];
         
-    if (_isLoggedInUser) {
-        _profiledUserData = [[_tung getLoggedInUserData] mutableCopy];
-        if (_profiledUserData) {
-            CLS_LOG(@"Is logged in user: Has logged-in user data.");
-            [self setUpProfileHeaderViewForData];
-            // request profile just to get current follower/following counts
-            [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
-                if (jsonData != nil) {
-                    NSDictionary *responseDict = jsonData;
-                    if ([responseDict objectForKey:@"user"]) {
-                        _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
-                        [self updateUserFollowingData];
-                        if (_tung.profileFeedNeedsRefresh.boolValue) {
-                        	[_storiesView refreshFeed:YES];
-                        }
-                    }
-                }
-            }];
-        }
-        else {
-            // restore logged in user data
-            CLS_LOG(@"Is logged in user: Was missing logged-in user data - fetching");
-            [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
-                if (jsonData != nil) {
-                    NSDictionary *responseDict = jsonData;
-                    if ([responseDict objectForKey:@"user"]) {
-                        //CLS_LOG(@"got user: %@", [responseDict objectForKey:@"user"]);
-                        [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
-                        _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
-                        [self setUpProfileHeaderViewForData];
-                        if (_tung.profileFeedNeedsRefresh.boolValue) {
-                            [_storiesView refreshFeed:YES];
-                        }
-                    }
-                }
-            }];
-        }
-    }
-    else {
-        
-        [_tung getProfileDataForUser:_profiledUserId withCallback:^(NSDictionary *jsonData) {
-            if (jsonData != nil) {
-                NSDictionary *responseDict = jsonData;
-                if ([responseDict objectForKey:@"user"]) {
-                    _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
-                    //CLS_LOG(@"profiled user data %@", _profiledUserData);
+            if (_isLoggedInUser) {
+                _profiledUserData = [[_tung getLoggedInUserData] mutableCopy];
+                if (_profiledUserData) {
+                    CLS_LOG(@"Is logged in user: Has logged-in user data.");
                     [self setUpProfileHeaderViewForData];
-                    if (_tung.profileFeedNeedsRefresh.boolValue) {
-                        [_storiesView refreshFeed:YES];
-                    }
+                    // request profile just to get current follower/following counts
+                    [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
+                        if (jsonData != nil) {
+                            NSDictionary *responseDict = jsonData;
+                            if ([responseDict objectForKey:@"user"]) {
+                                _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
+                                [self updateUserFollowingData];
+                                if (_tung.profileFeedNeedsRefresh.boolValue) {
+                                    [_storiesView refreshFeed];
+                                }
+                            }
+                        }
+                    }];
                 }
-                else if ([responseDict objectForKey:@"error"]) {
-                    UIAlertView *profileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-                    [profileErrorAlert show];
-                    // TODO: user not found, if user was deleted
+                else {
+                    // restore logged in user data
+                    CLS_LOG(@"Is logged in user: Was missing logged-in user data - fetching");
+                    [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
+                        if (jsonData != nil) {
+                            NSDictionary *responseDict = jsonData;
+                            if ([responseDict objectForKey:@"user"]) {
+                                //CLS_LOG(@"got user: %@", [responseDict objectForKey:@"user"]);
+                                [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
+                                _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
+                                [self setUpProfileHeaderViewForData];
+                                if (_tung.profileFeedNeedsRefresh.boolValue) {
+                                    [_storiesView refreshFeed];
+                                }
+                            }
+                        }
+                    }];
                 }
             }
-        }];
-    }
+            else {
+                
+                [_tung getProfileDataForUser:_profiledUserId withCallback:^(NSDictionary *jsonData) {
+                    if (jsonData != nil) {
+                        NSDictionary *responseDict = jsonData;
+                        if ([responseDict objectForKey:@"user"]) {
+                            _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
+                            //CLS_LOG(@"profiled user data %@", _profiledUserData);
+                            [self setUpProfileHeaderViewForData];
+                            if (_tung.profileFeedNeedsRefresh.boolValue) {
+                                [_storiesView refreshFeed];
+                            }
+                        }
+                        else if ([responseDict objectForKey:@"error"]) {
+                            UIAlertView *profileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+                            [profileErrorAlert show];
+                            // TODO: user not found, if user was deleted
+                        }
+                    }
+                }];
+            }
+        }
+        // unreachable
+        else {
+            _tung.connectionAvailable = [NSNumber numberWithBool:NO];
+            
+            UIAlertView *noReachabilityAlert = [[UIAlertView alloc] initWithTitle:@"No Connection" message:@"tung requires an internet connection" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+            [noReachabilityAlert show];
+        }
+    }];
 }
 
 - (void) refreshProfile {

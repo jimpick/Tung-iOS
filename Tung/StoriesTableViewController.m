@@ -24,12 +24,15 @@
 @property NSString *shareLink;
 @property NSString *shareText;
 @property NSString *timestamp;
+@property CGPoint contentOffset;
+@property BOOL contentOffsetSet;
 
 @end
 
 @implementation StoriesTableViewController
 
 CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, animationDistance;
+
 
 - (void)viewDidLoad {
     
@@ -61,7 +64,7 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     // refresh control
     if (!_storyId) {
         self.refreshControl = [[UIRefreshControl alloc] init];
-        [self.refreshControl addTarget:self action:@selector(refreshFeed:) forControlEvents:UIControlEventValueChanged];
+        [self.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
     }
     // table bkgd
     UIActivityIndicatorView *tableSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
@@ -89,26 +92,34 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
         
 }
 
-- (void) refreshFeed:(BOOL)fullRefresh {
-    CLS_LOG(@"refresh feed");
+- (void) viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    
+    if (!_contentOffsetSet) {
+    	_contentOffset = self.tableView.contentOffset;
+        _contentOffsetSet = YES;
+    }
+}
+
+- (void) refreshFeed {
+    //CLS_LOG(@"refresh feed");
     
     NSNumber *mostRecent;
-    if (fullRefresh) {
-        mostRecent = [NSNumber numberWithInt:0];
-        
-        if (_storiesArray.count > 0) {
-            // "fake" refresh
+
+    if (_storiesArray.count > 0) {
+        // animate refresh control if table is scrolled to top
+        if (self.tableView.contentOffset.y <= _contentOffset.y) {
             [self.refreshControl beginRefreshing];
-            [self.tableView setContentOffset:CGPointMake(0, - (self.refreshControl.frame.size.height * 2)) animated:YES];
+            [self.tableView setContentOffset:CGPointMake(0, - (self.refreshControl.frame.size.height - _contentOffset.y)) animated:YES];
         }
-    } else {
-        if (_storiesArray.count > 0) {
-            
-            mostRecent = [[[_storiesArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
-        } else { // if initial request timed out and they are trying again
-            mostRecent = [NSNumber numberWithInt:0];
-        }
+        mostRecent = [[[_storiesArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
+        
     }
+    // if initial request timed out and they are trying again
+    else {
+        mostRecent = [NSNumber numberWithInt:0];
+    }
+
     [self requestPostsNewerThan:mostRecent
                     orOlderThan:[NSNumber numberWithInt:0]
                        fromUser:_profiledUserId
@@ -244,6 +255,11 @@ NSInteger requestTries = 0;
                      fromUser:(NSString *)user_id
                      withCred:(BOOL)withCred {
     
+//    if (!_tung.connectionAvailable.boolValue) {
+//        [self endRefreshing];
+//        [TungCommonObjects showNoConnectionAlert];
+//    }
+    
     requestTries++;
     self.requestStatus = @"initiated";
     NSDate *requestStarted = [NSDate date];
@@ -269,6 +285,8 @@ NSInteger requestTries = 0;
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:feedRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
         if (error == nil) {
+            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *) response;
+            NSLog(@"response status code: %ld", (long)[httpResponse statusCode]);
             id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
             dispatch_async(dispatch_get_main_queue(), ^{
                 requestTries = 0;
@@ -299,6 +317,7 @@ NSInteger requestTries = 0;
                         
                         NSTimeInterval requestDuration = [requestStarted timeIntervalSinceNow];
                         NSArray *newStories = [responseDict objectForKey:@"stories"];
+                        //NSLog(@"new stories: %@", newStories);
                         //CLS_LOG(@"new stories count: %lu", (unsigned long)newStories.count);
                         
                         // if this is for the main feed, set feedLastFetched date (seconds)
@@ -333,7 +352,7 @@ NSInteger requestTries = 0;
                         }
                         else {
                             
-                            CLS_LOG(@"got stories in %f seconds.", fabs(requestDuration));
+                            //CLS_LOG(@"got stories in %f seconds.", fabs(requestDuration));
                         }
                         
                         [self endRefreshing];
@@ -341,8 +360,11 @@ NSInteger requestTries = 0;
                         // pull refresh
                         if ([afterTime intValue] > 0) {
                             if (newStories.count > 0) {
-                                //CLS_LOG(@"got stories newer than: %@", afterTime);
+                                CLS_LOG(@"got stories newer than: %@", afterTime);
                                 [self stopClipPlayback];
+                                
+                                [self removeOlderDuplicatesOfNewStories:newStories];
+                                
                                 NSArray *newItems = [self processStories:newStories];
                                 NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
                                 _storiesArray = [newFeedArray mutableCopy];
@@ -396,7 +418,6 @@ NSInteger requestTries = 0;
                             } else {
                                 _noResults = YES;
                             }
-                            
                             [self.tableView reloadData];
                             
                             // welcome tutorial
@@ -441,7 +462,6 @@ NSInteger requestTries = 0;
         else {
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (requestTries < 3) {
-                    [TungCommonObjects showBannerAlertForText:[NSString stringWithFormat:@"request %ld failed, trying again", (long)requestTries] andWidth:screenWidth];
                     
                     CLS_LOG(@"request %ld failed, trying again", (long)requestTries);
                     [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:withCred];
@@ -460,8 +480,22 @@ NSInteger requestTries = 0;
     _requestingMore = NO;
     self.requestStatus = @"finished";
     _loadMoreIndicator.alpha = 0;
-    [self.refreshControl endRefreshing];
-    self.tableView.backgroundView = nil;
+    
+    if (self.refreshControl.refreshing) {
+        [self.refreshControl endRefreshing];
+        [self.tableView setContentOffset:_contentOffset animated:YES];
+    }
+    
+    if (_tung.connectionAvailable.boolValue) {
+    	self.tableView.backgroundView = nil;
+    } else {
+        UILabel *retryLabel = [[UILabel alloc] init];
+        retryLabel.text = @"Swipe down to retry";
+        retryLabel.numberOfLines = 1;
+        retryLabel.textColor = [UIColor grayColor];
+        retryLabel.textAlignment = NSTextAlignmentCenter;
+        self.tableView.backgroundView = retryLabel;
+    }
 }
 
 // break events apart from story and into their own array items in _storiesArray,
@@ -476,25 +510,26 @@ NSInteger requestTries = 0;
     for (int i = 0; i < stories.count; i++) {
         
         NSMutableArray *storyArray = [NSMutableArray new];
-        NSMutableDictionary *dict = [[stories objectAtIndex:i] mutableCopy];
-        UIColor *keyColor = [TungCommonObjects colorFromHexString:[[dict objectForKey:@"episode"] objectForKey:@"keyColor1Hex"]];
-        [dict setObject:keyColor forKey:@"keyColor"];
-        NSArray *events = [dict objectForKey:@"events"];
-        NSString *username = [[dict objectForKey:@"user"] objectForKey:@"username"];
-        NSString *episodeShortlink = [[dict objectForKey:@"episode"] objectForKey:@"shortlink"];
+        NSMutableDictionary *headerDict = [[stories objectAtIndex:i] mutableCopy];
+        UIColor *keyColor = [TungCommonObjects colorFromHexString:[[headerDict objectForKey:@"episode"] objectForKey:@"keyColor1Hex"]];
+        [headerDict setObject:keyColor forKey:@"keyColor"];
+        NSArray *events = [headerDict objectForKey:@"events"];
+        NSString *username = [[headerDict objectForKey:@"user"] objectForKey:@"username"];
+        NSString *episodeShortlink = [[headerDict objectForKey:@"episode"] objectForKey:@"shortlink"];
         NSString *episodeLink = [NSString stringWithFormat:@"%@e/%@", _tung.tungSiteRootUrl, episodeShortlink];
-        [dict setObject:episodeLink forKey:@"episodeLink"];
+        [headerDict setObject:episodeLink forKey:@"episodeLink"];
         NSString *storyLink = [NSString stringWithFormat:@"%@e/%@/%@", _tung.tungSiteRootUrl, episodeShortlink, username];
-        [dict setObject:storyLink forKey:@"storyLink"];
-        [storyArray addObject:dict];
+        [headerDict setObject:storyLink forKey:@"storyLink"];
+        
+        [storyArray addObject:headerDict];
         
         // preload avatar and album art
         [preloadQueue addOperationWithBlock:^{
             // avatar
-            NSString *avatarURLString = [[dict objectForKey:@"user"] objectForKey:@"small_av_url"];
+            NSString *avatarURLString = [[headerDict objectForKey:@"user"] objectForKey:@"small_av_url"];
             [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avatarURLString];
             // album art
-            NSString *artURLString = [[dict objectForKey:@"episode"] objectForKey:@"artworkUrlSSL"];
+            NSString *artURLString = [[headerDict objectForKey:@"episode"] objectForKey:@"artworkUrlSSL"];
             [TungCommonObjects retrieveSSLPodcastArtDataWithUrlString:artURLString];
         }];
         
@@ -519,7 +554,7 @@ NSInteger requestTries = 0;
                 break;
             }
         }
-        [dict removeObjectForKey:@"events"];
+        [headerDict removeObjectForKey:@"events"];
         NSNumber *moreEvents = [NSNumber numberWithBool:events.count > 5];
         NSDictionary *footerDict = [NSDictionary dictionaryWithObjects:@[keyColor,
                                                                          moreEvents]
@@ -530,6 +565,39 @@ NSInteger requestTries = 0;
         
     }
     return results;
+}
+
+
+/* 	new stories fetched after feed has already been fetched may be part of those already fetched.
+	if the same story id comes down again, this method removes the old one so the new stories can 
+ 	be added to the front.
+*/
+- (void) removeOlderDuplicatesOfNewStories:(NSArray *)newStories {
+    
+    for (int i = 0; i < newStories.count; i++) {
+        NSDictionary *storyDict = [newStories objectAtIndex:i];
+        NSString *storyIdToMatch = [[storyDict objectForKey:@"_id"] objectForKey:@"$id"];
+        
+        // check for story id match in main stories array
+        for (int j = 0; j < _storiesArray.count; j++) {
+            NSDictionary *headerDict = [[_storiesArray objectAtIndex:j] objectAtIndex:0];
+            
+            // story match
+            if ([storyIdToMatch isEqualToString:[[headerDict objectForKey:@"_id"] objectForKey:@"$id"]]) {
+                NSLog(@"removed old duplicate");
+                [_storiesArray removeObjectAtIndex:j];
+                // remove section (story)
+                [UIView setAnimationsEnabled:NO];
+                [self.tableView beginUpdates];
+                [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:j]withRowAnimation:UITableViewRowAnimationNone];
+                [self.tableView endUpdates];
+                [UIView setAnimationsEnabled:YES];
+                
+                break;
+            }
+        }
+    }
+    
 }
 
 - (void) showWelcomePopup {
