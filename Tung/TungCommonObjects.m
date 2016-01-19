@@ -70,8 +70,8 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        //_apiRootUrl = @"https://api.tung.fm/";
-        _apiRootUrl = @"https://staging-api.tung.fm/";
+        _apiRootUrl = @"https://api.tung.fm/";
+        //_apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
@@ -1269,6 +1269,12 @@ UILabel *prototypeBadge;
             keyColor1 = [TungCommonObjects colorFromHexString:keyColor1Hex];
             keyColor2 = [TungCommonObjects colorFromHexString:keyColor2Hex];
         }
+        /*
+        NSLog(@"- key color 1: %@", keyColor1);
+        NSLog(@"- key color 1 hex: %@", keyColor1Hex);
+        NSLog(@"- key color 2: %@", keyColor2);
+        NSLog(@"- key color 2 hex: %@", keyColor2Hex);
+         */
         podcastEntity.keyColor1 = keyColor1;
         podcastEntity.keyColor1Hex = keyColor1Hex;
         podcastEntity.keyColor2 = keyColor2;
@@ -1299,7 +1305,7 @@ UILabel *prototypeBadge;
         return nil;
     }
     
-    //CLS_LOG(@"get episode entity for episode: %@", episodeDict);
+    //'CLS_LOG(@"get episode entity for episode: %@", episodeDict);
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
 
     // get episode entity
@@ -1329,9 +1335,13 @@ UILabel *prototypeBadge;
     
     episodeEntity.podcast = podcastEntity;
     
+    
     // optional/variable properties
     if ([episodeDict objectForKey:@"itunes:image"]) {
         episodeEntity.episodeImageUrl = [[[episodeDict objectForKey:@"itunes:image"] objectForKey:@"el:attributes"] objectForKey:@"href"];
+    }
+    if ([episodeDict objectForKey:@"itunes:duration"]) {
+        episodeEntity.duration = [TungCommonObjects formatDurationFromString:[episodeDict objectForKey:@"itunes:duration"]];
     }
     if ([episodeDict objectForKey:@"_id"]) {
         episodeEntity.id = [[episodeDict objectForKey:@"_id"] objectForKey:@"$id"];
@@ -1350,7 +1360,8 @@ UILabel *prototypeBadge;
         episodeEntity.pubDate = pubDate;
     }
     if ([episodeDict objectForKey:@"enclosure"]) {
-        episodeEntity.dataLength = [NSNumber numberWithDouble:[[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"length"] doubleValue]];
+        NSDictionary *enclosureDict = [TungCommonObjects getEnclosureDictForEpisode:episodeDict];
+        episodeEntity.dataLength = [NSNumber numberWithDouble:[[[enclosureDict objectForKey:@"el:attributes"] objectForKey:@"length"] doubleValue]];
     }
     
     NSString *url;
@@ -1358,7 +1369,8 @@ UILabel *prototypeBadge;
         url = [episodeDict objectForKey:@"url"];
     }
     else if ([episodeDict objectForKey:@"enclosure"]) {
-    	url = [[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
+        NSDictionary *enclosureDict = [TungCommonObjects getEnclosureDictForEpisode:episodeDict];
+    	url = [[enclosureDict objectForKey:@"el:attributes"] objectForKey:@"url"];
     }
     else if (!episodeEntity.url) {
         //NSLog(@"episode dict missing url: %@", episodeDict);
@@ -1387,6 +1399,19 @@ UILabel *prototypeBadge;
     return episodeEntity;
 }
 
++ (NSDictionary *) getEnclosureDictForEpisode:(NSDictionary *)episodeDict {
+    if ([episodeDict objectForKey:@"enclosure"]) {
+        id enclosure = [episodeDict objectForKey:@"enclosure"];
+        if ([enclosure isKindOfClass:[NSArray class]]) {
+            return [enclosure lastObject];
+        } else {
+            return enclosure;
+        }
+    } else {
+        return nil;
+    }
+}
+
 // get episode description
 + (NSString *) findEpisodeDescriptionWithDict:(NSDictionary *)episodeDict {
     
@@ -1410,19 +1435,32 @@ UILabel *prototypeBadge;
 
 + (NSString *) findPodcastDescriptionWithDict:(NSDictionary *)dict {
     NSString *descrip;
-    id desc = [[dict objectForKey:@"channel"] objectForKey:@"itunes:summary"];
-    if ([desc isKindOfClass:[NSString class]]) {
-        descrip = (NSString *)desc;
-    } else {
+    if ([[dict objectForKey:@"channel"] objectForKey:@"itunes:summary"]) {
+        id desc = [[dict objectForKey:@"channel"] objectForKey:@"itunes:summary"];
+        if ([desc isKindOfClass:[NSString class]]) {
+            descrip = (NSString *)desc;
+        }
+    }
+    
+    if (!descrip && [[dict objectForKey:@"channel"] objectForKey:@"description"]) {
         id descr = [[dict objectForKey:@"channel"] objectForKey:@"description"];
         if ([descr isKindOfClass:[NSString class]]) {
             descrip = (NSString *)descr;
         }
-        else {
-            return @"This podcast has no description.";
+    }
+    
+    if (!descrip && [[dict objectForKey:@"channel"] objectForKey:@"itunes:subtitle"]) {
+        id descr = [[dict objectForKey:@"channel"] objectForKey:@"itunes:subtitle"];
+        if ([descr isKindOfClass:[NSString class]]) {
+            descrip = (NSString *)descr;
         }
     }
-    return [descrip stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
+    
+    if (!descrip) {
+        descrip = @"This podcast has no description.";
+    }
+    //return [descrip stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
+    return descrip;
     
 }
 
@@ -1703,7 +1741,7 @@ static NSArray *colors;
     UIColor *keyColor2 = [self tungColor];// default
     if (keyColors.count > 0) {
         //CLS_LOG(@"determine key colors ---------");
-        //int x = 120;
+        
         int keyColor1Index = -1;
         int keyColor2Index = -1;
         NSString *keyColor1DominantColor;
@@ -1732,44 +1770,36 @@ static NSArray *colors;
             float R = components[0];
             float G = components[1];
             float B = components[2];
+            //float sum = R + G + B;
             
             NSString *dominantColor = [self determineDominantColorFromRGB:@[[NSNumber numberWithFloat:R], [NSNumber numberWithFloat:G], [NSNumber numberWithFloat:B]]];
             
-            //CLS_LOG(@"- color %d - dominant: %@, saturation: %f, RGB: %f - %f - %f", i, dominantColor, saturation, R, G, B);
+            //NSLog(@"- color %d - dominant: %@, saturation: %f, luminance: %f, RGB: %f - %f - %f", i, dominantColor, saturation, luminance, R, G, B);
             
             // test for not gray (only for first keyColor)
-            if (saturation < 0.09 && keyColor1Index < 0) {
-                continue;
-            }
-            // test for bright yellow/green
-            if (R > 0.65 && G > 0.65) {
-                continue;
-            }
-            /*
-             // test for dark blue/green
-             if (R < 0.4 && G < 0.4 && sum < 1.4) {
-             continue;
-             }
-             */
-            // test for dark purple
-            if (R < 0.4 && G < 0.4 && B < 0.6) {
-                continue;
-            }
-            // test for dark red/brown
-            if (R < 0.6 && G < 0.3 && B < 0.3) {
-                continue;
-            }
-            // test for too dark
-            if (R < 0.4 && G < 0.4 && B < 0.4) {
-                continue;
-            }
-            // test for too light
-            if (R > 0.6 && G > 0.6 && B > 0.6) {
-                continue;
-            }
+            if (saturation < 0.09 && keyColor1Index < 0) continue;
             
+            // test for too dark
+            if (R < 0.44 && G < 0.44 && B < 0.44) continue;
+
+            // test for too light
+            if (R > 0.6 && G > 0.6 && B > 0.6) continue;
+
+            // test for too dark blue
+            if (R < 0.1 && G < 0.45 && B < 0.75) continue;
+
+            // test for too bright yellow / green
+            if (R > 0.6 && G > 0.65) continue;
+
+            // test for dark purple
+            if (R < 0.4 && G < 0.4 && B < 0.6) continue;
+            
+            // test for dark red/brown
+            if (R < 0.7 && G < 0.3 && B < 0.3) continue;
+
+
             if (keyColor1Index < 0) {
-                //CLS_LOG(@"* set key color 1");
+                //NSLog(@"* set key color 1");
                 keyColor1Index = i;
                 keyColor1DominantColor = dominantColor;
             }
@@ -1778,7 +1808,7 @@ static NSArray *colors;
                 if ([keyColor1DominantColor isEqualToString:keyColor2DominantColor]) {
                     continue;
                 } else {
-                    //CLS_LOG(@"* set key color 2");
+                    //NSLog(@"* set key color 2");
                     keyColor2Index = i;
                     break;
                 }
@@ -1792,6 +1822,7 @@ static NSArray *colors;
         if (keyColor2Index > -1) keyColor2 = [keyColors objectAtIndex:keyColor2Index];
         if (keyColor1Index > -1 && keyColor2Index == -1) keyColor2 = [keyColors objectAtIndex:keyColor1Index];
     }
+    //return keyColors; // for testing key colors
     return @[keyColor1, keyColor2];
     
 }
@@ -4191,6 +4222,48 @@ static NSDateFormatter *dayDateFormatter = nil;
         result = [[components objectAtIndex:0] integerValue];
     }
     return result;
+}
+
++ (NSString *) formatDurationFromString:(NSString *)duration {
+    
+    NSArray *components = [duration componentsSeparatedByString:@":"];
+    
+    if (components.count == 3) {
+        NSNumber *hours = [components objectAtIndex:0];
+        NSNumber *minutes = [components objectAtIndex:1];
+        NSNumber *seconds = [components objectAtIndex:2];
+        
+        if (hours.doubleValue == 0 && minutes.doubleValue == 0 && seconds.doubleValue == 0) {
+            return @"";
+        }
+        
+        if (hours.integerValue > 0) {
+            return duration;
+        }
+        else if (minutes.integerValue > 0) {
+            return [NSString stringWithFormat:@"%ld:%@", (long)minutes.integerValue, [components objectAtIndex:2]];
+        }
+        else {
+            return [NSString stringWithFormat:@"%@ seconds", [components objectAtIndex:2]];
+        }
+    }
+    else if (components.count == 2) {
+        NSNumber *minutes = [components objectAtIndex:0];
+        NSNumber *seconds = [components objectAtIndex:1];
+        if (minutes.doubleValue == 0 && seconds.doubleValue == 0) {
+            return @"";
+        }
+        return [NSString stringWithFormat:@"%ld:%@", (long)minutes.integerValue, [components objectAtIndex:1]];
+    }
+    else {
+        NSNumber *seconds = [components objectAtIndex:0];
+        if (seconds.doubleValue > 0) {
+            NSString *timestamp = [TungCommonObjects convertSecondsToTimeString:seconds.floatValue];
+            return [TungCommonObjects formatDurationFromString:timestamp];
+        } else {
+            return @"";
+        }
+    }
 }
 
 

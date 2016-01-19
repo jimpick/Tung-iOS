@@ -71,7 +71,7 @@
 static NSDateFormatter *airDateFormatter = nil;
 
 -(void) setUpHeaderViewForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity {
-    
+
     self.hidden = NO;
     self.clipsToBounds = YES;
     
@@ -105,7 +105,7 @@ static NSDateFormatter *airDateFormatter = nil;
             airDateFormatter = [[NSDateFormatter alloc] init];
             [airDateFormatter setDateFormat:@"MMMM d, yyyy"];
         }
-        subTitle = [airDateFormatter stringFromDate:episodeEntity.pubDate];
+        subTitle = [self getSubtitleLabelTextForEntity:episodeEntity];
         desc = @"";
         if (title.length > 60) {
             self.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
@@ -119,19 +119,29 @@ static NSDateFormatter *airDateFormatter = nil;
         isSubscribed = episodeEntity.podcast.isSubscribed.boolValue;
         
     }
+    //NSLog(@"set up header view for %@", title);
     
     // art image
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     self.albumArt.image = artImage;
     
-    // find key color
+    // find key color, overwrite previous (in case album art changes
     _keyColors = [TungCommonObjects determineKeyColorsFromImage:artImage];
     UIColor *keyColor1 = [_keyColors objectAtIndex:0];
     UIColor *keyColor2 = [_keyColors objectAtIndex:1];
+    NSString *keyColor1Hex = [TungCommonObjects UIColorToHexString:keyColor1];
+    NSString *keyColor2Hex = [TungCommonObjects UIColorToHexString:keyColor2];
+    
+    //NSLog(@"key color 1: %@", [TungCommonObjects UIColorToHexString:keyColor1]);
+    //NSLog(@"key color 2: %@", [TungCommonObjects UIColorToHexString:keyColor2]);
     
     // play button
     if (podcastEntity) {
         self.largeButton.type = kCircleTypeSupport;
+        podcastEntity.keyColor1 = keyColor1;
+        podcastEntity.keyColor2 = keyColor2;
+        podcastEntity.keyColor1Hex = keyColor1Hex;
+        podcastEntity.keyColor2Hex = keyColor2Hex;
     }
     else {
         self.largeButton.type = kCircleTypePlay;
@@ -140,6 +150,10 @@ static NSDateFormatter *airDateFormatter = nil;
         } else {
             self.largeButton.on = NO;
         }
+        episodeEntity.podcast.keyColor1 = keyColor1;
+        episodeEntity.podcast.keyColor2 = keyColor2;
+        episodeEntity.podcast.keyColor1Hex = keyColor1Hex;
+        episodeEntity.podcast.keyColor2Hex = keyColor2Hex;
     }
     
     self.largeButton.hidden = NO;
@@ -160,7 +174,14 @@ static NSDateFormatter *airDateFormatter = nil;
     self.subscribeButton.subscribed = isSubscribed;
     self.subscribeButton.hidden = NO;
     [self.subscribeButton setNeedsDisplay]; // re-display for color change or sub. status
-    
+}
+
+- (NSString *) getSubtitleLabelTextForEntity:(EpisodeEntity *)episodeEntity {
+    if (episodeEntity.duration && episodeEntity.duration.length) {
+        return [NSString stringWithFormat:@"%@  •  %@", [airDateFormatter stringFromDate:episodeEntity.pubDate], episodeEntity.duration];
+    } else {
+        return [airDateFormatter stringFromDate:episodeEntity.pubDate];
+    }
 }
 
 -(void) sizeAndConstrainHeaderViewInViewController:(UIViewController *)vc {

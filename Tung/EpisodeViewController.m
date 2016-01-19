@@ -522,7 +522,7 @@ NSTimer *markAsSeenTimer;
 - (void) setUpViewForEpisode:(EpisodeEntity *)episodeEntity {
     
     //NSLog(@"set up view for episode: %@", [TungCommonObjects entityToDict:episodeEntity]);
-    
+    //NSLog(@"podcast: %@", [TungCommonObjects entityToDict:episodeEntity.podcast]);
     // set up header view
     [_headerView setUpHeaderViewForEpisode:episodeEntity orPodcast:nil];
     [_headerView sizeAndConstrainHeaderViewInViewController:self];
@@ -557,27 +557,33 @@ NSTimer *markAsSeenTimer;
     _episodesView.podcastEntity = episodeEntity.podcast;
     [_episodesView.tableView reloadData];
     
-    // episode description
-    if (episodeEntity.desc.length == 0 || [episodeEntity.desc isEqualToString:@"No description"]) {
-        // refresh description web view with description from feed
-        NSInteger feedIndex = [TungCommonObjects getIndexOfEpisodeWithGUID:episodeEntity.guid inFeed:_episodesView.episodeArray];
-        episodeEntity.desc = @"No description";
-        if (feedIndex >= 0) {
-            NSDictionary *epDict = [_episodesView.episodeArray objectAtIndex:feedIndex];
-            episodeEntity.dataLength = [NSNumber numberWithDouble:[[[[epDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"length"] doubleValue]];
-            
-            NSString *desc = [TungCommonObjects findEpisodeDescriptionWithDict:epDict];
-            
-            if (desc.length > 0) {
-                episodeEntity.desc = desc;
-            }
+    // refresh description web view with description from feed
+    NSInteger feedIndex = [TungCommonObjects getIndexOfEpisodeWithGUID:episodeEntity.guid inFeed:_episodesView.episodeArray];
+    episodeEntity.desc = @"No description";
+    if (feedIndex >= 0) {
+        // assign missing episode entity properties from feed
+        NSDictionary *epDict = [_episodesView.episodeArray objectAtIndex:feedIndex];
+        if ([epDict objectForKey:@"enclosure"]) {
+            NSDictionary *enclosureDict = [TungCommonObjects getEnclosureDictForEpisode:epDict];
+            episodeEntity.dataLength = [NSNumber numberWithDouble:[[[enclosureDict objectForKey:@"el:attributes"] objectForKey:@"length"] doubleValue]];
+        }
+        if ([epDict objectForKey:@"itunes:duration"]) {
+            NSString *formattedDuration = [TungCommonObjects formatDurationFromString:[epDict objectForKey:@"itunes:duration"]];
+            episodeEntity.duration = formattedDuration;
+            _headerView.subTitleLabel.text = [_headerView getSubtitleLabelTextForEntity:episodeEntity];
+        }
+        
+        NSString *desc = [TungCommonObjects findEpisodeDescriptionWithDict:epDict];
+        
+        if (desc.length > 0) {
+            episodeEntity.desc = desc;
         }
     }
     [self loadDescriptionWebViewStringForEntity:episodeEntity];
     
     // podcast description
     if (!episodeEntity.podcast.desc || episodeEntity.podcast.desc.length == 0) {
-        episodeEntity.podcast.desc = [[feedDict objectForKey:@"channel"] objectForKey:@"description"];
+        episodeEntity.podcast.desc = [TungCommonObjects findPodcastDescriptionWithDict:feedDict];
     }
     
     // scroll to episode row if it's playing

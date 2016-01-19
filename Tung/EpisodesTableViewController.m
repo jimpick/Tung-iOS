@@ -129,7 +129,9 @@ static NSString *cellIdentifier = @"EpisodeCell";
     // now playing?
     episodeCell.iconView.backgroundColor = [UIColor clearColor];
     if (_tung.playQueue.count > 0) {
-        NSString *urlString = [[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"];
+        
+        NSDictionary *enclosureDict = [TungCommonObjects getEnclosureDictForEpisode:episodeDict];
+        NSString *urlString = [[enclosureDict objectForKey:@"el:attributes"] objectForKey:@"url"];
         NSURL *playingUrl = [_tung.playQueue objectAtIndex:0];
         
         if ([urlString isEqualToString:playingUrl.absoluteString]) {

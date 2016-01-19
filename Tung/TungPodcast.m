@@ -80,7 +80,7 @@
     //CLS_LOG(@"search bar text did change: %@", searchText);
     [_searchTimer invalidate];
     if (searchText.length > 1) {
-    	_searchTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(keyupSearch:) userInfo:searchText repeats:NO];
+    	_searchTimer = [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(keyupSearch:) userInfo:searchText repeats:NO];
     }
     else {
         [_podcastArray removeAllObjects];
@@ -273,7 +273,11 @@ static NSDateFormatter *releaseDateFormatter = nil;
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     //CLS_LOG(@"number of rows in section: %lu", (unsigned long)_podcastArray.count);
-    return _podcastArray.count;
+    if (section == 0) {
+    	return _podcastArray.count;
+    } else {
+        return 0;
+    }
 }
 
 static NSString *cellIdentifier = @"PodcastResultCell";
@@ -358,8 +362,18 @@ static NSString *cellIdentifier = @"PodcastResultCell";
     
     // find key color
     NSArray *keyColors = [TungCommonObjects determineKeyColorsFromImage:artImage];
+    /* for testing key colors
+    int x = 90;
+    for (int i = 0; i < keyColors.count; i++) {
+        UIView *view = [[UIView alloc] initWithFrame:CGRectMake(x, 60, 40, 35)];
+        view.backgroundColor = keyColors[i];
+        [podcastCell addSubview:view];
+        x +=40;
+    };*/
     UIColor *keyColor1 = [keyColors objectAtIndex:0];
     UIColor *keyColor2 = [keyColors objectAtIndex:1];
+    //NSLog(@"key color 1 hex: %@", [TungCommonObjects UIColorToHexString:keyColor1]);
+    //NSLog(@"key color 2 hex: %@", [TungCommonObjects UIColorToHexString:keyColor2]);
     podcastCell.podcastTitle.textColor = keyColor1;
     [podcastDict setObject:keyColor1 forKey:@"keyColor1"];
     [podcastDict setObject:keyColor2 forKey:@"keyColor2"];
@@ -377,14 +391,11 @@ static NSString *cellIdentifier = @"PodcastResultCell";
         [podcastCell addSubview:podcastCell.accessory];
     }
     
-    // kill insets for iOS 8
+    // kill insets for iOS 8+
     if ([[UIDevice currentDevice].systemVersion floatValue] >= 8) {
         podcastCell.preservesSuperviewLayoutMargins = NO;
         [podcastCell setLayoutMargins:UIEdgeInsetsZero];
     }
-    // iOS 7
-    //    if ([podcastCell respondsToSelector:@selector(setSeparatorInset:)])
-    //        [podcastCell setSeparatorInset:UIEdgeInsetsZero];
     
     return podcastCell;
 
@@ -399,7 +410,7 @@ static NSString *cellIdentifier = @"PodcastResultCell";
     
     // push "show" view
     NSDictionary *podcastDict = [NSDictionary dictionaryWithDictionary:[_podcastArray objectAtIndex:indexPath.row]];
-    CLS_LOG(@"selected %@", [podcastDict objectForKey:@"collectionName"]);
+    //CLS_LOG(@"selected %@", [podcastDict objectForKey:@"collectionName"]);
     
     [self resignKeyboard];
     PodcastViewController *podcastView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"podcastView"];

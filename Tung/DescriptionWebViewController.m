@@ -20,6 +20,7 @@
     [super viewDidLoad];
     
     self.navigationItem.title = @"Podcast Description";
+    self.view.backgroundColor = [UIColor whiteColor];
     
     _webView.opaque = NO;
     _webView.backgroundColor = [UIColor whiteColor];

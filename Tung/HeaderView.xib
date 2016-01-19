@@ -69,8 +69,8 @@
                         <constraint firstAttribute="height" constant="62" id="dvm-p7-42T"/>
                     </constraints>
                 </button>
-                <button opaque="NO" contentMode="scaleToFill" misplaced="YES" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4ma-BI-uyd" customClass="CircleButton">
-                    <rect key="frame" x="89" y="70" width="86" height="62"/>
+                <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4ma-BI-uyd" customClass="CircleButton">
+                    <rect key="frame" x="91" y="70" width="86" height="62"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="86" id="dkC-9s-aKP"/>
                         <constraint firstAttribute="height" constant="62" id="iNP-R9-0BS"/>

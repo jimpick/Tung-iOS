@@ -129,6 +129,7 @@
 + (BOOL) saveContextWithReason:(NSString*)reason;
 + (PodcastEntity *) getEntityForPodcast:(NSDictionary *)podcastDict save:(BOOL)save;
 + (EpisodeEntity *) getEntityForEpisode:(NSDictionary *)episodeDict withPodcastEntity:(PodcastEntity *)podcastEntity save:(BOOL)save;
++ (NSDictionary *) getEnclosureDictForEpisode:(NSDictionary *)episodeDict;
 + (NSString *) findEpisodeDescriptionWithDict:(NSDictionary *)episodeDict;
 + (NSString *) findPodcastDescriptionWithDict:(NSDictionary *)dict;
 + (NSDictionary *) entityToDict:(NSManagedObject *)entity;
@@ -226,6 +227,7 @@
 + (NSString *)timeElapsed: (NSString *)secondsString;
 + (NSString*) convertSecondsToTimeString:(CGFloat)totalSeconds;
 + (double) convertTimestampToSeconds:(NSString *)timestamp;
++ (NSString *) formatDurationFromString:(NSString *)duration;
 + (NSInteger) getIndexOfEpisodeWithGUID:(NSString *)guid inFeed:(NSArray *)feed;
 + (BOOL) hasGrantedNotificationPermissions;
 

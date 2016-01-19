@@ -285,8 +285,6 @@ NSInteger requestTries = 0;
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:feedRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
         if (error == nil) {
-            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *) response;
-            NSLog(@"response status code: %ld", (long)[httpResponse statusCode]);
             id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
             dispatch_async(dispatch_get_main_queue(), ^{
                 requestTries = 0;
@@ -360,7 +358,7 @@ NSInteger requestTries = 0;
                         // pull refresh
                         if ([afterTime intValue] > 0) {
                             if (newStories.count > 0) {
-                                CLS_LOG(@"got stories newer than: %@", afterTime);
+                                //CLS_LOG(@"got stories newer than: %@", afterTime);
                                 [self stopClipPlayback];
                                 
                                 [self removeOlderDuplicatesOfNewStories:newStories];
@@ -851,8 +849,9 @@ CGFloat labelWidth = 0;
     }
     else if (screenWidth >= 375) { // iPhone 6/6s
         headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
-        if (title.length > 62) {
-            headerCell.title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
+        
+        if (title.length > 54) {
+            headerCell.title.font = [UIFont systemFontOfSize:16 weight:UIFontWeightLight];
         }
         else if (title.length > 42) {
             headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
