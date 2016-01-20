@@ -344,8 +344,7 @@ UILabel static *prototypeBadge;
     PodcastEntity *podcastEntity = [_resultsController objectAtIndexPath:indexPath];
     
     cell.collectionId = podcastEntity.collectionId;
-    
-    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600 andCollectionId:podcastEntity.collectionId];
+    NSData *artImageData = [TungCommonObjects retrieveSSLPodcastArtDataWithUrlString:podcastEntity.artworkUrlSSL];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     
     // podcast art

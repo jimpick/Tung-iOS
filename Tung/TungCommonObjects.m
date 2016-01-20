@@ -225,6 +225,10 @@
     // • No userInfo dictionary for this notification
     // • Audio streaming objects are invalidated (zombies)
     // • Handle this notification by fully reconfiguring audio
+    
+    // TODO: remove before next release
+    //[TungCommonObjects showBannerAlertForText:@"Media services reset" andWidth:325.0];
+    
     if ([[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayback error: nil]) {
         [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     }
@@ -709,6 +713,7 @@
 - (void) completedPlayback {
     float currentTimeSecs = CMTimeGetSeconds(_player.currentTime);
     CLS_LOG(@"completed playback? current secs: %f, total secs: %f", currentTimeSecs, _totalSeconds);
+    
     // called prematurely
     if (_totalSeconds == 0) {
         CLS_LOG(@"completed playback called prematurely. totalSeconds not set");
@@ -730,6 +735,7 @@
         }*/
         return;
     }
+    //[TungCommonObjects showBannerAlertForText:[NSString stringWithFormat:@"completed playback. current secs: %f, total secs: %f", currentTimeSecs, _totalSeconds] andWidth:325.0];
     [self playNextEpisode]; // ejects current episode
 }
 
@@ -842,6 +848,8 @@
 
 - (void) playerError:(NSNotification *)notification {
     CLS_LOG(@"PLAYER ERROR: %@ ...attempting to recover playback", [notification userInfo]);
+    
+    [TungCommonObjects showBannerAlertForText:[NSString stringWithFormat:@"Player error: %@", [notification userInfo]] andWidth:325.0];
     // try to recover playback
     if (_fileIsStreaming && _fileIsLocal) {
         [self replacePlayerItemWithLocalCopy];
@@ -3770,6 +3778,7 @@ static NSArray *colors;
     
     NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"SSLPodcastArt"];
     NSError *error;
+    
     if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
         // SSL podcast art uses the collection ID as the filename
         NSString *artFilename = [urlString lastPathComponent];
