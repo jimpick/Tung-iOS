@@ -239,6 +239,7 @@ NSTimer *promptTimer;
         //CLS_LOG(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
         _profileHeader.contentSizeSet = YES;
     }
+    
     SettingsEntity *settings = [TungCommonObjects settings];
     
     // refresh based on flags

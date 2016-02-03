@@ -23,6 +23,7 @@
 @property UIBarButtonItem *editAlertsBarButtonItem;
 @property UILabel *noSubsLabel;
 @property UIImageView *findPodcastsHere;
+@property BOOL fetched;
 
 @end
 
@@ -47,22 +48,6 @@ CGFloat screenWidth;
     _podcast.navController = [self navigationController];
     _podcast.delegate = self;
     
-    // get subscribed podcasts
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
-    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
-    //NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isSubscribed == %@", [NSNumber numberWithBool:YES]];
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSubscribed == YES"];
-    request.predicate = predicate;
-    NSSortDescriptor *dateSort = [[NSSortDescriptor alloc] initWithKey:@"timeSubscribed" ascending:YES];
-    request.sortDescriptors = @[dateSort];
-    _resultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:request managedObjectContext:appDelegate.managedObjectContext sectionNameKeyPath:nil cacheName:nil];
-    _resultsController.delegate = self;
-    
-    NSError *fetchingError;
-    if (![_resultsController performFetch:&fetchingError]) {
-        CLS_LOG(@"failed to fetch: %@", fetchingError);
-    }
-
     // set up collection view size based on screen size
     screenWidth = [[UIScreen mainScreen]bounds].size.width;
     
@@ -80,13 +65,18 @@ CGFloat screenWidth;
     self.collectionView.collectionViewLayout = flowLayout;
     self.collectionView.scrollEnabled = YES;
     self.collectionView.backgroundColor = [TungCommonObjects bkgdGrayColor];
-    // background view
+    // background view for no subscriptions
     _noSubsLabel = [[UILabel alloc] init];
     _noSubsLabel.text = @"You haven't subscribed to\nany podcasts yet";
     _noSubsLabel.numberOfLines = 2;
     _noSubsLabel.textColor = [UIColor grayColor];
     _noSubsLabel.textAlignment = NSTextAlignmentCenter;
-    self.collectionView.backgroundView = _noSubsLabel;
+    
+    UIActivityIndicatorView *bkgdSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+    bkgdSpinner.alpha = 1;
+    [bkgdSpinner startAnimating];
+    self.collectionView.backgroundView = bkgdSpinner;
+    //self.collectionView.backgroundView = _noSubsLabel;
     /*
     UIImage *findPodcastsImage = [UIImage imageNamed:@"find-podcasts-here.png"];
     _findPodcastsHere = [[UIImageView alloc] initWithImage:findPodcastsImage];
@@ -95,6 +85,17 @@ CGFloat screenWidth;
     self.collectionView.backgroundView = _findPodcastsHere;
     self.collectionView.backgroundView.contentMode = UIViewContentModeTopRight;
     */
+    
+    // get subscribed podcasts
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
+    //NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isSubscribed == %@", [NSNumber numberWithBool:YES]];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSubscribed == YES"];
+    request.predicate = predicate;
+    NSSortDescriptor *dateSort = [[NSSortDescriptor alloc] initWithKey:@"timeSubscribed" ascending:YES];
+    request.sortDescriptors = @[dateSort];
+    _resultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:request managedObjectContext:appDelegate.managedObjectContext sectionNameKeyPath:nil cacheName:nil];
+    _resultsController.delegate = self;
 }
 
 NSTimer *promptTimer;
@@ -125,6 +126,11 @@ NSTimer *promptTimer;
         newBadgeNumber = MAX(0, newBadgeNumber);
         [[UIApplication sharedApplication] setApplicationIconBadgeNumber:newBadgeNumber];
     }
+    
+    NSError *fetchingError;
+    [_resultsController performFetch:&fetchingError];
+    _fetched = YES;
+    [self.collectionView reloadData];
     
 }
 
@@ -176,6 +182,11 @@ NSTimer *promptTimer;
 
 
 - (void) initiateSearch {
+    
+    if (_editingNotifications) {
+        [self toggleEditNotifySettings];
+    }    
+    
     if ([_findPodcastsHere isDescendantOfView:self.view]) {
         [UIView animateWithDuration:.35
                               delay:0
@@ -197,6 +208,7 @@ NSTimer *promptTimer;
     
     self.navigationItem.titleView = _podcast.searchController.searchBar;
     [self.navigationItem setRightBarButtonItem:nil animated:YES];
+    [self.navigationItem setLeftBarButtonItem:nil animated:YES];
     	
     [_podcast.searchController.searchBar becomeFirstResponder];
     
@@ -223,7 +235,7 @@ NSTimer *promptTimer;
     self.navigationItem.titleView = nil;
     UIBarButtonItem *searchBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
     [self.navigationItem setRightBarButtonItem:searchBtn animated:YES];
-    
+    [self.navigationItem setLeftBarButtonItem:_editAlertsBarButtonItem animated:YES];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -317,13 +329,15 @@ NSTimer *promptTimer;
 }
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-    //CLS_LOG(@"collection view number of items in section");
+    //CLS_LOG(@"collection view number of items in section. fetched? %@", (_fetched) ? @"YES" : @"NO");
 
     id <NSFetchedResultsSectionInfo> sectionInfo = _resultsController.sections[section];
     if (sectionInfo.numberOfObjects == 0) {
-        //_findPodcastsHere.hidden = NO;
-		self.collectionView.backgroundView = _noSubsLabel;
-        self.navigationItem.leftBarButtonItem = nil;
+        if (_fetched) {
+            //_findPodcastsHere.hidden = NO;
+            self.collectionView.backgroundView = _noSubsLabel;
+            self.navigationItem.leftBarButtonItem = nil;
+        }
     }
     else {
         //_findPodcastsHere.hidden = YES;
@@ -344,7 +358,7 @@ UILabel static *prototypeBadge;
     PodcastEntity *podcastEntity = [_resultsController objectAtIndexPath:indexPath];
     
     cell.collectionId = podcastEntity.collectionId;
-    NSData *artImageData = [TungCommonObjects retrieveSSLPodcastArtDataWithUrlString:podcastEntity.artworkUrlSSL];
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600 andCollectionId:podcastEntity.collectionId];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     
     // podcast art

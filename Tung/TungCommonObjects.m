@@ -51,7 +51,6 @@
 @property (nonatomic, strong) NSMutableArray *pendingRequests;
 @property (nonatomic, strong) NSDateFormatter *ISODateFormatter;
 @property (strong, nonatomic) NSTimer *syncProgressTimer;
-@property (strong, nonatomic) NSTimer *determineTotalSecondsTimer;
 
 @end
 
@@ -70,8 +69,8 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        _apiRootUrl = @"https://api.tung.fm/";
-        //_apiRootUrl = @"https://staging-api.tung.fm/";
+        //_apiRootUrl = @"https://api.tung.fm/";
+        _apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
@@ -316,26 +315,12 @@
     }
 }
 
-// this also sets track info for MPNowPlayingInfoCenter
 - (void) determineTotalSeconds {
     
-    if (_totalSeconds == 0) {
-        CLS_LOG(@"determineTotalSeconds");
-        [_determineTotalSecondsTimer invalidate];
-        // need to wait until player is playing to get duration or app freezes
-        if ([self isPlaying] || (![self isPlaying] && _shouldStayPaused)) {
-            if ([self isPlaying]) {
-                [self setControlButtonStateToPause];
-            }
-            _totalSeconds = CMTimeGetSeconds(_player.currentItem.asset.duration);
-            [_trackInfo setObject:[NSNumber numberWithFloat:_totalSeconds] forKey:MPMediaItemPropertyPlaybackDuration];
-            [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_trackInfo];
-            CLS_LOG(@"determined total seconds: %f (%@)", _totalSeconds, [TungCommonObjects convertSecondsToTimeString:_totalSeconds]);
-        }
-        else {
-            _determineTotalSecondsTimer = [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(determineTotalSeconds) userInfo:nil repeats:NO];
-        }
-    }
+    _totalSeconds = CMTimeGetSeconds(_player.currentItem.asset.duration);
+    [_trackInfo setObject:[NSNumber numberWithFloat:_totalSeconds] forKey:MPMediaItemPropertyPlaybackDuration];
+    [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_trackInfo];
+    CLS_LOG(@"determined total seconds: %f (%@)", _totalSeconds, [TungCommonObjects convertSecondsToTimeString:_totalSeconds]);
 }
 
 - (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
@@ -366,35 +351,21 @@
                 // play
                 if (secs > 0) {
                     
-                    CLS_LOG(@"seeking to time: %f", secs);
+                    CLS_LOG(@"seeking to time: %f (progress: %f)", secs, _npEpisodeEntity.trackProgress.floatValue);
                     [_trackInfo setObject:[NSNumber numberWithFloat:secs] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
                     [_player seekToTime:time completionHandler:^(BOOL finished) {
-                        CLS_LOG(@"finished seeking");
+                        CLS_LOG(@"finished seeking: %@", (finished) ? @"Yes" : @"No");
                         [_player play];
-                        if (_fileIsLocal) {
-                            [self determineTotalSeconds];
-                        }
                     }];
                 } else {
                     [_trackInfo setObject:[NSNumber numberWithFloat:0] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
+                    [self setControlButtonStateToPause];
                     
                     if ([self isPlaying] && _fileIsLocal) {
                         CLS_LOG(@"play from beginning - already playing");
-                        [self setControlButtonStateToPause];
-                        [self determineTotalSeconds];
                     } else {
                         CLS_LOG(@"play from beginning - with preroll");
-                        [_player prerollAtRate:1.0 completionHandler:^(BOOL finished) {
-                            CLS_LOG(@"-- finished preroll: %d", finished);
-                            if ([self isPlaying]) {
-                                CLS_LOG(@"started playing");
-                                [self setControlButtonStateToPause];
-                            } else {
-                                CLS_LOG(@"not yet playing, play");
-                                [self playerPlay];
-                            }
-                            [self determineTotalSeconds];
-                        }];
+                        [_player prerollAtRate:1.0 completionHandler:nil];
                     }
                 }
                 break;
@@ -410,10 +381,7 @@
         if (_player.currentItem.playbackLikelyToKeepUp) {
             CLS_LOG(@"-- player likely to keep up");
             
-            if (_totalSeconds == 0) {
-                [self determineTotalSeconds];
-            }
-            else if (_totalSeconds > 0) {
+            if (_totalSeconds > 0) {
                 float currentSecs = CMTimeGetSeconds(_player.currentTime);
             	if (round(currentSecs) >= floor(_totalSeconds)) {
                     CLS_LOG(@"detected completed playback");
@@ -421,6 +389,7 @@
                     return;
                 }
             }
+            
             if ([self isPlaying]) {
                 [self setControlButtonStateToPause];
             }
@@ -436,6 +405,11 @@
             }
             if (!_shouldStayPaused) [self setControlButtonStateToBuffering];
         }
+    }
+    
+    if (object == _player && [keyPath isEqualToString:@"currentItem.duration"]) {
+        if (_totalSeconds == 0) [self determineTotalSeconds];
+        if (!_shouldStayPaused) [self setControlButtonStateToPause];
     }
     /*
     if (object == _player && [keyPath isEqualToString:@"currentItem.loadedTimeRanges"]) {
@@ -640,23 +614,20 @@
         _player = [[AVPlayer alloc] initWithPlayerItem:playerItem];
         // add observers
         [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
+        [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
+        [_player addObserver:self forKeyPath:@"currentItem.duration" options:0 context:nil];
         //[_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
         //[_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
         // Subscribe to AVPlayerItem's notifications
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(completedPlayback) name:AVPlayerItemDidPlayToEndTimeNotification object:playerItem];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemPlaybackStalledNotification object:playerItem];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemFailedToPlayToEndTimeNotification object:playerItem];
-        [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
         
         [self setControlButtonStateToBuffering];
         
-        // now playing did change
-        /*
-        if ([_ctrlBtnDelegate respondsToSelector:@selector(nowPlayingDidChange)])
-        	[_ctrlBtnDelegate nowPlayingDidChange];
-        */
         NSNotification *nowPlayingDidChangeNotif = [NSNotification notificationWithName:@"nowPlayingDidChange" object:nil userInfo:nil];
         [[NSNotificationCenter defaultCenter] postNotification:nowPlayingDidChangeNotif];
+        
     }
     //CLS_LOG(@"play queue: %@", _playQueue);
 }
@@ -668,11 +639,11 @@
     _shouldStayPaused = NO;
     _totalSeconds = 0;
     
-    [_determineTotalSecondsTimer invalidate];
     // remove old player and observers
     if (_player) {
         [_player removeObserver:self forKeyPath:@"status"];
         [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
+        [_player removeObserver:self forKeyPath:@"currentItem.duration"];
         [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:_player.currentItem];
         [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemPlaybackStalledNotification object:_player.currentItem];
         [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemFailedToPlayToEndTimeNotification object:_player.currentItem];
@@ -717,7 +688,6 @@
     // called prematurely
     if (_totalSeconds == 0) {
         CLS_LOG(@"completed playback called prematurely. totalSeconds not set");
-        [self determineTotalSeconds];
         return;
     }
     if (round(currentTimeSecs) < floor(_totalSeconds)) {
@@ -1030,7 +1000,6 @@ static NSString *episodeDirName = @"episodes";
             // we can safely release these
             _trackData = nil;
             _trackDataConnection = nil;
-            [self determineTotalSeconds];
         }
         else {
             CLS_LOG(@"ERROR: track did not save: %@", error);
@@ -1219,7 +1188,7 @@ UILabel *prototypeBadge;
         return nil;
     }
     
-    //CLS_LOG(@"get entity for podcast: %@", [podcastDict objectForKey:@"collectionName"]);
+    CLS_LOG(@"get entity for podcast: %@ (%@)", [podcastDict objectForKey:@"collectionName"], [podcastDict objectForKey:@"collectionId"]);
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     PodcastEntity *podcastEntity;
     
@@ -1985,7 +1954,7 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                //CLS_LOG(@"Verify cred response %@", responseDict);
+                CLS_LOG(@"Verify cred response %@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
                     
@@ -3369,6 +3338,7 @@ static NSArray *colors;
 -(void) signOut {
     CLS_LOG(@"--- signing out");
     
+    [self stopClipPlayback];
     [self playerPause];
     [_syncProgressTimer invalidate];
     _playQueue = [@[] mutableCopy];

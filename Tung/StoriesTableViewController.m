@@ -44,8 +44,8 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     
     _storiesArray = [NSMutableArray new];
     
-    _activeRowIndex = 0;
-    _activeSectionIndex = 0;
+    _activeRowIndex = -2; // < 0 && != -1
+    _activeSectionIndex = -2;
     _selectedRowIndex = -1;
     _selectedSectionIndex = -1;
     
@@ -582,7 +582,6 @@ NSInteger requestTries = 0;
             
             // story match
             if ([storyIdToMatch isEqualToString:[[headerDict objectForKey:@"_id"] objectForKey:@"$id"]]) {
-                NSLog(@"removed old duplicate");
                 [_storiesArray removeObjectAtIndex:j];
                 // remove section (story)
                 [UIView setAnimationsEnabled:NO];
@@ -898,7 +897,7 @@ CGFloat labelWidth = 0;
         eventCell.commentLabel.hidden = YES;
         eventCell.clipProgress.hidden = YES;
     }
-    else if ([type isEqualToString:@"subscribed"]) {
+    else if ([type isEqualToString:@"subscribed"]) { // not used
         eventCell.iconView.type = kIconTypeSubscribe;
         eventCell.simpleEventLabel.hidden = NO;
         eventCell.simpleEventLabel.text = @"Subscribed to this podcast";
@@ -980,6 +979,32 @@ CGFloat labelWidth = 0;
     footerCell.preservesSuperviewLayoutMargins = NO;
     [footerCell setLayoutMargins:UIEdgeInsetsZero];
 }
+
+
+- (void) tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
+    if ([_tung.clipPlayer isPlaying]) {
+        // stop animating if cell goes out of view, somehow causes other cells to animate
+        NSIndexPath *activeIndexPath = [NSIndexPath indexPathForRow:_activeRowIndex inSection:_activeSectionIndex];
+        if ([indexPath isEqual:activeIndexPath]) {
+            [_onEnterFrame invalidate];
+        }
+    }
+}
+
+- (void) tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    if ([_tung.clipPlayer isPlaying]) {
+        // resume animation
+        NSIndexPath *activeIndexPath = [NSIndexPath indexPathForRow:_activeRowIndex inSection:_activeSectionIndex];
+        if ([indexPath isEqual:activeIndexPath]) {
+            
+            // begin "onEnterFrame"
+            _onEnterFrame = [CADisplayLink displayLinkWithTarget:self selector:@selector(updateView)];
+            [_onEnterFrame addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+        }
+    }
+}
+
 
 #pragma mark - long press and action sheet
 
@@ -1295,30 +1320,27 @@ CGFloat labelWidth = 0;
         }
     }
     // different clip selected than the one playing
-    else {
+    else if ([_tung.clipPlayer isPlaying]) {
         [self stopClipPlayback];
-        _tung.clipPlayer = nil;
     }
+    
     // start playing new clip
-    if (_tung.clipPlayer == nil) {
+    _tung.clipPlayer = nil;
+    // check for cached audio data and init player
+    NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_selectedSectionIndex] objectAtIndex:_selectedRowIndex]];
+    NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
+    NSData *clipData = [TungCommonObjects retrieveAudioClipDataWithUrlString:clipURLString];
+    NSError *playbackError;
+    _tung.clipPlayer = [[AVAudioPlayer alloc] initWithData:clipData error:&playbackError];
+    
+    // play
+    if (_tung.clipPlayer != nil) {
+        _tung.clipPlayer.delegate = self;
+        // PLAY
+        [self playbackClip];
         
-        // check for cached audio data and init player
-        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_selectedSectionIndex] objectAtIndex:_selectedRowIndex]];
-        NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
-        NSData *clipData = [TungCommonObjects retrieveAudioClipDataWithUrlString:clipURLString];
-        NSError *playbackError;
-        _tung.clipPlayer = [[AVAudioPlayer alloc] initWithData:clipData error:&playbackError];
-        
-        // play
-        if (_tung.clipPlayer != nil) {
-            _tung.clipPlayer.delegate = self;
-            // PLAY
-            [self playbackClip];
-            
-        } else {
-            CLS_LOG(@"failed to create audio player: %@", playbackError);
-        }
-        
+    } else {
+        CLS_LOG(@"failed to create audio player: %@", playbackError);
     }
 }
 
@@ -1366,17 +1388,21 @@ CGFloat labelWidth = 0;
 - (void) updateView {
     float progress = _tung.clipPlayer.currentTime / _tung.clipPlayer.duration;
     float arc = 360 - (360 * progress);
-    _activeClipProgressView.arc = arc;
-    _activeClipProgressView.seconds = [NSString stringWithFormat:@":%02ld", lroundf(_tung.clipPlayer.duration - _tung.clipPlayer.currentTime)];
-    [_activeClipProgressView setNeedsDisplay];
+    
+    if (_activeClipProgressView) {
+        _activeClipProgressView.arc = arc;
+        _activeClipProgressView.seconds = [NSString stringWithFormat:@":%02ld", lroundf(_tung.clipPlayer.duration - _tung.clipPlayer.currentTime)];
+        [_activeClipProgressView setNeedsDisplay];
+    }
 }
 
 - (void) setActiveClipCellReference {
-
-    NSIndexPath *indexPath = [NSIndexPath indexPathForRow:_activeRowIndex inSection:_activeSectionIndex];
-    UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
-    StoryEventCell *activeCell = (StoryEventCell *)cell;
-    _activeClipProgressView = activeCell.clipProgress;
+    if (_activeRowIndex >= 1 && _activeSectionIndex >= 0) {
+        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:_activeRowIndex inSection:_activeSectionIndex];
+        UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
+        StoryEventCell *activeCell = (StoryEventCell *)cell;
+        _activeClipProgressView = activeCell.clipProgress;
+    }
 
 }
 

@@ -39,9 +39,11 @@
 @property CircleButton *clipOkayButton;
 @property CircleButton *commentButton;
 @property CircleButton *speedButton;
+@property CircleButton *saveButton;
 @property UILabel *recommendLabel;
 @property UILabel *commentLabel;
 @property UILabel *recordingDurationLabel;
+@property UILabel *saveLabel;
 @property CommentAndPostView *commentAndPostView;
 @property NSLayoutConstraint *commentViewTopLayoutConstraint;
 @property BOOL clipConfirmActive;
@@ -50,6 +52,7 @@
 @property BOOL clipHasPosted;
 @property NSString *shareIntention;
 @property NSString *shareTimestamp;
+@property NSString *recordingDuration;
 
 @property UIToolbar *switcherBar;
 @property UISegmentedControl *switcher;
@@ -677,7 +680,7 @@ NSTimer *markAsSeenTimer;
     NSURL *tungEndOfFileLogoUrl = [NSURL fileURLWithPath:tungEndOfFileLogoPath];
     NSString *tungEndOfFileImg = [NSString stringWithFormat:@"<img class=\"endOfFile\" src=\"%@\">", tungEndOfFileLogoUrl];
     // description
-    NSString *webViewString = [NSString stringWithFormat:@"%@%@%@%@", style, script, episodeEntity.desc, tungEndOfFileImg];
+    NSString *webViewString = [NSString stringWithFormat:@"%@%@%@\n%@", style, script, episodeEntity.desc, tungEndOfFileImg];
     //NSLog(@"webViewString: %@", webViewString);
     [_descriptionView.webView loadHTMLString:webViewString baseURL:[NSURL URLWithString:@"desc"]];
 }
@@ -824,6 +827,14 @@ static CGRect buttonsScrollViewHomeRect;
     UILabel *speedLabel = [UILabel new];
     speedLabel.text = @"Speed";
     [self setupButtonLabel:speedLabel withButtonDimension:circleButtonDimension andSuperView:extraButtonsSubView];
+    
+    _saveButton = [CircleButton new];
+    _saveButton.type = kCircleTypeSave;
+    [self setupCircleButton:_saveButton withWidth:circleButtonDimension andHeight:circleButtonDimension andSuperView:extraButtonsSubView];
+    [_saveButton addTarget:self action:@selector(saveTrack) forControlEvents:UIControlEventTouchUpInside];
+    _saveLabel = [UILabel new];
+    _saveLabel.text = @"Save";
+    [self setupButtonLabel:_saveLabel withButtonDimension:circleButtonDimension andSuperView:extraButtonsSubView];
 
     
     // button and label constraints: distribute X positions
@@ -832,6 +843,9 @@ static CGRect buttonsScrollViewHomeRect;
 
     [extraButtonsSubView addConstraint:[NSLayoutConstraint constraintWithItem:_speedButton attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:extraButtonsSubView attribute:NSLayoutAttributeTrailing multiplier:.381 constant:1]];
     [extraButtonsSubView addConstraint:[NSLayoutConstraint constraintWithItem:speedLabel attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:extraButtonsSubView attribute:NSLayoutAttributeTrailing multiplier:.381 constant:1]];
+    
+    [extraButtonsSubView addConstraint:[NSLayoutConstraint constraintWithItem:_saveButton attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:extraButtonsSubView attribute:NSLayoutAttributeTrailing multiplier:.622 constant:1]];
+    [extraButtonsSubView addConstraint:[NSLayoutConstraint constraintWithItem:_saveLabel attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:extraButtonsSubView attribute:NSLayoutAttributeTrailing multiplier:.622 constant:1]];
 
     
     // record subview
@@ -999,6 +1013,10 @@ static CGRect buttonsScrollViewHomeRect;
     [_tung.player setRate:rate.floatValue];
 }
 
+- (void) saveTrack {
+    NSLog(@"save track");
+}
+
 #pragma mark - UIWebView delegate methods
 
 -(BOOL) webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
@@ -1125,6 +1143,7 @@ static CGRect buttonsScrollViewHomeRect;
                 _recordButton.isRecording = NO;
                 [_recordButton setEnabled:NO];
                 [_tung playerPause];
+                _recordingDuration = [_recordingDurationLabel.text substringFromIndex:1];
                 
                 [_buttonsScrollView setScrollEnabled:YES];
                 [self trimAudioFrom:_recordStartMarker to:_recordEndMarker];
@@ -1144,7 +1163,6 @@ static CGRect buttonsScrollViewHomeRect;
             [_tung saveNowPlayingEpisodeInTempDirectory];
         }
     }
-    
 }
 
 - (void) togglePlayRecordedClip {
@@ -1173,6 +1191,7 @@ static CGRect buttonsScrollViewHomeRect;
     // can record
     [_recordButton setEnabled:YES];
     _recordingDurationLabel.text = @":00";
+    _recordingDuration = nil;
     [_playClipButton setEnabled:NO];
     _playClipButton.isPlaying = NO;
     [_clipOkayButton setEnabled:NO];
@@ -1932,8 +1951,8 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         
         [_commentAndPostView.postButton setEnabled:NO];
         [_commentAndPostView.postActivityIndicator startAnimating];
-        
-        [_tung postClipWithComment:text atTime:_shareTimestamp withDuration:[_recordingDurationLabel.text substringFromIndex:1] onEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
+        NSLog(@"post clip with duration: %@", _recordingDuration);
+        [_tung postClipWithComment:text atTime:_shareTimestamp withDuration:_recordingDuration onEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
             [_commentAndPostView.postActivityIndicator stopAnimating];
             [_commentAndPostView.postButton setEnabled:YES];
             if (success) {
