@@ -84,6 +84,7 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     headerScrollViewHeight = headerViewHeight - tableHeaderRow;
     animationDistance = headerScrollViewHeight - minHeaderHeight;
     screenWidth = self.view.frame.size.width;
+    _tung.screenWidth = screenWidth;
     
     if (_storyId) {
         self.navigationItem.title = @"Interaction";

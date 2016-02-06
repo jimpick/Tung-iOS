@@ -806,11 +806,9 @@ NSTimer *sessionCheckTimer;
 - (void) openSettings {
     NSString *version = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
     // saved files size
-    NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
-    NSURL *libraryFolder = [folders objectAtIndex:0];
+    NSString *savedEpisodesDir = [_tung getSavedEpisodesDirectoryPath];
     NSError *error;
-    NSNumber *savedFilesBytes = [TungCommonObjects getAllocatedSizeOfDirectoryAtURL:libraryFolder error:&error];
+    NSNumber *savedFilesBytes = [TungCommonObjects getAllocatedSizeOfDirectoryAtURL:[NSURL URLWithString:savedEpisodesDir] error:&error];
     NSString *clearSavedDataOption;
     if (!error) {
         CGFloat savedFilesMB = savedFilesBytes.floatValue/1048576;
@@ -821,7 +819,7 @@ NSTimer *sessionCheckTimer;
         error = nil;
     }
     // temp files size
-    NSString *tempEpisodeDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"episodes"];
+    NSString *tempEpisodeDir = [_tung getCachedEpisodesDirectoryPath];
     NSNumber *tempFilesBytes = [TungCommonObjects getAllocatedSizeOfDirectoryAtURL:[NSURL URLWithString:tempEpisodeDir] error:&error];
     NSString *clearTempDataOption;
     if (!error) {

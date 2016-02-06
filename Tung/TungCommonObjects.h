@@ -57,6 +57,7 @@
 @property NSNumber *connectionAvailable;
 @property (nonatomic, retain) NSString *tungSiteRootUrl;
 @property (nonatomic, retain) NSString *apiRootUrl;
+@property CGFloat screenWidth;
 
 // player
 @property EpisodeEntity *npEpisodeEntity;
@@ -100,11 +101,13 @@
 
 // caching/saving episodes
 @property EpisodeEntity *episodeToSaveEntity;
+- (NSString *) getSavedEpisodesDirectoryPath;
+- (NSString *) getCachedEpisodesDirectoryPath;
 - (void) saveNowPlayingEpisodeInTempDirectory;
 - (void) queueEpisodeForDownload:(EpisodeEntity *)episodeEntity;
-- (void) cancelSaveForEpisode:(EpisodeEntity *)episodeEntity;
-- (void) downloadEpisodeToLibraryDirectory:(EpisodeEntity *)episodeEntity;
-- (void) deleteSavedEpisodeWithUrl:(NSString *)urlString;
+- (void) cancelDownloadForEpisode:(EpisodeEntity *)episodeEntity;
+- (void) downloadEpisode:(EpisodeEntity *)episodeEntity;
+- (void) deleteSavedEpisodeWithUrl:(NSString *)urlString confirm:(BOOL)confirm;
 - (void) deleteAllSavedEpisodes;
 
 // badges

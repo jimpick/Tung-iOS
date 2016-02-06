@@ -16,6 +16,7 @@
 @property (nonatomic, assign) NSInteger downloadingEpisodeIndex;
 @property (strong, nonatomic) CADisplayLink *onEnterFrame;
 @property (strong, nonatomic) CircleButton *activeSaveBtn;
+@property (strong, nonatomic) NSString *episodeUrlString; // for if user wants to remove saved
 
 @end
 
@@ -113,7 +114,7 @@
 -(void) saveStatusChanged {
     [self assignSavedPropertiesToEpisodeArray];
     [self.tableView reloadData];
-    CLS_LOG(@"received notification: save status changed, downloadingEpisodeIndex: %ld", (long)_downloadingEpisodeIndex);
+    //CLS_LOG(@"received notification: save status changed, downloadingEpisodeIndex: %ld", (long)_downloadingEpisodeIndex);
     
     if (_downloadingEpisodeIndex >= 0) {
         // set reference to save button of actively downloading episode
@@ -157,17 +158,33 @@
         
         if (epEntity.isSaved.boolValue) {
             // tell user when episode will be auto deleted
-            UIAlertView *episodeSavedInfoAlert = [[UIAlertView alloc] initWithTitle:@"Saved" message:[NSString stringWithFormat:@"This episode will be saved until %@", epEntity.savedUntilDate] delegate:self cancelButtonTitle:@"OK" otherButtonTitles: nil];
+            _episodeUrlString = nil;
+            _episodeUrlString = epEntity.url;
+            NSString *formattedDate = [NSDateFormatter localizedStringFromDate:epEntity.savedUntilDate dateStyle:NSDateFormatterMediumStyle timeStyle:NSDateFormatterNoStyle];
+            UIAlertView *episodeSavedInfoAlert = [[UIAlertView alloc] initWithTitle:@"Saved" message:[NSString stringWithFormat:@"This episode will be saved until\n%@", formattedDate] delegate:self cancelButtonTitle:@"Keep" otherButtonTitles: @"Remove", nil];
+            episodeSavedInfoAlert.tag = 10;
             [episodeSavedInfoAlert show];
         }
         else if (epEntity.isQueuedForSave.boolValue) {
-            [_tung cancelSaveForEpisode:epEntity];
+            [_tung cancelDownloadForEpisode:epEntity];
         }
         else {
             // initiate download
             [_tung queueEpisodeForDownload:epEntity];
         }
         
+    }
+}
+
+#pragma mark - alerts
+
+-(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
+    CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
+    // search prompt
+    if (alertView.tag == 10 && buttonIndex) {
+        // delete episde
+        CLS_LOG(@"delete episode with url: %@", _episodeUrlString);
+        [_tung deleteSavedEpisodeWithUrl:_episodeUrlString confirm:YES];
     }
 }
 
