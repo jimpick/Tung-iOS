@@ -18,7 +18,7 @@
 @property BOOL noResults;
 @property (strong, nonatomic) UINavigationController *navController;
 
-- (void) findEachEpisodesProgress;
+- (void) assignSavedPropertiesToEpisodeArray;
 - (void) markNewEpisodesAsSeen;
 
 @end

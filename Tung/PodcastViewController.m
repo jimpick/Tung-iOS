@@ -99,7 +99,7 @@
 - (void) getNewestFeed {
     NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:YES];
     _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
-    [_episodesView findEachEpisodesProgress];
+    [_episodesView assignSavedPropertiesToEpisodeArray];
     
     [_episodesView.refreshControl endRefreshing];
     
@@ -112,7 +112,7 @@
     _episodesView.tableView.backgroundView = nil;
     
     _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:dict] mutableCopy];
-    [_episodesView findEachEpisodesProgress];
+    [_episodesView assignSavedPropertiesToEpisodeArray];
     
     // find focused indexPath if focused GUID
     if (_focusedGUID) {

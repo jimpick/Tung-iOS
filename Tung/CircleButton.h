@@ -24,6 +24,7 @@ typedef enum {
     kCircleTypeTextButton,
     kCircleTypeSpeed,
     kCircleTypeSave,
+    kCircleTypeSaveWithProgress,
     kCircleTypePlay,
     kCircleTypeSupport
 } CircleButtonType;
@@ -38,5 +39,7 @@ typedef enum {
 @property BOOL isRecording; // record btn
 @property BOOL isPlaying; // play
 @property BOOL on; // twitter/facebook
+@property (nonatomic) CGFloat arc; // save progress
+@property BOOL queued; // save queued
 
 @end

@@ -193,6 +193,11 @@
             [self switchTabBarSelectionToTabIndex:tabIndex.integerValue];
         }
     }
+    else if ([[notification userInfo] objectForKey:@"deleteEpisodeWithUrl"]) {
+        NSString *urlString = [[notification userInfo] objectForKey:@"deleteEpisodeWithUrl"];
+        CLS_LOG(@"received notification to delete episode with url: %@", urlString);
+        [_tung deleteSavedEpisodeWithUrl:urlString];
+    }
 }
 
 - (void) switchTabBarSelectionToTabIndex:(NSInteger)tabIndex {

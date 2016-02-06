@@ -397,7 +397,7 @@ NSTimer *markAsSeenTimer;
             _commentsView.view.hidden = YES;
             _episodesView.view.hidden = NO;
             [_tung savePositionForNowPlayingAndSync:NO];
-            [_episodesView findEachEpisodesProgress];
+            [_episodesView assignSavedPropertiesToEpisodeArray];
             [_episodesView.tableView reloadData];
             markAsSeenTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:_episodesView selector:@selector(markNewEpisodesAsSeen) userInfo:nil repeats:NO];
             _descriptionView.view.hidden = YES;
@@ -556,7 +556,7 @@ NSTimer *markAsSeenTimer;
     
     _episodesView.tableView.backgroundView = nil;
     _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
-    [_episodesView findEachEpisodesProgress];
+    [_episodesView assignSavedPropertiesToEpisodeArray];
     _episodesView.podcastEntity = episodeEntity.podcast;
     [_episodesView.tableView reloadData];
     
@@ -655,7 +655,7 @@ NSTimer *markAsSeenTimer;
 - (void) getNewestFeed {
     NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_episodeEntity.podcast forceNewest:YES];
     _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
-    [_episodesView findEachEpisodesProgress];
+    [_episodesView assignSavedPropertiesToEpisodeArray];
     
     [_episodesView.refreshControl endRefreshing];
     

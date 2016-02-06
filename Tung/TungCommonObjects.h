@@ -57,6 +57,7 @@
 @property NSNumber *connectionAvailable;
 @property (nonatomic, retain) NSString *tungSiteRootUrl;
 @property (nonatomic, retain) NSString *apiRootUrl;
+
 // player
 @property EpisodeEntity *npEpisodeEntity;
 @property (strong, nonatomic) UIButton *btn_player;
@@ -64,6 +65,7 @@
 @property CGFloat totalSeconds;
 @property (nonatomic, strong) AVPlayer *player;
 @property (nonatomic, strong) NSMutableData *trackData; // data being downloaded
+@property (nonatomic, strong) NSMutableData *saveTrackData;
 @property NSInteger currentFeedIndex;
 @property NSMutableDictionary *trackInfo;
 @property NSInteger playbackRateIndex;
@@ -95,7 +97,15 @@
 - (void) setControlButtonStateToBuffering;
 - (NSURL *) getEpisodeUrl:(NSURL *)url;
 - (void) replacePlayerItemWithLocalCopy;
+
+// caching/saving episodes
+@property EpisodeEntity *episodeToSaveEntity;
 - (void) saveNowPlayingEpisodeInTempDirectory;
+- (void) queueEpisodeForDownload:(EpisodeEntity *)episodeEntity;
+- (void) cancelSaveForEpisode:(EpisodeEntity *)episodeEntity;
+- (void) downloadEpisodeToLibraryDirectory:(EpisodeEntity *)episodeEntity;
+- (void) deleteSavedEpisodeWithUrl:(NSString *)urlString;
+- (void) deleteAllSavedEpisodes;
 
 // badges
 @property (strong, nonatomic) TungMiscView *subscriptionsBadge;
@@ -135,6 +145,7 @@
 + (NSDictionary *) entityToDict:(NSManagedObject *)entity;
 + (NSDate *) ISODateToNSDate: (NSString *)pubDate;
 + (EpisodeEntity *) getEpisodeEntityFromEpisodeId:(NSString *)episodeId;
++ (EpisodeEntity *) getEpisodeEntityFromUrlString:(NSString *)urlString;
 + (UserEntity *) saveUserWithDict:(NSDictionary *)userDict;
 + (UserEntity *) retrieveUserEntityForUserWithId:(NSString *)userId;
 - (NSDictionary *) getLoggedInUserData;
@@ -207,7 +218,7 @@
 + (NSURL *) getClipFileURL;
 + (NSString *) getAlbumArtFilenameFromUrlString:(NSString *)artURLString;
 
-// class methods
+// misc class methods
 + (id) establishTungObjects;
 + (void) clearTempDirectory;
 + (void) checkReachabilityWithCallback:(void (^)(BOOL reachable))callback;
@@ -230,5 +241,6 @@
 + (NSString *) formatDurationFromString:(NSString *)duration;
 + (NSInteger) getIndexOfEpisodeWithGUID:(NSString *)guid inFeed:(NSArray *)feed;
 + (BOOL) hasGrantedNotificationPermissions;
++ (NSNumber *) getAllocatedSizeOfDirectoryAtURL:(NSURL *)directoryURL error:(NSError * __autoreleasing *)error;
 
 @end

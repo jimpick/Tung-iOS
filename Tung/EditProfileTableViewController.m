@@ -188,12 +188,6 @@ static UIImage *iconRedX;
     }
 }
 
-- (void) viewWillDisappear:(BOOL)animated {
-    
-    [super viewWillDisappear:YES];
-
-}
-
 - (void) viewDidAppear:(BOOL)animated {
     
     _activeFieldIndex = 0;

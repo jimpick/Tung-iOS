@@ -1386,10 +1386,10 @@ CGFloat labelWidth = 0;
 }
 
 - (void) updateView {
-    float progress = _tung.clipPlayer.currentTime / _tung.clipPlayer.duration;
-    float arc = 360 - (360 * progress);
     
     if (_activeClipProgressView) {
+        float progress = _tung.clipPlayer.currentTime / _tung.clipPlayer.duration;
+        float arc = 360 - (360 * progress);
         _activeClipProgressView.arc = arc;
         _activeClipProgressView.seconds = [NSString stringWithFormat:@":%02ld", lroundf(_tung.clipPlayer.duration - _tung.clipPlayer.currentTime)];
         [_activeClipProgressView setNeedsDisplay];

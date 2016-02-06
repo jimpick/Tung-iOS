@@ -76,6 +76,10 @@
                 [TungPodcastStyleKit drawSaveButtonWithFrame:rect on:_on down:self.highlighted];
                 break;
                 
+            case kCircleTypeSaveWithProgress:
+                [TungPodcastStyleKit drawSaveWithProgressWithFrame:rect on:_on arc:_arc queued:_queued];
+                break;
+                
             case kCircleTypePlay:
                 [TungPodcastStyleKit drawPlayButtonWithFrame:rect color:_color on:_on down:self.highlighted];
                 break;

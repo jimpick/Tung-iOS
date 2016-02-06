@@ -36,6 +36,9 @@
             case kIconButtonTypeSkipAhead15:
                 [TungPodcastStyleKit drawSkipAhead15IconWithFrame:rect color:_color];
                 break;
+            case kIconButtonTypeSettings:
+                [TungPodcastStyleKit drawSettingsIconWithFrame:rect color:_color];
+                break;
             default:
                 break;
         }

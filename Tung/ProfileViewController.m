@@ -65,11 +65,11 @@ CGFloat screenWidth;
         self.navigationItem.title = @"My Profile";
         
         // sign out button
-        IconButton *signOutInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
-        signOutInner.type = kIconButtonTypeSignOut;
-        signOutInner.color = [TungCommonObjects tungColor];
-        [signOutInner addTarget:self action:@selector(confirmSignOut) forControlEvents:UIControlEventTouchUpInside];
-        UIBarButtonItem *signOutButton = [[UIBarButtonItem alloc] initWithCustomView:signOutInner];
+        IconButton *settingsInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
+        settingsInner.type = kIconButtonTypeSettings;
+        settingsInner.color = [TungCommonObjects tungColor];
+        [settingsInner addTarget:self action:@selector(openSettings) forControlEvents:UIControlEventTouchUpInside];
+        UIBarButtonItem *signOutButton = [[UIBarButtonItem alloc] initWithCustomView:settingsInner];
         self.navigationItem.leftBarButtonItem = signOutButton;
         // profile search button
         IconButton *profileSearchInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
@@ -803,11 +803,39 @@ NSTimer *sessionCheckTimer;
     [self.navigationController pushViewController:profileListView animated:YES];
 }
 
-- (void) confirmSignOut {
+- (void) openSettings {
     NSString *version = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
-    UIActionSheet *signOutSheet = [[UIActionSheet alloc] initWithTitle:[NSString stringWithFormat:@"You are running v %@ of tung.", version] delegate:_tung cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Sign out" otherButtonTitles:nil];
-    [signOutSheet setTag:99];
-    [signOutSheet showFromToolbar:self.navigationController.toolbar];
+    // saved files size
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
+    NSURL *libraryFolder = [folders objectAtIndex:0];
+    NSError *error;
+    NSNumber *savedFilesBytes = [TungCommonObjects getAllocatedSizeOfDirectoryAtURL:libraryFolder error:&error];
+    NSString *clearSavedDataOption;
+    if (!error) {
+        CGFloat savedFilesMB = savedFilesBytes.floatValue/1048576;
+        clearSavedDataOption = [NSString stringWithFormat:@"Delete saved episodes (%.f MB)", savedFilesMB];
+    } else {
+        CLS_LOG(@"error calculating saved data size: %@", error);
+        clearSavedDataOption = @"Delete saved episodes";
+        error = nil;
+    }
+    // temp files size
+    NSString *tempEpisodeDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"episodes"];
+    NSNumber *tempFilesBytes = [TungCommonObjects getAllocatedSizeOfDirectoryAtURL:[NSURL URLWithString:tempEpisodeDir] error:&error];
+    NSString *clearTempDataOption;
+    if (!error) {
+        CGFloat tempFilesMB = tempFilesBytes.floatValue/1048576;
+        clearTempDataOption = [NSString stringWithFormat:@"Delete cached episodes (%.f MB)", tempFilesMB];
+    } else {
+        CLS_LOG(@"error calculating temp data size: %@", error);
+        clearTempDataOption = @"Delete cached episodes";
+        error = nil;
+    }
+    
+    UIActionSheet *settingsSheet = [[UIActionSheet alloc] initWithTitle:[NSString stringWithFormat:@"You are running v %@ of tung.", version] delegate:_tung cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Sign out" otherButtonTitles:clearSavedDataOption, clearTempDataOption, nil];
+    [settingsSheet setTag:99];
+    [settingsSheet showFromToolbar:self.navigationController.toolbar];
 }
 
 #pragma mark - UIScrollView delegate

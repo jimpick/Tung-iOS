@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="9531" systemVersion="15C50" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" initialViewController="V9Q-yt-wDy">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="9532" systemVersion="15D21" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" initialViewController="V9Q-yt-wDy">
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9529"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9530"/>
         <capability name="Alignment constraints with different attributes" minToolsVersion="5.1"/>
         <capability name="Aspect ratio constraints" minToolsVersion="5.1"/>
         <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
@@ -870,7 +870,7 @@
                                             <nil key="highlightedColor"/>
                                         </label>
                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Air date" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="rQ1-Tb-5vL">
-                                            <rect key="frame" x="74" y="49" width="234" height="14"/>
+                                            <rect key="frame" x="74" y="49" width="196" height="14"/>
                                             <fontDescription key="fontDescription" type="system" pointSize="11"/>
                                             <color key="textColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
                                             <nil key="highlightedColor"/>
@@ -890,18 +890,27 @@
                                                 <constraint firstAttribute="height" constant="12" id="Jx2-Us-si3"/>
                                             </constraints>
                                         </view>
+                                        <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="gfV-Wo-pSn" customClass="CircleButton">
+                                            <rect key="frame" x="278" y="35" width="30" height="30"/>
+                                            <constraints>
+                                                <constraint firstAttribute="height" constant="30" id="NYm-Db-XFO"/>
+                                                <constraint firstAttribute="width" constant="30" id="vHz-Us-9BQ"/>
+                                            </constraints>
+                                        </button>
                                     </subviews>
                                     <constraints>
                                         <constraint firstItem="rQ1-Tb-5vL" firstAttribute="leading" secondItem="FxI-n0-cpf" secondAttribute="trailing" constant="12" id="1Ve-HV-ZBB"/>
                                         <constraint firstItem="FxI-n0-cpf" firstAttribute="leading" secondItem="AcK-Vl-02w" secondAttribute="leading" constant="12" id="3Oh-WK-N9q"/>
                                         <constraint firstAttribute="bottom" secondItem="FxI-n0-cpf" secondAttribute="bottom" constant="11" id="5Wk-xI-OGA"/>
-                                        <constraint firstAttribute="trailing" secondItem="rQ1-Tb-5vL" secondAttribute="trailing" constant="12" id="7Pf-gc-TgE"/>
+                                        <constraint firstAttribute="bottom" secondItem="gfV-Wo-pSn" secondAttribute="bottom" constant="8" id="6pi-bv-QK9"/>
                                         <constraint firstAttribute="trailing" secondItem="QHx-04-f3g" secondAttribute="trailing" constant="20" id="Mlp-NK-ZCS"/>
+                                        <constraint firstAttribute="trailing" secondItem="gfV-Wo-pSn" secondAttribute="trailing" constant="12" id="OTD-7H-HPe"/>
                                         <constraint firstItem="QHx-04-f3g" firstAttribute="leading" secondItem="AcK-Vl-02w" secondAttribute="leading" constant="12" id="ZBU-gd-CUh"/>
                                         <constraint firstItem="QHx-04-f3g" firstAttribute="top" secondItem="AcK-Vl-02w" secondAttribute="top" constant="12" id="Zu9-eS-VUk"/>
                                         <constraint firstItem="COO-L7-30h" firstAttribute="top" secondItem="AcK-Vl-02w" secondAttribute="top" constant="10" id="aVA-VE-tPC"/>
                                         <constraint firstAttribute="bottom" secondItem="rQ1-Tb-5vL" secondAttribute="bottom" constant="10" id="fqE-Xa-cjU"/>
                                         <constraint firstItem="COO-L7-30h" firstAttribute="leading" secondItem="AcK-Vl-02w" secondAttribute="leading" constant="10" id="wKq-wY-gS6"/>
+                                        <constraint firstItem="gfV-Wo-pSn" firstAttribute="leading" secondItem="rQ1-Tb-5vL" secondAttribute="trailing" constant="8" id="zN7-Rs-sTL"/>
                                     </constraints>
                                 </tableViewCellContentView>
                                 <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
@@ -911,6 +920,7 @@
                                     <outlet property="episodeTitle" destination="QHx-04-f3g" id="Pti-DG-gWE"/>
                                     <outlet property="iconView" destination="COO-L7-30h" id="kdH-3F-Ts5"/>
                                     <outlet property="leadingTitleConstraint" destination="ZBU-gd-CUh" id="xxX-AM-EIi"/>
+                                    <outlet property="saveWithProgressBtn" destination="gfV-Wo-pSn" id="0G2-4p-SZt"/>
                                 </connections>
                             </tableViewCell>
                         </prototypes>
@@ -923,7 +933,7 @@
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="zZl-0C-GPj" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="1038.4000000000001" y="761.12"/>
+            <point key="canvasLocation" x="1038" y="761"/>
         </scene>
         <!--Description Web View Controller-->
         <scene sceneID="jJ3-K5-Q8J">

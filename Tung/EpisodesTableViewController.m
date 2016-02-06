@@ -13,6 +13,9 @@
 
 
 @property (nonatomic, retain) TungCommonObjects *tung;
+@property (nonatomic, assign) NSInteger downloadingEpisodeIndex;
+@property (strong, nonatomic) CADisplayLink *onEnterFrame;
+@property (strong, nonatomic) CircleButton *activeSaveBtn;
 
 @end
 
@@ -36,6 +39,19 @@
     [tableSpinner startAnimating];
     self.tableView.backgroundView = tableSpinner;
     
+    _downloadingEpisodeIndex = -1;
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveStatusChanged) name:@"saveStatusDidChange" object:nil];
+    
+}
+
+- (void) viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:YES];
+    
+    // remove saveStatusChanged observer
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"saveStatusDidChanged" object:_tung];
+    
+    [_onEnterFrame invalidate];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -43,20 +59,27 @@
     // Dispose of any resources that can be recreated.
 }
 
-- (void) findEachEpisodesProgress {
+- (void) assignSavedPropertiesToEpisodeArray {
     
     //NSLog(@"find each episode's progress");
     for (EpisodeEntity *ep in _podcastEntity.episodes) {
-        // if episode has progress, loop through episode array and assign value to matching episode
-        if (ep.trackPosition.floatValue > 0.0f) {
-            for (int i = 0; i < _episodeArray.count; i++) {
-                NSMutableDictionary *episodeDict = [[NSDictionary dictionaryWithDictionary:[_episodeArray objectAtIndex:i]] mutableCopy];
-                if ([ep.guid isEqualToString:[episodeDict objectForKey:@"guid"]]) {
-                    //NSLog(@"set track position %f for %@", ep.trackPosition.floatValue, ep.title);
-                    [episodeDict setObject:ep.trackPosition forKey:@"trackPosition"];
-                    [_episodeArray replaceObjectsAtIndexes:[NSIndexSet indexSetWithIndex:i] withObjects:@[episodeDict]];
-                    break;
+        for (int i = 0; i < _episodeArray.count; i++) {
+            NSMutableDictionary *episodeDict = [[NSDictionary dictionaryWithDictionary:[_episodeArray objectAtIndex:i]] mutableCopy];
+            if ([ep.guid isEqualToString:[episodeDict objectForKey:@"guid"]]) {
+                //NSLog(@"set track position %f for %@", ep.trackPosition.floatValue, ep.title);
+                [episodeDict setObject:ep.trackPosition forKey:@"trackPosition"];
+                [episodeDict setObject:ep.isSaved forKey:@"isSaved"];
+                [episodeDict setObject:ep.isQueuedForSave forKey:@"isQueuedForSaved"];
+                // downloading?
+                if (ep.isDownloadingForSave.boolValue) {
+                    _downloadingEpisodeIndex = i;
+                } else {
+                    if (_downloadingEpisodeIndex == i) {
+                        _downloadingEpisodeIndex = -1;
+                    }
                 }
+                [_episodeArray replaceObjectsAtIndexes:[NSIndexSet indexSetWithIndex:i] withObjects:@[episodeDict]];
+                break;
             }
         }
     }
@@ -83,6 +106,69 @@
         [TungCommonObjects saveContextWithReason:@"marking new episodes as \"seen\""];
     }
     [[UIApplication sharedApplication] setApplicationIconBadgeNumber:settings.numProfileNotifications.integerValue];
+}
+
+#pragma mark - respond to save status changes
+
+-(void) saveStatusChanged {
+    [self assignSavedPropertiesToEpisodeArray];
+    [self.tableView reloadData];
+    CLS_LOG(@"received notification: save status changed, downloadingEpisodeIndex: %ld", (long)_downloadingEpisodeIndex);
+    
+    if (_downloadingEpisodeIndex >= 0) {
+        // set reference to save button of actively downloading episode
+        NSIndexPath *indexPath = [NSIndexPath indexPathForRow:_downloadingEpisodeIndex inSection:0];
+        UITableViewCell *cell = [self.tableView cellForRowAtIndexPath:indexPath];
+        EpisodeCell *activeCell = (EpisodeCell *)cell;
+        _activeSaveBtn = activeCell.saveWithProgressBtn;
+        // begin "onEnterFrame"
+        _onEnterFrame = [CADisplayLink displayLinkWithTarget:self selector:@selector(updateView)];
+        [_onEnterFrame addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
+        
+    } else {
+        [_onEnterFrame invalidate];
+        _activeSaveBtn = nil;
+    }
+}
+
+- (void) updateView {
+    if (_activeSaveBtn) {
+        float buffered = _tung.saveTrackData.length;
+        float progress = 0;
+        if (buffered > 0 && _tung.episodeToSaveEntity.dataLength.doubleValue > 0) {
+            progress = buffered / _tung.episodeToSaveEntity.dataLength.doubleValue;
+        }
+        float arc = 360 - (360 * progress);
+        _activeSaveBtn.arc = arc;
+        [_activeSaveBtn setNeedsDisplay];
+    }
+}
+
+#pragma mark - cell controls
+
+-(void) tableCellButtonTapped:(id)sender {
+    long tag = [sender tag];
+    
+    if (tag == 101) {
+        EpisodeCell *cell = (EpisodeCell *)[[sender superview] superview];
+        NSIndexPath *indexPath = [self.tableView indexPathForCell:cell];
+        NSDictionary *epDict = [_episodeArray objectAtIndex:indexPath.row];
+        EpisodeEntity *epEntity = [TungCommonObjects getEntityForEpisode:epDict withPodcastEntity:_podcastEntity save:YES];
+        
+        if (epEntity.isSaved.boolValue) {
+            // tell user when episode will be auto deleted
+            UIAlertView *episodeSavedInfoAlert = [[UIAlertView alloc] initWithTitle:@"Saved" message:[NSString stringWithFormat:@"This episode will be saved until %@", epEntity.savedUntilDate] delegate:self cancelButtonTitle:@"OK" otherButtonTitles: nil];
+            [episodeSavedInfoAlert show];
+        }
+        else if (epEntity.isQueuedForSave.boolValue) {
+            [_tung cancelSaveForEpisode:epEntity];
+        }
+        else {
+            // initiate download
+            [_tung queueEpisodeForDownload:epEntity];
+        }
+        
+    }
 }
 
 #pragma mark - Table view data source
@@ -176,6 +262,28 @@ static NSString *cellIdentifier = @"EpisodeCell";
     }
     episodeCell.episodeProgress.progress = position;
     [episodeCell.episodeProgress setNeedsDisplay];
+    
+    // episode saving
+    episodeCell.saveWithProgressBtn.type = kCircleTypeSaveWithProgress;
+    episodeCell.saveWithProgressBtn.tag = 101;
+    [episodeCell.saveWithProgressBtn addTarget:self action:@selector(tableCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+    NSNumber *isSaved = [episodeDict objectForKey:@"isSaved"];
+    NSNumber *isQueuedForSave = [episodeDict objectForKey:@"isQueuedForSaved"];
+    if (isSaved.boolValue) {
+        episodeCell.saveWithProgressBtn.on = YES;
+        episodeCell.saveWithProgressBtn.queued = NO;
+    }
+    else if (isQueuedForSave.boolValue) {
+        
+        episodeCell.saveWithProgressBtn.on = NO;
+        episodeCell.saveWithProgressBtn.queued = YES;
+    }
+    else {
+        episodeCell.saveWithProgressBtn.on = NO;
+        episodeCell.saveWithProgressBtn.queued = NO;
+        episodeCell.saveWithProgressBtn.arc = 0;
+    }
+    [episodeCell.saveWithProgressBtn setNeedsDisplay];
     
     // kill insets
     episodeCell.preservesSuperviewLayoutMargins = NO;

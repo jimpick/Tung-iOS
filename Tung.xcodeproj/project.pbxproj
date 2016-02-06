@@ -323,6 +323,7 @@
 		7D670F2F1934EE7600239673 /* Reachability.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Reachability.m; sourceTree = "<group>"; };
 		7D6D55E91B66A06000DFF759 /* EpisodesTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodesTableViewController.h; sourceTree = "<group>"; };
 		7D6D55EA1B66A06000DFF759 /* EpisodesTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodesTableViewController.m; sourceTree = "<group>"; };
+		7D6E02D81C63B75F000DE54E /* TungDataModel 4.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TungDataModel 4.xcdatamodel"; sourceTree = "<group>"; };
 		7D6F631A1BB338D600D7EB88 /* .gitignore */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text; path = .gitignore; sourceTree = "<group>"; };
 		7D768C92192D1B10000C8E3E /* icon-check-green@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-check-green@2x.png"; sourceTree = "<group>"; };
 		7D768C94192D3373000C8E3E /* UIButtonBarArrowLeft@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "UIButtonBarArrowLeft@2x.png"; sourceTree = "<group>"; };
@@ -1302,11 +1303,12 @@
 		7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				7D6E02D81C63B75F000DE54E /* TungDataModel 4.xcdatamodel */,
 				7D2CF0611C4C1A9F0008D112 /* TungDataModel 3.xcdatamodel */,
 				7DDD164E1C2DEDEE004D5193 /* TungDataModel 2.xcdatamodel */,
 				7D282C871AF2C89F00495E74 /* TungDataModel.xcdatamodel */,
 			);
-			currentVersion = 7D2CF0611C4C1A9F0008D112 /* TungDataModel 3.xcdatamodel */;
+			currentVersion = 7D6E02D81C63B75F000DE54E /* TungDataModel 4.xcdatamodel */;
 			path = TungDataModel.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

@@ -9,6 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "IconView.h"
 #import "TungMiscView.h"
+#import "CircleButton.h"
 
 @interface EpisodeCell : UITableViewCell
 
@@ -17,5 +18,6 @@
 @property (strong, nonatomic) IBOutlet NSLayoutConstraint *leadingTitleConstraint;
 @property (strong, nonatomic) IBOutlet IconView *iconView;
 @property (strong, nonatomic) IBOutlet TungMiscView *episodeProgress;
+@property (strong, nonatomic) IBOutlet CircleButton *saveWithProgressBtn;
 
 @end

@@ -23,13 +23,12 @@
  */
 
 #import "TungCommonObjects.h"
-//#import "ALDisk.h"
+#import "ALDisk.h"
 #import "CCColorCube.h"
 #import "TungPodcast.h"
 #import <CommonCrypto/CommonDigest.h>
 #import "KLCPopup.h"
 #import "BannerAlert.h"
-
 #import <MobileCoreServices/MobileCoreServices.h> // for AVURLAsset resource loading
 
 @interface TungCommonObjects()
@@ -46,9 +45,14 @@
 - (void) savePlayQueue;
 - (void) readPlayQueueFromDisk;
 
+// caching episodes
 @property (nonatomic, strong) NSURLConnection *trackDataConnection;
 @property (nonatomic, strong) NSHTTPURLResponse *response;
 @property (nonatomic, strong) NSMutableArray *pendingRequests;
+// saving episodes
+@property (nonatomic, strong) NSURLConnection *saveTrackConnection;
+@property (nonatomic, strong) NSMutableArray *episodeSaveQueue;
+
 @property (nonatomic, strong) NSDateFormatter *ISODateFormatter;
 @property (strong, nonatomic) NSTimer *syncProgressTimer;
 
@@ -107,18 +111,17 @@
         _ISODateFormatter = [[NSDateFormatter alloc] init];
         [_ISODateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
 
-        // show what's in documents dir
-        /*
+        // show what's in library dir
         NSError *fError = nil;
-        NSArray *folders = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+        NSArray *folders = NSSearchPathForDirectoriesInDomains(NSLibraryDirectory, NSUserDomainMask, YES);
         NSArray *appFolderContents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:[folders objectAtIndex:0] error:&fError];
-        CLS_LOG(@"documents folder contents ---------------");
+        CLS_LOG(@"library folder contents ---------------");
         if ([appFolderContents count] > 0 && fError == nil) {
             for (NSString *item in appFolderContents) {
                 CLS_LOG(@"- %@", item);
             }
         }
-         */
+        
         
         // show what's in temp dir
         /*
@@ -837,11 +840,12 @@
 - (NSURL *) getEpisodeUrl:(NSURL *)url {
     
     //CLS_LOG(@"get episode url: %@", url);
-    
+    // first look for file in episode temp dir
+    NSFileManager *fileManager = [NSFileManager defaultManager];
     NSString *episodeDir = [NSTemporaryDirectory() stringByAppendingPathComponent:episodeDirName];
     NSError *error;
-    [[NSFileManager defaultManager] createDirectoryAtPath:episodeDir withIntermediateDirectories:YES attributes:nil error:&error];
-	/*
+    [fileManager createDirectoryAtPath:episodeDir withIntermediateDirectories:YES attributes:nil error:&error];
+	/* show temp episode dir contents
     NSError *ftError = nil;
     NSArray *episodeDirContents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:episodeDir error:&ftError];
     CLS_LOG(@"episode directory contents ---------------");
@@ -855,33 +859,49 @@
     episodeFilename = [episodeFilename stringByRemovingPercentEncoding];
     NSString *episodeFilepath = [episodeDir stringByAppendingPathComponent:episodeFilename];
 
-    if ([[NSFileManager defaultManager] fileExistsAtPath:episodeFilepath]) {
-        CLS_LOG(@"^^^ will use local file");
+    if ([fileManager fileExistsAtPath:episodeFilepath]) {
+        CLS_LOG(@"^^^ will use local file in TEMP dir");
         _fileIsLocal = YES;
         _fileIsStreaming = NO;
         _fileWillBeCached = YES;
         return [NSURL fileURLWithPath:episodeFilepath];
-    } else {
-        _fileIsLocal = NO;
-        _fileIsStreaming = YES;
+    }
+    else {
+        // look for file in library directory
+        NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
+        NSURL *libraryFolder = [folders objectAtIndex:0];
+        NSString *savePath = [libraryFolder.path stringByAppendingPathComponent:episodeFilename];
         
-        NSURLComponents *components = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
-        // if episode has track position > 0.1, we do not use custom scheme,
-        // because this way AVPlayer will start streaming from the timestamp
-        // instead of downloading from the start as with a custom scheme
-        if (_npEpisodeEntity.trackPosition.floatValue > 0.1 && _npEpisodeEntity.trackPosition.floatValue < 1.0) {
-            // no caching
-            _fileWillBeCached = NO;
-            CLS_LOG(@"^^^ will stream from url with NO caching");
+        if ([fileManager fileExistsAtPath:savePath]) {
+            CLS_LOG(@"^^^ will use local file in SAVED dir");
+            _fileIsLocal = YES;
+            _fileIsStreaming = NO;
+            _fileWillBeCached = YES;
+            return [NSURL fileURLWithPath:savePath];
         }
         else {
-            // return url with custom scheme
-            components.scheme = @"tungstream";
-            _fileWillBeCached = YES;
-            CLS_LOG(@"^^^ will stream from url with custom scheme");
+            // fuck it, we'll do it live!
+            _fileIsLocal = NO;
+            _fileIsStreaming = YES;
             
+            NSURLComponents *components = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
+            // if episode has track position > 0.1, we do not use custom scheme,
+            // because this way AVPlayer will start streaming from the timestamp
+            // instead of downloading from the start as with a custom scheme
+            if (_npEpisodeEntity.trackPosition.floatValue > 0.1 && _npEpisodeEntity.trackPosition.floatValue < 1.0) {
+                // no caching
+                _fileWillBeCached = NO;
+                CLS_LOG(@"^^^ will stream from url with NO caching");
+            }
+            else {
+                // return url with custom scheme
+                components.scheme = @"tungstream";
+                _fileWillBeCached = YES;
+                CLS_LOG(@"^^^ will stream from url with custom scheme");
+                
+            }
+            return [components URL];
         }
-        return [components URL];
     }
 }
 
@@ -901,19 +921,6 @@
         }
     }];
 }
-
-static NSString *episodeDirName = @"episodes";
-
-- (void) saveNowPlayingEpisodeInTempDirectory {
-    
-    _fileWillBeCached = YES;
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:_npEpisodeEntity.url]];
-    _trackDataConnection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
-    [_trackDataConnection setDelegateQueue:[NSOperationQueue mainQueue]];
-    [_trackDataConnection start];
-}
-
-
 /*
  Play Queue saving and retrieving
  Does not seem to be a reliable way to recall what was playing when app becomes active
@@ -956,6 +963,168 @@ static NSString *episodeDirName = @"episodes";
     }
 }
 
+#pragma mark - caching/saving episodes
+
+static NSString *episodeDirName = @"episodes";
+
+/* TODO:
+ - save/retrieve/delete saved episodes in episodes folder rather than loose in lib folder
+ - downloadNextEpisode is not working
+ - finish implementing methods to clear episode cache, clear saved episodes
+ - format date in alert message for when episode will be deleted
+ */
+
+- (void) saveNowPlayingEpisodeInTempDirectory {
+    
+    _fileWillBeCached = YES;
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:_npEpisodeEntity.url]];
+    _trackDataConnection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
+    [_trackDataConnection setDelegateQueue:[NSOperationQueue mainQueue]];
+    [_trackDataConnection start];
+}
+
+- (void) queueEpisodeForDownload:(EpisodeEntity *)episodeEntity {
+    
+    CLS_LOG(@"queue episode for saving: %@", episodeEntity.title);
+    
+    // check if there is enough disk space
+    // TODO: add up queued episodes total size
+    CGFloat freeDiskSpace = [ALDisk freeDiskSpaceInBytes];
+    CGFloat episodeSize = episodeEntity.dataLength.doubleValue;
+    CGFloat freeMegabytes = roundf(freeDiskSpace/1048576);
+    CGFloat episodeMegabytes = roundf(episodeSize/1048576);
+    CLS_LOG(@"free disk space: %.f MB, episode size: %.f MB", freeMegabytes, episodeMegabytes);
+    if (freeDiskSpace <= episodeSize) {
+        UIAlertView *notEnoughDiskAlert = [[UIAlertView alloc] initWithTitle:@"Not enough storage" message:[NSString stringWithFormat:@"This episode requires %.f MB but your phone only has %.f MB available.", episodeMegabytes, freeMegabytes] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+        [notEnoughDiskAlert show];
+        return;
+    }
+    
+    // if not yet notified, notify of episode expiration
+    SettingsEntity *settings = [TungCommonObjects settings];
+    if (!settings.hasSeenEpisodeExpirationAlert.boolValue) {
+        UIAlertView *episodeExpirationAlert = [[UIAlertView alloc] initWithTitle:@"Saved episodes will be kept for 30 days." message:@"After that, they will be auto-deleted." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:@"Don't show again", nil];
+        episodeExpirationAlert.tag = 30;
+        [episodeExpirationAlert show];
+    }
+    
+    [_episodeSaveQueue addObject:episodeEntity.url];
+    episodeEntity.isQueuedForSave = [NSNumber numberWithBool:YES];
+    
+    // if nothing's downloading, start download
+    if (!_saveTrackConnection) {
+        [self downloadEpisodeToLibraryDirectory:episodeEntity];
+    } else {
+        [TungCommonObjects saveContextWithReason:@"queued episode for save"];
+        NSNotification *saveStatusChangedNotif = [NSNotification notificationWithName:@"saveStatusDidChange" object:nil userInfo:nil];
+        [[NSNotificationCenter defaultCenter] postNotification:saveStatusChangedNotif];
+    }
+}
+
+- (void) cancelSaveForEpisode:(EpisodeEntity *)episodeEntity {
+    
+    CLS_LOG(@"cancel save for episode: %@", episodeEntity.title);
+    [_episodeSaveQueue removeObject:episodeEntity.url];
+    episodeEntity.isQueuedForSave = [NSNumber numberWithBool:NO];
+    episodeEntity.isDownloadingForSave = [NSNumber numberWithBool:NO];
+    [TungCommonObjects saveContextWithReason:@"episode cancelled saving"];
+    NSNotification *saveStatusChangedNotif = [NSNotification notificationWithName:@"saveStatusDidChange" object:nil userInfo:nil];
+    [[NSNotificationCenter defaultCenter] postNotification:saveStatusChangedNotif];
+    
+    // cancel download
+    if ([episodeEntity.url isEqualToString:_episodeToSaveEntity.url]) {
+        [_saveTrackConnection cancel];
+        _saveTrackConnection = nil;
+        _saveTrackData = nil;
+    }
+}
+
+- (void) downloadNextEpisodeInQueue {
+    if (_episodeSaveQueue.count > 0) {
+        // lookup entity by guid
+        NSString *urlString = [_episodeSaveQueue objectAtIndex:0];
+        EpisodeEntity *epEntity = [TungCommonObjects getEpisodeEntityFromUrlString:urlString];
+        if (epEntity) {
+            [self downloadEpisodeToLibraryDirectory:epEntity];
+        }
+    }
+}
+
+- (void) downloadEpisodeToLibraryDirectory:(EpisodeEntity *)episodeEntity {
+    
+    CLS_LOG(@"start download of episode: %@", episodeEntity.title);
+    _episodeToSaveEntity = episodeEntity;
+    episodeEntity.isQueuedForSave = [NSNumber numberWithBool:YES];
+    episodeEntity.isDownloadingForSave = [NSNumber numberWithBool:YES];
+    [TungCommonObjects saveContextWithReason:@"new episode downloading"];
+    NSNotification *saveStatusChangedNotif = [NSNotification notificationWithName:@"saveStatusDidChange" object:nil userInfo:nil];
+    [[NSNotificationCenter defaultCenter] postNotification:saveStatusChangedNotif];
+    
+    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:episodeEntity.url]];
+    _saveTrackConnection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
+    [_saveTrackConnection setDelegateQueue:[NSOperationQueue mainQueue]];
+    [_saveTrackConnection start];
+}
+
+- (void) deleteSavedEpisodeWithUrl:(NSString *)urlString {
+    
+    EpisodeEntity *epEntity = [TungCommonObjects getEpisodeEntityFromUrlString:urlString];
+    if (epEntity) {
+        NSFileManager *fileManager = [NSFileManager defaultManager];
+        NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
+        NSString *episodeFilename = [epEntity.url lastPathComponent];
+        NSURL *libraryFolder = [folders objectAtIndex:0];
+        NSString *savePath = [libraryFolder.path stringByAppendingPathComponent:episodeFilename];
+        NSError *error;
+        if ([fileManager fileExistsAtPath:savePath]) {
+            [fileManager removeItemAtPath:savePath error:&error];
+        }
+        
+        epEntity.isSaved = [NSNumber numberWithBool:NO];
+        [TungCommonObjects saveContextWithReason:@"deleted saved episode file"];
+        
+        NSNotification *saveStatusChangedNotif = [NSNotification notificationWithName:@"saveStatusDidChange" object:nil userInfo:nil];
+        [[NSNotificationCenter defaultCenter] postNotification:saveStatusChangedNotif];
+        
+        CLS_LOG(@"deleted episode with url: %@", urlString);
+    }
+}
+
+- (void) deleteAllSavedEpisodes {
+    CLS_LOG(@"delete all saved episodes:");
+    // remove "isSaved" status from all entities
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSError *error = nil;
+    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isSaved == YES"];
+    [request setPredicate:predicate];
+    NSArray *episodeResult = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
+    if (episodeResult.count > 0) {
+        for (int i = 0; i < episodeResult.count; i++) {
+        	EpisodeEntity *epEntity = [episodeResult objectAtIndex:i];
+            epEntity.isSaved = [NSNumber numberWithBool:NO];
+        }
+        [TungCommonObjects saveContextWithReason:@"removed saved status from episodes"];
+        NSNotification *saveStatusChangedNotif = [NSNotification notificationWithName:@"saveStatusDidChange" object:nil userInfo:nil];
+        [[NSNotificationCenter defaultCenter] postNotification:saveStatusChangedNotif];
+    }
+    error = nil;
+    
+    // remove saved files
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
+    NSURL *libraryFolder = [folders objectAtIndex:0];
+    NSArray *libFolderContents = [fileManager contentsOfDirectoryAtPath:libraryFolder.path error:&error];
+    if (libFolderContents.count > 0 && error == nil) {
+        for (NSString *item in libFolderContents) {
+            if ([fileManager removeItemAtPath:[libraryFolder.path stringByAppendingPathComponent:item] error:NULL]) {
+                CLS_LOG(@"- removed item: %@", item);
+            };
+        }
+    }
+
+}
+
 
 #pragma mark - NSURLConnection delegate
 
@@ -968,6 +1137,10 @@ static NSString *episodeDirName = @"episodes";
         
         [self processPendingRequests];
     }
+    else if (connection == _saveTrackConnection) {
+        
+        _saveTrackData = [NSMutableData data];
+    }
 }
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
@@ -977,6 +1150,10 @@ static NSString *episodeDirName = @"episodes";
         [_trackData appendData:data];
         
         [self processPendingRequests];
+    }
+    else if (connection == _saveTrackConnection) {
+        
+        [_saveTrackData appendData:data];
     }
 }
 
@@ -995,7 +1172,7 @@ static NSString *episodeDirName = @"episodes";
         NSString *episodeFilepath = [episodeDir stringByAppendingPathComponent:episodeFilename];
         
         if ([_trackData writeToFile:episodeFilepath options:0 error:&error]) {
-            CLS_LOG(@"-- saved podcast track in temp episode dir");
+            CLS_LOG(@"-- saved podcast track in temp episode dir: %@", episodeFilepath);
             _fileIsLocal = YES;
             // we can safely release these
             _trackData = nil;
@@ -1004,6 +1181,66 @@ static NSString *episodeDirName = @"episodes";
         else {
             CLS_LOG(@"ERROR: track did not save: %@", error);
             _fileIsLocal = NO;
+        }
+    }
+    else if (connection == _saveTrackConnection) {
+        
+        // save in docs directory
+        NSFileManager *fileManager = [NSFileManager defaultManager];
+        NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
+        //NSArray *folders = NSSearchPathForDirectoriesInDomains(NSDocumentDirectory, NSUserDomainMask, YES);
+        NSString *episodeFilename = [_episodeToSaveEntity.url lastPathComponent];
+        NSURL *libraryFolder = [folders objectAtIndex:0];
+        NSString *savePath = [libraryFolder.path stringByAppendingPathComponent:episodeFilename];
+        NSError *error;
+        NSLog(@"episode file path: %@", savePath);
+        
+        if ([_saveTrackData writeToFile:savePath options:0 error:&error]) {
+            CLS_LOG(@"-- saved podcast track in library directory");
+            
+            _saveTrackData = nil;
+            _saveTrackConnection = nil;
+            // update entity
+            _episodeToSaveEntity.isQueuedForSave = [NSNumber numberWithBool:NO];
+            _episodeToSaveEntity.isDownloadingForSave = [NSNumber numberWithBool:NO];
+            _episodeToSaveEntity.isSaved = [NSNumber numberWithBool:YES];
+            // set date and local notif. for deletion
+            NSDate *todayPlusThirtyDays = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitDay value:30 toDate:[NSDate date] options:0];
+            //NSDate *todayPlusTenSecs = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitSecond value:10 toDate:[NSDate date] options:0];
+            _episodeToSaveEntity.savedUntilDate = todayPlusThirtyDays;
+            [TungCommonObjects saveContextWithReason:@"episode finished saving"];
+            
+            UILocalNotification *expiredEpisodeNotif = [[UILocalNotification alloc] init];
+            expiredEpisodeNotif.fireDate = todayPlusThirtyDays;
+            expiredEpisodeNotif.timeZone = [[NSCalendar currentCalendar] timeZone];
+            expiredEpisodeNotif.hasAction = NO;
+            expiredEpisodeNotif.userInfo = @{@"deleteEpisodeWithUrl": _episodeToSaveEntity.url};
+            [[UIApplication sharedApplication] scheduleLocalNotification:expiredEpisodeNotif];
+            
+            // next?
+            [_episodeSaveQueue removeObjectAtIndex:0];
+            if (_episodeSaveQueue.count > 0) {
+            	[self downloadNextEpisodeInQueue];
+            } else {
+                NSNotification *saveStatusChangedNotif = [NSNotification notificationWithName:@"saveStatusDidChange" object:nil userInfo:nil];
+                [[NSNotificationCenter defaultCenter] postNotification:saveStatusChangedNotif];
+            }
+            
+        }
+        else {
+            CLS_LOG(@"Error saving track: %@", error);
+            _saveTrackData = nil;
+            _saveTrackConnection = nil;
+            
+            UIAlertView *noSaveAlert = [[UIAlertView alloc] initWithTitle:@"Error saving episode" message:[NSString stringWithFormat:@"%@", [error localizedDescription]] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
+            [noSaveAlert show];
+            // update entity
+            _episodeToSaveEntity.isQueuedForSave = [NSNumber numberWithBool:NO];
+            _episodeToSaveEntity.isDownloadingForSave = [NSNumber numberWithBool:NO];
+            _episodeToSaveEntity.isSaved = [NSNumber numberWithBool:NO];
+            [TungCommonObjects saveContextWithReason:@"episode did not save"];
+            NSNotification *saveStatusChangedNotif = [NSNotification notificationWithName:@"saveStatusDidChange" object:nil userInfo:nil];
+            [[NSNotificationCenter defaultCenter] postNotification:saveStatusChangedNotif];
         }
     }
 }
@@ -1480,6 +1717,23 @@ static NSDateFormatter *ISODateInterpreter = nil;
     if (episodeResult.count) {
         return [episodeResult lastObject];
     } else {
+        return nil;
+    }
+}
++ (EpisodeEntity *) getEpisodeEntityFromUrlString:(NSString *)urlString {
+
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSError *error = nil;
+    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat: @"url == %@", urlString];
+    [request setPredicate:predicate];
+    NSArray *episodeResult = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
+    if (episodeResult.count > 0) {
+        EpisodeEntity *epEntity = [episodeResult lastObject];
+        return epEntity;
+    }
+    else {
+        CLS_LOG(@"ERROR: could not find episode entity for url: %@", urlString);
         return nil;
     }
 }
@@ -3569,6 +3823,14 @@ static NSArray *colors;
             [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
         }
     }
+    // don't show episode expiration warning again
+    if (alertView.tag == 30 && buttonIndex == 1) {
+        
+        SettingsEntity *settings = [TungCommonObjects settings];
+        settings.hasSeenEpisodeExpirationAlert = [NSNumber numberWithBool:YES];
+        [TungCommonObjects saveContextWithReason:@"settings changed"];
+        
+    }
     // unauthorized alert
     if (alertView.tag == 99) {
         [self signOut];
@@ -3624,13 +3886,21 @@ static NSArray *colors;
 
 - (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
     
-    //CLS_LOG(@"dismissed action sheet with button: %ld", (long)buttonIndex);
+    CLS_LOG(@"dismissed action sheet with button: %ld", (long)buttonIndex);
     
     // sign out
     if (actionSheet.tag == 99) {
         
-        if (buttonIndex == 0)
-            [self signOut];
+        switch (buttonIndex) {
+            case 0:
+                [self signOut];
+                break;
+            case 1:
+                [self deleteAllSavedEpisodes];
+                break;
+            default:
+                break;
+        }
     }
     // chose twitter account
     if (actionSheet.tag == 89) {
@@ -4260,6 +4530,63 @@ static NSDateFormatter *dayDateFormatter = nil;
 
 + (BOOL) hasGrantedNotificationPermissions {
     return [[UIApplication sharedApplication] currentUserNotificationSettings].types;
+}
+
++ (NSNumber *) getAllocatedSizeOfDirectoryAtURL:(NSURL *)directoryURL error:(NSError * __autoreleasing *)error {
+    
+    NSParameterAssert(directoryURL != nil);
+    
+    unsigned long long accumulatedSize = 0;
+    
+    // prefetching some properties during traversal will speed up things a bit.
+    NSArray *prefetchedProperties = @[
+                                      NSURLIsRegularFileKey,
+                                      NSURLFileAllocatedSizeKey,
+                                      NSURLTotalFileAllocatedSizeKey,
+                                      ];
+    
+    // The error handler simply signals errors to outside code.
+    __block BOOL errorDidOccur = NO;
+    BOOL (^errorHandler)(NSURL *, NSError *) = ^(NSURL *url, NSError *localError) {
+        if (error != NULL)
+            *error = localError;
+        errorDidOccur = YES;
+        return NO;
+    };
+    
+    // We have to enumerate all directory contents, including subdirectories.
+    NSDirectoryEnumerator *enumerator = [[NSFileManager defaultManager] enumeratorAtURL:directoryURL
+                                                             includingPropertiesForKeys:prefetchedProperties
+                                                                                options:(NSDirectoryEnumerationOptions)0
+                                                                           errorHandler:errorHandler];
+    // Start the traversal:
+    for (NSURL *contentItemURL in enumerator) {
+        
+        // Bail out on errors from the errorHandler.
+        if (errorDidOccur) return [NSNumber numberWithInt:0];
+        // Get the type of this item, making sure we only sum up sizes of regular files.
+        NSNumber *isRegularFile;
+        if (! [contentItemURL getResourceValue:&isRegularFile forKey:NSURLIsRegularFileKey error:error]) return [NSNumber numberWithInt:0];
+        if (! [isRegularFile boolValue]) continue; // Ignore anything except regular files.
+        
+        // To get the file's size we first try the most comprehensive value in terms of what the file may use on disk.
+        // This includes metadata, compression (on file system level) and block size.
+        NSNumber *fileSize;
+        if (! [contentItemURL getResourceValue:&fileSize forKey:NSURLTotalFileAllocatedSizeKey error:error]) return [NSNumber numberWithInt:0];
+        
+        // In case the value is unavailable we use the fallback value (excluding meta data and compression)
+        // This value should always be available.
+        if (fileSize == nil) {
+            if (! [contentItemURL getResourceValue:&fileSize forKey:NSURLFileAllocatedSizeKey error:error]) return [NSNumber numberWithInt:0];
+        }
+        // We're good, add up the value.
+        accumulatedSize += [fileSize unsignedLongLongValue];
+    }
+    
+    // Bail out on errors from the errorHandler.
+    if (errorDidOccur) return [NSNumber numberWithInt:0];
+	
+    return [NSNumber numberWithUnsignedLongLong:accumulatedSize];
 }
 
 @end
