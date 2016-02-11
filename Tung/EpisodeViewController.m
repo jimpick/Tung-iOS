@@ -274,8 +274,9 @@ UIActivityIndicatorView *backgroundSpinner;
     // episode view starts out hidden
     _episodesView.view.hidden = YES;
     
-    // listen for for nowPlayingDidChange
+    // listen for notifications
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(nowPlayingDidChange) name:@"nowPlayingDidChange" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveStatusChanged) name:@"saveStatusDidChange" object:nil];
     
     if (!_isNowPlayingView) {
         
@@ -454,6 +455,8 @@ NSTimer *markAsSeenTimer;
     
 }
 
+#pragma mark - Handle notifications
+
 -(void) nowPlayingDidChange {
     
     if (_isNowPlayingView) {
@@ -469,6 +472,12 @@ NSTimer *markAsSeenTimer;
             [self revealNowPlayingControls];
         }
     }
+}
+
+- (void) saveStatusChanged {
+    _saveButton.on = _episodeEntity.isSaved.boolValue;
+    _saveLabel.text = (_saveButton.on) ? @"Saved" : @"Save";
+    [_saveButton setNeedsDisplay];
 }
 
 #pragma mark - Set up view
@@ -830,12 +839,12 @@ static CGRect buttonsScrollViewHomeRect;
     
     _saveButton = [CircleButton new];
     _saveButton.type = kCircleTypeSave;
+    _saveButton.on = _episodeEntity.isSaved.boolValue;
     [self setupCircleButton:_saveButton withWidth:circleButtonDimension andHeight:circleButtonDimension andSuperView:extraButtonsSubView];
-    [_saveButton addTarget:self action:@selector(saveTrack) forControlEvents:UIControlEventTouchUpInside];
+    [_saveButton addTarget:self action:@selector(saveButtonTapped) forControlEvents:UIControlEventTouchUpInside];
     _saveLabel = [UILabel new];
-    _saveLabel.text = @"Save";
+    _saveLabel.text = (_saveButton.on) ? @"Saved" : @"Save";
     [self setupButtonLabel:_saveLabel withButtonDimension:circleButtonDimension andSuperView:extraButtonsSubView];
-
     
     // button and label constraints: distribute X positions
     [extraButtonsSubView addConstraint:[NSLayoutConstraint constraintWithItem:websiteButton attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:extraButtonsSubView attribute:NSLayoutAttributeTrailing multiplier:.134 constant:1]];
@@ -1013,8 +1022,34 @@ static CGRect buttonsScrollViewHomeRect;
     [_tung.player setRate:rate.floatValue];
 }
 
-- (void) saveTrack {
-    NSLog(@"save track");
+- (void) saveButtonTapped {
+    
+    if (_episodeEntity.isSaved.boolValue) {
+        [_tung showSavedInfoAlertForEpisode:_episodeEntity];
+    }
+    else {
+        if (!_tung.fileWillBeCached) {
+            // streaming; will not be cached
+            [_tung cacheNowPlayingEpisodeAndMoveToSaved:YES];
+            _saveButton.on = NO;
+            _saveLabel.text = @"Saving…";
+        }
+        else {
+            if (_tung.fileIsLocal) {
+                // already cached
+                [_tung moveEpisodeToSaved:_episodeEntity];
+                _saveButton.on = YES;
+                _saveLabel.text = @"Saved";
+            }
+            else {
+                // currently downloading
+                _tung.saveOnDownloadComplete = YES;
+                _saveButton.on = NO;
+                _saveLabel.text = @"Saving…";
+            }
+        }
+        [_saveButton setNeedsDisplay];
+    }
 }
 
 #pragma mark - UIWebView delegate methods
@@ -1160,7 +1195,7 @@ static CGRect buttonsScrollViewHomeRect;
         [waitForDownloadAlert show];
         
         if (!_tung.fileWillBeCached) {
-            [_tung saveNowPlayingEpisodeInTempDirectory];
+            [_tung cacheNowPlayingEpisodeAndMoveToSaved:NO];
         }
     }
 }

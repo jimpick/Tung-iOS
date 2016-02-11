@@ -31,6 +31,8 @@
 #import "BannerAlert.h"
 #import <MobileCoreServices/MobileCoreServices.h> // for AVURLAsset resource loading
 
+#define CLS_LOG(__FORMAT__, ...) CLSNSLog((@"%s line %d $ " __FORMAT__), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
+
 @interface TungCommonObjects()
 
 // Private properties and methods
@@ -92,7 +94,7 @@
         _playbackRateIndex = 1;
         
         // audio session
-        if ([[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayback error: nil]) {
+        if ([[AVAudioSession sharedInstance] setCategory:AVAudioSessionCategoryPlayback error:nil]) {
             [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
         }
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruption:) name:AVAudioSessionInterruptionNotification object:nil];
@@ -114,7 +116,7 @@
         
         _episodeSaveQueue = [NSMutableArray array];
 
-        // show what's in saved episodes dir
+        /* show what's in saved episodes dir
         NSError *fError = nil;
         NSString *savedEpisodesDir = [self getSavedEpisodesDirectoryPath];
         NSArray *savedEpisodesDirContents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:savedEpisodesDir error:&fError];
@@ -123,8 +125,9 @@
             for (NSString *item in savedEpisodesDirContents) {
                 CLS_LOG(@"- %@", item);
             }
-        }
-        // show what's in cached episodes dir
+        }*/
+        
+        /* show what's in cached episodes dir
         fError = nil;
         NSString *cachedEpisodesDir = [self getCachedEpisodesDirectoryPath];
         NSArray *cachedEpisodesDirContents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:cachedEpisodesDir error:&fError];
@@ -133,10 +136,9 @@
             for (NSString *item in cachedEpisodesDirContents) {
                 CLS_LOG(@"- %@", item);
             }
-        }
+        } */
         
-        // show what's in temp dir
-        /*
+        /* show what's in temp dir
          NSError *ftError = nil;
          NSArray *tmpFolderContents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:NSTemporaryDirectory() error:&ftError];
          CLS_LOG(@"temp folder contents ---------------");
@@ -245,18 +247,7 @@
     if ([[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayback error: nil]) {
         [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     }
-    if (_player) {
-        [self playerPause];
-        [_player removeObserver:self forKeyPath:@"status"];
-        [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
-        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:_player.currentItem];
-        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemPlaybackStalledNotification object:_player.currentItem];
-        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemFailedToPlayToEndTimeNotification object:_player.currentItem];
-        [_player cancelPendingPrerolls];
-        _player = nil;
-        _trackData = nil;
-        _trackDataConnection = nil;
-    }
+    [self resetPlayer];
     [self checkForNowPlaying];
 }
 
@@ -1001,9 +992,11 @@ static NSString *episodeDirName = @"episodes";
  - implement saving from now playing controls
  */
 
-- (void) saveNowPlayingEpisodeInTempDirectory {
-    
+- (void) cacheNowPlayingEpisodeAndMoveToSaved:(BOOL)moveToSaved {
+    // we use the _trackDataConnection because this is specifically for now playing,
+    // if it's to ultimately save the track, user will be able to see d/l progress
     _fileWillBeCached = YES;
+    _saveOnDownloadComplete = moveToSaved;
     NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:_npEpisodeEntity.url]];
     _trackDataConnection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
     [_trackDataConnection setDelegateQueue:[NSOperationQueue mainQueue]];
@@ -1168,6 +1161,54 @@ static NSString *episodeDirName = @"episodes";
     }
 }
 
+- (void) showSavedInfoAlertForEpisode:(EpisodeEntity *)episodeEntity {
+    // tell user when episode will be auto deleted
+    NSString *formattedDate = [NSDateFormatter localizedStringFromDate:episodeEntity.savedUntilDate dateStyle:NSDateFormatterLongStyle timeStyle:NSDateFormatterNoStyle];
+    
+    UIAlertController *episodeSavedInfoAlert = [UIAlertController alertControllerWithTitle:@"Saved" message:[NSString stringWithFormat:@"This episode will be saved until\n%@", formattedDate] preferredStyle:UIAlertControllerStyleAlert];
+    [episodeSavedInfoAlert addAction:[UIAlertAction actionWithTitle:@"Remove" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+        [self deleteSavedEpisodeWithUrl:episodeEntity.url confirm:YES];
+    }]];
+    UIAlertAction *keepAction = [UIAlertAction actionWithTitle:@"Keep" style:UIAlertActionStyleDefault handler:nil];
+    [episodeSavedInfoAlert addAction:keepAction];
+    episodeSavedInfoAlert.preferredAction = keepAction;
+    [_viewController presentViewController:episodeSavedInfoAlert animated:YES completion:nil];
+}
+
+- (void) moveEpisodeToSaved:(EpisodeEntity *)episodeEntity {
+    
+    // find in temp
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *episodeFilename = [[episodeEntity.url lastPathComponent] stringByRemovingPercentEncoding];
+    
+    NSString *cachedEpisodesDir = [self getCachedEpisodesDirectoryPath];
+    NSString *cachedEpisodeFilepath = [cachedEpisodesDir stringByAppendingPathComponent:episodeFilename];
+    
+    if ([fileManager fileExistsAtPath:cachedEpisodeFilepath]) {
+        // save in docs directory
+        NSString *episodesDir = [self getSavedEpisodesDirectoryPath];
+        NSString *savedEpisodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
+        NSError *error;
+        BOOL result = [fileManager moveItemAtPath:cachedEpisodeFilepath toPath:savedEpisodeFilepath error:&error];
+        CLS_LOG(@"moved episode to saved from temp: %@", (result) ? @"Success" : @"Failed");
+        if (result) {
+            episodeEntity.isSaved = [NSNumber numberWithBool:YES];
+            NSDate *todayPlusThirtyDays = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitDay value:30 toDate:[NSDate date] options:0];
+            episodeEntity.savedUntilDate = todayPlusThirtyDays;
+            
+        } else {
+            CLS_LOG(@"error: %@", error);
+            episodeEntity.isSaved = [NSNumber numberWithBool:NO];
+        }
+    } else {
+        CLS_LOG(@"file does not exist in temp path");
+        episodeEntity.isSaved = [NSNumber numberWithBool:NO];
+    }
+    [TungCommonObjects saveContextWithReason:@"moved episode to saved"];
+    [self queueSaveStatusDidChangeNotification];
+}
+
+
 
 #pragma mark - NSURLConnection delegate
 
@@ -1208,7 +1249,7 @@ static NSString *episodeDirName = @"episodes";
         
         NSString *episodesDir = [self getCachedEpisodesDirectoryPath];
         NSString *episodeFilename = [[_playQueue objectAtIndex:0] lastPathComponent];
-        //episodeFilename = [episodeFilename stringByRemovingPercentEncoding];
+        episodeFilename = [episodeFilename stringByRemovingPercentEncoding]; // is this necessary?
         NSString *episodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
         NSError *error;
         if ([_trackData writeToFile:episodeFilepath options:0 error:&error]) {
@@ -1217,9 +1258,14 @@ static NSString *episodeDirName = @"episodes";
             // we can safely release these
             _trackData = nil;
             _trackDataConnection = nil;
+            // move to saved?
+            if (_saveOnDownloadComplete) {
+                [self moveEpisodeToSaved:_npEpisodeEntity];
+                _saveOnDownloadComplete = NO; // reset
+            }
         }
         else {
-            CLS_LOG(@"ERROR: track did not save: %@", error);
+            CLS_LOG(@"ERROR: track did not get cached: %@", error);
             _fileIsLocal = NO;
         }
     }
@@ -1227,6 +1273,7 @@ static NSString *episodeDirName = @"episodes";
         
         // save in docs directory
         NSString *episodeFilename = [_episodeToSaveEntity.url lastPathComponent];
+        episodeFilename = [episodeFilename stringByRemovingPercentEncoding]; // is this necessary?
         NSString *episodesDir = [self getSavedEpisodesDirectoryPath];
         NSString *episodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
         NSError *error;
@@ -3866,6 +3913,12 @@ static NSArray *colors;
         settings.hasSeenEpisodeExpirationAlert = [NSNumber numberWithBool:YES];
         [TungCommonObjects saveContextWithReason:@"settings changed"];
         
+    }
+    // remove saved episode
+    if (alertView.tag == 40 && buttonIndex) {
+        // delete episde
+        //CLS_LOG(@"delete episode with url: %@", _episodeUrlString);
+        //[self deleteSavedEpisodeWithUrl:_episodeUrlString confirm:YES];
     }
     // unauthorized alert
     if (alertView.tag == 99) {

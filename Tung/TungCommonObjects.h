@@ -79,6 +79,7 @@
 @property BOOL fileIsStreaming;
 @property BOOL fileWillBeCached; // file will only be cached if custom url scheme is used
 @property BOOL shouldStayPaused;
+@property BOOL saveOnDownloadComplete;
 
 - (void) checkForNowPlaying;
 - (void) controlButtonTapped;
@@ -103,12 +104,14 @@
 @property EpisodeEntity *episodeToSaveEntity;
 - (NSString *) getSavedEpisodesDirectoryPath;
 - (NSString *) getCachedEpisodesDirectoryPath;
-- (void) saveNowPlayingEpisodeInTempDirectory;
+- (void) cacheNowPlayingEpisodeAndMoveToSaved:(BOOL)moveToSaved;
 - (void) queueEpisodeForDownload:(EpisodeEntity *)episodeEntity;
 - (void) cancelDownloadForEpisode:(EpisodeEntity *)episodeEntity;
 - (void) downloadEpisode:(EpisodeEntity *)episodeEntity;
 - (void) deleteSavedEpisodeWithUrl:(NSString *)urlString confirm:(BOOL)confirm;
 - (void) deleteAllSavedEpisodes;
+- (void) showSavedInfoAlertForEpisode:(EpisodeEntity *)episodeEntity;
+- (void) moveEpisodeToSaved:(EpisodeEntity *)episodeEntity;
 
 // badges
 @property (strong, nonatomic) TungMiscView *subscriptionsBadge;

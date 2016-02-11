@@ -10,7 +10,7 @@
 #import "TungCommonObjects.h"
 #import "EpisodeCell.h"
 
-@interface EpisodesTableViewController : UITableViewController <UIAlertViewDelegate>
+@interface EpisodesTableViewController : UITableViewController
 
 @property (strong, nonatomic) NSMutableArray *episodeArray;
 @property (strong, nonatomic) PodcastEntity *podcastEntity;
