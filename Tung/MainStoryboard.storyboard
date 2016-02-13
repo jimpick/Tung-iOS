@@ -1393,6 +1393,7 @@
                     <connections>
                         <segue destination="Utn-JV-HZh" kind="modal" identifier="presentEditProfileView" id="OZe-cP-Hjd"/>
                         <segue destination="wD7-6S-Iws" kind="modal" identifier="presentWebView" id="sbA-US-dCS"/>
+                        <segue destination="IeW-VN-1IQ" kind="modal" identifier="presentLogView" id="HhD-Zj-Re8"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="0jG-5G-kC2" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -1646,6 +1647,58 @@
             </objects>
             <point key="canvasLocation" x="1170.4000000000001" y="1515.6133333333332"/>
         </scene>
+        <!--Log View Controller-->
+        <scene sceneID="tHw-qj-ZKy">
+            <objects>
+                <viewController id="IeW-VN-1IQ" customClass="LogViewController" sceneMemberID="viewController">
+                    <layoutGuides>
+                        <viewControllerLayoutGuide type="top" id="viM-ia-uFJ"/>
+                        <viewControllerLayoutGuide type="bottom" id="pKm-zp-Brb"/>
+                    </layoutGuides>
+                    <view key="view" contentMode="scaleToFill" id="goR-Dk-ifL">
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <subviews>
+                            <textView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" textAlignment="natural" translatesAutoresizingMaskIntoConstraints="NO" id="kDR-gx-9ai">
+                                <rect key="frame" x="0.0" y="0.0" width="320" height="524"/>
+                                <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                                <string key="text">Lorem ipsum dolor sit er elit lamet, consectetaur cillium adipisicing pecu, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum. Nam liber te conscient to factor tum poen legum odioque civiuda.</string>
+                                <fontDescription key="fontDescription" type="system" pointSize="14"/>
+                                <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
+                            </textView>
+                            <toolbar opaque="NO" clearsContextBeforeDrawing="NO" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="1gM-Fc-mUj">
+                                <rect key="frame" x="0.0" y="524" width="320" height="44"/>
+                                <items>
+                                    <barButtonItem style="plain" systemItem="flexibleSpace" id="MdA-oc-vR8"/>
+                                    <barButtonItem title="Done" id="DeD-rA-Vpy">
+                                        <connections>
+                                            <action selector="doneAction:" destination="IeW-VN-1IQ" id="FRp-2a-yL9"/>
+                                        </connections>
+                                    </barButtonItem>
+                                </items>
+                            </toolbar>
+                        </subviews>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <constraints>
+                            <constraint firstItem="kDR-gx-9ai" firstAttribute="leading" secondItem="goR-Dk-ifL" secondAttribute="leading" id="0g5-gD-Bxy"/>
+                            <constraint firstItem="1gM-Fc-mUj" firstAttribute="leading" secondItem="goR-Dk-ifL" secondAttribute="leading" id="Oyg-oI-CZN"/>
+                            <constraint firstAttribute="trailing" secondItem="kDR-gx-9ai" secondAttribute="trailing" id="i5c-Ef-SEP"/>
+                            <constraint firstItem="kDR-gx-9ai" firstAttribute="top" secondItem="viM-ia-uFJ" secondAttribute="bottom" id="i9n-rf-q12"/>
+                            <constraint firstItem="pKm-zp-Brb" firstAttribute="top" secondItem="1gM-Fc-mUj" secondAttribute="bottom" id="mZQ-Pf-cml"/>
+                            <constraint firstAttribute="trailing" secondItem="1gM-Fc-mUj" secondAttribute="trailing" id="o9j-oT-dm9"/>
+                            <constraint firstItem="1gM-Fc-mUj" firstAttribute="top" secondItem="kDR-gx-9ai" secondAttribute="bottom" id="wZW-F8-JhI"/>
+                        </constraints>
+                    </view>
+                    <nil key="simulatedStatusBarMetrics"/>
+                    <connections>
+                        <outlet property="textView" destination="kDR-gx-9ai" id="Gqz-hP-zdl"/>
+                        <outlet property="toolbar" destination="1gM-Fc-mUj" id="upP-bn-7Zm"/>
+                    </connections>
+                </viewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="ftd-FG-1Sg" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="-352" y="1515"/>
+        </scene>
     </scenes>
     <resources>
         <image name="albumShawdow.png" width="112" height="187"/>
@@ -1653,6 +1706,6 @@
         <image name="tungSignInLogo.png" width="194" height="124"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="dk8-9Y-zcj"/>
+        <segue reference="sbA-US-dCS"/>
     </inferredMetricsTieBreakers>
 </document>

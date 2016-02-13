@@ -127,10 +127,6 @@
 - (void) checkFeedLastFetchedTime;
 
 // twitter
-@property (nonatomic, strong) NSArray *arrayOfTwitterAccounts;
-@property (nonatomic, strong) ACAccount *twitterAccountToUse;
-@property (nonatomic, strong) NSString *twitterAccountStatus;
-- (void) establishTwitterAccount;
 - (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url;
 
 // facebook

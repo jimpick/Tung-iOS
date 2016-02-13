@@ -32,7 +32,7 @@
 - (void)viewDidLoad
 {
     
-    //CLS_LOG(@"loaded browser view controller with url request: %@", _urlToNavigateTo);
+    //UALog(@"loaded browser view controller with url request: %@", _urlToNavigateTo);
     
     _tung = [TungCommonObjects establishTungObjects];
     

@@ -14,6 +14,7 @@
 #import "PodcastViewController.h"
 #import "EpisodeViewController.h"
 #import "DescriptionWebViewController.h"
+#import "UALogger.h"
 
 @interface TungPodcast()
 
@@ -70,14 +71,14 @@
 
     [_searchTimer invalidate];
     // timeout to resign keyboard
-    CLS_LOG(@"SET SELECTOR resignKeyboard");
+    UALog(@"SET SELECTOR resignKeyboard");
     [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(resignKeyboard) userInfo:nil repeats:NO];
     // search
     [self searchForTerm:searchBar.text];
     
 }
 -(void) searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
-    //CLS_LOG(@"search bar text did change: %@", searchText);
+    //UALog(@"search bar text did change: %@", searchText);
     [_searchTimer invalidate];
     if (searchText.length > 1) {
     	_searchTimer = [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(keyupSearch:) userInfo:searchText repeats:NO];
@@ -111,7 +112,7 @@
 #pragma mark - Search general methods
 
 -(void) keyupSearch:(NSTimer *)timer {
-    //CLS_LOG(@"time-out search for timer: %@", timer);
+    //UALog(@"time-out search for timer: %@", timer);
     [self searchForTerm:timer.userInfo];
 }
 
@@ -122,13 +123,13 @@
         // so you can search emoji - not needed
         /*
         NSString *unicodeText = [NSString stringWithUTF8String:[searchTerm UTF8String]];
-        CLS_LOG(@"unicode: %@", unicodeText);
-        CLS_LOG(@"unicode url encoded: %@", [self urlEncodeString:unicodeText]);
+        UALog(@"unicode: %@", unicodeText);
+        UALog(@"unicode url encoded: %@", [self urlEncodeString:unicodeText]);
         NSData *textData = [unicodeText dataUsingEncoding:NSNonLossyASCIIStringEncoding];
         NSString *encodedText = [[NSString alloc] initWithData:textData encoding:NSUTF8StringEncoding];
         NSString *encoded = [self urlEncodeString:encodedText];
          */
-        //CLS_LOG(@"SENDING SEARCH for %@", searchTerm);
+        //UALog(@"SENDING SEARCH for %@", searchTerm);
 		_queryExecuted = NO;
         [self searchItunesPodcastDirectoryWithTerm:searchTerm];
         
@@ -185,14 +186,14 @@
         _podcastSearchConnection = nil;
     }
     _podcastSearchConnection = [[NSURLConnection alloc] initWithRequest:podcastSearchRequest delegate:self];
-    //CLS_LOG(@"send request for term: %@", searchTerm);
+    //UALog(@"send request for term: %@", searchTerm);
 }
 
 #pragma mark - NSURLConnection delegate methods
 
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-    //CLS_LOG(@"did receive data");
+    //UALog(@"did receive data");
 
     [_podcastSearchResultData appendData:data];
 }
@@ -211,8 +212,8 @@
                 
                 _podcastArray = [[responseDict objectForKey:@"results"] mutableCopy];
                 
-                //CLS_LOG(@"got results: %lu", (unsigned long)_podcastArray.count);
-                //CLS_LOG(@"%@", _podcastArray);
+                //UALog(@"got results: %lu", (unsigned long)_podcastArray.count);
+                //UALog(@"%@", _podcastArray);
                 [self preloadPodcastArtForArray:_podcastArray];
                 [self preloadFeedsWithLimit:1]; // preload feed of first result
                 
@@ -225,17 +226,17 @@
         }
     }
     else if ([_podcastSearchResultData length] == 0 && error == nil) {
-        CLS_LOG(@"no response for search");
+        UALog(@"no response for search");
         
     }
     else if (error != nil) {
         
-        CLS_LOG(@"search error: %@", error);
+        UALog(@"search error: %@", error);
     }
 }
 
 - (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
-    CLS_LOG(@"search connection failed: %@", error);
+    UALog(@"search connection failed: %@", error);
     
     /* this error pops up occaisionally, probably because of rapid requests.
      makes user think something is wrong when it really isn't.
@@ -246,7 +247,7 @@
 
 /* unused NSURLConnection delegate methods
  - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-	CLS_LOG(@"connection received response: %@", response);
+	UALog(@"connection received response: %@", response);
  }
  
  */
@@ -267,7 +268,7 @@ static NSDateFormatter *releaseDateFormatter = nil;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    //CLS_LOG(@"number of rows in section: %lu", (unsigned long)_podcastArray.count);
+    //UALog(@"number of rows in section: %lu", (unsigned long)_podcastArray.count);
     if (section == 0) {
     	return _podcastArray.count;
     } else {
@@ -400,12 +401,12 @@ static NSString *cellIdentifier = @"PodcastResultCell";
 
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    //CLS_LOG(@"selected cell at row %ld", (long)[indexPath row]);
+    //UALog(@"selected cell at row %ld", (long)[indexPath row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     // push "show" view
     NSDictionary *podcastDict = [NSDictionary dictionaryWithDictionary:[_podcastArray objectAtIndex:indexPath.row]];
-    //CLS_LOG(@"selected %@", [podcastDict objectForKey:@"collectionName"]);
+    //UALog(@"selected %@", [podcastDict objectForKey:@"collectionName"]);
     
     [self resignKeyboard];
     PodcastViewController *podcastView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"podcastView"];
@@ -530,13 +531,13 @@ static NSString *feedDictsDirName = @"feedDicts";
     NSDictionary *feedDict;
     
     if (forceNewest) {
-        //CLS_LOG(@"retrieve cached feed for entity :: force newest");
+        //UALog(@"retrieve cached feed for entity :: force newest");
         feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
     }
     else if (entity.feedLastCached) {
         long timeSinceLastCached = fabs([entity.feedLastCached timeIntervalSinceNow]);
         if (timeSinceLastCached > 60 * 60 * 24) {
-            //CLS_LOG(@"retrieve cached feed for entity :: cached feed dict was stale - refetch");
+            //UALog(@"retrieve cached feed for entity :: cached feed dict was stale - refetch");
             feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
         } else {
             // pull feed dict from cache
@@ -548,15 +549,15 @@ static NSString *feedDictsDirName = @"feedDicts";
             NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:feedFilePath];
             if (dict) {
                 // return cached feed
-                //CLS_LOG(@"retrieve cached feed for entity :: found fresh cached feed dictionary");
+                //UALog(@"retrieve cached feed for entity :: found fresh cached feed dictionary");
                 return dict;
             } else {
-                //CLS_LOG(@"retrieve cached feed for entity :: tmp dir must have been cleared, fetching feed");
+                //UALog(@"retrieve cached feed for entity :: tmp dir must have been cleared, fetching feed");
                 feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
             }
         }
     } else {
-        //CLS_LOG(@"retrieve cached feed for entity :: need to request new");
+        //UALog(@"retrieve cached feed for entity :: need to request new");
         feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
     }
     [self cacheFeed:feedDict forEntity:entity];
@@ -587,7 +588,7 @@ static NSString *feedDictsDirName = @"feedDicts";
     for (int i = 0; i < maxNumToPreload; i++) {
         
         [_feedPreloadQueue addOperationWithBlock:^{
-            //CLS_LOG(@"** preload feed at index: %d", i);
+            //UALog(@"** preload feed at index: %d", i);
             PodcastEntity *podEntity = [TungCommonObjects getEntityForPodcast:[podcastArrayCopy objectAtIndex:i] save:NO];
             NSDictionary *feedDict = [TungPodcast requestAndConvertPodcastFeedDataWithFeedUrl:podEntity.feedUrl];
             [TungPodcast cacheFeed:feedDict forEntity:podEntity];

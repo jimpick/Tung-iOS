@@ -291,7 +291,8 @@ static UALoggerSeverity	UA__minimumSeverity			= UALoggerSeverityUnset;
 			[tmpDict setObject:string forKey:keyString];
 		}
 		
-		NSString *message = [tmpDict objectForKey:@"Message"];
+		NSString *message = [[tmpDict objectForKey:@"Message"] stringByAppendingString:@"\n"];
+    
 		if (message)
 		[logs addObject:message];
 		
@@ -312,7 +313,10 @@ static UALoggerSeverity	UA__minimumSeverity			= UALoggerSeverityUnset;
 	dispatch_queue_t backgroundQueue = dispatch_queue_create("com.urbanapps.ualogger", 0);
 	dispatch_async(backgroundQueue, ^{
 		NSArray *logs = [UALogger getConsoleLogEntriesForBundleName:[self bundleName]];
-		onComplete(logs);
+        // reverse array to have newest logs first
+        NSArray* reversedArray = [[logs reverseObjectEnumerator] allObjects];
+        
+		onComplete(reversedArray);
 	});
 }
 	

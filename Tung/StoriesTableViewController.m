@@ -17,6 +17,7 @@
 #import "FeedViewController.h"
 #import "KLCPopup.h"
 #import "WelcomePopupView.h"
+#import "UALogger.h"
 
 @interface StoriesTableViewController()
 
@@ -35,7 +36,7 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
 
 
 - (void)viewDidLoad {
-    
+
     [super viewDidLoad];
         
     _tung = [TungCommonObjects establishTungObjects];
@@ -103,7 +104,7 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
 }
 
 - (void) refreshFeed {
-    //CLS_LOG(@"refresh feed");
+    //UALog(@"refresh feed");
     
     NSNumber *mostRecent;
 
@@ -173,14 +174,14 @@ NSInteger requestTries = 0;
                              @"sessionId": _tung.sessionId,
                              @"story_id": _storyId
                              };
-    //CLS_LOG(@"request for stories with params: %@", params);
+    //UALog(@"request for stories with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [storyRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:storyRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
         if (error == nil) {
             id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-            //CLS_LOG(@"got response: %@", jsonData);
+            //UALog(@"got response: %@", jsonData);
             if (jsonData != nil && error == nil) {
                 if ([jsonData isKindOfClass:[NSDictionary class]]) {
                     NSDictionary *responseDict = jsonData;
@@ -188,7 +189,7 @@ NSInteger requestTries = 0;
                         dispatch_async(dispatch_get_main_queue(), ^{
                             if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                                 // get new session and re-request
-                                CLS_LOG(@"SESSION EXPIRED");
+                                //UALog(@"SESSION EXPIRED");
                                 [_tung getSessionWithCallback:^{
                                     [self getStory];
                                 }];
@@ -212,8 +213,8 @@ NSInteger requestTries = 0;
                         } else {
                             _noResults = YES;
                         }
-                        //CLS_LOG(@"got story");
-                        //CLS_LOG(@"%@", _storiesArray);
+                        //UALog(@"got story");
+                        //UALog(@"%@", _storiesArray);
                         [self.tableView reloadData];
                         
                         [self endRefreshing];
@@ -226,9 +227,9 @@ NSInteger requestTries = 0;
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self endRefreshing];
                 });
-                CLS_LOG(@"Error: %@", error);
+                UALog(@"Error: %@", error);
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"HTML: %@", html);
+                UALog(@"HTML: %@", html);
             }
         }
         // connection error
@@ -236,7 +237,7 @@ NSInteger requestTries = 0;
             dispatch_async(dispatch_get_main_queue(), ^{
                 
                 if (requestTries < 3) {
-                    CLS_LOG(@"request %ld failed, trying again", (long)requestTries);
+                    UALog(@"request %ld failed, trying again", (long)requestTries);
                     [self getStory];
                 }
                 else {
@@ -279,7 +280,7 @@ NSInteger requestTries = 0;
                                      };
         [params addEntriesFromDictionary:credParams];
     }
-    //CLS_LOG(@"request for stories with params: %@", params);
+    //UALog(@"request for stories with params: %@", params);
     
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [feedRequest setHTTPBody:serializedParams];
@@ -295,7 +296,7 @@ NSInteger requestTries = 0;
                         
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                             // get new session and re-request
-                            CLS_LOG(@"SESSION EXPIRED");
+                            UALog(@"SESSION EXPIRED");
                             [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:YES];
                             
                         }
@@ -317,7 +318,7 @@ NSInteger requestTries = 0;
                         NSTimeInterval requestDuration = [requestStarted timeIntervalSinceNow];
                         NSArray *newStories = [responseDict objectForKey:@"stories"];
                         //NSLog(@"new stories: %@", newStories);
-                        //CLS_LOG(@"new stories count: %lu", (unsigned long)newStories.count);
+                        //UALog(@"new stories count: %lu", (unsigned long)newStories.count);
                         
                         // if this is for the main feed, set feedLastFetched date (seconds)
                         if (user_id.length == 0) {
@@ -328,21 +329,21 @@ NSInteger requestTries = 0;
                         
                         if (withCred) {
                             
-                            CLS_LOG(@"got stories AND session in %f seconds. session Id: %@", fabs(requestDuration), [responseDict objectForKey:@"sessionId"]);
+                            UALog(@"got stories AND session in %f seconds.", fabs(requestDuration));
                             _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                             _tung.connectionAvailable = [NSNumber numberWithInt:1];
                             // check if data needs syncing
                             UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
                             NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
                             if (loggedUser) {
-                                CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
+                                UALog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
                                 if (lastDataChange.doubleValue > loggedUser.lastDataChange.doubleValue) {
-                                    CLS_LOG(@"needs restore. ");
+                                    UALog(@"needs restore. ");
                                     [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
                                 }
                             } else {
                                 // no logged in user data - save with data from request
-                                CLS_LOG(@"no logged in user data... save new entity and restore data");
+                                UALog(@"no logged in user data... save new entity and restore data");
                                 UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
                                 
                                 // we don't have local data to compare, so we just restore
@@ -351,7 +352,7 @@ NSInteger requestTries = 0;
                         }
                         else {
                             
-                            //CLS_LOG(@"got stories in %f seconds.", fabs(requestDuration));
+                            //UALog(@"got stories in %f seconds.", fabs(requestDuration));
                         }
                         
                         [self endRefreshing];
@@ -359,7 +360,7 @@ NSInteger requestTries = 0;
                         // pull refresh
                         if ([afterTime intValue] > 0) {
                             if (newStories.count > 0) {
-                                //CLS_LOG(@"got stories newer than: %@", afterTime);
+                                //UALog(@"got stories newer than: %@", afterTime);
                                 [self stopClipPlayback];
                                 
                                 [self removeOlderDuplicatesOfNewStories:newStories];
@@ -383,14 +384,14 @@ NSInteger requestTries = 0;
                         else if ([beforeTime intValue] > 0) {
                             
                             if (newStories.count == 0) {
-                                //CLS_LOG(@"no more stories to get");
+                                //UALog(@"no more stories to get");
                                 _reachedEndOfPosts = YES;
                                 // hide footer
                                 //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_storiesArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
                                 [self.tableView reloadData];
                                 
                             } else {
-                                //CLS_LOG(@"got stories older than: %@", beforeTime);
+                                //UALog(@"got stories older than: %@", beforeTime);
                                 int startingIndex = (int)_storiesArray.count;
                                 
                                 NSArray *newFeedArray = [_storiesArray arrayByAddingObjectsFromArray:[self processStories:newStories]];
@@ -410,7 +411,7 @@ NSInteger requestTries = 0;
                         }
                         // initial request
                         else {
-                            //CLS_LOG(@"%@", newStories);
+                            //UALog(@"%@", newStories);
                             if (newStories.count > 0) {
                                 _storiesArray = [self processStories:newStories];
                                 _noResults = NO;
@@ -441,7 +442,7 @@ NSInteger requestTries = 0;
                 }
                 // errors
                 else if ([data length] == 0 && error == nil) {
-                    CLS_LOG(@"no response");
+                    UALog(@"no response");
                     dispatch_async(dispatch_get_main_queue(), ^{
                         [self endRefreshing];
                     });
@@ -450,9 +451,9 @@ NSInteger requestTries = 0;
                     dispatch_async(dispatch_get_main_queue(), ^{
                         [self endRefreshing];
                     });
-                    CLS_LOG(@"Error: %@", error);
+                    UALog(@"Error: %@", error);
                     NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                    CLS_LOG(@"HTML: %@", html);
+                    UALog(@"HTML: %@", html);
                 }
                 
             });
@@ -462,7 +463,7 @@ NSInteger requestTries = 0;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (requestTries < 3) {
                     
-                    CLS_LOG(@"request %ld failed, trying again", (long)requestTries);
+                    UALog(@"request %ld failed, trying again", (long)requestTries);
                     [self requestPostsNewerThan:afterTime orOlderThan:beforeTime fromUser:user_id withCred:withCred];
                 }
                 else {
@@ -670,7 +671,7 @@ static NSString *footerCellIdentifier = @"storyFooterCell";
 
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    //CLS_LOG(@"selected cell at row %ld", (long)[indexPath row]);
+    //UALog(@"selected cell at row %ld", (long)[indexPath row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     if (indexPath.row == 0) {
@@ -799,7 +800,7 @@ CGFloat labelWidth = 0;
     
     StoryHeaderCell *headerCell = (StoryHeaderCell *)cell;
     headerCell.clipsToBounds = YES;
-    //CLS_LOG(@"story header cell for row at index path, section: %ld", (long)indexPath.section);
+    //UALog(@"story header cell for row at index path, section: %ld", (long)indexPath.section);
     
     // cell data
     NSDictionary *storyDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
@@ -1011,7 +1012,7 @@ CGFloat labelWidth = 0;
 
 - (void) tableCellLongPress:(UILongPressGestureRecognizer *)gestureRecognizer {
     
-    //CLS_LOG(@"long press detected with state: %ld", (long)gestureRecognizer.state);
+    //UALog(@"long press detected with state: %ld", (long)gestureRecognizer.state);
     
     if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
         CGPoint loc = [gestureRecognizer locationInView:self.tableView];
@@ -1026,7 +1027,7 @@ CGFloat labelWidth = 0;
             }
             
             NSDictionary *headerDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
-            //CLS_LOG(@"header dict: %@", headerDict);
+            //UALog(@"header dict: %@", headerDict);
             
             NSArray *options;
             
@@ -1034,7 +1035,7 @@ CGFloat labelWidth = 0;
             NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:_buttonPressIndexPath.row]];
             _timestamp = [eventDict objectForKey:@"timestamp"];
             NSString *playFromString = [NSString stringWithFormat:@"Play from %@", _timestamp];
-            //CLS_LOG(@"event dict: %@", eventDict);
+            //UALog(@"event dict: %@", eventDict);
             NSString *type = [eventDict objectForKey:@"type"];
             NSString *destructiveOption;
             NSString *userId = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
@@ -1088,7 +1089,7 @@ CGFloat labelWidth = 0;
 	StoryFooterCell* cell  = (StoryFooterCell*)[[sender superview] superview];
     _buttonPressIndexPath = [self.tableView indexPathForCell:cell];
     
-    //CLS_LOG(@"set button press index path: %@", _buttonPressIndexPath);
+    //UALog(@"set button press index path: %@", _buttonPressIndexPath);
     
     UIActionSheet *optionsOptionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Flag this" otherButtonTitles:nil];
     NSArray *options = @[@"Share episode", @"Copy link to episode", @"Share this interaction", @"Copy link to interaction"];
@@ -1126,7 +1127,7 @@ CGFloat labelWidth = 0;
 
 - (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
     
-    //CLS_LOG(@"dismissed action sheet with tag: %ld and button: %ld", (long)actionSheet.tag, (long)buttonIndex);
+    //UALog(@"dismissed action sheet with tag: %ld and button: %ld", (long)actionSheet.tag, (long)buttonIndex);
     
     // long press table cell
     if (actionSheet.tag == 1) {
@@ -1206,7 +1207,7 @@ CGFloat labelWidth = 0;
         //@"Share episode", @"Copy link to episode", @"Share this interaction", @"Copy link to interaction"
         
         NSDictionary *headerDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
-        //CLS_LOG(@"header dict: %@", headerDict);
+        //UALog(@"header dict: %@", headerDict);
         NSString *episodeLink = [headerDict objectForKey:@"episodeLink"];
         NSString *episodeShareText = [self getShareTextForEpisodeWithDict:headerDict];
         
@@ -1246,7 +1247,7 @@ CGFloat labelWidth = 0;
 }
 
 -(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    //CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
+    //UALog(@"dismissed alert with button index: %ld", (long)buttonIndex);
     
     if (alertView.tag == 99) { // unauthorized alert
         // sign out
@@ -1341,7 +1342,7 @@ CGFloat labelWidth = 0;
         [self playbackClip];
         
     } else {
-        CLS_LOG(@"failed to create audio player: %@", playbackError);
+        UALog(@"failed to create audio player: %@", playbackError);
     }
 }
 
@@ -1363,10 +1364,10 @@ CGFloat labelWidth = 0;
 }
 
 - (void) stopClipPlayback {
-    //CLS_LOG(@"stop");
+    //UALog(@"stop");
     // stop "onEnterFrame"
     [_onEnterFrame invalidate];
-    //CLS_LOG(@"%@",[NSThread callStackSymbols]);
+    //UALog(@"%@",[NSThread callStackSymbols]);
     [_tung stopClipPlayback];
     
     // reset GUI
@@ -1426,7 +1427,7 @@ CGFloat labelWidth = 0;
     if (scrollView == self.tableView) {
         // shrink profile header
         if (_profiledUserId.length > 0 && scrollView.contentOffset.y > 0 && scrollView.contentOffset.y <= animationDistance) {
-            //CLS_LOG(@"table offset: %f", scrollView.contentOffset.y);
+            //UALog(@"table offset: %f", scrollView.contentOffset.y);
             _profileHeightConstraint.constant = headerViewHeight - scrollView.contentOffset.y;
             _profileHeader.scrollSubView1Height.constant = headerScrollViewHeight - scrollView.contentOffset.y;
             _profileHeader.scrollSubView2Height.constant = headerScrollViewHeight - scrollView.contentOffset.y;
@@ -1439,7 +1440,7 @@ CGFloat labelWidth = 0;
             if (scrollView.contentOffset.y >= bottomOffset) {
                 // request more posts if they didn't reach the end
                 if (!_requestingMore && !_reachedEndOfPosts && _storiesArray.count > 0) {
-                    CLS_LOG(@"requesting more stories");
+                    UALog(@"requesting more stories");
                     _requestingMore = YES;
                     _loadMoreIndicator.alpha = 1;
                     [_loadMoreIndicator startAnimating];
@@ -1468,14 +1469,14 @@ CGFloat labelWidth = 0;
 }
 
 - (void) setScrollViewContentSizeForHeight {
-    //CLS_LOG(@"set scroll view content size for height");
+    //UALog(@"set scroll view content size for height");
     // set scroll view content size for height
     CGFloat scrollViewHeight = _profileHeightConstraint.constant - tableHeaderRow;
-//    CLS_LOG(@"scroll view height: %f", scrollViewHeight);
-//    CLS_LOG(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
+//    UALog(@"scroll view height: %f", scrollViewHeight);
+//    UALog(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
     CGSize contentSize = CGSizeMake(screenWidth * 2, scrollViewHeight);
     _profileHeader.scrollView.contentSize = contentSize;
-//    CLS_LOG(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
+//    UALog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
 }
 
 

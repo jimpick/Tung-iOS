@@ -113,7 +113,7 @@
 -(void) saveStatusChanged {
     [self assignSavedPropertiesToEpisodeArray];
     [self.tableView reloadData];
-    //CLS_LOG(@"received notification: save status changed, downloadingEpisodeIndex: %ld", (long)_downloadingEpisodeIndex);
+    //UALog(@"received notification: save status changed, downloadingEpisodeIndex: %ld", (long)_downloadingEpisodeIndex);
     
     if (_downloadingEpisodeIndex >= 0) {
         // set reference to save button of actively downloading episode

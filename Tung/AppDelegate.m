@@ -11,6 +11,7 @@
 #import "TungCommonObjects.h"
 #import "TungPodcast.h"
 #import "MainTabBarController.h"
+#import "UALogger.h"
 
 @implementation AppDelegate
 
@@ -22,7 +23,7 @@
 
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-    NSLog(@"application did finish launching");
+    UALog(@"application did finish launching");
     _tung = [TungCommonObjects establishTungObjects];
     
     BOOL isLoggedIn = NO;
@@ -44,7 +45,7 @@
     NSDictionary *attributes = (__bridge_transfer NSDictionary *)valueAttributes;
     if (results == errSecSuccess) {
         NSString *creationDate = attributes[(__bridge id)kSecAttrCreationDate];
-        CLS_LOG(@"Credentials found. Created on: %@", creationDate);
+        UALog(@"Credentials found. Created on: %@", creationDate);
         isLoggedIn = YES;
     }
     
@@ -195,7 +196,7 @@
     }
     else if ([[notification userInfo] objectForKey:@"deleteEpisodeWithUrl"]) {
         NSString *urlString = [[notification userInfo] objectForKey:@"deleteEpisodeWithUrl"];
-        CLS_LOG(@"received notification to delete episode with url: %@", urlString);
+        UALog(@"received notification to delete episode with url: %@", urlString);
         [_tung deleteSavedEpisodeWithUrl:urlString confirm:NO];
     }
 }
@@ -236,7 +237,7 @@
 
 - (void) application:(UIApplication *)application didFailToRegisterForRemoteNotificationsWithError:(nonnull NSError *)error {
     
-    CLS_LOG(@"FAILED to register for remote notifications with error: %@", error);
+    UALog(@"FAILED to register for remote notifications with error: %@", error);
 }
 
 - (void) application:(UIApplication *)application didReceiveRemoteNotification:(NSDictionary *)userInfo {
@@ -284,7 +285,7 @@
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                //CLS_LOG(@"%@", responseDict);
+                //UALog(@"%@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
@@ -294,13 +295,13 @@
                         }];
                     }
                     else {
-                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                     }
                 }
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
             }
         });
     }];
@@ -338,7 +339,7 @@
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-    //CLS_LOG(@"Application did become active");
+    //UALog(@"Application did become active");
     [_tung checkForNowPlaying];
     // if feed hasn't been fetched in the last 5 minutes
     [_tung checkFeedLastFetchedTime];
@@ -355,7 +356,7 @@
 
 - (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
 {
-    //CLS_LOG(@"fb open url: %@, source application: %@, annotation: %@", url, sourceApplication, annotation);
+    //UALog(@"fb open url: %@, source application: %@, annotation: %@", url, sourceApplication, annotation);
     return [[FBSDKApplicationDelegate sharedInstance] application:application
                                                           openURL:url
                                                 sourceApplication:sourceApplication
@@ -367,12 +368,12 @@
 #pragma mark - Url scheme handling method
 
 - (BOOL)application:(UIApplication *)application handleOpenURL:(NSURL *)url {
-    CLS_LOG(@"url recieved: %@", url);
-    CLS_LOG(@"- query string: %@", [url query]);
-    CLS_LOG(@"- host: %@", [url host]);
-    CLS_LOG(@"- url path: %@", [url path]);
+    UALog(@"url recieved: %@", url);
+    UALog(@"- query string: %@", [url query]);
+    UALog(@"- host: %@", [url host]);
+    UALog(@"- url path: %@", [url path]);
     NSDictionary *dict = [self parseQueryString:[url query]];
-    CLS_LOG(@"- query dict: %@", dict);
+    UALog(@"- query dict: %@", dict);
     return YES;
 }
 
@@ -400,7 +401,7 @@
         if ([managedObjectContext hasChanges] && ![managedObjectContext save:&error]) {
             // Replace this implementation with code to handle the error appropriately.
             // abort() causes the application to generate a crash log and terminate. You should not use this function in a shipping application, although it may be useful during development.
-            CLS_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
+            UALog(@"Unresolved error %@, %@", error, [error userInfo]);
             //abort();
         }
     }
@@ -475,7 +476,7 @@
          Lightweight migration will only work for a limited set of schema changes; consult "Core Data Model Versioning and Data Migration Programming Guide" for details.
          
          */
-        CLS_LOG(@"Unresolved error %@, %@", error, [error userInfo]);
+        UALog(@"Unresolved error %@, %@", error, [error userInfo]);
         //abort();
     }    
     

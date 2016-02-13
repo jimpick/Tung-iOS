@@ -11,6 +11,7 @@
 #import "ProfileListCell.h"
 #import "ProfileViewController.h"
 #import "EpisodeViewController.h"
+#import "UALogger.h"
 
 @interface ProfileListTableViewController ()
 
@@ -84,11 +85,11 @@ CGFloat screenWidth;
     _feedRefreshed = YES;
     NSNumber *mostRecent;
     if (_profileArray.count > 0) {
-        //CLS_LOG(@"profile list: refresh feed");
+        //UALog(@"profile list: refresh feed");
         [self.refreshControl beginRefreshing];
         mostRecent = [[_profileArray objectAtIndex:0] objectForKey:@"time_secs"];
     } else {
-        //CLS_LOG(@"profile list: get feed");
+        //UALog(@"profile list: get feed");
         mostRecent = [NSNumber numberWithInt:0];
     }
     [self requestProfileListWithQuery:_queryType
@@ -122,7 +123,7 @@ CGFloat screenWidth;
                              @"target_id": target_id,
                              @"newerThan": afterTime,
                              @"olderThan": beforeTime};
-    //CLS_LOG(@"get profile list with params: %@", params);
+    //UALog(@"get profile list with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [getProfileListRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -136,7 +137,7 @@ CGFloat screenWidth;
                         dispatch_async(dispatch_get_main_queue(), ^{
                             if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                                 // get new session and re-request
-                                CLS_LOG(@"SESSION EXPIRED");
+                                UALog(@"SESSION EXPIRED");
                                 [_tung getSessionWithCallback:^{
                                     [self requestProfileListWithQuery:queryType forTarget:target_id newerThan:afterTime orOlderThan:beforeTime];
                                 }];
@@ -187,15 +188,15 @@ CGFloat screenWidth;
                         else if ([beforeTime intValue] > 0) {
                             _requestingMore = NO;
                             if (newItems.count == 0) {
-                                //CLS_LOG(@"no more items to get");
+                                //UALog(@"no more items to get");
                                 _noMoreItemsToGet = YES;
                                 // hide footer
                                 //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_profileArray.count-1 inSection:0] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
                                 [self.tableView reloadData];
                             } else {
-                                //CLS_LOG(@"\tgot items older than: %@", beforeTime);
+                                //UALog(@"\tgot items older than: %@", beforeTime);
                                 int startingIndex = (int)_profileArray.count;
-                                // CLS_LOG(@"\tstarting index: %d", startingIndex);
+                                // UALog(@"\tstarting index: %d", startingIndex);
                                 NSArray *newItemsArray = [_profileArray arrayByAddingObjectsFromArray:newItems];
                                 _profileArray = [newItemsArray mutableCopy];
                                 NSMutableArray *indexPaths = [[NSMutableArray alloc] init];
@@ -217,7 +218,7 @@ CGFloat screenWidth;
                             [self.tableView reloadData];
                         }
                         
-                        CLS_LOG(@"got items. profileArray count: %lu", (unsigned long)[_profileArray count]);
+                        UALog(@"got items. profileArray count: %lu", (unsigned long)[_profileArray count]);
                         [self preloadAvatars];
                         
                         // 1 second delay to set new lastSeenNotification
@@ -229,7 +230,7 @@ CGFloat screenWidth;
                 }
             }
             else if ([data length] == 0 && error == nil) {
-                CLS_LOG(@"no response");
+                UALog(@"no response");
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self endRefreshing];
                 });
@@ -238,9 +239,9 @@ CGFloat screenWidth;
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self endRefreshing];
                 });
-                CLS_LOG(@"Error: %@", error);
+                UALog(@"Error: %@", error);
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"HTML: %@", html);
+                UALog(@"HTML: %@", html);
             }
         }
         // error
@@ -309,7 +310,7 @@ CGFloat screenWidth;
 - (void) pushProfileForUserAtIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
     
-    //CLS_LOG(@"push profile of user: %@", [profileDict objectForKey:@"username"]);
+    //UALog(@"push profile of user: %@", [profileDict objectForKey:@"username"]);
     
     ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
     profileView.profiledUserId = [profileDict objectForKey:@"id"];
@@ -358,12 +359,12 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:profileListCellIdentifier];
-    //CLS_LOG(@"profile list cell for row at index path: %ld", (long)indexPath.row);
+    //UALog(@"profile list cell for row at index path: %ld", (long)indexPath.row);
     ProfileListCell *profileCell = (ProfileListCell *)cell;
     
     // cell data
     profileCell.profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
-    //CLS_LOG(@"%@", profileCell.profileDict);
+    //UALog(@"%@", profileCell.profileDict);
     NSString *action = [profileCell.profileDict objectForKey:@"action"];
     
     // avatar
@@ -388,7 +389,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
         
         profileCell.subLabelLeadingConstraint.constant = 30;
         profileCell.iconView.hidden = NO;
-        //CLS_LOG(@"action: %@", action);
+        //UALog(@"action: %@", action);
         NSString *eventString;
         if ([action isEqualToString:@"followed"]) {
             profileCell.iconView.type = kIconTypeAdd;
@@ -427,7 +428,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     }
     else {
         // user/user relationship
-        //CLS_LOG(@"userfollows: %@", [profileCell.profileDict objectForKey:@"userFollows"]);
+        //UALog(@"userfollows: %@", [profileCell.profileDict objectForKey:@"userFollows"]);
         profileCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
         
         profileCell.followBtn.hidden = NO;
@@ -462,7 +463,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     NSDictionary *profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
-    //CLS_LOG(@"selected %@", profileDict);
+    //UALog(@"selected %@", profileDict);
     
     if ([profileDict objectForKey:@"event_id"]) {
         NSString *eventId = [[profileDict objectForKey:@"event_id"] objectForKey:@"$id"];
@@ -555,7 +556,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
 #pragma mark - handle alerts
 
 -(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
+    UALog(@"dismissed alert with button index: %ld", (long)buttonIndex);
     
     if (alertView.tag == 59 && buttonIndex) { // invite friends request
         NSString *friends = [[alertView textFieldAtIndex:0] text];

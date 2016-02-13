@@ -31,7 +31,7 @@
 #import "BannerAlert.h"
 #import <MobileCoreServices/MobileCoreServices.h> // for AVURLAsset resource loading
 
-#define CLS_LOG(__FORMAT__, ...) CLSNSLog((@"%s line %d $ " __FORMAT__), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
+#define UALog(__FORMAT__, ...) CLSNSLog((@"%s line %d $ " __FORMAT__), __PRETTY_FUNCTION__, __LINE__, ##__VA_ARGS__)
 
 @interface TungCommonObjects()
 
@@ -122,10 +122,10 @@
         NSError *fError = nil;
         NSString *savedEpisodesDir = [self getSavedEpisodesDirectoryPath];
         NSArray *savedEpisodesDirContents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:savedEpisodesDir error:&fError];
-        CLS_LOG(@"saved episodes folder contents ---------------");
+        UALog(@"saved episodes folder contents ---------------");
         if ([savedEpisodesDirContents count] > 0 && fError == nil) {
             for (NSString *item in savedEpisodesDirContents) {
-                CLS_LOG(@"- %@", item);
+                UALog(@"- %@", item);
             }
         }*/
         
@@ -133,20 +133,20 @@
         fError = nil;
         NSString *cachedEpisodesDir = [self getCachedEpisodesDirectoryPath];
         NSArray *cachedEpisodesDirContents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:cachedEpisodesDir error:&fError];
-        CLS_LOG(@"cached episodes folder contents ---------------");
+        UALog(@"cached episodes folder contents ---------------");
         if ([cachedEpisodesDirContents count] > 0 && fError == nil) {
             for (NSString *item in cachedEpisodesDirContents) {
-                CLS_LOG(@"- %@", item);
+                UALog(@"- %@", item);
             }
         } */
         
         /* show what's in temp dir
          NSError *ftError = nil;
          NSArray *tmpFolderContents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:NSTemporaryDirectory() error:&ftError];
-         CLS_LOG(@"temp folder contents ---------------");
+         UALog(@"temp folder contents ---------------");
          if ([tmpFolderContents count] > 0 && ftError == nil) {
              for (NSString *item in tmpFolderContents) {
-             	CLS_LOG(@"- %@", item);
+             	UALog(@"- %@", item);
              }
          }
          */
@@ -256,7 +256,7 @@
 #pragma mark - Player instance methods
 
 - (BOOL) isPlaying {
-    //CLS_LOG(@"is playing at rate: %f", _player.rate);
+    //UALog(@"is playing at rate: %f", _player.rate);
     return (_player && _player.rate > 0.0f);
 }
 - (void) playerPlay {
@@ -327,22 +327,22 @@
     _totalSeconds = CMTimeGetSeconds(_player.currentItem.asset.duration);
     [_trackInfo setObject:[NSNumber numberWithFloat:_totalSeconds] forKey:MPMediaItemPropertyPlaybackDuration];
     [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_trackInfo];
-    CLS_LOG(@"determined total seconds: %f (%@)", _totalSeconds, [TungCommonObjects convertSecondsToTimeString:_totalSeconds]);
+    UALog(@"determined total seconds: %f (%@)", _totalSeconds, [TungCommonObjects convertSecondsToTimeString:_totalSeconds]);
 }
 
 - (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
     
-    //CLS_LOG(@"observe value for key path: %@", keyPath);
+    //UALog(@"observe value for key path: %@", keyPath);
     if (object == _player && [keyPath isEqualToString:@"status"]) {
         
         switch (_player.status) {
             case AVPlayerStatusFailed:
-                CLS_LOG(@"-- AVPlayer status: Failed");
+                UALog(@"-- AVPlayer status: Failed");
                 [self ejectCurrentEpisode];
                 [self setControlButtonStateToFauxDisabled];;
                 break;
             case AVPlayerStatusReadyToPlay:
-                CLS_LOG(@"-- AVPlayer status: ready to play");
+                UALog(@"-- AVPlayer status: ready to play");
                 [self setControlButtonStateToBuffering];
                 // check for track progress
                 float secs = 0;
@@ -358,10 +358,10 @@
                 // play
                 if (secs > 0) {
                     
-                    CLS_LOG(@"seeking to time: %f (progress: %f)", secs, _npEpisodeEntity.trackProgress.floatValue);
+                    UALog(@"seeking to time: %f (progress: %f)", secs, _npEpisodeEntity.trackProgress.floatValue);
                     [_trackInfo setObject:[NSNumber numberWithFloat:secs] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
                     [_player seekToTime:time completionHandler:^(BOOL finished) {
-                        CLS_LOG(@"finished seeking: %@", (finished) ? @"Yes" : @"No");
+                        UALog(@"finished seeking: %@", (finished) ? @"Yes" : @"No");
                         [_player play];
                     }];
                 } else {
@@ -369,15 +369,15 @@
                     [self setControlButtonStateToPause];
                     
                     if ([self isPlaying] && _fileIsLocal) {
-                        CLS_LOG(@"play from beginning - already playing");
+                        UALog(@"play from beginning - already playing");
                     } else {
-                        CLS_LOG(@"play from beginning - with preroll");
+                        UALog(@"play from beginning - with preroll");
                         [_player prerollAtRate:1.0 completionHandler:nil];
                     }
                 }
                 break;
             case AVPlayerItemStatusUnknown:
-                CLS_LOG(@"-- AVPlayer status: Unknown");
+                UALog(@"-- AVPlayer status: Unknown");
                 break;
             default:
                 break;
@@ -386,12 +386,12 @@
     if (object == _player && [keyPath isEqualToString:@"currentItem.playbackLikelyToKeepUp"]) {
         
         if (_player.currentItem.playbackLikelyToKeepUp) {
-            CLS_LOG(@"-- player likely to keep up");
+            UALog(@"-- player likely to keep up");
             
             if (_totalSeconds > 0) {
                 float currentSecs = CMTimeGetSeconds(_player.currentTime);
             	if (round(currentSecs) >= floor(_totalSeconds)) {
-                    CLS_LOG(@"detected completed playback");
+                    UALog(@"detected completed playback");
                     [self completedPlayback];
                     return;
                 }
@@ -405,7 +405,7 @@
             }
             
         } else {
-            CLS_LOG(@"-- player NOT likely to keep up");
+            UALog(@"-- player NOT likely to keep up");
             // see if file is cached yet, so player can switch to local file
             if (_fileIsStreaming && _fileIsLocal) {
                 [self replacePlayerItemWithLocalCopy];
@@ -423,13 +423,13 @@
         NSArray *timeRanges = (NSArray *)[change objectForKey:NSKeyValueChangeNewKey];
         if (timeRanges && [timeRanges count]) {
             CMTimeRange timerange = [[timeRanges objectAtIndex:0] CMTimeRangeValue];
-            CLS_LOG(@" . . . %.5f -> %.5f", CMTimeGetSeconds(timerange.start), CMTimeGetSeconds(CMTimeAdd(timerange.start, timerange.duration)));
+            UALog(@" . . . %.5f -> %.5f", CMTimeGetSeconds(timerange.start), CMTimeGetSeconds(CMTimeAdd(timerange.start, timerange.duration)));
         }
     }
     if (object == _player && [keyPath isEqualToString:@"currentItem.playbackBufferEmpty"]) {
         
         if (_player.currentItem.playbackBufferEmpty) {
-            CLS_LOG(@"-- playback buffer empty");
+            UALog(@"-- playback buffer empty");
             [self setControlButtonStateToBuffering];
         }
     }*/
@@ -507,7 +507,7 @@
     NSURL *url = [NSURL URLWithString:urlString];
     NSString *fileName = [url lastPathComponent];
     NSString *fileType = [fileName pathExtension];
-    //CLS_LOG(@"play file of type: %@", fileType);
+    //UALog(@"play file of type: %@", fileType);
     // avoid videos
     if ([fileType isEqualToString:@"mp4"] || [fileType isEqualToString:@"m4v"]) {
 
@@ -576,7 +576,7 @@
         
         NSString *urlString = [NSString stringWithFormat:@"%@", [_playQueue objectAtIndex:0]];
         
-        CLS_LOG(@"play url: %@", urlString);
+        UALog(@"play url: %@", urlString);
         
         // assign now playing entity
         AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
@@ -586,13 +586,13 @@
         [request setPredicate:predicate];
         NSArray *episodeResult = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
         if (episodeResult.count > 0) {
-            //CLS_LOG(@"found and assigned now playing entity");
+            //UALog(@"found and assigned now playing entity");
             _npEpisodeEntity = [episodeResult lastObject];
         } else {
             /* create entity - case is next episode in feed is played. Episode entity may not have been
              created yet, but podcast entity would, so we get it from np episode entity. */
             // look up podcast entity
-            //CLS_LOG(@"creating new entity for now playing entity");
+            //UALog(@"creating new entity for now playing entity");
             NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex];
             PodcastEntity *npPodcastEntity = _npEpisodeEntity.podcast;
             _npEpisodeEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:npPodcastEntity save:NO];
@@ -643,12 +643,12 @@
         [[NSNotificationCenter defaultCenter] postNotification:nowPlayingDidChangeNotif];
         
     }
-    //CLS_LOG(@"play queue: %@", _playQueue);
+    //UALog(@"play queue: %@", _playQueue);
 }
 
 // removes observers, releases player related properties
 - (void) resetPlayer {
-    //CLS_LOG(@"reset player ///////////////");
+    //UALog(@"reset player ///////////////");
     _npViewSetupForCurrentEpisode = NO;
     _shouldStayPaused = NO;
     _totalSeconds = 0;
@@ -666,7 +666,7 @@
     }
     // clear leftover connection data
     if (_trackDataConnection) {
-        //CLS_LOG(@"clear connection data");
+        //UALog(@"clear connection data");
         [_trackDataConnection cancel];
         _trackDataConnection = nil;
         _trackData = [NSMutableData data];
@@ -697,21 +697,21 @@
 
 - (void) completedPlayback {
     float currentTimeSecs = CMTimeGetSeconds(_player.currentTime);
-    CLS_LOG(@"completed playback? current secs: %f, total secs: %f", currentTimeSecs, _totalSeconds);
+    UALog(@"completed playback? current secs: %f, total secs: %f", currentTimeSecs, _totalSeconds);
     
     // called prematurely
     if (_totalSeconds == 0) {
-        CLS_LOG(@"completed playback called prematurely. totalSeconds not set");
+        UALog(@"completed playback called prematurely. totalSeconds not set");
         return;
     }
     if (round(currentTimeSecs) < floor(_totalSeconds)) {
-        CLS_LOG(@"completed playback called prematurely.");
+        UALog(@"completed playback called prematurely.");
         if (_fileIsStreaming && _fileIsLocal) {
             [self replacePlayerItemWithLocalCopy];
         }
         /*
         else {
-            CLS_LOG(@"- attempt to reload episode");
+            UALog(@"- attempt to reload episode");
             // do not need timestamp bc eject current episode saves position
             NSString *urlString = _npEpisodeEntity.url;
             [self ejectCurrentEpisode];
@@ -724,7 +724,7 @@
 }
 
 - (void) ejectCurrentEpisode {
-    CLS_LOG(@"ejecting current episode");
+    UALog(@"ejecting current episode");
     if (_playQueue.count > 0) {
         if ([self isPlaying]) [_player pause];
         [self removeNowPlayingStatusFromAllEpisodes];
@@ -758,7 +758,7 @@
     if (_playQueue.count > 1) {
         [self ejectCurrentEpisode];
         //AudioServicesPlaySystemSound(1103); // play beep
-        CLS_LOG(@"play next episode");
+        UALog(@"play next episode");
         [self playQueuedPodcast];
     }
     // play next episode in feed
@@ -774,7 +774,7 @@
             EpisodeEntity *epEntity = [TungCommonObjects getEntityForEpisode:epDict withPodcastEntity:_npEpisodeEntity.podcast save:NO];
             
             if (epEntity.trackPosition.floatValue == 0) {
-                //CLS_LOG(@"newer episode hasn't been listened to yet, queue and play");
+                //UALog(@"newer episode hasn't been listened to yet, queue and play");
                 [self ejectCurrentEpisode];
                 _currentFeedIndex--;
                 [_playQueue insertObject:[NSURL URLWithString:epEntity.url] atIndex:0];
@@ -794,7 +794,7 @@
     }
 
     if (_currentFeedIndex + 1 >= 0) {
-        CLS_LOG(@"play previous episode in feed");
+        UALog(@"play previous episode in feed");
         [self ejectCurrentEpisode];
         _currentFeedIndex++;
         NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex];
@@ -815,7 +815,7 @@
     }
     
     if (_currentFeedIndex - 1 >= 0) {
-        CLS_LOG(@"play previous episode in feed");
+        UALog(@"play previous episode in feed");
         [self ejectCurrentEpisode];
         _currentFeedIndex--;
         NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex];
@@ -831,7 +831,7 @@
 
 
 - (void) playerError:(NSNotification *)notification {
-    CLS_LOG(@"PLAYER ERROR: %@ ...attempting to recover playback", [notification userInfo]);
+    UALog(@"PLAYER ERROR: %@ ...attempting to recover playback", [notification userInfo]);
     
     [TungCommonObjects showBannerAlertForText:[NSString stringWithFormat:@"Player error: %@ ...attempting to recover playback", [notification userInfo]] andWidth:_screenWidth];
     // try to recover playback
@@ -839,7 +839,7 @@
         [self replacePlayerItemWithLocalCopy];
     }
     else {
-        CLS_LOG(@"- attempt to reload episode");
+        UALog(@"- attempt to reload episode");
         // do not need timestamp bc eject current episode saves position
         NSString *urlString = _npEpisodeEntity.url;
         [self ejectCurrentEpisode];
@@ -859,7 +859,7 @@
     NSString *cachedEpisodeFilepath = [cachedEpisodesDir stringByAppendingPathComponent:episodeFilename];
 
     if ([fileManager fileExistsAtPath:cachedEpisodeFilepath]) {
-        CLS_LOG(@"^^^ will use local file in TEMP dir");
+        UALog(@"^^^ will use local file in TEMP dir");
         _fileIsLocal = YES;
         _fileIsStreaming = NO;
         _fileWillBeCached = YES;
@@ -871,7 +871,7 @@
         NSString *savedEpisodeFilepath = [savedEpisodesDir stringByAppendingPathComponent:episodeFilename];
         
         if ([fileManager fileExistsAtPath:savedEpisodeFilepath]) {
-            CLS_LOG(@"^^^ will use local file in SAVED dir");
+            UALog(@"^^^ will use local file in SAVED dir");
             _fileIsLocal = YES;
             _fileIsStreaming = NO;
             _fileWillBeCached = YES;
@@ -889,13 +889,13 @@
             if (_npEpisodeEntity.trackPosition.floatValue > 0.1 && _npEpisodeEntity.trackPosition.floatValue < 1.0) {
                 // no caching
                 _fileWillBeCached = NO;
-                CLS_LOG(@"^^^ will stream from url with NO caching");
+                UALog(@"^^^ will stream from url with NO caching");
             }
             else {
                 // return url with custom scheme
                 components.scheme = @"tungstream";
                 _fileWillBeCached = YES;
-                CLS_LOG(@"^^^ will stream from url with custom scheme");
+                UALog(@"^^^ will stream from url with custom scheme");
                 
             }
             return [components URL];
@@ -905,7 +905,7 @@
 
 // replace player file with local cached copy
 - (void) replacePlayerItemWithLocalCopy {
-    CLS_LOG(@"replace player item with local copy");
+    UALog(@"replace player item with local copy");
     CMTime currentTime = _player.currentTime;
     NSURL *urlToPlay = [self getEpisodeUrl:[_playQueue objectAtIndex:0]];
     AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
@@ -945,18 +945,18 @@
     }
     //[fileURL setResourceValue:[NSNumber numberWithBool:YES] forKey:NSURLIsExcludedFromBackupKey error:&error];
     [_playQueue writeToFile:playQueuePath atomically:YES];
-    CLS_LOG(@"saved play queue %@ to path: %@", _playQueue, playQueuePath);
+    UALog(@"saved play queue %@ to path: %@", _playQueue, playQueuePath);
 }
 
 - (void) readPlayQueueFromDisk {
     NSString *playQueuePath = [self getPlayQueuePath];
-    CLS_LOG(@"read play queue from path: %@", playQueuePath);
+    UALog(@"read play queue from path: %@", playQueuePath);
     NSArray *queue = [NSArray arrayWithContentsOfFile:playQueuePath];
     if (queue) {
-        CLS_LOG(@"found saved play queue: %@", _playQueue);
+        UALog(@"found saved play queue: %@", _playQueue);
         _playQueue = [queue mutableCopy];
     } else {
-        CLS_LOG(@"no saved play queue. create new");
+        UALog(@"no saved play queue. create new");
         _playQueue = [NSMutableArray array];
     }
 }
@@ -1014,7 +1014,7 @@ static NSString *episodeDirName = @"episodes";
 
 - (void) queueEpisodeForDownload:(EpisodeEntity *)episodeEntity {
     
-    CLS_LOG(@"queue episode for saving: %@", episodeEntity.title);
+    UALog(@"queue episode for saving: %@", episodeEntity.title);
     
     // check if there is enough disk space
     CGFloat freeDiskSpace = [ALDisk freeDiskSpaceInBytes];
@@ -1023,7 +1023,7 @@ static NSString *episodeDirName = @"episodes";
     NSString *spaceNeeded = [TungCommonObjects formatBytes:[NSNumber numberWithFloat:_bytesToSave]];
     
     if (freeDiskSpace <= _bytesToSave) {
-        CLS_LOG(@"not enough storage. free space: %@, space needed: %@", freeSpace, spaceNeeded);
+        UALog(@"not enough storage. free space: %@, space needed: %@", freeSpace, spaceNeeded);
         
         UIAlertController *notEnoughDiskAlert = [UIAlertController alertControllerWithTitle:@"Not enough storage" message:[NSString stringWithFormat:@"The episode(s) you're trying to save require %@ but you only have %@ available. Try removing some other saved episodes or delete all saved episodes from settings.", spaceNeeded, freeSpace] preferredStyle:UIAlertControllerStyleAlert];
         [notEnoughDiskAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
@@ -1060,7 +1060,7 @@ static NSString *episodeDirName = @"episodes";
 
 - (void) cancelDownloadForEpisode:(EpisodeEntity *)episodeEntity {
     
-    CLS_LOG(@"cancel save for episode: %@", episodeEntity.title);
+    UALog(@"cancel save for episode: %@", episodeEntity.title);
     
     // deduct bytes to save
     _bytesToSave -= episodeEntity.dataLength.doubleValue;
@@ -1093,7 +1093,7 @@ static NSString *episodeDirName = @"episodes";
 
 - (void) downloadEpisode:(EpisodeEntity *)episodeEntity {
     
-    CLS_LOG(@"start download of episode: %@", episodeEntity.title);
+    UALog(@"start download of episode: %@", episodeEntity.title);
     _episodeToSaveEntity = episodeEntity;
     episodeEntity.isQueuedForSave = [NSNumber numberWithBool:YES];
     episodeEntity.isDownloadingForSave = [NSNumber numberWithBool:YES];
@@ -1125,7 +1125,7 @@ static NSString *episodeDirName = @"episodes";
         
         [self queueSaveStatusDidChangeNotification];
         
-        //CLS_LOG(@"deleted episode with url: %@", urlString);
+        //UALog(@"deleted episode with url: %@", urlString);
         if (confirm) {
             [TungCommonObjects showBannerAlertForText:@"Your saved copy of this episode has been deleted." andWidth:_screenWidth];
         }
@@ -1133,7 +1133,7 @@ static NSString *episodeDirName = @"episodes";
 }
 
 - (void) deleteAllSavedEpisodes {
-    CLS_LOG(@"delete all saved episodes:");
+    UALog(@"delete all saved episodes:");
     // remove "isSaved" status from all entities
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     NSError *error = nil;
@@ -1159,14 +1159,14 @@ static NSString *episodeDirName = @"episodes";
     if (episodesDirContents.count > 0 && error == nil) {
         for (NSString *item in episodesDirContents) {
             if ([fileManager removeItemAtPath:[episodesDir stringByAppendingPathComponent:item] error:NULL]) {
-                CLS_LOG(@"- removed item: %@", item);
+                UALog(@"- removed item: %@", item);
             };
         }
     }
 }
 
 - (void) deleteAllCachedEpisodes {
-    CLS_LOG(@"delete all cached episodes:");
+    UALog(@"delete all cached episodes:");
     // remove saved files
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSString *episodesDir = [self getCachedEpisodesDirectoryPath];
@@ -1176,7 +1176,7 @@ static NSString *episodeDirName = @"episodes";
     if (episodesDirContents.count > 0 && error == nil) {
         for (NSString *item in episodesDirContents) {
             if ([fileManager removeItemAtPath:[episodesDir stringByAppendingPathComponent:item] error:NULL]) {
-                CLS_LOG(@"- removed item: %@", item);
+                UALog(@"- removed item: %@", item);
             };
         }
     }
@@ -1211,18 +1211,18 @@ static NSString *episodeDirName = @"episodes";
         NSString *savedEpisodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
         NSError *error;
         BOOL result = [fileManager moveItemAtPath:cachedEpisodeFilepath toPath:savedEpisodeFilepath error:&error];
-        //CLS_LOG(@"moved episode to saved from temp: %@", (result) ? @"Success" : @"Failed");
+        //UALog(@"moved episode to saved from temp: %@", (result) ? @"Success" : @"Failed");
         if (result) {
             episodeEntity.isSaved = [NSNumber numberWithBool:YES];
             NSDate *todayPlusThirtyDays = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitDay value:30 toDate:[NSDate date] options:0];
             episodeEntity.savedUntilDate = todayPlusThirtyDays;
             
         } else {
-            CLS_LOG(@"error: %@", error);
+            UALog(@"error: %@", error);
             episodeEntity.isSaved = [NSNumber numberWithBool:NO];
         }
     } else {
-        CLS_LOG(@"file does not exist in temp path");
+        UALog(@"file does not exist in temp path");
         episodeEntity.isSaved = [NSNumber numberWithBool:NO];
     }
     [TungCommonObjects saveContextWithReason:@"moved episode to saved"];
@@ -1236,7 +1236,7 @@ static NSString *episodeDirName = @"episodes";
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
     if (connection == _trackDataConnection) {
-        //CLS_LOG(@"[NSURLConnectionDataDelegate] connection did receive response");
+        //UALog(@"[NSURLConnectionDataDelegate] connection did receive response");
         _trackData = [NSMutableData data];
         _response = (NSHTTPURLResponse *)response;
         
@@ -1251,7 +1251,7 @@ static NSString *episodeDirName = @"episodes";
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
 {
     if (connection == _trackDataConnection) {
-        //CLS_LOG(@"[NSURLConnectionDataDelegate] connection did receive data");
+        //UALog(@"[NSURLConnectionDataDelegate] connection did receive data");
         [_trackData appendData:data];
         
         [self processPendingRequests];
@@ -1265,7 +1265,7 @@ static NSString *episodeDirName = @"episodes";
 - (void)connectionDidFinishLoading:(NSURLConnection *)connection
 {
     if (connection == _trackDataConnection) {
-        //CLS_LOG(@"[NSURLConnectionDataDelegate] connection did finish loading");
+        //UALog(@"[NSURLConnectionDataDelegate] connection did finish loading");
         [self processPendingRequests];
         
         NSString *episodesDir = [self getCachedEpisodesDirectoryPath];
@@ -1274,7 +1274,7 @@ static NSString *episodeDirName = @"episodes";
         NSString *episodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
         NSError *error;
         if ([_trackData writeToFile:episodeFilepath options:0 error:&error]) {
-            CLS_LOG(@"-- saved podcast track in temp episode dir: %@", episodeFilepath);
+            UALog(@"-- saved podcast track in temp episode dir: %@", episodeFilepath);
             _fileIsLocal = YES;
             // we can safely release these
             _trackData = nil;
@@ -1286,7 +1286,7 @@ static NSString *episodeDirName = @"episodes";
             }
         }
         else {
-            CLS_LOG(@"ERROR: track did not get cached: %@", error);
+            UALog(@"ERROR: track did not get cached: %@", error);
             _fileIsLocal = NO;
         }
     }
@@ -1302,7 +1302,7 @@ static NSString *episodeDirName = @"episodes";
         NSError *error;
         NSLog(@"episode file path: %@", episodeFilepath);
         if ([_saveTrackData writeToFile:episodeFilepath options:0 error:&error]) {
-            CLS_LOG(@"-- saved podcast track");
+            UALog(@"-- saved podcast track");
             
             _saveTrackData = nil;
             _saveTrackConnection = nil;
@@ -1334,7 +1334,7 @@ static NSString *episodeDirName = @"episodes";
             
         }
         else {
-            CLS_LOG(@"Error saving track: %@", error);
+            UALog(@"Error saving track: %@", error);
             _saveTrackData = nil;
             _saveTrackConnection = nil;
             
@@ -1355,7 +1355,7 @@ static NSString *episodeDirName = @"episodes";
 
 - (void)processPendingRequests
 {
-    //CLS_LOG(@"[AVAssetResourceLoaderDelegate] process pending requests");
+    //UALog(@"[AVAssetResourceLoaderDelegate] process pending requests");
     NSMutableArray *requestsCompleted = [NSMutableArray array];
     
     for (AVAssetResourceLoadingRequest *loadingRequest in self.pendingRequests)
@@ -1381,7 +1381,7 @@ static NSString *episodeDirName = @"episodes";
     {
         return;
     }
-    //CLS_LOG(@"[AVAssetResourceLoaderDelegate] fill in content information");
+    //UALog(@"[AVAssetResourceLoaderDelegate] fill in content information");
     NSString *mimeType = [self.response MIMEType];
     CFStringRef contentType = UTTypeCreatePreferredIdentifierForTag(kUTTagClassMIMEType, (__bridge CFStringRef)(mimeType), NULL);
     
@@ -1392,7 +1392,7 @@ static NSString *episodeDirName = @"episodes";
 
 - (BOOL)respondWithDataForRequest:(AVAssetResourceLoadingDataRequest *)dataRequest
 {
-    //CLS_LOG(@"[AVAssetResourceLoaderDelegate] respond with data for request");
+    //UALog(@"[AVAssetResourceLoaderDelegate] respond with data for request");
     long long startOffset = dataRequest.requestedOffset;
     if (dataRequest.currentOffset != 0)
     {
@@ -1424,7 +1424,7 @@ static NSString *episodeDirName = @"episodes";
 {
     if (_trackDataConnection == nil)
     {
-        //CLS_LOG(@"[AVAssetResourceLoaderDelegate] should wait for loading of requested resource");
+        //UALog(@"[AVAssetResourceLoaderDelegate] should wait for loading of requested resource");
         NSURL *interceptedURL = [loadingRequest.request URL];
         NSURLComponents *actualURLComponents = [[NSURLComponents alloc] initWithURL:interceptedURL resolvingAgainstBaseURL:NO];
         // TODO: scheme may be https...
@@ -1444,7 +1444,7 @@ static NSString *episodeDirName = @"episodes";
 
 - (void)resourceLoader:(AVAssetResourceLoader *)resourceLoader didCancelLoadingRequest:(AVAssetResourceLoadingRequest *)loadingRequest
 {
-    //CLS_LOG(@"[AVAssetResourceLoaderDelegate] did cancel loading request");
+    //UALog(@"[AVAssetResourceLoaderDelegate] did cancel loading request");
     [self.pendingRequests removeObject:loadingRequest];
 }
 
@@ -1509,12 +1509,12 @@ UILabel *prototypeBadge;
         NSError *savingError;
     	saved = [appDelegate.managedObjectContext save:&savingError];
         if (saved) {
-            //CLS_LOG(@"** save context with reason: %@ :: Successfully saved", reason);
+            //UALog(@"** save context with reason: %@ :: Successfully saved", reason);
         } else {
-            CLS_LOG(@"** save context with reason: %@ :: ERROR: %@", reason, savingError);
+            UALog(@"** save context with reason: %@ :: ERROR: %@", reason, savingError);
         }
     } else {
-        CLS_LOG(@"** save context with reason: %@ :: Did not save, no changes", reason);
+        UALog(@"** save context with reason: %@ :: Did not save, no changes", reason);
     }
     return saved;
 }
@@ -1527,11 +1527,11 @@ UILabel *prototypeBadge;
 + (PodcastEntity *) getEntityForPodcast:(NSDictionary *)podcastDict save:(BOOL)save {
     
     if (!podcastDict || ![podcastDict objectForKey:@"collectionId"]) {
-        CLS_LOG(@"get entity for podcast: ERROR: podcast dict was null");
+        UALog(@"get entity for podcast: ERROR: podcast dict was null");
         return nil;
     }
     
-    CLS_LOG(@"get entity for podcast: %@ (%@)", [podcastDict objectForKey:@"collectionName"], [podcastDict objectForKey:@"collectionId"]);
+    UALog(@"get entity for podcast: %@ (%@)", [podcastDict objectForKey:@"collectionName"], [podcastDict objectForKey:@"collectionId"]);
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     PodcastEntity *podcastEntity;
     
@@ -1545,7 +1545,7 @@ UILabel *prototypeBadge;
         podcastEntity = [result lastObject];
     } else {
         // new entity
-        //CLS_LOG(@"creating new podcast entity for %@", [podcastDict objectForKey:@"collectionId"]);
+        //UALog(@"creating new podcast entity for %@", [podcastDict objectForKey:@"collectionId"]);
         podcastEntity = [NSEntityDescription insertNewObjectForEntityForName:@"PodcastEntity" inManagedObjectContext:appDelegate.managedObjectContext];
         id collectionIdId = [podcastDict objectForKey:@"collectionId"];
         NSNumber *collectionId;
@@ -1621,11 +1621,11 @@ UILabel *prototypeBadge;
 + (EpisodeEntity *) getEntityForEpisode:(NSDictionary *)episodeDict withPodcastEntity:(PodcastEntity *)podcastEntity save:(BOOL)save {
     
     if (!episodeDict || !podcastEntity) {
-        CLS_LOG(@"get entity for episode: ERROR: podcast entity or episode dict was null");
+        UALog(@"get entity for episode: ERROR: podcast entity or episode dict was null");
         return nil;
     }
     
-    //'CLS_LOG(@"get episode entity for episode: %@", episodeDict);
+    //'UALog(@"get episode entity for episode: %@", episodeDict);
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
 
     // get episode entity
@@ -1643,7 +1643,7 @@ UILabel *prototypeBadge;
     } else {
         // make sure guid is present for new entity
         if ([episodeDict objectForKey:@"guid"] == [NSNull null]) {
-            CLS_LOG(@"did not get episode entity - cannot create episode entity without GUID");
+            UALog(@"did not get episode entity - cannot create episode entity without GUID");
             return nil;
         }
         // new entity
@@ -1737,17 +1737,17 @@ UILabel *prototypeBadge;
     
     id desc = [episodeDict objectForKey:@"itunes:summary"];
     if ([desc isKindOfClass:[NSString class]]) {
-        //CLS_LOG(@"- summary description");
+        //UALog(@"- summary description");
         return (NSString *)desc;
     }
     else {
         id descr = [episodeDict objectForKey:@"description"];
         if ([descr isKindOfClass:[NSString class]]) {
-            //CLS_LOG(@"- regular description");
+            //UALog(@"- regular description");
             return (NSString *)descr;
         }
         else {
-            //CLS_LOG(@"- no desc");
+            //UALog(@"- no desc");
             return @"";
         }
     }
@@ -1805,7 +1805,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
         date = [ISODateInterpreter dateFromString:pubDate];
     }
     else {
-        CLS_LOG(@"could not convert date: %@", pubDate);
+        UALog(@"could not convert date: %@", pubDate);
         date = [NSDate date];
     }
     return date;
@@ -1839,7 +1839,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
         return epEntity;
     }
     else {
-        CLS_LOG(@"ERROR: could not find episode entity for url: %@", urlString);
+        UALog(@"ERROR: could not find episode entity for url: %@", urlString);
         return nil;
     }
 }
@@ -1853,11 +1853,11 @@ static NSDateFormatter *ISODateInterpreter = nil;
     } else {
         tungId = [userDict objectForKey:@"tung_id"];
     }
-    //CLS_LOG(@"save user with dict: %@", userDict);
+    //UALog(@"save user with dict: %@", userDict);
     UserEntity *userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:tungId];
     
     if (!userEntity) {
-        //CLS_LOG(@"no existing user entity, create new");
+        //UALog(@"no existing user entity, create new");
         AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
         userEntity = [NSEntityDescription insertNewObjectForEntityForName:@"UserEntity" inManagedObjectContext:appDelegate.managedObjectContext];
     }
@@ -1890,7 +1890,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 }
 
 + (UserEntity *) retrieveUserEntityForUserWithId:(NSString *)userId {
-    //CLS_LOG(@"retrieve user entity for user with id: %@", userId);
+    //UALog(@"retrieve user entity for user with id: %@", userId);
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     NSError *error = nil;
     NSFetchRequest *findUser = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
@@ -1956,13 +1956,13 @@ static NSDateFormatter *ISODateInterpreter = nil;
         for (int i = 0; i < result.count; i++) {
             UserEntity *userEntity = [result objectAtIndex:i];
             NSDictionary *userDict = [TungCommonObjects entityToDict:userEntity];
-            CLS_LOG(@"user at index: %d", i);
-            CLS_LOG(@"%@", userDict);
+            UALog(@"user at index: %d", i);
+            UALog(@"%@", userDict);
         }
         
         return YES;
     } else {
-        CLS_LOG(@"no user entities found");
+        UALog(@"no user entities found");
         return NO;
     }
 }
@@ -1972,18 +1972,18 @@ static NSDateFormatter *ISODateInterpreter = nil;
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     
     // show episode entity data
-    CLS_LOG(@"episode entity data");
+    UALog(@"episode entity data");
     NSFetchRequest *eRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
     NSError *eError = nil;
     NSArray *eResult = [appDelegate.managedObjectContext executeFetchRequest:eRequest error:&eError];
     if (eResult.count > 0) {
         for (int i = 0; i < eResult.count; i++) {
             EpisodeEntity *episodeEntity = [eResult objectAtIndex:i];
-            CLS_LOG(@"episode at index: %d", i);
+            UALog(@"episode at index: %d", i);
             // entity -> dict
             NSArray *ekeys = [[[episodeEntity entity] attributesByName] allKeys];
             NSDictionary *eDict = [episodeEntity dictionaryWithValuesForKeys:ekeys];
-            CLS_LOG(@"%@", eDict);
+            UALog(@"%@", eDict);
         }
     }
     
@@ -1994,11 +1994,11 @@ static NSDateFormatter *ISODateInterpreter = nil;
         
         for (int i = 0; i < result.count; i++) {
             PodcastEntity *podcastEntity = [result objectAtIndex:i];
-            CLS_LOG(@"podcast at index: %d", i);
+            UALog(@"podcast at index: %d", i);
             // entity -> dict
             NSArray *keys = [[[podcastEntity entity] attributesByName] allKeys];
             NSDictionary *podcastDict = [podcastEntity dictionaryWithValuesForKeys:keys];
-            CLS_LOG(@"%@", podcastDict);
+            UALog(@"%@", podcastDict);
         }
         
         return YES;
@@ -2009,7 +2009,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 
 + (void) removePodcastAndEpisodeData {
     
-    CLS_LOG(@"remove podcast and episode data");
+    UALog(@"remove podcast and episode data");
     
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     // delete episode entity data
@@ -2019,7 +2019,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
     if (eResult.count > 0) {
         for (int i = 0; i < eResult.count; i++) {
             [appDelegate.managedObjectContext deleteObject:[eResult objectAtIndex:i]];
-            //CLS_LOG(@"deleted episode record at index: %d", i);
+            //UALog(@"deleted episode record at index: %d", i);
         }
     }
     
@@ -2029,7 +2029,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
     if (pResult.count > 0) {
         for (int i = 0; i < pResult.count; i++) {
             [appDelegate.managedObjectContext deleteObject:[pResult objectAtIndex:i]];
-            //CLS_LOG(@"deleted podcast record at index: %d", i);
+            //UALog(@"deleted podcast record at index: %d", i);
         }
     }
     
@@ -2037,7 +2037,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 }
 
 + (void) removeAllUserData {
-    CLS_LOG(@"remove all user data");
+    UALog(@"remove all user data");
     
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
@@ -2046,7 +2046,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
     if (result.count > 0) {
         for (int i = 0; i < result.count; i++) {
             [appDelegate.managedObjectContext deleteObject:[result objectAtIndex:i]];
-            CLS_LOG(@"deleted user record at index: %d", i);
+            UALog(@"deleted user record at index: %d", i);
         }
     }
 }
@@ -2077,7 +2077,7 @@ static NSArray *colors;
     UIColor *keyColor1 = [UIColor colorWithRed:0.45 green:0.45 blue:0.45 alpha:1];// default
     UIColor *keyColor2 = [self tungColor];// default
     if (keyColors.count > 0) {
-        //CLS_LOG(@"determine key colors ---------");
+        //UALog(@"determine key colors ---------");
         
         int keyColor1Index = -1;
         int keyColor2Index = -1;
@@ -2191,7 +2191,7 @@ static NSArray *colors;
     CGFloat red, green, blue, alpha;
     [color getRed:&red green:&green blue:&blue alpha:&alpha];
     NSString *hexString = [NSString stringWithFormat:@"#%02x%02x%02x", (int)(red * 255),(int)(green * 255),(int)(blue * 255)];
-    //CLS_LOG(@"UIColor (red: %f, green: %f, blue: %f) to hex string: %@", red, green, blue, hexString);
+    //UALog(@"UIColor (red: %f, green: %f, blue: %f) to hex string: %@", red, green, blue, hexString);
     return hexString;
 }
 
@@ -2247,8 +2247,8 @@ static NSArray *colors;
     NSArray *components = [tungCred componentsSeparatedByString:@":"];
     _tungId = [components objectAtIndex:0];
     _tungToken = [components objectAtIndex:1];
-    //CLS_LOG(@"id: %@", _tungId);
-    //CLS_LOG(@"token: %@", _tungToken);
+    //UALog(@"id: %@", _tungId);
+    //UALog(@"token: %@", _tungToken);
 }
 
 - (void) checkConnectionStatus {
@@ -2279,10 +2279,10 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                //CLS_LOG(@"Verify cred response %@", responseDict);
+                //UALog(@"Verify cred response %@", responseDict);
                 
                 if ([responseDict objectForKey:@"error"]) {
-                    CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                    UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                     callback(NO, responseDict);
                 }
                 else if ([responseDict objectForKey:@"success"]) {
@@ -2291,7 +2291,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
                 callback(NO, @{@"error": html});
             }
         });
@@ -2314,9 +2314,9 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                CLS_LOG(@"Verify cred response %@", responseDict);
+                UALog(@"Verify cred response %@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
-                    CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                    UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                     
                     callback(NO, responseDict);
                 }
@@ -2326,7 +2326,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
                 callback(NO, @{@"error": html});
             }
         });
@@ -2336,10 +2336,10 @@ static NSArray *colors;
 // all requests require a session ID instead of credentials
 // start here and get session with credentials
 - (void) getSessionWithCallback:(void (^)(void))callback {
-    CLS_LOG(@"getting new session with id: %@", _tungId);
+    UALog(@"getting new session with id: %@", _tungId);
 
     if (!_tungId) {
-        CLS_LOG(@"Tung ID was null, re-establish cred");
+        UALog(@"Tung ID was null, re-establish cred");
         [self establishCred];
     }
     
@@ -2355,7 +2355,7 @@ static NSArray *colors;
     
     [NSURLConnection sendAsynchronousRequest:getSessionRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
         //NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *) response;
-        //CLS_LOG(@"response status code: %ld", (long)[httpResponse statusCode]);
+        //UALog(@"response status code: %ld", (long)[httpResponse statusCode]);
         if (error == nil) {
             id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
             if (jsonData != nil && error == nil) {
@@ -2364,14 +2364,14 @@ static NSArray *colors;
                     
                     dispatch_async(dispatch_get_main_queue(), ^{
                         _sessionId = [responseDict objectForKey:@"sessionId"];
-                        //CLS_LOG(@"got new session: %@", _sessionId);
+                        //UALog(@"got new session: %@", _sessionId);
                         _connectionAvailable = [NSNumber numberWithInt:1];
                         // callback
                         callback();
                     });
                 }
                 else if ([responseDict objectForKey:@"error"]) {
-                    CLS_LOG(@"error getting session: response: %@", responseDict);
+                    UALog(@"error getting session: response: %@", responseDict);
                     dispatch_async(dispatch_get_main_queue(), ^{
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Unauthorized"]) {
                             // attempt to automatically sign back in or sign out
@@ -2383,12 +2383,12 @@ static NSArray *colors;
                 }
             }
             else if ([data length] == 0 && error == nil) {
-                CLS_LOG(@"no response");
+                UALog(@"no response");
             }
             else if (error != nil) {
-                //CLS_LOG(@"Error: %@", error);
+                //UALog(@"Error: %@", error);
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"HTML: %@", html);
+                UALog(@"HTML: %@", html);
             }
         } else {
             dispatch_async(dispatch_get_main_queue(), ^{
@@ -2416,14 +2416,14 @@ static NSArray *colors;
             [self verifyCredWithTwitterOauthHeaders:authHeaders withCallback:^(BOOL success, NSDictionary *responseDict) {
                 // user exists
                 if (success && [responseDict objectForKey:@"sessionId"]) {
-                    CLS_LOG(@"recovered session with twitter - signed in");
+                    UALog(@"recovered session with twitter - signed in");
                     _sessionId = [responseDict objectForKey:@"sessionId"];
                     _connectionAvailable = [NSNumber numberWithInt:1];
                     
                     NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                    CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
+                    UALog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
                     if (lastDataChange.doubleValue > loggedUser.lastDataChange.doubleValue) {
-                        CLS_LOG(@"needs restore. ");
+                        UALog(@"needs restore. ");
                         [self restorePodcastDataSinceTime:loggedUser.lastDataChange];
                     }
                     
@@ -2444,14 +2444,14 @@ static NSArray *colors;
             NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
             [self verifyCredWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {
                 if (success && [responseDict objectForKey:@"sessionId"]) {
-                    CLS_LOG(@"recovered session with facebook - signed in");
+                    UALog(@"recovered session with facebook - signed in");
                     _sessionId = [responseDict objectForKey:@"sessionId"];
                     _connectionAvailable = [NSNumber numberWithInt:1];
                     
                     NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                    CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
+                    UALog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
                     if (lastDataChange.doubleValue > loggedUser.lastDataChange.doubleValue) {
-                        CLS_LOG(@"needs restore. ");
+                        UALog(@"needs restore. ");
                         [self restorePodcastDataSinceTime:loggedUser.lastDataChange];
                     }
                     
@@ -2488,7 +2488,7 @@ static NSArray *colors;
         return;
     }
     
-    CLS_LOG(@"add podcast/episode request");
+    UALog(@"add podcast/episode request");
     NSURL *addEpisodeRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/add-podcast.php", _apiRootUrl]];
     NSMutableURLRequest *addEpisodeRequest = [NSMutableURLRequest requestWithURL:addEpisodeRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [addEpisodeRequest setHTTPMethod:@"POST"];
@@ -2496,8 +2496,8 @@ static NSArray *colors;
     NSString *email = (podcastEntity.email) ? podcastEntity.email : @"";
     NSString *website = (podcastEntity.website) ? podcastEntity.website : @"";
     
-    //CLS_LOG(@"episode entity: %@", episodeEntity);
-    //CLS_LOG(@"podcast entity: %@", episodeEntity.podcast);
+    //UALog(@"episode entity: %@", episodeEntity);
+    //UALog(@"podcast entity: %@", episodeEntity.podcast);
     NSMutableDictionary *params = [@{@"sessionId":_sessionId,
                                     @"collectionId": podcastEntity.collectionId,
                                     @"collectionName": podcastEntity.collectionName,
@@ -2551,12 +2551,12 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                //CLS_LOG(@"%@", responseDict);
+                //UALog(@"%@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self addPodcast:podcastEntity orEpisode:episodeEntity withCallback:callback];
                         }];
@@ -2578,7 +2578,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
             }
         });
     }];
@@ -2593,7 +2593,7 @@ static NSArray *colors;
     NSDictionary *params = @{@"sessionId":_sessionId,
                              @"lastDataChange":[NSString stringWithFormat:@"%@", time]
                              };
-    CLS_LOG(@"restore podcast data since %@ request", time);
+    UALog(@"restore podcast data since %@ request", time);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [restoreRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -2603,18 +2603,18 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                //CLS_LOG(@"restore podcast response: %@", responseDict);
+                //UALog(@"restore podcast response: %@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self restorePodcastDataSinceTime:time];
                         }];
                     }
                     else {
-                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
@@ -2642,10 +2642,10 @@ static NSArray *colors;
                         }
                         [TungCommonObjects saveContextWithReason:@"episode entities restored"];
                     }
-                    CLS_LOG(@"got restore data for %lu podcasts and %lu episodes", (unsigned long)podcasts.count, (unsigned long)episodes.count);
-//                    CLS_LOG(@"- script duration: %@", [responseDict objectForKey:@"scriptDuration"]);
-//                    CLS_LOG(@"- memory usage: %@", [responseDict objectForKey:@"memoryUsage"]);
-//                    CLS_LOG(@"- lastDataChange: %@", [responseDict objectForKey:@"lastDataChange"]);
+                    UALog(@"got restore data for %lu podcasts and %lu episodes", (unsigned long)podcasts.count, (unsigned long)episodes.count);
+//                    UALog(@"- script duration: %@", [responseDict objectForKey:@"scriptDuration"]);
+//                    UALog(@"- memory usage: %@", [responseDict objectForKey:@"memoryUsage"]);
+//                    UALog(@"- lastDataChange: %@", [responseDict objectForKey:@"lastDataChange"]);
                     UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
                     if (loggedUser) {
                         NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
@@ -2656,7 +2656,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
             }
         });
     }];
@@ -2664,7 +2664,7 @@ static NSArray *colors;
 
 // get shortlink and id for episode, make new record in none exists.
 - (void) addEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback {
-    CLS_LOG(@"add episoe request");
+    UALog(@"add episoe request");
     NSURL *getEpisodeInfoRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/add-episode.php", _apiRootUrl]];
     NSMutableURLRequest *getEpisodeInfoRequest = [NSMutableURLRequest requestWithURL:getEpisodeInfoRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [getEpisodeInfoRequest setHTTPMethod:@"POST"];
@@ -2693,7 +2693,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
@@ -2708,7 +2708,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
             }
         });
     }];
@@ -2716,7 +2716,7 @@ static NSArray *colors;
 
 // SUBSCRIBING
 - (void) subscribeToPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button {
-    CLS_LOG(@"subscribe request for podcast with id %@", podcastEntity.collectionId);
+    UALog(@"subscribe request for podcast with id %@", podcastEntity.collectionId);
     [button setEnabled:NO];
     
     SettingsEntity *settings = [TungCommonObjects settings];
@@ -2738,12 +2738,12 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                //CLS_LOG(@"%@", responseDict);
+                //UALog(@"%@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self subscribeToPodcast:podcastEntity withButton:button];
                         }];
@@ -2756,7 +2756,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                         [button setEnabled:YES];
                     }
                 }
@@ -2778,14 +2778,14 @@ static NSArray *colors;
                 
                 [button setEnabled:YES];
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
             }
         });
     }];
 }
 
 - (void) unsubscribeFromPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button {
-    CLS_LOG(@"unsubscribe request for podcast with id %@", podcastEntity.collectionId);
+    UALog(@"unsubscribe request for podcast with id %@", podcastEntity.collectionId);
     [button setEnabled:NO];
     NSURL *unsubscribeFromPodcastRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/unsubscribe.php", _apiRootUrl]];
     NSMutableURLRequest *unsubscribeFromPodcastRequest = [NSMutableURLRequest requestWithURL:unsubscribeFromPodcastRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
@@ -2801,12 +2801,12 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                //CLS_LOG(@"%@", responseDict);
+                //UALog(@"%@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self unsubscribeFromPodcast:podcastEntity withButton:button];
                         }];
@@ -2819,7 +2819,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                         [button setEnabled:YES];
                     }
                 }
@@ -2839,7 +2839,7 @@ static NSArray *colors;
             else {
                 [button setEnabled:YES];
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
             }
         });
     }];
@@ -2875,7 +2875,7 @@ static NSArray *colors;
                    @"episodeTitle": episodeEntity.title
                    };
     }
-    //CLS_LOG(@"recommend episode request with params: %@", params);
+    //UALog(@"recommend episode request with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [recommendPodcastRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -2889,7 +2889,7 @@ static NSArray *colors;
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self recommendEpisode:episodeEntity withCallback:callback];
                         }];
@@ -2902,12 +2902,12 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                         callback(NO, responseDict);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    CLS_LOG(@"successfully recommended episode");
+                    UALog(@"successfully recommended episode");
                     if (!episodeEntity.id) {
                         // save episode id and shortlink
                         NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -2928,7 +2928,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
                 callback(NO, @{@"error": @"Unspecified error"});
             }
         });
@@ -2944,7 +2944,7 @@ static NSArray *colors;
                              @"episodeId": episodeId
                              };
     
-    CLS_LOG(@"un-recommend episode");
+    UALog(@"un-recommend episode");
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [unRecommendPodcastRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -2954,12 +2954,12 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                //CLS_LOG(@"%@", responseDict);
+                //UALog(@"%@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self unRecommendEpisode:episodeEntity];
                         }];
@@ -2972,7 +2972,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
@@ -2988,7 +2988,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
             }
         });
     }];
@@ -3025,7 +3025,7 @@ static NSArray *colors;
                    };
     }
     
-    CLS_LOG(@"sync progress (%f) request", episodeEntity.trackPosition.doubleValue);
+    UALog(@"sync progress (%f) request", episodeEntity.trackPosition.doubleValue);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [syncProgressRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -3039,7 +3039,7 @@ static NSArray *colors;
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self syncProgressForEpisode:episodeEntity];
                         }];
@@ -3052,11 +3052,11 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    //CLS_LOG(@"%@", responseDict);
+                    //UALog(@"%@", responseDict);
                     if (!episodeEntity.id) {
                         // save episode id and shortlink
                         NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -3076,7 +3076,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
             }
         });
     }];
@@ -3084,7 +3084,7 @@ static NSArray *colors;
 
 // COMMENTS AND CLIPS
 - (void) postComment:(NSString*)comment atTime:(NSString*)timestamp onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback  {
-    //CLS_LOG(@"post comment request");
+    //UALog(@"post comment request");
     NSURL *postCommentRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/new-comment.php", _apiRootUrl]];
     NSMutableURLRequest *postCommentRequest = [NSMutableURLRequest requestWithURL:postCommentRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [postCommentRequest setHTTPMethod:@"POST"];
@@ -3111,7 +3111,7 @@ static NSArray *colors;
                    };
     }
     
-    //CLS_LOG(@"post comment request w/ params: %@", params);
+    //UALog(@"post comment request w/ params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [postCommentRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -3121,12 +3121,12 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                //CLS_LOG(@"%@", responseDict);
+                //UALog(@"%@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self postComment:comment atTime:timestamp onEpisode:episodeEntity withCallback:callback];
                         }];
@@ -3139,12 +3139,12 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                         callback(NO, responseDict);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    CLS_LOG(@"successfully posted comment");
+                    UALog(@"successfully posted comment");
                     if (!episodeEntity.id) {
                         // save episode id and shortlink
                         NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -3160,7 +3160,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
                 callback(NO, @{@"error": @"Unspecified error"});
             }
         });
@@ -3168,7 +3168,7 @@ static NSArray *colors;
 }
 
 - (void) postClipWithComment:(NSString*)comment atTime:(NSString*)timestamp withDuration:(NSString *)duration onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback  {
-    //CLS_LOG(@"post clip request");
+    //UALog(@"post clip request");
     NSURL *postClipRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/new-clip.php", _apiRootUrl]];
     NSMutableURLRequest *postClipRequest = [NSMutableURLRequest requestWithURL:postClipRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [postClipRequest setHTTPMethod:@"POST"];
@@ -3230,12 +3230,12 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                //CLS_LOG(@"%@", responseDict);
+                //UALog(@"%@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self postClipWithComment:comment atTime:timestamp withDuration:duration onEpisode:episodeEntity withCallback:callback];
                         }];
@@ -3248,12 +3248,12 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                         callback(NO, responseDict);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    CLS_LOG(@"successfully posted clip");
+                    UALog(@"successfully posted clip");
                     if (!episodeEntity.id) {
                         // save episode id and shortlink
                         NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -3269,7 +3269,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
                 callback(NO, @{@"error": @"Unspecified error"});
             }
         });
@@ -3277,7 +3277,7 @@ static NSArray *colors;
 }
 
 - (void) deleteStoryEventWithId:(NSString *)eventId withCallback:(void (^)(BOOL success))callback  {
-    CLS_LOG(@"delete story event with id: %@", eventId);
+    UALog(@"delete story event with id: %@", eventId);
     NSURL *deleteEventRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/delete-story-event.php", _apiRootUrl]];
     NSMutableURLRequest *deleteEventRequest = [NSMutableURLRequest requestWithURL:deleteEventRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [deleteEventRequest setHTTPMethod:@"POST"];
@@ -3298,24 +3298,24 @@ static NSArray *colors;
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self deleteStoryEventWithId:eventId withCallback:callback];
                         }];
                     }
                     else {
-                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                         callback(NO);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    CLS_LOG(@"successfully deleted story event");
+                    UALog(@"successfully deleted story event");
                     callback(YES);
                 }
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
                 callback(NO);
             }
         });
@@ -3323,7 +3323,7 @@ static NSArray *colors;
 }
 
 - (void) flagCommentWithId:(NSString *)eventId {
-    CLS_LOG(@"flag comment with id: %@", eventId);
+    UALog(@"flag comment with id: %@", eventId);
     NSURL *flagCommentRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/flag.php", _apiRootUrl]];
     NSMutableURLRequest *flagCommentRequest = [NSMutableURLRequest requestWithURL:flagCommentRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [flagCommentRequest setHTTPMethod:@"POST"];
@@ -3344,20 +3344,20 @@ static NSArray *colors;
                     // session expired
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self flagCommentWithId:eventId];
                         }];
                     }
                     else {
-                        CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        UALog(@"Error: %@", [responseDict objectForKey:@"error"]);
                         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Error flagging" message:[responseDict objectForKey:@"error"] preferredStyle:UIAlertControllerStyleAlert];
                         [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
                         [_viewController presentViewController:alert animated:YES completion:nil];
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    CLS_LOG(@"successfully flagged comment");
+                    UALog(@"successfully flagged comment");
                     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Successfully flagged" message:@"This comment will be moderated. Thank you for your feedback." preferredStyle:UIAlertControllerStyleAlert];
                     [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
                     [_viewController presentViewController:alert animated:YES completion:nil];
@@ -3365,7 +3365,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error. HTML: %@", html);
+                UALog(@"Error. HTML: %@", html);
             }
         });
     }];
@@ -3373,7 +3373,7 @@ static NSArray *colors;
 
 // for getting episode and podcast entities
 -(void) requestEpisodeInfoForId:(NSString *)episodeId andCollectionId:(NSString *)collectionId withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
-    //CLS_LOG(@"requesting episode info");
+    //UALog(@"requesting episode info");
     //NSDate *requestStart = [NSDate date];
     NSURL *episodeInfoURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/episode-info.php", _apiRootUrl]];
     NSMutableURLRequest *feedRequest = [NSMutableURLRequest requestWithURL:episodeInfoURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
@@ -3383,7 +3383,7 @@ static NSArray *colors;
                              @"episodeId": episodeId,
                              @"collectionId": collectionId
                              };
-    //CLS_LOG(@"request for episodeInfo with params: %@", params);
+    //UALog(@"request for episodeInfo with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [feedRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -3396,25 +3396,25 @@ static NSArray *colors;
                 if ([responseDict objectForKey:@"error"]) {
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:callback];
                         }];
                     }
                     else {
-                        CLS_LOG(@"Error requesting episode info: %@", [responseDict objectForKey:@"error"]);
+                        UALog(@"Error requesting episode info: %@", [responseDict objectForKey:@"error"]);
                         callback(NO, responseDict);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
                     //NSTimeInterval requestDuration = [requestStart timeIntervalSinceNow];
-                    //CLS_LOG(@"successfully retrieved episode info in %f seconds", fabs(requestDuration));
+                    //UALog(@"successfully retrieved episode info in %f seconds", fabs(requestDuration));
                     callback(YES, responseDict);
                 }
             }
             else if (error != nil) {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error requesting episode info. HTML: %@", html);
+                UALog(@"Error requesting episode info. HTML: %@", html);
                 callback(NO, @{@"error": @"Unspecified error"});
             }
         });
@@ -3427,7 +3427,7 @@ static NSArray *colors;
 
 
 - (void) getProfileDataForUser:(NSString *)target_id withCallback:(void (^)(NSDictionary *jsonData))callback {
-    //CLS_LOG(@"getting user profile data for id: %@", target_id);
+    //UALog(@"getting user profile data for id: %@", target_id);
     NSURL *getProfileDataRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/profile.php", _apiRootUrl]];
     NSMutableURLRequest *getProfileDataRequest = [NSMutableURLRequest requestWithURL:getProfileDataRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [getProfileDataRequest setHTTPMethod:@"POST"];
@@ -3445,7 +3445,7 @@ static NSArray *colors;
                 NSDictionary *responseDict = jsonData;
                 if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                     // get new session and re-request
-                    CLS_LOG(@"SESSION EXPIRED");
+                    UALog(@"SESSION EXPIRED");
                     [self getSessionWithCallback:^{
                         [self getProfileDataForUser:target_id withCallback:callback];
                     }];
@@ -3457,14 +3457,14 @@ static NSArray *colors;
         }
         else {
             NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            CLS_LOG(@"HTML: %@", html);
+            UALog(@"HTML: %@", html);
         }
     }];
 }
 
 
 - (void) updateUserWithDictionary:(NSDictionary *)userInfo withCallback:(void (^)(NSDictionary *jsonData))callback {
-    //CLS_LOG(@"update user with dictionary: %@", userInfo);
+    //UALog(@"update user with dictionary: %@", userInfo);
     
     NSURL *updateUserRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/update-user.php", _apiRootUrl]];
     NSMutableURLRequest *updateUserRequest = [NSMutableURLRequest requestWithURL:updateUserRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
@@ -3485,7 +3485,7 @@ static NSArray *colors;
                 if ([responseDict objectForKey:@"error"]) {
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self updateUserWithDictionary:userInfo withCallback:^(NSDictionary *responseDict) {
                                 callback(responseDict);
@@ -3496,20 +3496,20 @@ static NSArray *colors;
                     }
                 }
                 else {
-                    CLS_LOG(@"user updated successfully: %@", responseDict);
+                    UALog(@"user updated successfully: %@", responseDict);
                     callback(responseDict);
                 }
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"HTML: %@", html);
+                UALog(@"HTML: %@", html);
             }
         });
     }];
 }
 
 - (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback {
-    //CLS_LOG(@"follow user with id: %@", target_id);
+    //UALog(@"follow user with id: %@", target_id);
     NSURL *followUserRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/follow.php", _apiRootUrl]];
     NSMutableURLRequest *followUserRequest = [NSMutableURLRequest requestWithURL:followUserRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [followUserRequest setHTTPMethod:@"POST"];
@@ -3527,7 +3527,7 @@ static NSArray *colors;
                 if ([responseDict objectForKey:@"error"]) {
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self followUserWithId:target_id withCallback:^(BOOL success) {
                                 callback(success);
@@ -3545,7 +3545,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"HTML: %@", html);
+                UALog(@"HTML: %@", html);
                 callback(NO);
             }
         });
@@ -3553,7 +3553,7 @@ static NSArray *colors;
     
 }
 - (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback {
-    //CLS_LOG(@"UN-follow user with id: %@", target_id);
+    //UALog(@"UN-follow user with id: %@", target_id);
     NSURL *unfollowUserRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/unfollow.php", _apiRootUrl]];
     NSMutableURLRequest *unfollowUserRequest = [NSMutableURLRequest requestWithURL:unfollowUserRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [unfollowUserRequest setHTTPMethod:@"POST"];
@@ -3571,7 +3571,7 @@ static NSArray *colors;
                 if ([responseDict objectForKey:@"error"]) {
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self unfollowUserWithId:target_id withCallback:^(BOOL success) {
                                 callback(success);
@@ -3589,7 +3589,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"HTML: %@", html);
+                UALog(@"HTML: %@", html);
                 callback(NO);
             }
         });
@@ -3598,7 +3598,7 @@ static NSArray *colors;
 
 // for beta period
 - (void) followAllUsersFromId:(NSString *)user_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
-    CLS_LOG(@"follow all users with id: %@", user_id);
+    UALog(@"follow all users with id: %@", user_id);
     NSURL *followAllUsersRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/follow-all.php", _apiRootUrl]];
     NSMutableURLRequest *followAllUsersRequest = [NSMutableURLRequest requestWithURL:followAllUsersRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [followAllUsersRequest setHTTPMethod:@"POST"];
@@ -3623,7 +3623,7 @@ static NSArray *colors;
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"HTML: %@", html);
+                UALog(@"HTML: %@", html);
                 callback(NO, @{@"error": @"unspecified error"});
             }
         });
@@ -3631,7 +3631,7 @@ static NSArray *colors;
 }
 
 - (void) inviteFriends:(NSString *)friends {
-    CLS_LOG(@"send invite friends request");
+    UALog(@"send invite friends request");
     NSURL *inviteFriendsRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/invite-friends.php", _apiRootUrl]];
     NSMutableURLRequest *inviteFriendsRequest = [NSMutableURLRequest requestWithURL:inviteFriendsRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [inviteFriendsRequest setHTTPMethod:@"POST"];
@@ -3650,22 +3650,22 @@ static NSArray *colors;
                 if ([responseDict objectForKey:@"error"]) {
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        CLS_LOG(@"SESSION EXPIRED");
+                        UALog(@"SESSION EXPIRED");
                         [self getSessionWithCallback:^{
                             [self inviteFriends:friends];
                         }];
                     } else {
-                    	CLS_LOG(@"Error inviting friends: %@", [responseDict objectForKey:@"error"]);
+                    	UALog(@"Error inviting friends: %@", [responseDict objectForKey:@"error"]);
                         [self simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    CLS_LOG(@"Successfully invited friends: %@", responseDict);
+                    UALog(@"Successfully invited friends: %@", responseDict);
                 }
             }
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                CLS_LOG(@"Error: %@", html);
+                UALog(@"Error: %@", html);
                 [self simpleErrorAlertWithMessage:@"Sorry, something went wrong with your request"];
             }
         });
@@ -3673,7 +3673,7 @@ static NSArray *colors;
 }
 
 -(void) signOut {
-    CLS_LOG(@"--- signing out");
+    UALog(@"--- signing out");
     
     [self stopClipPlayback];
     [self playerPause];
@@ -3721,6 +3721,43 @@ static NSArray *colors;
     [_viewController presentViewController:welcome animated:YES completion:^{}];
 }
 
+#pragma mark - Twitter
+
+// post tweet
+- (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url {
+    
+    NSString *tweet = [NSString stringWithFormat:@"%@ %@", text, url];
+    
+    //TWTRSession *session = [TWTRSessionStore session];
+    NSString *twitterID = [Twitter sharedInstance].sessionStore.session.userID;
+    TWTRAPIClient *client = [[TWTRAPIClient alloc] initWithUserID:twitterID];
+    
+    NSString *updateStatusEndpoint = @"https://api.twitter.com/1.1/statuses/update.json";
+    NSDictionary *tweetParams = @{@"status": tweet};
+    NSError *clientError;
+    
+    NSURLRequest *request = [[[Twitter sharedInstance] APIClient] URLRequestWithMethod:@"POST" URL:updateStatusEndpoint parameters:tweetParams error:&clientError];
+    
+    if (request) {
+        [client sendTwitterRequest:request completion:^(NSURLResponse *urlResponse, NSData *data, NSError *connectionError) {
+            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)urlResponse;
+            long responseCode =  (long)[httpResponse statusCode];
+            if (responseCode == 200) {
+                UALog(@"tweet posted");
+            }
+            
+            UALog(@"Twitter HTTP response: %li", responseCode);
+            if (connectionError != nil) {
+                UALog(@"Error: %@", connectionError);
+            }
+        }];
+    }
+    else {
+        UALog(@"Error: %@", clientError);
+    }
+    
+}
+
 #pragma mark - Facebook sharing and share delegate methods
 
 - (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity {
@@ -3736,24 +3773,24 @@ static NSArray *colors;
                                   HTTPMethod:@"POST"];
     [request startWithCompletionHandler:^(FBSDKGraphRequestConnection *connection, id result, NSError *error) {
         // Handle the result
-        CLS_LOG(@"facebook share result: %@", result);
+        UALog(@"facebook share result: %@", result);
     }];
 
 }
 
 - (void) sharer:(id<FBSDKSharing>)sharer didCompleteWithResults:(NSDictionary *)results {
     
-    CLS_LOG(@"successfully shared story to FB. results: %@", results);
+    UALog(@"successfully shared story to FB. results: %@", results);
 }
 
 - (void) sharer:(id<FBSDKSharing>)sharer didFailWithError:(NSError *)error {
     
-    CLS_LOG(@"failed to share to FB. Error: %@", error);
+    UALog(@"failed to share to FB. Error: %@", error);
 }
 
 - (void) sharerDidCancel:(id<FBSDKSharing>)sharer {
     
-    CLS_LOG(@"FB sharing cancelled");
+    UALog(@"FB sharing cancelled");
     
 }
 
@@ -3761,7 +3798,7 @@ static NSArray *colors;
 #pragma mark - alerts
 
 -(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
+    UALog(@"dismissed alert with button index: %ld", (long)buttonIndex);
 
     // notification permissions - new episodes
     if (alertView.tag == 20) {
@@ -3825,7 +3862,7 @@ static NSArray *colors;
 
 - (void) showConnectionErrorAlertForError:(NSError *)error {
     
-    //CLS_LOG(@"show connection error: \n%@",[NSThread callStackSymbols]);
+    //UALog(@"show connection error: \n%@",[NSThread callStackSymbols]);
     UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Connection error" message:[error localizedDescription] preferredStyle:UIAlertControllerStyleAlert];
     [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
     [_viewController presentViewController:errorAlert animated:YES completion:nil];
@@ -4044,7 +4081,7 @@ static NSArray *colors;
     for (NSString *file in tmpDirectory) {
         [[NSFileManager defaultManager] removeItemAtPath:[NSString stringWithFormat:@"%@%@", NSTemporaryDirectory(), file] error:NULL];
     }
-    CLS_LOG(@"cleared temporary directory");
+    UALog(@"cleared temporary directory");
 }
 
 + (void) checkReachabilityWithCallback:(void (^)(BOOL reachable))callback {
@@ -4058,16 +4095,16 @@ static NSArray *colors;
             break;
         }
         case NotReachable: {
-            CLS_LOG(@"Network not reachable");
+            UALog(@"Network not reachable");
             callback(NO);
             break;
         }
         case ReachableViaWWAN:
-            //CLS_LOG(@"Network reachable via cellular data");
+            //UALog(@"Network reachable via cellular data");
             callback(YES);
             break;
         case ReachableViaWiFi:
-            //CLS_LOG(@"Network reachable via wifi");
+            //UALog(@"Network reachable via wifi");
             callback(YES);
             break;
     }
@@ -4077,20 +4114,20 @@ static NSArray *colors;
  // always reports no connection
 - (void) checkTungReachability {
     // causes long pause
-    CLS_LOG(@"checking tung reachability against %@", _apiRootUrl);
+    UALog(@"checking tung reachability against %@", _apiRootUrl);
     Reachability *tungReachability = [Reachability reachabilityWithHostName:_apiRootUrl];
     NetworkStatus tungStatus = [tungReachability currentReachabilityStatus];
     switch (tungStatus) {
         case NotReachable: {
-            CLS_LOG(@"TUNG not reachable");
+            UALog(@"TUNG not reachable");
  			[self showNoConnectionAlert];
             break;
         }
         case ReachableViaWWAN:
-            CLS_LOG(@"TUNG reachable via cellular data");
+            UALog(@"TUNG reachable via cellular data");
             break;
         case ReachableViaWiFi:
-            CLS_LOG(@"TUNG reachable via wifi");
+            UALog(@"TUNG reachable via wifi");
             break;
     }
 }
@@ -4125,11 +4162,11 @@ static NSArray *colors;
     OSStatus results = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&cfValue);
     
     if (results == errSecSuccess) {
-        //CLS_LOG(@"credentials found");
+        //UALog(@"credentials found");
         NSString *tungCred = [[NSString alloc] initWithData:(__bridge_transfer NSData *)cfValue encoding:NSUTF8StringEncoding];
         return tungCred;
     } else {
-    	//CLS_LOG(@"No cred found. Code: %ld", (long)results);
+    	//UALog(@"No cred found. Code: %ld", (long)results);
         return NULL;
     }
 }
@@ -4152,9 +4189,9 @@ static NSArray *colors;
     OSStatus status = SecItemAdd((__bridge CFDictionaryRef)id_security_item, &result);
     
     if (status == errSecSuccess) {
-        //CLS_LOG(@"successfully stored credentials");
+        //UALog(@"successfully stored credentials");
     } else {
-        CLS_LOG(@"Failed to store cred with code: %ld", (long)status);
+        UALog(@"Failed to store cred with code: %ld", (long)status);
     }
 }
 
@@ -4204,8 +4241,8 @@ static NSArray *colors;
 + (NSData *) serializeParamsForPostRequest:(NSDictionary *)params {
     
     NSArray *paramArray = [self createEncodedArrayOfParams:params];
-//    CLS_LOG(@"serialize params for post request:");
-//    CLS_LOG(@"%@", paramArray);
+//    UALog(@"serialize params for post request:");
+//    UALog(@"%@", paramArray);
     NSString *resultString = [paramArray componentsJoinedByString:@"&"];
     return [resultString dataUsingEncoding:NSUTF8StringEncoding];
 }
@@ -4232,7 +4269,7 @@ static NSArray *colors;
     if (foundExisting == errSecSuccess) {
         OSStatus deleted = SecItemDelete((__bridge CFDictionaryRef)deleteQuery);
         if (deleted == errSecSuccess) {
-            CLS_LOG(@"deleted keychain cred");
+            UALog(@"deleted keychain cred");
         }
     }
 }

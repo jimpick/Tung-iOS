@@ -10,6 +10,7 @@
 #import "TungCommonObjects.h"
 #import <Security/Security.h>
 #import "AppDelegate.h"
+#import "UALogger.h"
 
 //#import <FBSDKCoreKit/FBSDKCoreKit.h>
 
@@ -137,7 +138,7 @@
             	}
         		// successful registration
             	else if ([responseDict objectForKey:@"success"]) {
-                    CLS_LOG(@"successful registration");
+                    UALog(@"successful registration");
                     _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                     _tung.connectionAvailable = [NSNumber numberWithInt:1];
                     [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
@@ -152,14 +153,14 @@
                     // request to mutually follow all users
                     [_tung followAllUsersFromId:tungId withCallback:^(BOOL success, NSDictionary *response) {
                         if (success) {
-                            CLS_LOG(@"successfully followed all users: %@", response);
+                            UALog(@"successfully followed all users: %@", response);
                             
                             // show feed
                             UIViewController *feed = [self.navigationController.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];
                             [self presentViewController:feed animated:YES completion:^{}];
                             
                         } else {
-                            CLS_LOG(@"failed to follow all users: %@", response);
+                            UALog(@"failed to follow all users: %@", response);
                             // something f'd up. sign out and try again
                             UIAlertView *followError = [[UIAlertView alloc] initWithTitle:@"Oops" message:@"Something went wrong... please try signing up again." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
                             followError.tag = 34;
@@ -176,12 +177,12 @@
             });
         }
         else if ([data length] == 0 && error == nil) {
-            CLS_LOG(@"no response");
+            UALog(@"no response");
         }
         else if (error != nil) {
-            CLS_LOG(@"Error: %@", error);
+            UALog(@"Error: %@", error);
             NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            CLS_LOG(@"HTML: %@", html);
+            UALog(@"HTML: %@", html);
         }
         
     }];

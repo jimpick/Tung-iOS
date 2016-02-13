@@ -246,19 +246,19 @@ NSTimer *promptTimer;
 #pragma mark - NSFetchedResultsController delegate methods
 
 - (void) controllerWillChangeContent:(NSFetchedResultsController *)controller {
-    //CLS_LOG(@"controller will change content");
+    //UALog(@"controller will change content");
     _sectionChanges = [[NSMutableArray alloc] init];
     _itemChanges = [[NSMutableArray alloc] init];
 }
 - (void) controller:(NSFetchedResultsController *)controller didChangeSection:(id<NSFetchedResultsSectionInfo>)sectionInfo atIndex:(NSUInteger)sectionIndex forChangeType:(NSFetchedResultsChangeType)type {
-    //CLS_LOG(@"controller did change section");
+    //UALog(@"controller did change section");
     
     NSMutableDictionary *change = [[NSMutableDictionary alloc] init];
     change[@(type)] = @(sectionIndex);
     [_sectionChanges addObject:change];
 }
 - (void) controller:(NSFetchedResultsController *)controller didChangeObject:(id)anObject atIndexPath:(NSIndexPath *)indexPath forChangeType:(NSFetchedResultsChangeType)type newIndexPath:(NSIndexPath *)newIndexPath {
-    //CLS_LOG(@"controller did change object");
+    //UALog(@"controller did change object");
     
     NSMutableDictionary *change = [[NSMutableDictionary alloc] init];
     switch(type) {
@@ -279,7 +279,7 @@ NSTimer *promptTimer;
 }
 
 - (void) controllerDidChangeContent:(NSFetchedResultsController *)controller {
-    //CLS_LOG(@"controller did change content");
+    //UALog(@"controller did change content");
     [self.collectionView performBatchUpdates:^{
         for (NSDictionary *change in _sectionChanges) {
             [change enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
@@ -329,7 +329,7 @@ NSTimer *promptTimer;
 }
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-    //CLS_LOG(@"collection view number of items in section. fetched? %@", (_fetched) ? @"YES" : @"NO");
+    //UALog(@"collection view number of items in section. fetched? %@", (_fetched) ? @"YES" : @"NO");
 
     id <NSFetchedResultsSectionInfo> sectionInfo = _resultsController.sections[section];
     if (sectionInfo.numberOfObjects == 0) {
@@ -350,9 +350,9 @@ NSTimer *promptTimer;
 UILabel static *prototypeBadge;
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
-    //CLS_LOG(@"collection view cell for item at index path %ld", (long)indexPath.row);
+    //UALog(@"collection view cell for item at index path %ld", (long)indexPath.row);
     
-    //CLS_LOG(@"cell for row at index: %ld", (long)indexPath.row);
+    //UALog(@"cell for row at index: %ld", (long)indexPath.row);
     SubscriptionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:reuseIdentifier forIndexPath:indexPath];
     
     PodcastEntity *podcastEntity = [_resultsController objectAtIndexPath:indexPath];

@@ -17,6 +17,7 @@
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
 
 #import "AppDelegate.h"
+#import "UALogger.h"
 
 @interface WelcomeViewController ()
 
@@ -67,14 +68,14 @@
 }
 
 -(void) viewDidLayoutSubviews {
-    //CLS_LOG(@"welcome - view did layout subviews");
+    //UALog(@"welcome - view did layout subviews");
     _endingLogoFrame = _logo.frame;
     
     if (_firstAppearance) {
         // starting logo frame is middle of the screen
         CGRect startingLogoFrame = _logo.frame;
         float screenHeight = [[UIScreen mainScreen]bounds].size.height;
-        //CLS_LOG(@"screen height: %f", screenHeight);
+        //UALog(@"screen height: %f", screenHeight);
         if (screenHeight > 667) { // iPhone 6 Plus
             startingLogoFrame.origin.y = 736/2 - 124/2;
         }
@@ -93,8 +94,8 @@
 
 -(void)viewDidAppear:(BOOL)animated {
     
-    //CLS_LOG(@"welcome view did appear. First appearance:");
-    //CLS_LOG(_firstAppearance ? @"YES" : @"NO");
+    //UALog(@"welcome view did appear. First appearance:");
+    //UALog(_firstAppearance ? @"YES" : @"NO");
     
     if (_firstAppearance) {
         _firstAppearance = NO;
@@ -137,7 +138,7 @@
     if ([animationID isEqualToString:@"animate logo"]) {
         if ([finished boolValue]) {
             CGRect newLogoFrame = _logo.frame;
-            CLS_LOG(@"new logo frame %@", NSStringFromCGRect(newLogoFrame));
+            UALog(@"new logo frame %@", NSStringFromCGRect(newLogoFrame));
         }
     }
 }*/
@@ -162,13 +163,13 @@
 
 - (IBAction)signUpWithTwitter:(id)sender {
 
-    CLS_LOG(@"sign up with twitter");
+    UALog(@"sign up with twitter");
     
     [self loginRequestBegan];
     
     [[Twitter sharedInstance] logInWithCompletion:^(TWTRSession *session, NSError *error) {
         if (session) {
-            CLS_LOG(@"signed in as %@", [session userName]);
+            UALog(@"signed in as %@", [session userName]);
             
             TWTROAuthSigning *oauthSigning = [[TWTROAuthSigning alloc] initWithAuthConfig:[Twitter sharedInstance].authConfig authSession:[Twitter sharedInstance].session];
             NSDictionary *authHeaders = [oauthSigning OAuthEchoHeadersToVerifyCredentials];
@@ -178,16 +179,16 @@
                     
                     // user exists
                     if ([responseDict objectForKey:@"sessionId"]) {
-                        CLS_LOG(@"user exists. signing in...");
+                        UALog(@"user exists. signing in...");
                         _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                         _tung.connectionAvailable = [NSNumber numberWithInt:1];
                         UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
-                        //CLS_LOG(@"logged in user: %@", [TungCommonObjects entityToDict:loggedUser]);
+                        //UALog(@"logged in user: %@", [TungCommonObjects entityToDict:loggedUser]);
                         NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
                         
-                        CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
+                        UALog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
                         if (lastDataChange.floatValue > loggedUser.lastDataChange.floatValue) {
-                            CLS_LOG(@"needs restore. ");
+                            UALog(@"needs restore. ");
                             [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
                         }
                         
@@ -205,7 +206,7 @@
                     else {
                         
                         NSDictionary *twitterProfile = [responseDict objectForKey:@"twitterProfile"];
-                        CLS_LOG(@"user is new.");
+                        UALog(@"user is new.");
                         // sanitize bio (remove urls)
                         NSMutableString *bio = [[twitterProfile objectForKey:@"description"] mutableCopy];
                         NSDataDetector *linkDetector = [NSDataDetector dataDetectorWithTypes:NSTextCheckingTypeLink error:nil];
@@ -255,18 +256,18 @@
                  fromViewController:self
                             handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
                                  if (error) {
-                                     CLS_LOG(@"fb - Process error: %@", error);
+                                     UALog(@"fb - Process error: %@", error);
                                      NSString *alertText = [NSString stringWithFormat:@"\"%@\"", error];
                                      UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Facebook error" message:alertText delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
                                      [errorAlert show];
                                      [self loginRequestEnded];
                                  }
                                  else if (result.isCancelled) {
-                                     CLS_LOG(@"fb - login cancelled");
+                                     UALog(@"fb - login cancelled");
                                      [self loginRequestEnded];
                                  }
                                  else {
-                                     CLS_LOG(@"fb - Logged in");
+                                     UALog(@"fb - Logged in");
                                      if ([FBSDKAccessToken currentAccessToken]) {
                                          NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
                                          //NSLog(@"fb access token: %@", tokenString);
@@ -277,16 +278,16 @@
                                                  // user exists
                                                  if ([responseDict objectForKey:@"sessionId"]) {
                                                      
-                                                     CLS_LOG(@"user exists. signing in...");
+                                                     UALog(@"user exists. signing in...");
                                                      _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                                                      _tung.connectionAvailable = [NSNumber numberWithInt:1];
                                                      UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
-                                                     //CLS_LOG(@"logged in user: %@", [TungCommonObjects entityToDict:loggedUser]);
+                                                     //UALog(@"logged in user: %@", [TungCommonObjects entityToDict:loggedUser]);
                                                      NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
                                                      
-                                                     CLS_LOG(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
+                                                     UALog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
                                                      if (lastDataChange.floatValue > loggedUser.lastDataChange.floatValue) {
-                                                         CLS_LOG(@"needs restore. ");
+                                                         UALog(@"needs restore. ");
                                                          [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
                                                      }
                                                      
@@ -306,7 +307,7 @@
                                                  else {
                                                      
                                                      NSDictionary *facebookProfile = [responseDict objectForKey:@"facebookProfile"];
-                                                     CLS_LOG(@"user is new.");
+                                                     UALog(@"user is new.");
                                                      
                                                      NSString *userImageURL = [NSString stringWithFormat:@"https://graph.facebook.com/%@/picture?type=square&height=640&width=640", [facebookProfile objectForKey:@"id"]];
                                                      _profileData = [NSMutableDictionary dictionaryWithObjectsAndKeys:
