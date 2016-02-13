@@ -251,7 +251,7 @@ UIActivityIndicatorView *backgroundSpinner;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     // episode view starts out hidden
     _commentsView.view.hidden = YES;
-    _commentsView.commentsArray = [NSMutableArray new];
+    _commentsView.viewController = self;
     // focused comment
     if (!_isNowPlayingView && _focusedEventId) {
         _switcherIndex = 1;
@@ -615,7 +615,7 @@ NSTimer *markAsSeenTimer;
         _urlToPass = [NSURL URLWithString:@"https://tung.fm/fundraising"];
         [self performSegueWithIdentifier:@"presentWebView" sender:self];
     } else {
-        [_podcast showNoConnectionAlert];
+        [_tung showNoConnectionAlert];
     }
 }
 
@@ -728,7 +728,7 @@ NSTimer *markAsSeenTimer;
         }
     }
     else {
-        [_podcast showNoConnectionAlert];
+        [_tung showNoConnectionAlert];
     }
 }
 
@@ -1076,7 +1076,7 @@ static CGRect buttonsScrollViewHomeRect;
             _urlToPass = [NSURL URLWithString:_episodeEntity.podcast.website];            
             [self performSegueWithIdentifier:@"presentWebView" sender:self];
         } else {
-            [_podcast showNoConnectionAlert];
+            [_tung showNoConnectionAlert];
         }
     } else {
         CLS_LOG(@"no website");
@@ -2052,7 +2052,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         _tung.npEpisodeEntity.isRecommended = [NSNumber numberWithBool:_recommendButton.recommended];
     }
     else {
-        [_podcast showNoConnectionAlert];
+        [_tung showNoConnectionAlert];
     }
 }
 

@@ -153,6 +153,7 @@
 		7DC923B319072AB4004A5E96 /* Social.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DC923B219072AB4004A5E96 /* Social.framework */; };
 		7DCAC60219FEF81A004B6182 /* FollowersCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DCAC60119FEF81A004B6182 /* FollowersCell.m */; };
 		7DD13059192CFA2F00979A07 /* icon-X-red@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DD13057192CFA2F00979A07 /* icon-X-red@2x.png */; };
+		7DD84D341C6E19D200D11E2E /* UALogger.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DD84D331C6E19D200D11E2E /* UALogger.m */; };
 		7DDA94DD1AFEE3BC0090F70C /* posbar-thumb@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DDA94DB1AFEE3BC0090F70C /* posbar-thumb@2x.png */; };
 		7DDA94DE1AFEE3BC0090F70C /* posbar-thumb@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DDA94DC1AFEE3BC0090F70C /* posbar-thumb@3x.png */; };
 		7DDC9BED1B67DAB7005E4E52 /* DescriptionWebViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DDC9BEC1B67DAB7005E4E52 /* DescriptionWebViewController.m */; };
@@ -395,6 +396,8 @@
 		7DCAC60019FEF81A004B6182 /* FollowersCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FollowersCell.h; sourceTree = "<group>"; };
 		7DCAC60119FEF81A004B6182 /* FollowersCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FollowersCell.m; sourceTree = "<group>"; };
 		7DD13057192CFA2F00979A07 /* icon-X-red@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-X-red@2x.png"; sourceTree = "<group>"; };
+		7DD84D321C6E19D200D11E2E /* UALogger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UALogger.h; sourceTree = "<group>"; };
+		7DD84D331C6E19D200D11E2E /* UALogger.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UALogger.m; sourceTree = "<group>"; };
 		7DDA94DB1AFEE3BC0090F70C /* posbar-thumb@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "posbar-thumb@2x.png"; sourceTree = "<group>"; };
 		7DDA94DC1AFEE3BC0090F70C /* posbar-thumb@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "posbar-thumb@3x.png"; sourceTree = "<group>"; };
 		7DDC9BEB1B67DAB7005E4E52 /* DescriptionWebViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = DescriptionWebViewController.h; sourceTree = "<group>"; };
@@ -666,6 +669,8 @@
 				7D8974361BC4CDF6005F6273 /* ClipProgressView.m */,
 				7D8F02BF1B619AA300A30492 /* ALDisk.h */,
 				7D8F02C01B619AA300A30492 /* ALDisk.m */,
+				7DD84D321C6E19D200D11E2E /* UALogger.h */,
+				7DD84D331C6E19D200D11E2E /* UALogger.m */,
 				7D4F35341AB89DB40090EE81 /* CCColorCube.h */,
 				7D4F35351AB89DB40090EE81 /* CCColorCube.m */,
 				7D4F35371AB89DDE0090EE81 /* CCLocalMaximum.h */,
@@ -1016,6 +1021,7 @@
 				7D5BC1A71A546A61008C008D /* MainTabBarController.m in Sources */,
 				7DA5ED4A1B548882007BD424 /* FXBlurView.m in Sources */,
 				7DDF1B9F1987F87A008CB927 /* AvatarContainerView.m in Sources */,
+				7DD84D341C6E19D200D11E2E /* UALogger.m in Sources */,
 				7DC58A8E1AEFF125000DBAF8 /* PodcastViewController.m in Sources */,
 				7D07B6E81BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m in Sources */,
 				7DE4B1BE1B726D6C00C02BE2 /* CommentAndPostView.m in Sources */,

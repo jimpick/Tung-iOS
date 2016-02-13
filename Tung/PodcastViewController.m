@@ -190,7 +190,7 @@
         }
     }
     else {
-        [_podcast showNoConnectionAlert];
+        [_tung showNoConnectionAlert];
     }
 }
 

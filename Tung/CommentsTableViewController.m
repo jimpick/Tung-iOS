@@ -158,22 +158,56 @@ static CGFloat commentBubbleMargins = 27;
     //CLS_LOG(@"%@", [_commentsArray objectAtIndex:indexPath.row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
-    _buttonPressIndexPath = indexPath;
     NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
     NSString *idString = [[[commentDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
     
     if ([idString isEqualToString:_tung.tungId]) {
         // logged-in user's comment
-        UIActionSheet *deleteCommentActionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Delete this comment" otherButtonTitles:nil];
-
-        [deleteCommentActionSheet setTag:1];
-        [deleteCommentActionSheet showInView:self.view];
-    } else {
-        // other user's comment
-        UIActionSheet *commentOptionsActionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Flag this comment" otherButtonTitles:nil];
+        UIAlertController *deleteCommentActionSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+        [deleteCommentActionSheet addAction:[UIAlertAction actionWithTitle:@"Delete this comment" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+            
+            UIAlertController *confirmDeleteAlert = [UIAlertController alertControllerWithTitle:@"Delete comment" message:@"Are you sure?" preferredStyle:UIAlertControllerStyleAlert];
+            [confirmDeleteAlert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+            [confirmDeleteAlert addAction:[UIAlertAction actionWithTitle:@"Delete" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+                
+                NSString *eventId = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
+                [_tung deleteStoryEventWithId:eventId withCallback:^(BOOL success) {
+                    [_commentsArray removeObjectAtIndex:indexPath.row];
+                    if (_commentsArray.count > 0) {
+                        // remove table row
+                        [self.tableView beginUpdates];
+                        [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationRight];
+                        [self.tableView endUpdates];
+                    } else {
+                        _noResults = YES;
+                        [self.tableView reloadData];
+                    }
+                    _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                }];
+            }]];
+            [_viewController presentViewController:confirmDeleteAlert animated:YES completion:nil];
+            
+        }]];
+        [deleteCommentActionSheet addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+        [_viewController presentViewController:deleteCommentActionSheet animated:YES completion:nil];
         
-        [commentOptionsActionSheet setTag:2];
-        [commentOptionsActionSheet showInView:self.view];
+    } else {
+        
+        UIAlertController *commentOptionsActionSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+        [commentOptionsActionSheet addAction:[UIAlertAction actionWithTitle:@"Flag this comment" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+            
+            UIAlertController *confirmFlagAlert = [UIAlertController alertControllerWithTitle:@"Flag for moderation?" message:nil preferredStyle:UIAlertControllerStyleAlert];
+            [confirmFlagAlert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+            [confirmFlagAlert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                
+                NSString *eventId = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
+                [_tung flagCommentWithId:eventId];
+            }]];
+            [_viewController presentViewController:confirmFlagAlert animated:YES completion:nil];
+            
+        }]];
+        [commentOptionsActionSheet addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+        [_viewController presentViewController:commentOptionsActionSheet animated:YES completion:nil];
     }
 }
 
@@ -271,9 +305,9 @@ UILabel *prototypeLabel;
 - (void) theirCommentUsernameButtonTapped:(id)sender {
     NSLog(@"username button tapped");
     CommentCell* cell  = (CommentCell*)[[sender superview] superview];
-    _buttonPressIndexPath = [self.tableView indexPathForCell:cell];
+    NSIndexPath *indexPath = [self.tableView indexPathForCell:cell];
     
-    [self pushProfileForUserAtIndexPath:_buttonPressIndexPath];
+    [self pushProfileForUserAtIndexPath:indexPath];
     
 }
 
@@ -286,61 +320,6 @@ UILabel *prototypeLabel;
     ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
     profileView.profiledUserId = idString;
     [_navController pushViewController:profileView animated:YES];
-}
-
-#pragma mark - Handle alerts/action sheets
-
--(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    //CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
-    
-    // confirm delete comment
-    if (alertView.tag == 59 && buttonIndex == 1) {
-        
-        NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:_buttonPressIndexPath.row]];
-        
-        NSString *eventId = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
-        [_tung deleteStoryEventWithId:eventId withCallback:^(BOOL success) {
-            [_commentsArray removeObjectAtIndex:_buttonPressIndexPath.row];
-            if (_commentsArray.count > 0) {
-                // remove table row
-                [self.tableView beginUpdates];
-                [self.tableView deleteRowsAtIndexPaths:@[_buttonPressIndexPath] withRowAnimation:UITableViewRowAnimationRight];
-                [self.tableView endUpdates];
-            } else {
-                _noResults = YES;
-                [self.tableView reloadData];
-            }
-            _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
-        }];
-    }
-    else if (alertView.tag == 49 && buttonIndex == 1) { // flag for moderation
-        
-        NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:_buttonPressIndexPath.row]];
-        
-        NSString *eventId = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
-        [_tung flagCommentWithId:eventId];
-    }
-}
-
-- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
-    
-    //CLS_LOG(@"dismissed commentsTableView action sheet with button: %ld", (long)buttonIndex);
-
-    // delete own comment
-    if (actionSheet.tag == 1 && buttonIndex == 0) {
-            
-        UIAlertView *confirmDelete = [[UIAlertView alloc] initWithTitle:@"Delete comment" message:@"Are you sure? This can't be undone." delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Delete", nil];
-        [confirmDelete setTag:59];
-        [confirmDelete show];
-    }
-    // their comment
-    else if (actionSheet.tag == 2 && buttonIndex == 0) {
-        
-        UIAlertView *confirmFlag = [[UIAlertView alloc] initWithTitle:@"Flag for moderation?" message:nil delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Yes", nil];
-        [confirmFlag setTag:49];
-        [confirmFlag show];
-        
-    }
 }
 
 #pragma mark - Requests
@@ -387,8 +366,7 @@ UILabel *prototypeLabel;
                             } else {
                                 [self endRefreshing];
                                 // other error - alert user
-                                UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                                [errorAlert show];
+                                [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                             }
                         });
                     }
@@ -502,7 +480,7 @@ UILabel *prototypeLabel;
             dispatch_async(dispatch_get_main_queue(), ^{
                 [self endRefreshing];
                 
-                //[TungCommonObjects showConnectionErrorAlertForError:error];
+                //[_tung showConnectionErrorAlertForError:error];
             });
         }
     }];

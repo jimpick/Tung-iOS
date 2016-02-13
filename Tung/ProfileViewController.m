@@ -517,7 +517,7 @@ NSTimer *promptTimer;
     /* this error pops up occaisionally, probably because of rapid requests.
      makes user think something is wrong when it really isn't.
      
-     [TungCommonObjects showConnectionErrorAlertForError:error];
+     [_tung showConnectionErrorAlertForError:error];
      */
 }
 
@@ -805,14 +805,15 @@ NSTimer *sessionCheckTimer;
 
 - (void) openSettings {
     NSString *version = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
+    
     // saved files size
     NSString *savedEpisodesDir = [_tung getSavedEpisodesDirectoryPath];
     NSError *error;
     NSNumber *savedFilesBytes = [TungCommonObjects getAllocatedSizeOfDirectoryAtURL:[NSURL URLWithString:savedEpisodesDir] error:&error];
     NSString *clearSavedDataOption;
     if (!error) {
-        CGFloat savedFilesMB = savedFilesBytes.floatValue/1048576;
-        clearSavedDataOption = [NSString stringWithFormat:@"Delete saved episodes (%.f MB)", savedFilesMB];
+        NSString *savedFilesMB = [TungCommonObjects formatBytes:savedFilesBytes];
+        clearSavedDataOption = [NSString stringWithFormat:@"Delete saved episodes (%@)", savedFilesMB];
     } else {
         CLS_LOG(@"error calculating saved data size: %@", error);
         clearSavedDataOption = @"Delete saved episodes";
@@ -823,17 +824,28 @@ NSTimer *sessionCheckTimer;
     NSNumber *tempFilesBytes = [TungCommonObjects getAllocatedSizeOfDirectoryAtURL:[NSURL URLWithString:tempEpisodeDir] error:&error];
     NSString *clearTempDataOption;
     if (!error) {
-        CGFloat tempFilesMB = tempFilesBytes.floatValue/1048576;
-        clearTempDataOption = [NSString stringWithFormat:@"Delete cached episodes (%.f MB)", tempFilesMB];
+        NSString *tempFilesMB = [TungCommonObjects formatBytes:tempFilesBytes];
+        clearTempDataOption = [NSString stringWithFormat:@"Delete cached episodes (%@)", tempFilesMB];
     } else {
         CLS_LOG(@"error calculating temp data size: %@", error);
         clearTempDataOption = @"Delete cached episodes";
         error = nil;
     }
     
-    UIActionSheet *settingsSheet = [[UIActionSheet alloc] initWithTitle:[NSString stringWithFormat:@"You are running v %@ of tung.", version] delegate:_tung cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Sign out" otherButtonTitles:clearSavedDataOption, clearTempDataOption, nil];
-    [settingsSheet setTag:99];
-    [settingsSheet showFromToolbar:self.navigationController.toolbar];
+    UIAlertController *settingsSheet = [UIAlertController alertControllerWithTitle:nil message:[NSString stringWithFormat:@"You are running v %@ of tung.", version] preferredStyle:UIAlertControllerStyleActionSheet];
+    [settingsSheet addAction:[UIAlertAction actionWithTitle:clearSavedDataOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [_tung deleteAllSavedEpisodes];
+        [TungCommonObjects showBannerAlertForText:@"All saved episodes have been deleted." andWidth:screenWidth];
+    }]];
+    [settingsSheet addAction:[UIAlertAction actionWithTitle:clearTempDataOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [_tung deleteAllCachedEpisodes];
+        [TungCommonObjects showBannerAlertForText:@"All cached episodes have been deleted." andWidth:screenWidth];
+    }]];
+    [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Sign out" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+        [_tung signOut];
+    }]];
+    [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:settingsSheet animated:YES completion:nil];
 }
 
 #pragma mark - UIScrollView delegate

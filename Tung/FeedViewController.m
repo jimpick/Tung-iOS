@@ -173,7 +173,7 @@
         // unreachable
         else {
             _tung.connectionAvailable = [NSNumber numberWithBool:NO];
-            [TungCommonObjects showNoConnectionAlert];
+            [_tung showNoConnectionAlert];
             [_storiesView endRefreshing];
         }
     }];

@@ -242,7 +242,7 @@ NSInteger requestTries = 0;
                 else {
                     [self endRefreshing];
                     
-                    [TungCommonObjects showConnectionErrorAlertForError:error];
+                    [_tung showConnectionErrorAlertForError:error];
                 }
             });
         }
@@ -468,7 +468,7 @@ NSInteger requestTries = 0;
                 else {
                     [self endRefreshing];
                     
-                    [TungCommonObjects showConnectionErrorAlertForError:error];
+                    [_tung showConnectionErrorAlertForError:error];
                 }
             });
         }

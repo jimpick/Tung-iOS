@@ -12,7 +12,7 @@
 #import "CommentCellMine.h"
 #import "EpisodeEntity.h"
 
-@interface CommentsTableViewController : UITableViewController <UIActionSheetDelegate, UIAlertViewDelegate>
+@interface CommentsTableViewController : UITableViewController
 
 @property (strong, nonatomic) NSMutableArray *commentsArray;
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
@@ -27,6 +27,7 @@
 
 // references to host viewcontroller's properties
 @property (strong, nonatomic) UINavigationController *navController;
+@property (strong, nonatomic) UIViewController *viewController; // for displaying alerts
 
 -(void) requestCommentsForEpisodeEntity:(EpisodeEntity *)episodeEntity
                               NewerThan:(NSNumber *)afterTime

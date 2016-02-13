@@ -110,6 +110,7 @@
 - (void) downloadEpisode:(EpisodeEntity *)episodeEntity;
 - (void) deleteSavedEpisodeWithUrl:(NSString *)urlString confirm:(BOOL)confirm;
 - (void) deleteAllSavedEpisodes;
+- (void) deleteAllCachedEpisodes;
 - (void) showSavedInfoAlertForEpisode:(EpisodeEntity *)episodeEntity;
 - (void) moveEpisodeToSaved:(EpisodeEntity *)episodeEntity;
 
@@ -208,9 +209,10 @@
 // alerts
 - (void) promptForNotificationsForEpisodes;
 - (void) promptForNotificationsForMentions;
-+ (void) showConnectionErrorAlertForError:(NSError *)error;
-+ (void) showNoConnectionAlert;
+- (void) showConnectionErrorAlertForError:(NSError *)error;
+- (void) showNoConnectionAlert;
 + (void) showBannerAlertForText:(NSString *)text andWidth:(CGFloat)screenWidth;
+- (void) simpleErrorAlertWithMessage:(NSString *)message;
 
 // caching
 + (NSData*) retrieveLargeAvatarDataWithUrlString:(NSString *)urlString;
@@ -248,5 +250,6 @@
 + (NSInteger) getIndexOfEpisodeWithGUID:(NSString *)guid inFeed:(NSArray *)feed;
 + (BOOL) hasGrantedNotificationPermissions;
 + (NSNumber *) getAllocatedSizeOfDirectoryAtURL:(NSURL *)directoryURL error:(NSError * __autoreleasing *)error;
++ (NSString *) formatBytes:(NSNumber *)bytes;
 
 @end

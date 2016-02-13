@@ -61,7 +61,6 @@
 
 - (void) preloadPodcastArtForArray:(NSArray*)itemArray;
 - (void) preloadFeedsWithLimit:(NSUInteger)limit;
-- (void) showNoConnectionAlert;
 
 
 @end

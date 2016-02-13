@@ -240,7 +240,7 @@
     /* this error pops up occaisionally, probably because of rapid requests.
      makes user think something is wrong when it really isn't.
      
-     [TungCommonObjects showConnectionErrorAlertForError:error];
+     [_tung showConnectionErrorAlertForError:error];
     */
 }
 
@@ -250,11 +250,6 @@
  }
  
  */
-
-- (void) showNoConnectionAlert {
-    UIAlertView *noConnectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"No connection" message:@"Please try again when you're connected to the internet." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-    [noConnectionErrorAlert show];
-}
 
 #pragma mark - Podcast Search table
 

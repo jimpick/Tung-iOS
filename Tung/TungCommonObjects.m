@@ -55,6 +55,7 @@
 @property (nonatomic, strong) NSURLConnection *saveTrackConnection;
 @property (nonatomic, strong) NSMutableArray *episodeSaveQueue;
 @property (strong, nonatomic) NSTimer *savedStatusNotifTimer;
+@property CGFloat bytesToSave;
 
 @property (nonatomic, strong) NSDateFormatter *ISODateFormatter;
 @property (strong, nonatomic) NSTimer *syncProgressTimer;
@@ -115,6 +116,7 @@
         [_ISODateFormatter setDateFormat:@"yyyy-MM-dd HH:mm:ss"];
         
         _episodeSaveQueue = [NSMutableArray array];
+        _bytesToSave = 0;
 
         /* show what's in saved episodes dir
         NSError *fError = nil;
@@ -448,9 +450,14 @@
         }
     }
     else {
-        UIAlertView *searchPromptAlert = [[UIAlertView alloc] initWithTitle:@"Nothing is playing" message:@"Would you like to search for a podcast?" delegate:self cancelButtonTitle:@"No" otherButtonTitles:@"Yes", nil];
-        [searchPromptAlert setTag:10];
-        [searchPromptAlert show];
+        UIAlertController *searchPromptAlert = [UIAlertController alertControllerWithTitle:@"Nothing is playing" message:@"Would you like to search for a podcast?" preferredStyle:UIAlertControllerStyleAlert];
+        [searchPromptAlert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            if ([_ctrlBtnDelegate respondsToSelector:@selector(initiateSearch)]) {
+            	[_ctrlBtnDelegate initiateSearch];
+            }
+        }]];
+        [searchPromptAlert addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleCancel handler:nil]];
+        [_viewController presentViewController:searchPromptAlert animated:YES completion:nil];
     }
 }
 
@@ -503,8 +510,10 @@
     //CLS_LOG(@"play file of type: %@", fileType);
     // avoid videos
     if ([fileType isEqualToString:@"mp4"] || [fileType isEqualToString:@"m4v"]) {
-        UIAlertView *videoAlert = [[UIAlertView alloc] initWithTitle:@"Video Podcast" message:@"Tung does not currently support video podcasts." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-        [videoAlert show];
+
+        UIAlertController *videoAlert = [UIAlertController alertControllerWithTitle:@"Video podcast" message:@"Tung does not currently support video podcasts." preferredStyle:UIAlertControllerStyleAlert];
+        [videoAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+        [_viewController presentViewController:videoAlert animated:YES completion:nil];
     }
     else {
         // make sure it isn't playing
@@ -1008,24 +1017,33 @@ static NSString *episodeDirName = @"episodes";
     CLS_LOG(@"queue episode for saving: %@", episodeEntity.title);
     
     // check if there is enough disk space
-    // TODO: add up queued episodes total size
     CGFloat freeDiskSpace = [ALDisk freeDiskSpaceInBytes];
-    CGFloat episodeSize = episodeEntity.dataLength.doubleValue;
-    CGFloat freeMegabytes = roundf(freeDiskSpace/1048576);
-    CGFloat episodeMegabytes = roundf(episodeSize/1048576);
-    CLS_LOG(@"free disk space: %.f MB, episode size: %.f MB", freeMegabytes, episodeMegabytes);
-    if (freeDiskSpace <= episodeSize) {
-        UIAlertView *notEnoughDiskAlert = [[UIAlertView alloc] initWithTitle:@"Not enough storage" message:[NSString stringWithFormat:@"This episode requires %.f MB but your phone only has %.f MB available.", episodeMegabytes, freeMegabytes] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-        [notEnoughDiskAlert show];
+    _bytesToSave += episodeEntity.dataLength.doubleValue;
+    NSString *freeSpace = [TungCommonObjects formatBytes:[NSNumber numberWithFloat:freeDiskSpace]];
+    NSString *spaceNeeded = [TungCommonObjects formatBytes:[NSNumber numberWithFloat:_bytesToSave]];
+    
+    if (freeDiskSpace <= _bytesToSave) {
+        CLS_LOG(@"not enough storage. free space: %@, space needed: %@", freeSpace, spaceNeeded);
+        
+        UIAlertController *notEnoughDiskAlert = [UIAlertController alertControllerWithTitle:@"Not enough storage" message:[NSString stringWithFormat:@"The episode(s) you're trying to save require %@ but you only have %@ available. Try removing some other saved episodes or delete all saved episodes from settings.", spaceNeeded, freeSpace] preferredStyle:UIAlertControllerStyleAlert];
+        [notEnoughDiskAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+        [_viewController presentViewController:notEnoughDiskAlert animated:YES completion:nil];
         return;
     }
     
     // if not yet notified, notify of episode expiration
     SettingsEntity *settings = [TungCommonObjects settings];
     if (!settings.hasSeenEpisodeExpirationAlert.boolValue) {
-        UIAlertView *episodeExpirationAlert = [[UIAlertView alloc] initWithTitle:@"Saved episodes will be kept for 30 days." message:@"After that, they will be auto-deleted." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:@"Don't show again", nil];
-        episodeExpirationAlert.tag = 30;
-        [episodeExpirationAlert show];
+        UIAlertController *episodeExpirationAlert = [UIAlertController alertControllerWithTitle:@"Saved episodes will be kept for 30 days." message:@"After that, they will be automatically deleted." preferredStyle:UIAlertControllerStyleAlert];
+        
+        [episodeExpirationAlert addAction:[UIAlertAction actionWithTitle:@"Don't show again" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            settings.hasSeenEpisodeExpirationAlert = [NSNumber numberWithBool:YES];
+            [TungCommonObjects saveContextWithReason:@"settings changed"];
+        }]];
+        [episodeExpirationAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        episodeExpirationAlert.preferredAction = [episodeExpirationAlert.actions objectAtIndex:1];
+        [_viewController presentViewController:episodeExpirationAlert animated:YES completion:nil];
+        
     }
     
     [_episodeSaveQueue addObject:episodeEntity.url];
@@ -1043,6 +1061,9 @@ static NSString *episodeDirName = @"episodes";
 - (void) cancelDownloadForEpisode:(EpisodeEntity *)episodeEntity {
     
     CLS_LOG(@"cancel save for episode: %@", episodeEntity.title);
+    
+    // deduct bytes to save
+    _bytesToSave -= episodeEntity.dataLength.doubleValue;
     
     [_episodeSaveQueue removeObject:episodeEntity.url];
     episodeEntity.isQueuedForSave = [NSNumber numberWithBool:NO];
@@ -1104,9 +1125,9 @@ static NSString *episodeDirName = @"episodes";
         
         [self queueSaveStatusDidChangeNotification];
         
-        CLS_LOG(@"deleted episode with url: %@", urlString);
+        //CLS_LOG(@"deleted episode with url: %@", urlString);
         if (confirm) {
-            [TungCommonObjects showBannerAlertForText:@"This episode has been deleted." andWidth:_screenWidth];
+            [TungCommonObjects showBannerAlertForText:@"Your saved copy of this episode has been deleted." andWidth:_screenWidth];
         }
     }
 }
@@ -1190,7 +1211,7 @@ static NSString *episodeDirName = @"episodes";
         NSString *savedEpisodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
         NSError *error;
         BOOL result = [fileManager moveItemAtPath:cachedEpisodeFilepath toPath:savedEpisodeFilepath error:&error];
-        CLS_LOG(@"moved episode to saved from temp: %@", (result) ? @"Success" : @"Failed");
+        //CLS_LOG(@"moved episode to saved from temp: %@", (result) ? @"Success" : @"Failed");
         if (result) {
             episodeEntity.isSaved = [NSNumber numberWithBool:YES];
             NSDate *todayPlusThirtyDays = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitDay value:30 toDate:[NSDate date] options:0];
@@ -1271,6 +1292,8 @@ static NSString *episodeDirName = @"episodes";
     }
     else if (connection == _saveTrackConnection) {
         
+        // deduct bytes to save
+        _bytesToSave -= _episodeToSaveEntity.dataLength.doubleValue;
         // save in docs directory
         NSString *episodeFilename = [_episodeToSaveEntity.url lastPathComponent];
         episodeFilename = [episodeFilename stringByRemovingPercentEncoding]; // is this necessary?
@@ -1288,13 +1311,14 @@ static NSString *episodeDirName = @"episodes";
             _episodeToSaveEntity.isDownloadingForSave = [NSNumber numberWithBool:NO];
             _episodeToSaveEntity.isSaved = [NSNumber numberWithBool:YES];
             // set date and local notif. for deletion
-            NSDate *todayPlusThirtyDays = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitDay value:30 toDate:[NSDate date] options:0];
-            //NSDate *todayPlusTenSecs = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitSecond value:10 toDate:[NSDate date] options:0];
-            _episodeToSaveEntity.savedUntilDate = todayPlusThirtyDays;
+            // TODO: replace one day with thirty days
+            //NSDate *todayPlusThirtyDays = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitDay value:30 toDate:[NSDate date] options:0];
+            NSDate *todayPlusOneDay = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitDay value:1 toDate:[NSDate date] options:0];
+            _episodeToSaveEntity.savedUntilDate = todayPlusOneDay;
             [TungCommonObjects saveContextWithReason:@"episode finished saving"];
             
             UILocalNotification *expiredEpisodeNotif = [[UILocalNotification alloc] init];
-            expiredEpisodeNotif.fireDate = todayPlusThirtyDays;
+            expiredEpisodeNotif.fireDate = todayPlusOneDay;
             expiredEpisodeNotif.timeZone = [[NSCalendar currentCalendar] timeZone];
             expiredEpisodeNotif.hasAction = NO;
             expiredEpisodeNotif.userInfo = @{@"deleteEpisodeWithUrl": _episodeToSaveEntity.url};
@@ -1314,8 +1338,9 @@ static NSString *episodeDirName = @"episodes";
             _saveTrackData = nil;
             _saveTrackConnection = nil;
             
-            UIAlertView *noSaveAlert = [[UIAlertView alloc] initWithTitle:@"Error saving episode" message:[NSString stringWithFormat:@"%@", [error localizedDescription]] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-            [noSaveAlert show];
+            UIAlertController *noSaveAlert = [UIAlertController alertControllerWithTitle:@"Error saving episode" message:[NSString stringWithFormat:@"%@", [error localizedDescription]] preferredStyle:UIAlertControllerStyleAlert];
+            [noSaveAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+            [_viewController presentViewController:noSaveAlert animated:YES completion:nil];
             // update entity
             _episodeToSaveEntity.isQueuedForSave = [NSNumber numberWithBool:NO];
             _episodeToSaveEntity.isDownloadingForSave = [NSNumber numberWithBool:NO];
@@ -2234,7 +2259,7 @@ static NSArray *colors;
         else {
             // unreachable
             _connectionAvailable = [NSNumber numberWithBool:NO];
-            [TungCommonObjects showNoConnectionAlert];
+            [self showNoConnectionAlert];
         }
     }];
 }
@@ -2368,7 +2393,7 @@ static NSArray *colors;
         } else {
             dispatch_async(dispatch_get_main_queue(), ^{
                 // _tableView.backgroundView = nil;
-                [TungCommonObjects showConnectionErrorAlertForError:error];
+                [self showConnectionErrorAlertForError:error];
             });
         }
     }];
@@ -2443,35 +2468,13 @@ static NSArray *colors;
         }
     }
 	// if method hasn't returned... force user to sign out and sign in again
-    UIAlertView *unauthorizedAlert = [[UIAlertView alloc] initWithTitle:@"Session expired" message:@"Please sign in again." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-    unauthorizedAlert.tag = 99;
-    [unauthorizedAlert show];
+    UIAlertController *unauthorizedAlert = [UIAlertController alertControllerWithTitle:@"Session expired" message:@"Please sign in again." preferredStyle:UIAlertControllerStyleAlert];
+    [unauthorizedAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        [self signOut];
+    }]];
+    [_viewController presentViewController:unauthorizedAlert animated:YES completion:nil];
 }
 
-
--(void) killSessionForTesting {
-    CLS_LOG(@"killing session...");
-    NSURL *killSessionRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/kill-session.php",_apiRootUrl]];
-    NSMutableURLRequest *killSessionRequest = [NSMutableURLRequest requestWithURL:killSessionRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
-    [killSessionRequest setHTTPMethod:@"POST"];
-    NSDictionary *cred = @{@"sessionId":_sessionId};
-    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:cred];
-    [killSessionRequest setHTTPBody:serializedParams];
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    [NSURLConnection sendAsynchronousRequest:killSessionRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        if (jsonData != nil && error == nil) {
-            NSDictionary *responseDict = jsonData;
-            CLS_LOG(@"	killed session");
-            dispatch_async(dispatch_get_main_queue(), ^{
-                // notification
-                UIAlertView *killedSessionAlert = [[UIAlertView alloc] initWithTitle:@"Killed Session" message:[NSString stringWithFormat:@"session with ID %@ has been killed", [responseDict objectForKey:@"sessionId"]] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-                [killedSessionAlert show];
-            });
-        }
-    }];
-}
 
 /*//////////////////////////////////
  Tung Stories
@@ -3348,15 +3351,16 @@ static NSArray *colors;
                     }
                     else {
                         CLS_LOG(@"Error: %@", [responseDict objectForKey:@"error"]);
-                        UIAlertView *errorFlaggingAlert = [[UIAlertView alloc] initWithTitle:@"Error flagging" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                        [errorFlaggingAlert show];
+                        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Error flagging" message:[responseDict objectForKey:@"error"] preferredStyle:UIAlertControllerStyleAlert];
+                        [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+                        [_viewController presentViewController:alert animated:YES completion:nil];
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    CLS_LOG(@"successfully flagged comment - %@", responseDict);
-                    
-                    UIAlertView *successfullyFlaggedAlert = [[UIAlertView alloc] initWithTitle:@"Successfully flagged" message:@"This comment will be moderated. Thank you for your feedback." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                    [successfullyFlaggedAlert show];
+                    CLS_LOG(@"successfully flagged comment");
+                    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Successfully flagged" message:@"This comment will be moderated. Thank you for your feedback." preferredStyle:UIAlertControllerStyleAlert];
+                    [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+                    [_viewController presentViewController:alert animated:YES completion:nil];
                 }
             }
             else {
@@ -3652,8 +3656,7 @@ static NSArray *colors;
                         }];
                     } else {
                     	CLS_LOG(@"Error inviting friends: %@", [responseDict objectForKey:@"error"]);
-                        UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Oops..." message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                        [errorAlert show];
+                        [self simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
@@ -3663,8 +3666,7 @@ static NSArray *colors;
             else {
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
                 CLS_LOG(@"Error: %@", html);
-                UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"An error occurred" message:@"Sorry, something went wrong with your request" delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                [errorAlert show];
+                [self simpleErrorAlertWithMessage:@"Sorry, something went wrong with your request"];
             }
         });
     }];
@@ -3719,122 +3721,6 @@ static NSArray *colors;
     [_viewController presentViewController:welcome animated:YES completion:^{}];
 }
 
-#pragma mark Old Twitter Code (not used)
-
-- (void) establishTwitterAccount {
-    CLS_LOG(@"establish twitter account");
-    ACAccountStore *accountStore = [[ACAccountStore alloc] init];
-    ACAccountType *accountType = [accountStore accountTypeWithAccountTypeIdentifier:ACAccountTypeIdentifierTwitter];
-    [accountStore requestAccessToAccountsWithType:accountType options:nil completion:^(BOOL granted, NSError *error) {
-        if (!granted) {
-            CLS_LOG(@"twitter access denied");
-            dispatch_async(dispatch_get_main_queue(), ^{
-                // alert user
-                UIAlertView *deniedAccessToTwitterAlert = [[UIAlertView alloc] initWithTitle:@"No Twitter Access" message:@"To give Tung access to your Twitter accounts, go to Settings > Twitter and turn on access for Tung." delegate:_viewController cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                [deniedAccessToTwitterAlert show];
-                self.twitterAccountStatus = @"failed";
-            });
-        } else {
-            // permission to use twitter granted, determine which account to use
-            dispatch_async(dispatch_get_main_queue(), ^{
-                //
-                _arrayOfTwitterAccounts = [accountStore accountsWithAccountType:accountType];
-                if ([_arrayOfTwitterAccounts count] > 0) {
-                    // first check if userData has a twitter id
-                    NSDictionary *userData = [self getLoggedInUserData];
-                    if (userData && [userData objectForKey:@"twitter_username"] != (id)[NSNull null]) {
-                        NSString *twitter_username = [userData objectForKey:@"twitter_username"];
-                        CLS_LOG(@"twitter username found in logged-in user data: %@", twitter_username);
-                        for (ACAccount *acct in _arrayOfTwitterAccounts) {
-                            if ([acct.username isEqualToString:twitter_username]) {
-                                _twitterAccountToUse = acct;
-                                [self updateUserDataWithTwitterAccount];
-                            }
-                        }
-                        if (_twitterAccountToUse == NULL) [self determineTwitterAccountToUse];
-                        
-                    }
-                    // if not, determine account to use and store it.
-                    else {
-                        [self determineTwitterAccountToUse];
-                    }
-                }
-                else {
-                    UIAlertView *noTwitterAccountAlert = [[UIAlertView alloc] initWithTitle:@"No Twitter Accounts" message:@"It appears you haven't added any Twitter accounts to your phone yet. You can add one in Settings > Twitter. " delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-                    [noTwitterAccountAlert show];
-                    self.twitterAccountStatus = @"failed";
-                }
-            });
-        }
-    }];
-}
-
-- (void) determineTwitterAccountToUse {
-    CLS_LOG(@"determine twitter account to use");
-    if ([_arrayOfTwitterAccounts count] > 1) {
-        // show action sheet allowing user to choose which twitter account they want to use
-        UIActionSheet *accountOptionsSheet = [[UIActionSheet alloc] initWithTitle:@"Which account would you like to use?" delegate:self cancelButtonTitle:nil destructiveButtonTitle:nil otherButtonTitles:nil];
-        accountOptionsSheet.tag = 89;
-        for (ACAccount *acct in _arrayOfTwitterAccounts) {
-            [accountOptionsSheet addButtonWithTitle:[NSString stringWithFormat:@"@%@", acct.username]];
-        }
-        [accountOptionsSheet showInView:_viewController.view];
-        
-    } else {
-        //CLS_LOG(@"only 1 account. established twitter account.");
-        _twitterAccountToUse = [_arrayOfTwitterAccounts lastObject];
-        [self updateUserDataWithTwitterAccount];
-    }
-}
-
-- (void) updateUserDataWithTwitterAccount {
-    self.twitterAccountStatus = @"success"; // needs "self" for observer to work
-    CLS_LOG(@"update user data with twitter account");
-    // update user record if we've established user ID
-    if (_tungId) {
-        NSMutableDictionary *userData = [[self getLoggedInUserData] mutableCopy];
-        if (userData != NULL) {
-            [userData setObject:_twitterAccountToUse.username forKey:@"twitter_username"];
-            [TungCommonObjects saveUserWithDict:userData];
-        }
-    }
-}
-
-// post tweet
-- (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url {
-    
-    NSString *tweet = [NSString stringWithFormat:@"%@ %@", text, url];
-
-    //TWTRSession *session = [TWTRSessionStore session];
-    NSString *twitterID = [Twitter sharedInstance].sessionStore.session.userID;
-    TWTRAPIClient *client = [[TWTRAPIClient alloc] initWithUserID:twitterID];
-    
-    NSString *updateStatusEndpoint = @"https://api.twitter.com/1.1/statuses/update.json";
-    NSDictionary *tweetParams = @{@"status": tweet};
-    NSError *clientError;
-    
-    NSURLRequest *request = [[[Twitter sharedInstance] APIClient] URLRequestWithMethod:@"POST" URL:updateStatusEndpoint parameters:tweetParams error:&clientError];
-    
-    if (request) {
-        [client sendTwitterRequest:request completion:^(NSURLResponse *urlResponse, NSData *data, NSError *connectionError) {
-            NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)urlResponse;
-            long responseCode =  (long)[httpResponse statusCode];
-            if (responseCode == 200) {
-                CLS_LOG(@"tweet posted");
-            }
-            
-            CLS_LOG(@"Twitter HTTP response: %li", responseCode);
-            if (connectionError != nil) {
-                CLS_LOG(@"Error: %@", connectionError);
-            }
-        }];
-    }
-    else {
-        CLS_LOG(@"Error: %@", clientError);
-    }
-    
-}
-
 #pragma mark - Facebook sharing and share delegate methods
 
 - (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity {
@@ -3876,12 +3762,7 @@ static NSArray *colors;
 
 -(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
     CLS_LOG(@"dismissed alert with button index: %ld", (long)buttonIndex);
-    // search prompt
-    if (alertView.tag == 10 && buttonIndex) {
-        if ([_ctrlBtnDelegate respondsToSelector:@selector(initiateSearch)]) {
-            [_ctrlBtnDelegate initiateSearch];
-        }
-    }
+
     // notification permissions - new episodes
     if (alertView.tag == 20) {
         
@@ -3906,20 +3787,6 @@ static NSArray *colors;
             [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
         }
     }
-    // don't show episode expiration warning again
-    if (alertView.tag == 30 && buttonIndex == 1) {
-        
-        SettingsEntity *settings = [TungCommonObjects settings];
-        settings.hasSeenEpisodeExpirationAlert = [NSNumber numberWithBool:YES];
-        [TungCommonObjects saveContextWithReason:@"settings changed"];
-        
-    }
-    // remove saved episode
-    if (alertView.tag == 40 && buttonIndex) {
-        // delete episde
-        //CLS_LOG(@"delete episode with url: %@", _episodeUrlString);
-        //[self deleteSavedEpisodeWithUrl:_episodeUrlString confirm:YES];
-    }
     // unauthorized alert
     if (alertView.tag == 99) {
         [self signOut];
@@ -3927,30 +3794,55 @@ static NSArray *colors;
 }
 
 - (void) promptForNotificationsForEpisodes {
-    
-    UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"New Episodes" message:@"Tung can notify you when new episodes are released for podcasts you subscribe to, based on your preference for each podcast. Would you like to receive notifications?" delegate:self cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
-    [notifPermissionAlert setTag:20];
-    [notifPermissionAlert show];
+
+    UIAlertController *notifPermissionAlert = [UIAlertController alertControllerWithTitle:@"New episodes" message:@"Tung can notify you when new episodes are released for podcasts you subscribe to, based on your preference for each podcast. Would you like to receive notifications?" preferredStyle:UIAlertControllerStyleAlert];
+    [notifPermissionAlert addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:nil]];
+    [notifPermissionAlert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        SettingsEntity *settings = [TungCommonObjects settings];
+        settings.hasSeenNewEpisodesPrompt = [NSNumber numberWithBool:YES];
+        [TungCommonObjects saveContextWithReason:@"settings changed"];
+        
+        [[UIApplication sharedApplication] registerForRemoteNotifications];
+        [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
+    }]];
+    [_viewController presentViewController:notifPermissionAlert animated:YES completion:nil];
 }
+
 - (void) promptForNotificationsForMentions {
     
-    UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"User Mentions" message:@"Tung can notify you when someone mentions you in a comment, or when new episodes are released for podcasts you subscribe to. Would you like to receive notifications?" delegate:self cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
-    [notifPermissionAlert setTag:21];
-    [notifPermissionAlert show];
+    UIAlertController *notifPermissionAlert = [UIAlertController alertControllerWithTitle:@"User mentions" message:@"Tung can notify you when someone mentions you in a comment, or when new episodes are released for podcasts you subscribe to. Would you like to receive notifications?" preferredStyle:UIAlertControllerStyleAlert];
+    [notifPermissionAlert addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:nil]];
+    [notifPermissionAlert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
+        SettingsEntity *settings = [TungCommonObjects settings];
+        settings.hasSeenMentionsPrompt = [NSNumber numberWithBool:YES];
+        [TungCommonObjects saveContextWithReason:@"settings changed"];
+        
+        [[UIApplication sharedApplication] registerForRemoteNotifications];
+        [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
+    }]];
+    [_viewController presentViewController:notifPermissionAlert animated:YES completion:nil];
 }
 
-+ (void) showConnectionErrorAlertForError:(NSError *)error {
+- (void) showConnectionErrorAlertForError:(NSError *)error {
     
     //CLS_LOG(@"show connection error: \n%@",[NSThread callStackSymbols]);
+    UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Connection error" message:[error localizedDescription] preferredStyle:UIAlertControllerStyleAlert];
+    [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+    [_viewController presentViewController:errorAlert animated:YES completion:nil];
     
-    UIAlertView *connectionErrorAlert = [[UIAlertView alloc] initWithTitle:@"Connection error" message:[error localizedDescription] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-    [connectionErrorAlert show];
 }
 
-+ (void) showNoConnectionAlert {
+- (void) showNoConnectionAlert {
     
-    UIAlertView *noReachabilityAlert = [[UIAlertView alloc] initWithTitle:@"No Connection" message:@"Tung requires an internet connection" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-    [noReachabilityAlert show];
+    UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"No connection" message:@"Please try again when you're connected to the internet." preferredStyle:UIAlertControllerStyleAlert];
+    [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+    [_viewController presentViewController:errorAlert animated:YES completion:nil];
+}
+
+- (void) simpleErrorAlertWithMessage:(NSString *)message {
+    UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Error" message:message preferredStyle:UIAlertControllerStyleAlert];
+    [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+    [_viewController presentViewController:errorAlert animated:YES completion:nil];
 }
 
 + (void) showBannerAlertForText:(NSString *)text andWidth:(CGFloat)screenWidth {
@@ -3969,41 +3861,6 @@ static NSArray *colors;
     
     //[bannerAlert showWithLayout:layout duration:3];
     [bannerAlert showWithDuration:3];
-}
-
-#pragma mark - handle actionsheet
-
-- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
-    
-    CLS_LOG(@"dismissed action sheet with button: %ld", (long)buttonIndex);
-    
-    // sign out
-    if (actionSheet.tag == 99) {
-        
-        switch (buttonIndex) {
-            case 0:
-                [self signOut];
-                break;
-            case 1:
-                [self deleteAllSavedEpisodes];
-                [TungCommonObjects showBannerAlertForText:@"All saved episodes have been deleted." andWidth:_screenWidth];
-                break;
-            case 2:
-                [self deleteAllCachedEpisodes];
-                [TungCommonObjects showBannerAlertForText:@"All cached episodes have been deleted." andWidth:_screenWidth];
-                break;
-            default:
-                break;
-        }
-    }
-    // chose twitter account
-    if (actionSheet.tag == 89) {
-        
-        _twitterAccountToUse = [_arrayOfTwitterAccounts objectAtIndex:buttonIndex];
-        //CLS_LOG(@"chose account with username: %@", _twitterAccountToUse.username);
-        [self updateUserDataWithTwitterAccount];
-        
-    }
 }
 
 #pragma mark - Caching
@@ -4226,8 +4083,7 @@ static NSArray *colors;
     switch (tungStatus) {
         case NotReachable: {
             CLS_LOG(@"TUNG not reachable");
-            UIAlertView *unavailableAlert = [[UIAlertView alloc] initWithTitle:@"Unavailable" message:@"tung is currently unavailable, please try again later." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-            [unavailableAlert show];
+ 			[self showNoConnectionAlert];
             break;
         }
         case ReachableViaWWAN:
@@ -4239,7 +4095,6 @@ static NSArray *colors;
     }
 }
  */
-
 + (NSString *) generateHash {
     
     NSString *characters = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
@@ -4681,6 +4536,28 @@ static NSDateFormatter *dayDateFormatter = nil;
     if (errorDidOccur) return [NSNumber numberWithInt:0];
 	
     return [NSNumber numberWithUnsignedLongLong:accumulatedSize];
+}
+
++ (NSString *) formatBytes:(NSNumber *)bytes {
+    
+    if (bytes.doubleValue == 0) {
+        return @"0 MB";
+    }
+    if (bytes.doubleValue >= 1073741824) {
+        double gb = bytes.doubleValue/1073741824;
+        return [NSString stringWithFormat:@"%.f GB", gb];
+    }
+    if (bytes.doubleValue >= 1048576) {
+        double mb = bytes.doubleValue/1048576;
+        return [NSString stringWithFormat:@"%.f MB", mb];
+    }
+    if (bytes.doubleValue >= 1024) {
+        double kb = bytes.doubleValue/1024;
+        return [NSString stringWithFormat:@"%.f KB", kb];
+    }
+    else {
+        return [NSString stringWithFormat:@"%.f bytes", bytes.doubleValue];
+    }
 }
 
 @end
