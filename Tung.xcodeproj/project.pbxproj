@@ -31,6 +31,7 @@
 		7D282C761AF022D900495E74 /* albumShawdow@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D282C741AF022D900495E74 /* albumShawdow@3x.png */; };
 		7D282C7C1AF29D3400495E74 /* TungPodcastStyleKit.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D282C7B1AF29D3400495E74 /* TungPodcastStyleKit.m */; };
 		7D282C881AF2C89F00495E74 /* TungDataModel.xcdatamodeld in Sources */ = {isa = PBXBuildFile; fileRef = 7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */; };
+		7D3A1D061C712BDE00C590A3 /* JPLogRecorder.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D3A1D051C712BDE00C590A3 /* JPLogRecorder.m */; };
 		7D3B735A19227F92005413F1 /* WelcomeViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D3B735919227F92005413F1 /* WelcomeViewController.m */; };
 		7D4336871926C65600CBC02E /* UINavigationBarNextIndicatorDefault@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4336861926C65600CBC02E /* UINavigationBarNextIndicatorDefault@2x.png */; };
 		7D43368A1926C6AF00CBC02E /* UINavigationBarBackIndicatorDefault@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D4336891926C6AF00CBC02E /* UINavigationBarBackIndicatorDefault@2x.png */; };
@@ -153,7 +154,6 @@
 		7DC923B319072AB4004A5E96 /* Social.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DC923B219072AB4004A5E96 /* Social.framework */; };
 		7DCAC60219FEF81A004B6182 /* FollowersCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DCAC60119FEF81A004B6182 /* FollowersCell.m */; };
 		7DD13059192CFA2F00979A07 /* icon-X-red@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DD13057192CFA2F00979A07 /* icon-X-red@2x.png */; };
-		7DD84D341C6E19D200D11E2E /* UALogger.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DD84D331C6E19D200D11E2E /* UALogger.m */; };
 		7DD84D371C6FEA8500D11E2E /* LogViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DD84D361C6FEA8500D11E2E /* LogViewController.m */; };
 		7DDA94DD1AFEE3BC0090F70C /* posbar-thumb@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DDA94DB1AFEE3BC0090F70C /* posbar-thumb@2x.png */; };
 		7DDA94DE1AFEE3BC0090F70C /* posbar-thumb@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DDA94DC1AFEE3BC0090F70C /* posbar-thumb@3x.png */; };
@@ -236,6 +236,8 @@
 		7D282C7B1AF29D3400495E74 /* TungPodcastStyleKit.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TungPodcastStyleKit.m; sourceTree = "<group>"; };
 		7D282C871AF2C89F00495E74 /* TungDataModel.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = TungDataModel.xcdatamodel; sourceTree = "<group>"; };
 		7D2CF0611C4C1A9F0008D112 /* TungDataModel 3.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TungDataModel 3.xcdatamodel"; sourceTree = "<group>"; };
+		7D3A1D041C712BDE00C590A3 /* JPLogRecorder.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = JPLogRecorder.h; sourceTree = "<group>"; };
+		7D3A1D051C712BDE00C590A3 /* JPLogRecorder.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = JPLogRecorder.m; sourceTree = "<group>"; };
 		7D3B735819227F92005413F1 /* WelcomeViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = WelcomeViewController.h; sourceTree = "<group>"; };
 		7D3B735919227F92005413F1 /* WelcomeViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = WelcomeViewController.m; sourceTree = "<group>"; };
 		7D4336861926C65600CBC02E /* UINavigationBarNextIndicatorDefault@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "UINavigationBarNextIndicatorDefault@2x.png"; sourceTree = "<group>"; };
@@ -397,8 +399,6 @@
 		7DCAC60019FEF81A004B6182 /* FollowersCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FollowersCell.h; sourceTree = "<group>"; };
 		7DCAC60119FEF81A004B6182 /* FollowersCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FollowersCell.m; sourceTree = "<group>"; };
 		7DD13057192CFA2F00979A07 /* icon-X-red@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "icon-X-red@2x.png"; sourceTree = "<group>"; };
-		7DD84D321C6E19D200D11E2E /* UALogger.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UALogger.h; sourceTree = "<group>"; };
-		7DD84D331C6E19D200D11E2E /* UALogger.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UALogger.m; sourceTree = "<group>"; };
 		7DD84D351C6FEA8500D11E2E /* LogViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = LogViewController.h; sourceTree = "<group>"; };
 		7DD84D361C6FEA8500D11E2E /* LogViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = LogViewController.m; sourceTree = "<group>"; };
 		7DDA94DB1AFEE3BC0090F70C /* posbar-thumb@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "posbar-thumb@2x.png"; sourceTree = "<group>"; };
@@ -650,6 +650,8 @@
 				7D4F352F1AB7A2720090EE81 /* TungPodcast.m */,
 				7DE780951AE950F20081E28E /* JPXMLtoDictionary.h */,
 				7DE780961AE950F20081E28E /* JPXMLtoDictionary.m */,
+				7D3A1D041C712BDE00C590A3 /* JPLogRecorder.h */,
+				7D3A1D051C712BDE00C590A3 /* JPLogRecorder.m */,
 				7DB6A1AB1BFD54040057D337 /* TungMiscView.h */,
 				7DB6A1AC1BFD54040057D337 /* TungMiscView.m */,
 				7D282C7A1AF29D3400495E74 /* TungPodcastStyleKit.h */,
@@ -674,8 +676,6 @@
 				7D8974361BC4CDF6005F6273 /* ClipProgressView.m */,
 				7D8F02BF1B619AA300A30492 /* ALDisk.h */,
 				7D8F02C01B619AA300A30492 /* ALDisk.m */,
-				7DD84D321C6E19D200D11E2E /* UALogger.h */,
-				7DD84D331C6E19D200D11E2E /* UALogger.m */,
 				7D4F35341AB89DB40090EE81 /* CCColorCube.h */,
 				7D4F35351AB89DB40090EE81 /* CCColorCube.m */,
 				7D4F35371AB89DDE0090EE81 /* CCLocalMaximum.h */,
@@ -1009,6 +1009,7 @@
 				7DE99BD61ACE3F02007A154F /* EpisodeCell.m in Sources */,
 				7DA465E119AE2F2C00DA3EE7 /* HorizontalLine.m in Sources */,
 				7DA465E419AE312300DA3EE7 /* AvatarWithLineIntersect.m in Sources */,
+				7D3A1D061C712BDE00C590A3 /* JPLogRecorder.m in Sources */,
 				7D4F35361AB89DB40090EE81 /* CCColorCube.m in Sources */,
 				7DF2FAD11AF3BE3F004C66E6 /* SubscriptionViewCell.m in Sources */,
 				7DB6A1AD1BFD54040057D337 /* TungMiscView.m in Sources */,
@@ -1026,7 +1027,6 @@
 				7D5BC1A71A546A61008C008D /* MainTabBarController.m in Sources */,
 				7DA5ED4A1B548882007BD424 /* FXBlurView.m in Sources */,
 				7DDF1B9F1987F87A008CB927 /* AvatarContainerView.m in Sources */,
-				7DD84D341C6E19D200D11E2E /* UALogger.m in Sources */,
 				7DC58A8E1AEFF125000DBAF8 /* PodcastViewController.m in Sources */,
 				7D07B6E81BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m in Sources */,
 				7DE4B1BE1B726D6C00C02BE2 /* CommentAndPostView.m in Sources */,

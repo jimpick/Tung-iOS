@@ -13,7 +13,7 @@
 #import "ProfileListTableViewController.h"
 #import "BrowserViewController.h"
 #import "IconButton.h"
-#import "UALogger.h"
+#import "JPLogRecorder.h"
 
 @class TungCommonObjects;
 
@@ -233,11 +233,11 @@ NSTimer *promptTimer;
     // scroll view
     if (!_profileHeader.contentSizeSet) {
         CGSize contentSize = _profileHeader.scrollView.contentSize;
-        //UALog(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
+        //JPLog(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
         contentSize.width = contentSize.width * 2;
         _profileHeader.scrollView.contentSize = contentSize;
         _profileHeader.scrollView.contentInset = UIEdgeInsetsZero;
-        //UALog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
+        //JPLog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
         _profileHeader.contentSizeSet = YES;
     }
     
@@ -247,15 +247,15 @@ NSTimer *promptTimer;
     if (_isLoggedInUser) {
         // profile header view and activity feed
         if (_tung.profileFeedNeedsRefresh.boolValue && _tung.profileNeedsRefresh.boolValue) {
-            //UALog(@"profile feed and data need refresh");
+            //JPLog(@"profile feed and data need refresh");
             [self requestPageData];
         }
         else if (_tung.profileFeedNeedsRefresh.boolValue) {
-            //UALog(@"profile feed needs refresh");
+            //JPLog(@"profile feed needs refresh");
             [_storiesView refreshFeed];
         }
         else if (_tung.profileNeedsRefresh.boolValue) {
-            //UALog(@"profile data needs refresh");
+            //JPLog(@"profile data needs refresh");
             [self refreshProfile];
         }
         // notifications
@@ -382,7 +382,7 @@ NSTimer *promptTimer;
     
 }
 -(void) searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
-    //UALog(@"search bar text did change: %@", searchText);
+    //JPLog(@"search bar text did change: %@", searchText);
     [_searchTimer invalidate];
     if (searchText.length > 1) {
         _searchTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(keyupSearch:) userInfo:searchText repeats:NO];
@@ -442,7 +442,7 @@ NSTimer *promptTimer;
             _profileSearchConnection = nil;
         }
         _profileSearchConnection = [[NSURLConnection alloc] initWithRequest:profileSearchRequest delegate:self];
-        //UALog(@"search profiles for: %@", searchTerm);
+        //JPLog(@"search profiles for: %@", searchTerm);
     }
 }
 
@@ -450,7 +450,7 @@ NSTimer *promptTimer;
 
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-    //UALog(@"did receive data");
+    //JPLog(@"did receive data");
     [_profileSearchResultData appendData:data];
 }
 
@@ -465,7 +465,7 @@ NSTimer *promptTimer;
                 dispatch_async(dispatch_get_main_queue(), ^{
                     if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                         // get new session and re-request
-                        UALog(@"SESSION EXPIRED");
+                        JPLog(@"SESSION EXPIRED");
                         [_tung getSessionWithCallback:^{
                             [self searchProfilesWithTerm:_searchController.searchBar.text];
                         }];
@@ -487,8 +487,8 @@ NSTimer *promptTimer;
                 
                 _profileSearchView.profileArray = [newUsers mutableCopy];
                 
-                //UALog(@"got results: %lu", (unsigned long)_profileSearchView.profileArray.count);
-                //UALog(@"%@", _profileArray);
+                //JPLog(@"got results: %lu", (unsigned long)_profileSearchView.profileArray.count);
+                //JPLog(@"%@", _profileArray);
                 [_profileSearchView preloadAvatars];
                 [_profileSearchView.tableView reloadData];
                 
@@ -496,25 +496,25 @@ NSTimer *promptTimer;
             else {
                 _profileSearchView.noResults = YES;
                 _profileSearchView.profileArray = [NSMutableArray array];
-                //UALog(@"NO RESULTS");
+                //JPLog(@"NO RESULTS");
                 [_profileSearchView.tableView reloadData];
             }
         }
     }
     else if ([_profileSearchResultData length] == 0 && error == nil) {
-        UALog(@"no response for profile search");
+        JPLog(@"no response for profile search");
         
     }
     else if (error != nil) {
         
-        UALog(@"Error: %@", error);
+        JPLog(@"Error: %@", error);
         NSString *html = [[NSString alloc] initWithData:_profileSearchResultData encoding:NSUTF8StringEncoding];
-        UALog(@"HTML: %@", html);
+        JPLog(@"HTML: %@", html);
     }
 }
 
 - (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
-    UALog(@"connection failed: %@", error);
+    JPLog(@"connection failed: %@", error);
     /* this error pops up occaisionally, probably because of rapid requests.
      makes user think something is wrong when it really isn't.
      
@@ -524,7 +524,7 @@ NSTimer *promptTimer;
 
 /* unused NSURLConnection delegate methods
  - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-	UALog(@"connection received response: %@", response);
+	JPLog(@"connection received response: %@", response);
  }
  
  */
@@ -550,7 +550,7 @@ NSTimer *sessionCheckTimer;
             if (_isLoggedInUser) {
                 _profiledUserData = [[_tung getLoggedInUserData] mutableCopy];
                 if (_profiledUserData) {
-                    UALog(@"Is logged in user: Has logged-in user data.");
+                    //JPLog(@"Is logged in user: Has logged-in user data.");
                     [self setUpProfileHeaderViewForData];
                     // request profile just to get current follower/following counts
                     [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
@@ -568,12 +568,12 @@ NSTimer *sessionCheckTimer;
                 }
                 else {
                     // restore logged in user data
-                    UALog(@"Is logged in user: Was missing logged-in user data - fetching");
+                    JPLog(@"Is logged in user: Was missing logged-in user data - fetching");
                     [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
                         if (jsonData != nil) {
                             NSDictionary *responseDict = jsonData;
                             if ([responseDict objectForKey:@"user"]) {
-                                //UALog(@"got user: %@", [responseDict objectForKey:@"user"]);
+                                //JPLog(@"got user: %@", [responseDict objectForKey:@"user"]);
                                 [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
                                 _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
                                 [self setUpProfileHeaderViewForData];
@@ -592,7 +592,7 @@ NSTimer *sessionCheckTimer;
                         NSDictionary *responseDict = jsonData;
                         if ([responseDict objectForKey:@"user"]) {
                             _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
-                            //UALog(@"profiled user data %@", _profiledUserData);
+                            //JPLog(@"profiled user data %@", _profiledUserData);
                             [self setUpProfileHeaderViewForData];
                             if (_tung.profileFeedNeedsRefresh.boolValue) {
                                 [_storiesView refreshFeed];
@@ -640,7 +640,7 @@ NSTimer *sessionCheckTimer;
     }
     
     CGSize contentSize = _profileHeader.scrollSubViewOne.frame.size;
-    //UALog(@"scroll view starting content size: %@", NSStringFromCGSize(contentSize));
+    //JPLog(@"scroll view starting content size: %@", NSStringFromCGSize(contentSize));
     
     // basic info web view
     NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:0; color:white; font: .9em/1.4em -apple-system, Helvetica; } a { color:rgba(255,255,255,.6); } .name { font-size:1.1em; } .location { color:rgba(0,0,0,.4) } table { width:100%%; height:100%%; border-spacing:0; border-collapse:collapse; border:none; } td { text-align:center; vertical-align:middle; }</style>\n"];
@@ -738,17 +738,17 @@ NSTimer *sessionCheckTimer;
 }
 
 - (void) viewFollowers {
-    //UALog(@"view followers");
+    //JPLog(@"view followers");
     if ([[_profiledUserData objectForKey:@"followerCount"] integerValue] > 0)
     	[self pushProfileListForTargetId:_profiledUserId andQuery:@"Followers"];
 }
 - (void) viewFollowing {
-    //UALog(@"view following");
+    //JPLog(@"view following");
     if ([[_profiledUserData objectForKey:@"followingCount"] integerValue] > 0)
         [self pushProfileListForTargetId:_profiledUserId andQuery:@"Following"];
 }
 - (void) editProfile {
-    //UALog(@"edit profile");
+    //JPLog(@"edit profile");
     [self performSegueWithIdentifier:@"presentEditProfileView" sender:self];
 }
 
@@ -760,13 +760,13 @@ NSTimer *sessionCheckTimer;
         // unfollow
         [_tung unfollowUserWithId:_profiledUserId withCallback:^(BOOL success) {
             if (!success) {// fail
-                UALog(@"error unfollowing user");
+                JPLog(@"error unfollowing user");
                 [_profiledUserData setValue:userFollowsStartingValue forKey:@"userFollows"];
                 [_profiledUserData setValue:followersStartingValue forKey:@"followerCount"];
                 [self updateUserFollowingData];
             }
             else {
-                UALog(@"successfully unfollowed user");
+                JPLog(@"successfully unfollowed user");
                 _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
                 _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
             }
@@ -778,13 +778,13 @@ NSTimer *sessionCheckTimer;
         // follow
         [_tung followUserWithId:_profiledUserId withCallback:^(BOOL success) {
             if (!success) {// fail
-                UALog(@"error following user");
+                JPLog(@"error following user");
                 [_profiledUserData setValue:userFollowsStartingValue forKey:@"userFollows"];
                 [_profiledUserData setValue:followersStartingValue forKey:@"followerCount"];
                 [self updateUserFollowingData];
             }
             else {
-                UALog(@"success following user");
+                JPLog(@"success following user");
                 _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
                 _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
             }
@@ -816,7 +816,7 @@ NSTimer *sessionCheckTimer;
         NSString *savedFilesMB = [TungCommonObjects formatBytes:savedFilesBytes];
         clearSavedDataOption = [NSString stringWithFormat:@"Delete saved episodes (%@)", savedFilesMB];
     } else {
-        UALog(@"error calculating saved data size: %@", error);
+        JPLog(@"error calculating saved data size: %@", error);
         clearSavedDataOption = @"Delete saved episodes";
         error = nil;
     }
@@ -828,7 +828,7 @@ NSTimer *sessionCheckTimer;
         NSString *tempFilesMB = [TungCommonObjects formatBytes:tempFilesBytes];
         clearTempDataOption = [NSString stringWithFormat:@"Delete cached episodes (%@)", tempFilesMB];
     } else {
-        UALog(@"error calculating temp data size: %@", error);
+        JPLog(@"error calculating temp data size: %@", error);
         clearTempDataOption = @"Delete cached episodes";
         error = nil;
     }

@@ -7,7 +7,7 @@
 //
 
 #import "LogViewController.h"
-#import "UALogger.h"
+#import "JPLogRecorder.h"
 #import "TungCommonObjects.h"
 
 @interface LogViewController ()
@@ -20,10 +20,8 @@
     [super viewDidLoad];
     // Do any additional setup after loading the view.
     
-    NSString *log = [UALogger applicationLog];
+    NSString *log = [JPLogRecorder logArrayAsString];
     _textView.text = log;
-    NSRange range = NSMakeRange(_textView.text.length - 1, 1);
-    [_textView scrollRangeToVisible:range];
     
     _toolbar.tintColor = [TungCommonObjects tungColor];
 }

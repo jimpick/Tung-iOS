@@ -8,7 +8,6 @@
 
 #import "CommentsTableViewController.h"
 #import "ProfileViewController.h"
-#import "UALogger.h"
 
 @interface CommentsTableViewController ()
 
@@ -156,7 +155,7 @@ static CGFloat commentBubbleMargins = 27;
 #pragma mark - Table view delegate methods
 
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    //UALog(@"%@", [_commentsArray objectAtIndex:indexPath.row]);
+    //JPLog(@"%@", [_commentsArray objectAtIndex:indexPath.row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
@@ -231,7 +230,7 @@ UILabel *prototypeLabel;
     
     prototypeLabel.text = [commentDict objectForKey:@"comment"];
     CGSize labelSize = [prototypeLabel sizeThatFits:CGSizeMake(labelWidth, 400)];
-    //UALog(@"label size for row %ld: %@", (long)indexPath.row, NSStringFromCGSize(labelSize));
+    //JPLog(@"label size for row %ld: %@", (long)indexPath.row, NSStringFromCGSize(labelSize));
     return labelSize;
 }
 
@@ -344,7 +343,7 @@ UILabel *prototypeLabel;
                              @"newerThan": afterTime,
                              @"olderThan": beforeTime
                              };    
-    //UALog(@"request for comments with params: %@", params);
+    //JPLog(@"request for comments with params: %@", params);
     _queryExecuted = YES;
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [feedRequest setHTTPBody:serializedParams];
@@ -352,7 +351,7 @@ UILabel *prototypeLabel;
     [NSURLConnection sendAsynchronousRequest:feedRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
         if (error == nil) {
             id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-            //UALog(@"got response: %@", jsonData);
+            //JPLog(@"got response: %@", jsonData);
             if (jsonData != nil && error == nil) {
                 if ([jsonData isKindOfClass:[NSDictionary class]]) {
                     NSDictionary *responseDict = jsonData;
@@ -360,7 +359,7 @@ UILabel *prototypeLabel;
                         dispatch_async(dispatch_get_main_queue(), ^{
                             if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                                 // get new session and re-request
-                                UALog(@"SESSION EXPIRED");
+                                JPLog(@"SESSION EXPIRED");
                                 [_tung getSessionWithCallback:^{
                                     [self requestCommentsForEpisodeEntity:episodeEntity NewerThan:afterTime orOlderThan:beforeTime];
                                 }];
@@ -377,7 +376,7 @@ UILabel *prototypeLabel;
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
                         NSArray *newComments = jsonData;
-                        //UALog(@"new comments count: %lu", (unsigned long)newComments.count);
+                        //JPLog(@"new comments count: %lu", (unsigned long)newComments.count);
                         
                         // end refreshing
                         [self endRefreshing];
@@ -389,7 +388,7 @@ UILabel *prototypeLabel;
                         // pull refresh
                         if ([afterTime intValue] > 0) {
                             if (newComments.count > 0) {
-                                UALog(@"\tgot comments newer than: %@", afterTime);
+                                JPLog(@"\tgot comments newer than: %@", afterTime);
                                 NSArray *newCommentsArray = [newComments arrayByAddingObjectsFromArray:_commentsArray];
                                 _commentsArray = [newCommentsArray mutableCopy];
                                 NSMutableArray *indexPaths = [[NSMutableArray alloc] init];
@@ -413,14 +412,14 @@ UILabel *prototypeLabel;
                             _loadMoreIndicator.alpha = 0;
                             
                             if (newComments.count == 0) {
-                                UALog(@"no more comments to get");
+                                JPLog(@"no more comments to get");
                                 _reachedEndOfPosts = YES;
                                 // hide footer
                                 //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_commentsArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
                                 [self.tableView reloadData];
                                 
                             } else {
-                                UALog(@"\tgot comments older than: %@", beforeTime);
+                                JPLog(@"\tgot comments older than: %@", beforeTime);
                                 int startingIndex = (int)_commentsArray.count;
                                 
                                 NSArray *newCommentsArray = [_commentsArray arrayByAddingObjectsFromArray:newComments];
@@ -442,8 +441,8 @@ UILabel *prototypeLabel;
                             if (newComments.count > 0) {
                                 _noResults = NO;
                                 _commentsArray = [newComments mutableCopy];
-                                UALog(@"got comments. commentsArray count: %lu", (unsigned long)[_commentsArray count]);
-                                //UALog(@"%@", _commentsArray);
+                                JPLog(@"got comments. commentsArray count: %lu", (unsigned long)[_commentsArray count]);
+                                //JPLog(@"%@", _commentsArray);
                             } else {
                                 _noResults = YES;
                             }
@@ -453,7 +452,7 @@ UILabel *prototypeLabel;
                         if (newComments.count > 0) {
                             _noResults = NO;
                             _commentsArray = [newComments mutableCopy];
-                            //UALog(@"%@", _commentsArray);
+                            //JPLog(@"%@", _commentsArray);
                         } else {
                             _noResults = YES;
                         }
@@ -471,9 +470,9 @@ UILabel *prototypeLabel;
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self endRefreshing];
                 });
-                UALog(@"Error: %@", error);
+                JPLog(@"Error: %@", error);
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                UALog(@"HTML: %@", html);
+                JPLog(@"HTML: %@", html);
             }
         }
         // connection error

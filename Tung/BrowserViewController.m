@@ -32,7 +32,7 @@
 - (void)viewDidLoad
 {
     
-    //UALog(@"loaded browser view controller with url request: %@", _urlToNavigateTo);
+    //JPLog(@"loaded browser view controller with url request: %@", _urlToNavigateTo);
     
     _tung = [TungCommonObjects establishTungObjects];
     

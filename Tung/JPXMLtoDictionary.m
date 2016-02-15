@@ -7,7 +7,7 @@
 //
 
 #import "JPXMLtoDictionary.h"
-#import "UALogger.h"
+#import "JPLogRecorder.h"
 
 @interface JPXMLtoDictionary()
 
@@ -43,7 +43,7 @@
 
 -(void) parserDidStartDocument:(NSXMLParser *)parser {
     
-    //UALog(@"////// parsing started");
+    //JPLog(@"////// parsing started");
     _isParsing = YES;
 }
 
@@ -133,7 +133,7 @@
 }
 
 -(void) parser:(NSXMLParser *)parser parseErrorOccurred:(NSError *)parseError {
-    UALog(@"Parser error: %@", [parseError localizedDescription]);
+    JPLog(@"Parser error: %@", [parseError localizedDescription]);
     
     _isParsing = NO;
 }
@@ -181,7 +181,7 @@ static NSDateFormatter *pubDateInterpreter_D = nil;
         date = [pubDateInterpreter_D dateFromString:pubDate];
     }
     else {
-        UALog(@"could not convert date: %@", pubDate);
+        JPLog(@"could not convert date: %@", pubDate);
         date = [NSDate date];
     }
     return date;

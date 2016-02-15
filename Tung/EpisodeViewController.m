@@ -21,8 +21,6 @@
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
 
-#import "UALogger.h"
-
 #define MAX_RECORD_TIME 29
 #define MIN_RECORD_TIME 2
 #define MAX_COMMENT_CHARS 220
@@ -495,7 +493,7 @@ NSTimer *markAsSeenTimer;
         
         self.view.backgroundColor = [UIColor whiteColor];
         // initialize views
-        //UALog(@"setup view for now playing: %@", _tung.npEpisodeEntity.title);
+        //JPLog(@"setup view for now playing: %@", _tung.npEpisodeEntity.title);
         if ([_nothingPlayingLabel isDescendantOfView:self.view]) {
             [_nothingPlayingLabel removeFromSuperview];
         }
@@ -754,7 +752,7 @@ static CGRect buttonsScrollViewHomeRect;
 - (void) setupNowPlayingControls {
     
     _npControlsViewIsVisible = YES;
-    //UALog(@"set up now playing control view");
+    //JPLog(@"set up now playing control view");
     if (!circleButtonDimension) circleButtonDimension = 45;
     
     // buttons scroll view
@@ -1006,7 +1004,7 @@ static CGRect buttonsScrollViewHomeRect;
     _speedButton.buttonText = [NSString stringWithFormat:@"%@", [playbackRateStrings objectAtIndex:_tung.playbackRateIndex]];
     [_speedButton setNeedsDisplay];
     
-    UALog(@"set playback rate to %@", rate);
+    JPLog(@"set playback rate to %@", rate);
     [_tung.player setRate:rate.floatValue];
     [_tung.trackInfo setObject:[NSNumber numberWithFloat:rate.floatValue] forKey:MPNowPlayingInfoPropertyPlaybackRate];
     [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_tung.trackInfo];
@@ -1081,7 +1079,7 @@ static CGRect buttonsScrollViewHomeRect;
             [_tung showNoConnectionAlert];
         }
     } else {
-        UALog(@"no website");
+        JPLog(@"no website");
         
         UIAlertView *noWebsiteAlert = [[UIAlertView alloc] initWithTitle:@"Bummer" message:@"This podcast doesn't have a website url in its feed." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
         [noWebsiteAlert show];
@@ -1092,22 +1090,22 @@ static CGRect buttonsScrollViewHomeRect;
 
 - (BOOL) trimAudioFrom:(CGFloat)startMarker to:(CGFloat)endMarker {
 
-    UALog(@"//// trim audio from %f to %f", startMarker, endMarker);
+    JPLog(@"//// trim audio from %f to %f", startMarker, endMarker);
     // input
 //    NSString *audioFile = [NSString stringWithFormat:@"%@", _tung.streamer.outputFile];
-//    //UALog(@"//// audio file to trim: %@", audioFile);
+//    //JPLog(@"//// audio file to trim: %@", audioFile);
 //    NSURL *audioFileUrl = [NSURL URLWithString:audioFile];
     
     NSURL *audioFileUrl = [_tung getEpisodeUrl:[_tung.playQueue objectAtIndex:0]];
     // test if input file has any bytes
     //NSData *audioURLData = [NSData dataWithContentsOfURL:audioFileUrl];
-    //UALog(@"//// audio file data length: %lu", (unsigned long)audioURLData.length);
+    //JPLog(@"//// audio file data length: %lu", (unsigned long)audioURLData.length);
     // output
     NSString *outputFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"recording.m4a"];
     NSURL *outputFileUrl = [TungCommonObjects getClipFileURL];
 
     if (!audioFileUrl || !outputFileUrl) {
-        UALog(@"//// ERROR no input or output file url");
+        JPLog(@"//// ERROR no input or output file url");
     	return NO;
     }
     // delete recording file if exists.
@@ -1119,7 +1117,7 @@ static CGRect buttonsScrollViewHomeRect;
 
     AVAssetExportSession *exportSession = [AVAssetExportSession exportSessionWithAsset:asset presetName:AVAssetExportPresetAppleM4A];
     if (exportSession == nil) {
-        UALog(@"//// ERROR no export session");
+        JPLog(@"//// ERROR no export session");
     	return NO;
     }
 
@@ -1134,7 +1132,7 @@ static CGRect buttonsScrollViewHomeRect;
     [exportSession exportAsynchronouslyWithCompletionHandler:^ {
         if (AVAssetExportSessionStatusCompleted == exportSession.status) {
             // It worked!
-            UALog(@"//// audio export successful");
+            JPLog(@"//// audio export successful");
             dispatch_async(dispatch_get_main_queue(), ^{
             	[_playClipButton setEnabled:YES];
                 [_clipOkayButton setEnabled:YES];
@@ -1142,7 +1140,7 @@ static CGRect buttonsScrollViewHomeRect;
         }
         else if (AVAssetExportSessionStatusFailed == exportSession.status) {
             // It failed...
-            UALog(@"//// audio export failed with status: %ld", (long)exportSession.status);
+            JPLog(@"//// audio export failed with status: %ld", (long)exportSession.status);
         }
     }];
 
@@ -1159,7 +1157,7 @@ static CGRect buttonsScrollViewHomeRect;
             // if rate not 1, set to 1
             if (_tung.player.rate != 1) [self setPlaybackRateToOne];
             
-            UALog(@"start recording *****");
+            JPLog(@"start recording *****");
             _isRecording = YES;
             
             [_playClipButton setEnabled:NO];
@@ -1174,7 +1172,7 @@ static CGRect buttonsScrollViewHomeRect;
         else {
             long recordTime = fabs([_recordStartTime timeIntervalSinceNow]);
             if (recordTime >= MIN_RECORD_TIME) {
-                UALog(@"STOP recording *****");
+                JPLog(@"STOP recording *****");
                 _recordEndMarker = CMTimeGetSeconds(_tung.player.currentTime);
                 _isRecording = NO;
                 _recordButton.isRecording = NO;
@@ -1218,7 +1216,7 @@ static CGRect buttonsScrollViewHomeRect;
 }
 
 - (void) resetRecording {
-    //UALog(@"reset recording");
+    //JPLog(@"reset recording");
     
     if ([_audioPlayer isPlaying]) [_audioPlayer stop];
     _audioPlayer = nil;
@@ -1243,7 +1241,7 @@ static CGRect buttonsScrollViewHomeRect;
     // create audio player
     NSURL *clipFileUrl = [TungCommonObjects getClipFileURL];
     NSData *clipData = [NSData dataWithContentsOfURL:clipFileUrl];
-    UALog(@"play clip file with data length: %lu", (unsigned long)clipData.length);
+    JPLog(@"play clip file with data length: %lu", (unsigned long)clipData.length);
     
     NSError *playbackError;
     _audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:clipFileUrl error:&playbackError];
@@ -1252,15 +1250,15 @@ static CGRect buttonsScrollViewHomeRect;
         _audioPlayer.delegate = self;
         // PLAY
         if ([_audioPlayer prepareToPlay] && [_audioPlayer play]) {
-            UALog(@"audio play started playing. duration: %f", _audioPlayer.duration);
+            JPLog(@"audio play started playing. duration: %f", _audioPlayer.duration);
             
         } else {
-            UALog(@"could not play recording");
+            JPLog(@"could not play recording");
             [self stopPlayback];
         }
     } else {
-        UALog(@"failed to create audio player");
-        UALog(@"%@", playbackError);
+        JPLog(@"failed to create audio player");
+        JPLog(@"%@", playbackError);
         [self stopPlayback];
     }
 }
@@ -1276,7 +1274,7 @@ static CGRect buttonsScrollViewHomeRect;
 - (void) audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag {
     
     if (flag) {
-        //UALog(@"audio player stopped successfully");
+        //JPLog(@"audio player stopped successfully");
         [_clipOkayButton setEnabled:YES];
     }
     _recordingDurationLabel.text = [NSString stringWithFormat:@":%02ld", lroundf(_audioPlayer.duration)];
@@ -1288,7 +1286,7 @@ static CGRect buttonsScrollViewHomeRect;
 }
 - (void) audioPlayerEndInterruption:(AVAudioPlayer *)player withOptions:(NSUInteger)flags {
     if (flags == AVAudioSessionInterruptionOptionShouldResume) {
-        UALog(@"audio player end interruption");
+        JPLog(@"audio player end interruption");
     }
 }
 
@@ -1348,7 +1346,7 @@ static CGRect buttonsScrollViewHomeRect;
         if (buffered > 0 && _tung.npEpisodeEntity.dataLength.doubleValue > 0) {
             progress = buffered / _tung.npEpisodeEntity.dataLength.doubleValue;
         }
-        //UALog(@"buffered: %f, total: %f, progress: %f", buffered, _tung.npEpisodeEntity.dataLength.floatValue, progress);
+        //JPLog(@"buffered: %f, total: %f, progress: %f", buffered, _tung.npEpisodeEntity.dataLength.floatValue, progress);
         _progressBar.progress = progress;
     } else {
         _progressBar.progress = 1;
@@ -1404,7 +1402,7 @@ static CGRect buttonsScrollViewHomeRect;
 
 // toggles clipConfirm view state and scroll view
 - (void) toggleNewClipView {
-    //UALog(@"toggle new clip view. clipConfirmActive: %@", (_clipConfirmActive) ? @"YES" : @"NO");
+    //JPLog(@"toggle new clip view. clipConfirmActive: %@", (_clipConfirmActive) ? @"YES" : @"NO");
     // dismiss comment and post view
     if (_clipConfirmActive) {
         if (_keyboardActive) {
@@ -1458,7 +1456,7 @@ static CGRect buttonsScrollViewHomeRect;
     _posbarIsBeingDragged = NO;
     
     int secs = floor(slider.value * _tung.totalSeconds);
-    //UALog(@"seek to position %f - %d seconds", slider.value, secs);
+    //JPLog(@"seek to position %f - %d seconds", slider.value, secs);
     
     CMTime time = CMTimeMake((secs * 100), 100);
 
@@ -1473,7 +1471,7 @@ static CGRect buttonsScrollViewHomeRect;
         }
     }
     [_tung.player seekToTime:time completionHandler:^(BOOL finished) {
-        //UALog(@"finished seeking to time (%@)", (finished) ? @"yes" : @"no");
+        //JPLog(@"finished seeking to time (%@)", (finished) ? @"yes" : @"no");
         [_tung.trackInfo setObject:[NSNumber numberWithFloat:CMTimeGetSeconds(time)] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
         [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_tung.trackInfo];
         [_posbar setEnabled:YES];
@@ -1578,7 +1576,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
     
     touchedInsideShowHideButton = NO;
     
-    //UALog(@"animate close with curve: %lu and duration: %f", (unsigned long)controlsEasing, animDuration);
+    //JPLog(@"animate close with curve: %lu and duration: %f", (unsigned long)controlsEasing, animDuration);
     willHide = NO;
     
     [self.view layoutIfNeeded];
@@ -1673,24 +1671,24 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         if (newConstraint > openConstraint) {
             float cDiff = newConstraint - openConstraint;
             float ratio = (cDiff < 200) ? cDiff/200 : 1;
-            //UALog(@"ratio: %f", ratio);
+            //JPLog(@"ratio: %f", ratio);
             newConstraint = openConstraint + 100 * ratio;
         }
         // stop drag at bottom
         if (newConstraint < closedConstraint) newConstraint = closedConstraint;
         
-        //UALog(@"drag controls with diff: %f to new constraint: %f", diff, newConstraint);
+        //JPLog(@"drag controls with diff: %f to new constraint: %f", diff, newConstraint);
         _npControlsBottomLayoutConstraint.constant = newConstraint;
         
         // animate alpha of controls
         float total = openConstraint - closedConstraint;
         float prog = fabsf(newConstraint) - fabsf(openConstraint);
-        //UALog(@"prog %f / total %f = decimal %f", prog, total, prog/total);
+        //JPLog(@"prog %f / total %f = decimal %f", prog, total, prog/total);
         float decimal = 1 - (prog / total);
         animDuration = fabsf((1-(fabsf(diff) / total)) * totalAnimDuration);
-        //UALog(@"animation duration: %f", animDuration);
+        //JPLog(@"animation duration: %f", animDuration);
         //float decimal = fabsf(newConstraint) - fabsf(openConstraint) / (openConstraint - closedConstraint);
-        //UALog(@"decimal: %f", decimal);
+        //JPLog(@"decimal: %f", decimal);
         float alpha = (decimal > 1) ? 1 : decimal;
         _buttonsScrollView.alpha = alpha;
         _posbar.alpha = alpha;
@@ -1710,7 +1708,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         [_commentAndPostView.postButton setEnabled:YES];
     }
     // count characters?
-    //UALog(@"char count: %lu", (unsigned long)textView.text.length);
+    //JPLog(@"char count: %lu", (unsigned long)textView.text.length);
 }
 
 - (void)textViewDidBeginEditing:(UITextView *)textView {
@@ -1727,7 +1725,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
     if ([_commentAndPostView.commentTextView.text isEqualToString:@""]) {
         [TungCommonObjects fadeInView:_commentAndPostView.tapToCommentLabel];
     } else {
-        UALog(@"*** reached comment character limit ***");
+        JPLog(@"*** reached comment character limit ***");
     }
 
 }
@@ -1749,8 +1747,8 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         CGRect keyboardRectBegin = [keyboardFrameBegin CGRectValue];
         NSValue *keyboardFrameEnd = [keyboardInfo valueForKey:UIKeyboardFrameEndUserInfoKey];
         CGRect keyboardRectEnd = [keyboardFrameEnd CGRectValue];
-        //UALog(@"keyboard will appear. %@", keyboardInfo);
-        //UALog(@"keyboard will appear. rect begin: %@, rect end: %@", NSStringFromCGRect(keyboardRectBegin),NSStringFromCGRect(keyboardRectEnd));
+        //JPLog(@"keyboard will appear. %@", keyboardInfo);
+        //JPLog(@"keyboard will appear. rect begin: %@, rect end: %@", NSStringFromCGRect(keyboardRectBegin),NSStringFromCGRect(keyboardRectEnd));
         
         // keyboard changes height (switch to emoji, open auto complete
         if (_keyboardActive) {
@@ -1813,7 +1811,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
         _hideControlsButton.hidden = NO;
         _buttonsScrollView.hidden = NO;
         _posbar.hidden = NO;
-        //UALog(@"keyboard will be hidden");
+        //JPLog(@"keyboard will be hidden");
         
         [UIView beginAnimations:@"keyboard down" context:NULL];
         [UIView setAnimationDuration:[notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
@@ -2092,7 +2090,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
 #pragma mark - Handle alerts / action sheets
 
 -(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    UALog(@"dismissed alert with button index: %ld", (long)buttonIndex);
+    JPLog(@"dismissed alert with button index: %ld", (long)buttonIndex);
     
     // reset recording prompt
     if (alertView.tag == 3) {
@@ -2102,7 +2100,7 @@ UIViewAnimationOptions controlsEasing = UIViewAnimationOptionCurveEaseInOut;
 
 /* not used
 - (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
-    UALog(@"dismissed actionSheet with button index: %ld", (long)buttonIndex);
+    JPLog(@"dismissed actionSheet with button index: %ld", (long)buttonIndex);
     
 }
 */

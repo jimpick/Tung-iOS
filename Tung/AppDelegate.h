@@ -15,6 +15,7 @@
 #import <Crashlytics/Crashlytics.h>
 #import <TwitterKit/TwitterKit.h>
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
+#import "JPLogRecorder.h"
 
 @class TungCommonObjects;
 

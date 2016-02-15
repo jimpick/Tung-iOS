@@ -178,7 +178,6 @@
 - (void) verifyCredWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) getSessionWithCallback:(void (^)(void))callback;
 - (void) handleUnauthorizedWithCallback:(void (^)(void))callback;
-- (void) killSessionForTesting;
 // stories post requests
 - (void) addPodcast:(PodcastEntity *)podcastEntity orEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
 - (void) restorePodcastDataSinceTime:(NSNumber *)time;
