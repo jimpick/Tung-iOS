@@ -181,7 +181,7 @@ static NSDateFormatter *pubDateInterpreter_D = nil;
         date = [pubDateInterpreter_D dateFromString:pubDate];
     }
     else {
-        JPLog(@"could not convert date: %@", pubDate);
+        JPLog(@"JPXMLtoDict: could not convert date: %@", pubDate);
         date = [NSDate date];
     }
     return date;

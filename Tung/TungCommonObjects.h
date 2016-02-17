@@ -228,10 +228,10 @@
 + (NSString *) generateHash;
 + (NSString *) getKeychainCred;
 + (void) saveKeychainCred: (NSString *)cred;
++ (void) deleteCredentials;
 + (NSData *) generateBodyFromDictionary:(NSDictionary *)dict withBoundary:(NSString *)boundary;
 + (NSData *) serializeParamsForPostRequest:(NSDictionary *)params;
 + (NSString *) serializeParamsForGetRequest:(NSDictionary *)params;
-+ (void) deleteCredentials;
 + (NSString *) cleanURLStringFromString:(NSString*)string;
 + (NSString *) formatNumberForCount:(NSNumber*)count;
 + (NSNumber *) stringToNumber:(NSString *)string;

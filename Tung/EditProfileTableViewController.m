@@ -114,7 +114,7 @@ static UIImage *iconRedX;
     [_keyboardToolbar setItems:@[_backBarItem, _fspace, _keyboardLabelBarItem, _fspace, _nextBarItem]];
     
     // set up fields and pre-load fields with profile data
-    JPLog(@"profile data: %@", _profileData);
+    //JPLog(@"profile data: %@", _profileData);
     if ([_profileData objectForKey:@"username"] != [NSNull null]) _field_username.text = [_profileData objectForKey:@"username"];
     _field_username.delegate = self;
     _field_username.inputAccessoryView = _keyboardToolbar;
@@ -292,8 +292,6 @@ static UIImage *iconRedX;
             [updateProfileErrorAlert show];
         }
     }];
-    
-    JPLog(@"save profile data: %@", _profileData);
 }
 
 #pragma mark - Avatar related
@@ -389,7 +387,7 @@ static UIImage *iconRedX;
 }
 
 - (void) establishAccountForAvatarRequest {
-    JPLog(@"establish account for avatar request");
+    //JPLog(@"establish account for avatar request");
     // spin
     _avatarActivityIndicator.hidden = NO;
     [_avatarActivityIndicator startAnimating];
@@ -436,7 +434,7 @@ static UIImage *iconRedX;
             id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
             NSDictionary *accountData = jsonData;
             if ([accountData objectForKey:@"errors"]) {
-                JPLog(@"Errors: %@", [accountData objectForKey:@"errors"]);
+                JPLog(@"Error getting twitter avatar: %@", [accountData objectForKey:@"errors"]);
             }
             else {
                 // make image big by removing "_normal"
@@ -467,7 +465,7 @@ static UIImage *iconRedX;
 
 // posts new avatar images to server
 - (void) updateAvatar {
-    JPLog(@"update avatar request");
+    //JPLog(@"update avatar request");
     // create request object
     NSURL *updateAvatarRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/update-avatar.php", _tung.apiRootUrl]];
     NSMutableURLRequest *updateAvatarRequest = [NSMutableURLRequest requestWithURL:updateAvatarRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];

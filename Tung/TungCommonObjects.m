@@ -384,7 +384,7 @@
     if (object == _player && [keyPath isEqualToString:@"currentItem.playbackLikelyToKeepUp"]) {
         
         if (_player.currentItem.playbackLikelyToKeepUp) {
-            JPLog(@"-- player likely to keep up");
+            //JPLog(@"-- player likely to keep up");
             
             if (_totalSeconds > 0) {
                 float currentSecs = CMTimeGetSeconds(_player.currentTime);
@@ -403,7 +403,7 @@
             }
             
         } else {
-            JPLog(@"-- player NOT likely to keep up");
+            //JPLog(@"-- player NOT likely to keep up");
             // see if file is cached yet, so player can switch to local file
             if (_fileIsStreaming && _fileIsLocal) {
                 [self replacePlayerItemWithLocalCopy];
@@ -1012,7 +1012,7 @@ static NSString *episodeDirName = @"episodes";
 
 - (void) queueEpisodeForDownload:(EpisodeEntity *)episodeEntity {
     
-    JPLog(@"queue episode for saving: %@", episodeEntity.title);
+    //JPLog(@"queue episode for saving: %@", episodeEntity.title);
     
     // check if there is enough disk space
     CGFloat freeDiskSpace = [ALDisk freeDiskSpaceInBytes];
@@ -1021,7 +1021,7 @@ static NSString *episodeDirName = @"episodes";
     NSString *spaceNeeded = [TungCommonObjects formatBytes:[NSNumber numberWithFloat:_bytesToSave]];
     
     if (freeDiskSpace <= _bytesToSave) {
-        JPLog(@"not enough storage. free space: %@, space needed: %@", freeSpace, spaceNeeded);
+        JPLog(@"Error queueing episode for save: not enough storage. free space: %@, space needed: %@", freeSpace, spaceNeeded);
         
         UIAlertController *notEnoughDiskAlert = [UIAlertController alertControllerWithTitle:@"Not enough storage" message:[NSString stringWithFormat:@"The episode(s) you're trying to save require %@ but you only have %@ available. Try removing some other saved episodes or delete all saved episodes from settings.", spaceNeeded, freeSpace] preferredStyle:UIAlertControllerStyleAlert];
         [notEnoughDiskAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
@@ -1058,7 +1058,7 @@ static NSString *episodeDirName = @"episodes";
 
 - (void) cancelDownloadForEpisode:(EpisodeEntity *)episodeEntity {
     
-    JPLog(@"cancel save for episode: %@", episodeEntity.title);
+    //JPLog(@"cancel save for episode: %@", episodeEntity.title);
     
     // deduct bytes to save
     _bytesToSave -= episodeEntity.dataLength.doubleValue;
@@ -1091,7 +1091,7 @@ static NSString *episodeDirName = @"episodes";
 
 - (void) downloadEpisode:(EpisodeEntity *)episodeEntity {
     
-    JPLog(@"start download of episode: %@", episodeEntity.title);
+    //JPLog(@"start download of episode: %@", episodeEntity.title);
     _episodeToSaveEntity = episodeEntity;
     episodeEntity.isQueuedForSave = [NSNumber numberWithBool:YES];
     episodeEntity.isDownloadingForSave = [NSNumber numberWithBool:YES];
@@ -1131,7 +1131,7 @@ static NSString *episodeDirName = @"episodes";
 }
 
 - (void) deleteAllSavedEpisodes {
-    JPLog(@"delete all saved episodes:");
+    //JPLog(@"delete all saved episodes");
     // remove "isSaved" status from all entities
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     NSError *error = nil;
@@ -1164,7 +1164,7 @@ static NSString *episodeDirName = @"episodes";
 }
 
 - (void) deleteAllCachedEpisodes {
-    JPLog(@"delete all cached episodes:");
+    //JPLog(@"delete all cached episodes");
     // remove saved files
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSString *episodesDir = [self getCachedEpisodesDirectoryPath];
@@ -1174,7 +1174,7 @@ static NSString *episodeDirName = @"episodes";
     if (episodesDirContents.count > 0 && error == nil) {
         for (NSString *item in episodesDirContents) {
             if ([fileManager removeItemAtPath:[episodesDir stringByAppendingPathComponent:item] error:NULL]) {
-                JPLog(@"- removed item: %@", item);
+                //JPLog(@"- removed item: %@", item);
             };
         }
     }
@@ -1216,11 +1216,11 @@ static NSString *episodeDirName = @"episodes";
             episodeEntity.savedUntilDate = todayPlusThirtyDays;
             
         } else {
-            JPLog(@"error: %@", error);
+            JPLog(@"Error moving episode: %@", error);
             episodeEntity.isSaved = [NSNumber numberWithBool:NO];
         }
     } else {
-        JPLog(@"file does not exist in temp path");
+        JPLog(@"move episode: file does not exist in temp path");
         episodeEntity.isSaved = [NSNumber numberWithBool:NO];
     }
     [TungCommonObjects saveContextWithReason:@"moved episode to saved"];
@@ -1298,9 +1298,9 @@ static NSString *episodeDirName = @"episodes";
         NSString *episodesDir = [self getSavedEpisodesDirectoryPath];
         NSString *episodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
         NSError *error;
-        NSLog(@"episode file path: %@", episodeFilepath);
+        
         if ([_saveTrackData writeToFile:episodeFilepath options:0 error:&error]) {
-            JPLog(@"-- saved podcast track");
+            //JPLog(@"-- saved podcast track");
             
             _saveTrackData = nil;
             _saveTrackConnection = nil;
@@ -1309,14 +1309,12 @@ static NSString *episodeDirName = @"episodes";
             _episodeToSaveEntity.isDownloadingForSave = [NSNumber numberWithBool:NO];
             _episodeToSaveEntity.isSaved = [NSNumber numberWithBool:YES];
             // set date and local notif. for deletion
-            // TODO: replace one day with thirty days
-            //NSDate *todayPlusThirtyDays = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitDay value:30 toDate:[NSDate date] options:0];
-            NSDate *todayPlusOneDay = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitDay value:1 toDate:[NSDate date] options:0];
-            _episodeToSaveEntity.savedUntilDate = todayPlusOneDay;
+            NSDate *todayPlusThirtyDays = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitDay value:30 toDate:[NSDate date] options:0];
+            _episodeToSaveEntity.savedUntilDate = todayPlusThirtyDays;
             [TungCommonObjects saveContextWithReason:@"episode finished saving"];
             
             UILocalNotification *expiredEpisodeNotif = [[UILocalNotification alloc] init];
-            expiredEpisodeNotif.fireDate = todayPlusOneDay;
+            expiredEpisodeNotif.fireDate = todayPlusThirtyDays;
             expiredEpisodeNotif.timeZone = [[NSCalendar currentCalendar] timeZone];
             expiredEpisodeNotif.hasAction = NO;
             expiredEpisodeNotif.userInfo = @{@"deleteEpisodeWithUrl": _episodeToSaveEntity.url};
@@ -1512,7 +1510,7 @@ UILabel *prototypeBadge;
             JPLog(@"** save context with reason: %@ :: ERROR: %@", reason, savingError);
         }
     } else {
-        JPLog(@"** save context with reason: %@ :: Did not save, no changes", reason);
+        //JPLog(@"** save context with reason: %@ :: Did not save, no changes", reason);
     }
     return saved;
 }
@@ -1525,11 +1523,11 @@ UILabel *prototypeBadge;
 + (PodcastEntity *) getEntityForPodcast:(NSDictionary *)podcastDict save:(BOOL)save {
     
     if (!podcastDict || ![podcastDict objectForKey:@"collectionId"]) {
-        JPLog(@"get entity for podcast: ERROR: podcast dict was null");
+        JPLog(@"get entity for podcast ERROR: podcast dict was null");
         return nil;
     }
     
-    JPLog(@"get entity for podcast: %@ (%@)", [podcastDict objectForKey:@"collectionName"], [podcastDict objectForKey:@"collectionId"]);
+    //JPLog(@"get entity for podcast: %@ (%@)", [podcastDict objectForKey:@"collectionName"], [podcastDict objectForKey:@"collectionId"]);
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     PodcastEntity *podcastEntity;
     
@@ -1623,7 +1621,7 @@ UILabel *prototypeBadge;
         return nil;
     }
     
-    //'JPLog(@"get episode entity for episode: %@", episodeDict);
+    //JPLog(@"get episode entity for episode: %@", episodeDict);
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
 
     // get episode entity
@@ -1691,7 +1689,7 @@ UILabel *prototypeBadge;
     	url = [[enclosureDict objectForKey:@"el:attributes"] objectForKey:@"url"];
     }
     else if (!episodeEntity.url) {
-        //NSLog(@"episode dict missing url: %@", episodeDict);
+        JPLog(@"episode dict missing url: %@", episodeDict);
         //NSLog(@"%@",[NSThread callStackSymbols]);
         url = @"";
     }
@@ -2005,9 +2003,10 @@ static NSDateFormatter *ISODateInterpreter = nil;
     }
 }
 
+// called on sign-out
 + (void) removePodcastAndEpisodeData {
     
-    JPLog(@"remove podcast and episode data");
+    //JPLog(@"remove podcast and episode data");
     
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     // delete episode entity data
@@ -2034,8 +2033,9 @@ static NSDateFormatter *ISODateInterpreter = nil;
     [self saveContextWithReason:@"removed podcast and episode data"];
 }
 
+// called on sign-out
 + (void) removeAllUserData {
-    JPLog(@"remove all user data");
+    //JPLog(@"remove all user data");
     
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
@@ -2044,7 +2044,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
     if (result.count > 0) {
         for (int i = 0; i < result.count; i++) {
             [appDelegate.managedObjectContext deleteObject:[result objectAtIndex:i]];
-            JPLog(@"deleted user record at index: %d", i);
+            //JPLog(@"deleted user record at index: %d", i);
         }
     }
 }
@@ -2280,7 +2280,7 @@ static NSArray *colors;
                 //JPLog(@"Verify cred response %@", responseDict);
                 
                 if ([responseDict objectForKey:@"error"]) {
-                    JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                    JPLog(@"Error verifying cred with Twitter: %@", [responseDict objectForKey:@"error"]);
                     callback(NO, responseDict);
                 }
                 else if ([responseDict objectForKey:@"success"]) {
@@ -2312,9 +2312,9 @@ static NSArray *colors;
         dispatch_async(dispatch_get_main_queue(), ^{
             if (jsonData != nil && error == nil) {
                 NSDictionary *responseDict = jsonData;
-                JPLog(@"Verify cred response %@", responseDict);
+                //JPLog(@"Verify cred response %@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
-                    JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                    JPLog(@"Error verifying cred with FB: %@", [responseDict objectForKey:@"error"]);
                     
                     callback(NO, responseDict);
                 }
@@ -2369,7 +2369,7 @@ static NSArray *colors;
                     });
                 }
                 else if ([responseDict objectForKey:@"error"]) {
-                    JPLog(@"error getting session: response: %@", responseDict);
+                    JPLog(@"Error getting session: response: %@", responseDict);
                     dispatch_async(dispatch_get_main_queue(), ^{
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Unauthorized"]) {
                             // attempt to automatically sign back in or sign out
@@ -2401,6 +2401,8 @@ static NSArray *colors;
 // this happens because a new token is issued on each sign-in (signin != session).
 // so if user signed into Tung on a different device, their token here won't work.
 -(void) handleUnauthorizedWithCallback:(void (^)(void))callback {
+    
+    JPLog(@"handle unauthorized with callback");
     
     UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
     if (loggedUser && loggedUser.tung_id) {
@@ -2466,7 +2468,7 @@ static NSArray *colors;
         }
     }
 	// if method hasn't returned... force user to sign out and sign in again
-    UIAlertController *unauthorizedAlert = [UIAlertController alertControllerWithTitle:@"Session expired" message:@"Please sign in again." preferredStyle:UIAlertControllerStyleAlert];
+    UIAlertController *unauthorizedAlert = [UIAlertController alertControllerWithTitle:@"Credentials expired" message:@"Please sign in again." preferredStyle:UIAlertControllerStyleAlert];
     [unauthorizedAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:^(UIAlertAction * _Nonnull action) {
         [self signOut];
     }]];
@@ -2486,7 +2488,7 @@ static NSArray *colors;
         return;
     }
     
-    JPLog(@"add podcast/episode request");
+    //JPLog(@"add podcast/episode request");
     NSURL *addEpisodeRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/add-podcast.php", _apiRootUrl]];
     NSMutableURLRequest *addEpisodeRequest = [NSMutableURLRequest requestWithURL:addEpisodeRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [addEpisodeRequest setHTTPMethod:@"POST"];
@@ -2662,7 +2664,7 @@ static NSArray *colors;
 
 // get shortlink and id for episode, make new record in none exists.
 - (void) addEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback {
-    JPLog(@"add episoe request");
+    //JPLog(@"add episoe request");
     NSURL *getEpisodeInfoRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/add-episode.php", _apiRootUrl]];
     NSMutableURLRequest *getEpisodeInfoRequest = [NSMutableURLRequest requestWithURL:getEpisodeInfoRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [getEpisodeInfoRequest setHTTPMethod:@"POST"];
@@ -2691,7 +2693,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        JPLog(@"Error adding episode: %@", [responseDict objectForKey:@"error"]);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
@@ -2714,7 +2716,7 @@ static NSArray *colors;
 
 // SUBSCRIBING
 - (void) subscribeToPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button {
-    JPLog(@"subscribe request for podcast with id %@", podcastEntity.collectionId);
+    //JPLog(@"subscribe request for podcast with id %@", podcastEntity.collectionId);
     [button setEnabled:NO];
     
     SettingsEntity *settings = [TungCommonObjects settings];
@@ -2754,7 +2756,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        JPLog(@"Error subscribing to podcast: %@", [responseDict objectForKey:@"error"]);
                         [button setEnabled:YES];
                     }
                 }
@@ -2783,7 +2785,7 @@ static NSArray *colors;
 }
 
 - (void) unsubscribeFromPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button {
-    JPLog(@"unsubscribe request for podcast with id %@", podcastEntity.collectionId);
+    //JPLog(@"unsubscribe request for podcast with id %@", podcastEntity.collectionId);
     [button setEnabled:NO];
     NSURL *unsubscribeFromPodcastRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/unsubscribe.php", _apiRootUrl]];
     NSMutableURLRequest *unsubscribeFromPodcastRequest = [NSMutableURLRequest requestWithURL:unsubscribeFromPodcastRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
@@ -2817,7 +2819,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        JPLog(@"Error unsubscribing from podcast: %@", [responseDict objectForKey:@"error"]);
                         [button setEnabled:YES];
                     }
                 }
@@ -2900,7 +2902,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        JPLog(@"Error recommending episode: %@", [responseDict objectForKey:@"error"]);
                         callback(NO, responseDict);
                     }
                 }
@@ -2934,6 +2936,7 @@ static NSArray *colors;
 }
 
 - (void) unRecommendEpisode:(EpisodeEntity *)episodeEntity {
+    //JPLog(@"un-recommend episode");
     NSURL *unRecommendPodcastRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/un-recommend.php", _apiRootUrl]];
     NSMutableURLRequest *unRecommendPodcastRequest = [NSMutableURLRequest requestWithURL:unRecommendPodcastRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [unRecommendPodcastRequest setHTTPMethod:@"POST"];
@@ -2941,8 +2944,6 @@ static NSArray *colors;
     NSDictionary *params = @{@"sessionId":_sessionId,
                              @"episodeId": episodeId
                              };
-    
-    JPLog(@"un-recommend episode");
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [unRecommendPodcastRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -2970,7 +2971,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        JPLog(@"Error un-recommending episode: %@", [responseDict objectForKey:@"error"]);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
@@ -3023,7 +3024,7 @@ static NSArray *colors;
                    };
     }
     
-    JPLog(@"sync progress (%f) request", episodeEntity.trackPosition.doubleValue);
+    //JPLog(@"sync progress (%f) request", episodeEntity.trackPosition.doubleValue);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [syncProgressRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -3050,7 +3051,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        JPLog(@"Error syncing progress: %@", [responseDict objectForKey:@"error"]);
                     }
                 }
                 else if ([responseDict objectForKey:@"success"]) {
@@ -3137,7 +3138,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        JPLog(@"Error posting comment: %@", [responseDict objectForKey:@"error"]);
                         callback(NO, responseDict);
                     }
                 }
@@ -3246,7 +3247,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        JPLog(@"Error posting clip: %@", [responseDict objectForKey:@"error"]);
                         callback(NO, responseDict);
                     }
                 }
@@ -3275,7 +3276,7 @@ static NSArray *colors;
 }
 
 - (void) deleteStoryEventWithId:(NSString *)eventId withCallback:(void (^)(BOOL success))callback  {
-    JPLog(@"delete story event with id: %@", eventId);
+    //JPLog(@"delete story event with id: %@", eventId);
     NSURL *deleteEventRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/delete-story-event.php", _apiRootUrl]];
     NSMutableURLRequest *deleteEventRequest = [NSMutableURLRequest requestWithURL:deleteEventRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [deleteEventRequest setHTTPMethod:@"POST"];
@@ -3302,7 +3303,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        JPLog(@"Error deleting story event: %@", [responseDict objectForKey:@"error"]);
                         callback(NO);
                     }
                 }
@@ -3321,7 +3322,7 @@ static NSArray *colors;
 }
 
 - (void) flagCommentWithId:(NSString *)eventId {
-    JPLog(@"flag comment with id: %@", eventId);
+    //JPLog(@"flag comment with id: %@", eventId);
     NSURL *flagCommentRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/flag.php", _apiRootUrl]];
     NSMutableURLRequest *flagCommentRequest = [NSMutableURLRequest requestWithURL:flagCommentRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [flagCommentRequest setHTTPMethod:@"POST"];
@@ -3348,7 +3349,7 @@ static NSArray *colors;
                         }];
                     }
                     else {
-                        JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                        JPLog(@"Error flagging comment: %@", [responseDict objectForKey:@"error"]);
                         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Error flagging" message:[responseDict objectForKey:@"error"] preferredStyle:UIAlertControllerStyleAlert];
                         [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
                         [_viewController presentViewController:alert animated:YES completion:nil];
@@ -3703,9 +3704,6 @@ static NSArray *colors;
     	[[FBSDKLoginManager new] logOut];
     }
     
-    // clear temp directory
-    [TungCommonObjects clearTempDirectory];
-    
     // settings
     [UIApplication sharedApplication].applicationIconBadgeNumber = 0;
     SettingsEntity *settings = [TungCommonObjects settings];
@@ -3883,19 +3881,16 @@ static NSArray *colors;
 }
 
 + (void) showBannerAlertForText:(NSString *)text andWidth:(CGFloat)screenWidth {
+    
     BannerAlert *bannerAlertView = [[BannerAlert alloc] init];
-    
     [bannerAlertView sizeBannerAndSetText:text forWidth:screenWidth];
-    
     //KLCPopupLayout layout = KLCPopupLayoutMake(KLCPopupHorizontalLayoutCenter, KLCPopupVerticalLayoutBottom);
-    
     KLCPopup *bannerAlert = [KLCPopup popupWithContentView:bannerAlertView
                                                   showType:KLCPopupShowTypeFadeIn
                                                dismissType:KLCPopupDismissTypeFadeOut
                                                   maskType:KLCPopupMaskTypeDimmed
                                   dismissOnBackgroundTouch:NO
                                      dismissOnContentTouch:NO];
-    
     //[bannerAlert showWithLayout:layout duration:3];
     [bannerAlert showWithDuration:3];
 }
@@ -4189,9 +4184,34 @@ static NSArray *colors;
     OSStatus status = SecItemAdd((__bridge CFDictionaryRef)id_security_item, &result);
     
     if (status == errSecSuccess) {
-        //JPLog(@"successfully stored credentials");
+        JPLog(@"successfully stored credentials");
     } else {
         JPLog(@"Failed to store cred with code: %ld", (long)status);
+    }
+}
+
++ (void) deleteCredentials {
+    
+    // delete credentials from keychain
+    NSString *key = @"tung credentials";
+    NSString *service = [[NSBundle mainBundle] bundleIdentifier];
+    
+    NSDictionary *deleteQuery = @{
+                                  (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
+                                  (__bridge id)kSecAttrService : service,
+                                  (__bridge id)kSecAttrAccount : key,
+                                  (__bridge id)kSecAttrSynchronizable : (__bridge id)kCFBooleanTrue // iCloud sync
+                                  };
+    OSStatus foundExisting = SecItemCopyMatching((__bridge CFDictionaryRef)deleteQuery, NULL);
+    if (foundExisting == errSecSuccess) {
+        OSStatus status = SecItemDelete((__bridge CFDictionaryRef)deleteQuery);
+        if (status == errSecSuccess) {
+            JPLog(@"deleted keychain cred");
+        } else {
+            JPLog(@"failed to delete keychain cred: %@", (long)status);
+        }
+    } else {
+        JPLog(@"failed to delete keychain cred - did not exist");
     }
 }
 
@@ -4251,27 +4271,6 @@ static NSArray *colors;
     
     NSArray *paramArray = [self createEncodedArrayOfParams:params];
     return [NSString stringWithFormat:@"?%@", [paramArray componentsJoinedByString:@"&"]];
-}
-
-+ (void) deleteCredentials {
-    
-    // delete credentials from keychain
-    NSString *key = @"tung credentials";
-    NSString *service = [[NSBundle mainBundle] bundleIdentifier];
-    
-    NSDictionary *deleteQuery = @{
-                                  (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
-                                  (__bridge id)kSecAttrService : service,
-                                  (__bridge id)kSecAttrAccount : key,
-                                  (__bridge id)kSecAttrSynchronizable : (__bridge id)kCFBooleanTrue // iCloud sync
-                                  };
-    OSStatus foundExisting = SecItemCopyMatching((__bridge CFDictionaryRef)deleteQuery, NULL);
-    if (foundExisting == errSecSuccess) {
-        OSStatus deleted = SecItemDelete((__bridge CFDictionaryRef)deleteQuery);
-        if (deleted == errSecSuccess) {
-            JPLog(@"deleted keychain cred");
-        }
-    }
 }
 
 static NSRegularExpression *protocolRgx = nil;

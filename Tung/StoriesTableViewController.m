@@ -104,7 +104,7 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
 }
 
 - (void) refreshFeed {
-    //JPLog(@"refresh feed");
+    JPLog(@"refresh feed");
     
     NSNumber *mostRecent;
 
