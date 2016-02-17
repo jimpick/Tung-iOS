@@ -7,7 +7,7 @@
 
 #import "JPLogRecorder.h"
 
-static BOOL JPLogRecorder_shouldLogInProduction = NO;
+static BOOL JPLogRecorder_shouldLogInProduction = YES;
 static NSInteger JPLogRecorder_maxLogsRetained = 50;
 
 @implementation JPLogRecorder
