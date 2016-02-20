@@ -75,8 +75,8 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        //_apiRootUrl = @"https://api.tung.fm/";
-        _apiRootUrl = @"https://staging-api.tung.fm/";
+        _apiRootUrl = @"https://api.tung.fm/";
+        //_apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
@@ -1209,10 +1209,17 @@ static NSString *episodeDirName = @"episodes";
     
     // find in temp
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSString *episodeFilename = [[episodeEntity.url lastPathComponent] stringByRemovingPercentEncoding];
     
+    // strip out query string
+    NSURL *url = [NSURL URLWithString:episodeEntity.url];
+    NSURLComponents *urlComponents = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
+    urlComponents.query = nil;
+    NSString *episodeFilename = [urlComponents.string lastPathComponent];
+    
+    //NSString *episodeFilename = [[episodeEntity.url lastPathComponent] stringByRemovingPercentEncoding];
     NSString *cachedEpisodesDir = [self getCachedEpisodesDirectoryPath];
     NSString *cachedEpisodeFilepath = [cachedEpisodesDir stringByAppendingPathComponent:episodeFilename];
+    //NSLog(@"move episode - path: %@", cachedEpisodeFilepath);
     
     if ([fileManager fileExistsAtPath:cachedEpisodeFilepath]) {
         // save in docs directory
@@ -1233,6 +1240,7 @@ static NSString *episodeDirName = @"episodes";
     } else {
         JPLog(@"move episode: file does not exist in temp path");
         episodeEntity.isSaved = [NSNumber numberWithBool:NO];
+        [self simpleErrorAlertWithMessage:@"Could not move episode to saved"];
     }
     [TungCommonObjects saveContextWithReason:@"moved episode to saved"];
     [self queueSaveStatusDidChangeNotification];
@@ -1246,12 +1254,29 @@ static NSString *episodeDirName = @"episodes";
 {
     if (connection == _trackDataConnection) {
         //JPLog(@"[NSURLConnectionDataDelegate] connection did receive response");
+        //NSLog(@"connection response: %@", response);
+        
+        // get data length from response header
+        //if (_npEpisodeEntity.dataLength.doubleValue == 0) {
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *) response;
+        if ([[httpResponse allHeaderFields] objectForKey:@"Content-Length"]) {
+            NSNumber *dataLength = [NSNumber numberWithDouble:[[[httpResponse allHeaderFields] objectForKey:@"Content-Length"] doubleValue]];
+            _npEpisodeEntity.dataLength = dataLength;
+        }
+        //}
         _trackData = [NSMutableData data];
         _response = (NSHTTPURLResponse *)response;
         
         [self processPendingRequests];
     }
     else if (connection == _saveTrackConnection) {
+        
+        // get data length from response header
+        NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *) response;
+        if ([[httpResponse allHeaderFields] objectForKey:@"Content-Length"]) {
+            NSNumber *dataLength = [NSNumber numberWithDouble:[[[httpResponse allHeaderFields] objectForKey:@"Content-Length"] doubleValue]];
+            _episodeToSaveEntity.dataLength = dataLength;
+        }
         
         _saveTrackData = [NSMutableData data];
     }

@@ -1032,7 +1032,7 @@ static CGRect buttonsScrollViewHomeRect;
             // streaming; will not be cached
             [_tung cacheNowPlayingEpisodeAndMoveToSaved:YES];
             _saveButton.on = NO;
-            _saveLabel.text = @"Saving…";
+            _saveLabel.text = @"Downloading…";
         }
         else {
             if (_tung.fileIsLocal) {
@@ -1045,7 +1045,7 @@ static CGRect buttonsScrollViewHomeRect;
                 // currently downloading
                 _tung.saveOnDownloadComplete = YES;
                 _saveButton.on = NO;
-                _saveLabel.text = @"Saving…";
+                _saveLabel.text = @"Downloading…";
             }
         }
         [_saveButton setNeedsDisplay];
@@ -1342,6 +1342,7 @@ static CGRect buttonsScrollViewHomeRect;
     // progress bar
     if (!_tung.fileIsLocal) {
         float buffered = _tung.trackData.length;
+        //JPLog(@"update view - buffered: %f, entity data length: %@", buffered, _tung.npEpisodeEntity.dataLength);
         float progress = 0;
         if (buffered > 0 && _tung.npEpisodeEntity.dataLength.doubleValue > 0) {
             progress = buffered / _tung.npEpisodeEntity.dataLength.doubleValue;
