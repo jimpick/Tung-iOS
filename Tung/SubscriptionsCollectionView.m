@@ -14,6 +14,7 @@
 @interface SubscriptionsCollectionView () <NSFetchedResultsControllerDelegate>
 
 @property NSFetchedResultsController *resultsController;
+@property NSFetchRequest *subscribedQuery;
 @property TungPodcast *podcast;
 @property TungCommonObjects *tung;
 @property NSMutableArray *sectionChanges;
@@ -88,14 +89,34 @@ CGFloat screenWidth;
     
     // get subscribed podcasts
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
-    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
+    _subscribedQuery = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
     //NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isSubscribed == %@", [NSNumber numberWithBool:YES]];
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSubscribed == YES"];
-    request.predicate = predicate;
+    _subscribedQuery.predicate = predicate;
     NSSortDescriptor *dateSort = [[NSSortDescriptor alloc] initWithKey:@"timeSubscribed" ascending:YES];
-    request.sortDescriptors = @[dateSort];
-    _resultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:request managedObjectContext:appDelegate.managedObjectContext sectionNameKeyPath:nil cacheName:nil];
+    _subscribedQuery.sortDescriptors = @[dateSort];
+    _resultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:_subscribedQuery managedObjectContext:appDelegate.managedObjectContext sectionNameKeyPath:nil cacheName:nil];
     _resultsController.delegate = self;
+}
+
+- (void) viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    // preload podcast art
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSError *fetchingError;
+    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:_subscribedQuery error:&fetchingError];
+    if (result.count > 0) {
+        NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
+        preloadQueue.maxConcurrentOperationCount = 3;
+        
+        for (int i = 0; i < result.count; i++) {
+            PodcastEntity *podEntity = [result objectAtIndex:i];
+            [preloadQueue addOperationWithBlock:^{
+                [TungCommonObjects retrievePodcastArtDataWithUrlString:podEntity.artworkUrl600 andCollectionId:podEntity.collectionId];
+            }];
+        }
+    }
 }
 
 NSTimer *promptTimer;
@@ -127,6 +148,7 @@ NSTimer *promptTimer;
         [[UIApplication sharedApplication] setApplicationIconBadgeNumber:newBadgeNumber];
     }
     
+    // perform fetch
     NSError *fetchingError;
     [_resultsController performFetch:&fetchingError];
     _fetched = YES;

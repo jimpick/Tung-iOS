@@ -335,12 +335,13 @@
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
     // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
+    JPLog(@"application will enter foreground");
     
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-    //JPLog(@"Application did become active");
+    JPLog(@"Application did become active");
     [_tung checkForNowPlaying];
     // if feed hasn't been fetched in the last 5 minutes
     [_tung checkFeedLastFetchedTime];

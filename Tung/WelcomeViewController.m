@@ -162,7 +162,7 @@
 
 - (IBAction)signUpWithTwitter:(id)sender {
 
-    JPLog(@"sign up with twitter");
+    JPLog(@"sign-in/up with twitter");
     
     [self loginRequestBegan];
     
@@ -247,7 +247,8 @@
 
 
 - (IBAction)signUpWithFacebook:(id)sender {
-        
+    
+    JPLog(@"sign-in/up with facebook");
     [self loginRequestBegan];
     
     FBSDKLoginManager *login = [[FBSDKLoginManager alloc] init];

@@ -75,8 +75,8 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        _apiRootUrl = @"https://api.tung.fm/";
-        //_apiRootUrl = @"https://staging-api.tung.fm/";
+        //_apiRootUrl = @"https://api.tung.fm/";
+        _apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
@@ -243,7 +243,7 @@
     // • Handle this notification by fully reconfiguring audio
     
     //[TungCommonObjects showBannerAlertForText:@"Media services reset" andWidth:_screenWidth];
-    
+    JPLog(@"////// handle media services reset");
     if ([[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayback error: nil]) {
         [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     }
@@ -280,9 +280,10 @@
         [self setControlButtonStateToPlay];
         [self savePositionForNowPlayingAndSync:YES];
         // see if file is cached yet, so player can switch to local file
+        /* may be causing issues, disabling for now
         if (_fileIsStreaming && _fileIsLocal) {
             [self replacePlayerItemWithLocalCopy];
-        }
+        } */
     }
 }
 - (void) seekBack {
@@ -370,7 +371,15 @@
                         JPLog(@"play from beginning - already playing");
                     } else {
                         JPLog(@"play from beginning - with preroll");
-                        [_player prerollAtRate:1.0 completionHandler:nil];
+                        [_player prerollAtRate:1.0 completionHandler:^(BOOL finished) {
+                            JPLog(@"-- finished preroll: %d", finished);
+                            if ([self isPlaying]) {
+                                [self setControlButtonStateToPause];
+                            } else {
+                                [self playerPlay];
+                            }
+                            [self determineTotalSeconds];
+                        }];
                     }
                 }
                 break;
@@ -405,9 +414,10 @@
         } else {
             //JPLog(@"-- player NOT likely to keep up");
             // see if file is cached yet, so player can switch to local file
+            /* may be causing issues, disabling for now
             if (_fileIsStreaming && _fileIsLocal) {
                 [self replacePlayerItemWithLocalCopy];
-            }
+            }*/
             if (!_shouldStayPaused) [self setControlButtonStateToBuffering];
         }
     }
@@ -485,9 +495,10 @@
 }
 
 - (void) seekToTime:(CMTime)time {
+    /* may be causing issues, disabling for now
     if (_fileIsStreaming && _fileIsLocal) {
         [self replacePlayerItemWithLocalCopy];
-    }
+    }*/
     [_trackInfo setObject:[NSNumber numberWithFloat:CMTimeGetSeconds(time)] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
     [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_trackInfo];
     //[_player seekToTime:time];
@@ -704,10 +715,10 @@
     }
     if (round(currentTimeSecs) < floor(_totalSeconds)) {
         JPLog(@"completed playback called prematurely.");
+        /*
         if (_fileIsStreaming && _fileIsLocal) {
             [self replacePlayerItemWithLocalCopy];
         }
-        /*
         else {
             JPLog(@"- attempt to reload episode");
             // do not need timestamp bc eject current episode saves position
@@ -887,13 +898,13 @@
             if (_npEpisodeEntity.trackPosition.floatValue > 0.1 && _npEpisodeEntity.trackPosition.floatValue < 1.0) {
                 // no caching
                 _fileWillBeCached = NO;
-                JPLog(@"^^^ will stream from url with NO caching");
+                JPLog(@"^^^ will STREAM from url with NO caching");
             }
             else {
                 // return url with custom scheme
                 components.scheme = @"tungstream";
                 _fileWillBeCached = YES;
-                JPLog(@"^^^ will stream from url with custom scheme");
+                JPLog(@"^^^ will STREAM from url with custom scheme");
                 
             }
             return [components URL];
@@ -2334,7 +2345,7 @@ static NSArray *colors;
 // all requests require a session ID instead of credentials
 // start here and get session with credentials
 - (void) getSessionWithCallback:(void (^)(void))callback {
-    JPLog(@"getting new session with id: %@", _tungId);
+    JPLog(@"getting new session");
 
     if (!_tungId) {
         JPLog(@"Tung ID was null, re-establish cred");
@@ -2404,6 +2415,8 @@ static NSArray *colors;
     
     JPLog(@"handle unauthorized with callback");
     
+    [TungCommonObjects deleteCredentials];
+    
     UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
     if (loggedUser && loggedUser.tung_id) {
         
@@ -2421,14 +2434,13 @@ static NSArray *colors;
                     _connectionAvailable = [NSNumber numberWithInt:1];
                     
                     NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                    JPLog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
+                    //JPLog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
                     if (lastDataChange.doubleValue > loggedUser.lastDataChange.doubleValue) {
                         JPLog(@"needs restore. ");
                         [self restorePodcastDataSinceTime:loggedUser.lastDataChange];
                     }
                     
                     // construct token of id and token together and save to keychain
-                    [TungCommonObjects deleteCredentials];
                     NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
                     NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
                     [TungCommonObjects saveKeychainCred:tungCred];
@@ -2456,7 +2468,6 @@ static NSArray *colors;
                     }
                     
                     // construct token of id and token together and save to keychain
-                    [TungCommonObjects deleteCredentials];
                     NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
                     NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
                     [TungCommonObjects saveKeychainCred:tungCred];

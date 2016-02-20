@@ -10,9 +10,9 @@
 
 #import <Foundation/Foundation.h>
 
-#define JPLog( f, ... ) [JPLogRecorder logFromFile:[[NSString stringWithUTF8String:__FILE__] lastPathComponent] \
+#define JPLog(format, ...) [JPLogRecorder logFromFile:[[NSString stringWithUTF8String:__FILE__] lastPathComponent] \
 	lineNumber:[NSNumber numberWithInt:__LINE__] \
-	formatAndArgs:f, ##__VA_ARGS__]
+	formatAndArgs:format, ##__VA_ARGS__]
 
 @interface JPLogRecorder : NSObject
 

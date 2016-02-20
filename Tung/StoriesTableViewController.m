@@ -1316,39 +1316,42 @@ CGFloat labelWidth = 0;
     // toggle play/pause
     if (_selectedSectionIndex == _activeSectionIndex && _selectedRowIndex == _activeRowIndex) {
         if ([_tung.clipPlayer isPlaying]) {
+            JPLog(@"pause");
             [self pauseClipPlayback];
         } else {
+            JPLog(@"play");
             [self playbackClip];
         }
     }
     // different clip selected than the one playing
-    else if ([_tung.clipPlayer isPlaying]) {
-        [self stopClipPlayback];
-    }
-    
-    // start playing new clip
-    _tung.clipPlayer = nil;
-    // check for cached audio data and init player
-    NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_selectedSectionIndex] objectAtIndex:_selectedRowIndex]];
-    NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
-    NSData *clipData = [TungCommonObjects retrieveAudioClipDataWithUrlString:clipURLString];
-    NSError *playbackError;
-    _tung.clipPlayer = [[AVAudioPlayer alloc] initWithData:clipData error:&playbackError];
-    
-    // play
-    if (_tung.clipPlayer != nil) {
-        _tung.clipPlayer.delegate = self;
-        // PLAY
-        [self playbackClip];
+    else {
         
-    } else {
-        JPLog(@"failed to create audio player: %@", playbackError);
+        if ([_tung.clipPlayer isPlaying]) [self stopClipPlayback];
+    
+        // start playing new clip
+        _tung.clipPlayer = nil;
+        // check for cached audio data and init player
+        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_selectedSectionIndex] objectAtIndex:_selectedRowIndex]];
+        NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
+        NSData *clipData = [TungCommonObjects retrieveAudioClipDataWithUrlString:clipURLString];
+        NSError *playbackError;
+        _tung.clipPlayer = [[AVAudioPlayer alloc] initWithData:clipData error:&playbackError];
+        
+        // play
+        if (_tung.clipPlayer != nil) {
+            _tung.clipPlayer.delegate = self;
+            // PLAY
+            [self playbackClip];
+            
+        } else {
+            JPLog(@"failed to create audio player: %@", playbackError);
+        }
     }
 }
 
 - (void) playbackClip {
     
-    [_tung playerPause];
+    //[_tung playerPause];
     
     [_tung.clipPlayer prepareToPlay];
     [_tung.clipPlayer play]; // play on, player
@@ -1380,8 +1383,11 @@ CGFloat labelWidth = 0;
 }
 
 - (void) pauseClipPlayback {
-
-    if ([_tung.clipPlayer isPlaying]) [_tung.clipPlayer pause];
+	
+    if ([_tung.clipPlayer isPlaying]) {
+        JPLog(@"pause clip playback");
+        [_tung.clipPlayer pause];
+    }
     // stop "onEnterFrame"
     [_onEnterFrame invalidate];
     
