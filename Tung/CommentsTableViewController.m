@@ -251,43 +251,54 @@ UILabel *prototypeLabel;
 
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
     
-    UILabel *toCommentLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 25, screenWidth, 40)];
-    toCommentLabel.text = @"To comment, play this episode.";
-    toCommentLabel.numberOfLines = 2;
-    toCommentLabel.textColor = [UIColor lightGrayColor];
-    toCommentLabel.textAlignment = NSTextAlignmentCenter;
-    toCommentLabel.font = [UIFont systemFontOfSize:15];
-    
-    if (_commentsArray.count > 0 && section == 1) {
-        UILabel *noMoreLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 5, screenWidth, 20)];
-        noMoreLabel.text = @"That's everything.\n ";
-        noMoreLabel.numberOfLines = 0;
-        noMoreLabel.textColor = [UIColor grayColor];
-        noMoreLabel.textAlignment = NSTextAlignmentCenter;
-        if (_episodeEntity.isNowPlaying.boolValue) {
-        	return noMoreLabel;
-        }
-        UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 60)];
-        [commentFooterView addSubview:noMoreLabel];
-        [commentFooterView addSubview:toCommentLabel];
-        return commentFooterView;
-    }
-    else if (_noResults && section == 1) {
-        UILabel *noCommentsLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 5, screenWidth, 20)];
-        noCommentsLabel.text = @"No comments yet.";
-        noCommentsLabel.textColor = [UIColor grayColor];
-        noCommentsLabel.textAlignment = NSTextAlignmentCenter;
-        noCommentsLabel.font = [UIFont systemFontOfSize:15];
-        if (_episodeEntity.isNowPlaying.boolValue) {
-            return noCommentsLabel;
-        }
-        UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 60)];
-        [commentFooterView addSubview:noCommentsLabel];
-        [commentFooterView addSubview:toCommentLabel];
-        return commentFooterView;
+    if (!_tung.connectionAvailable.boolValue && section == 1) {
+        
+        UILabel *noConnectionLabel = [[UILabel alloc] init];
+        noConnectionLabel.text = @"Currently offline.\n ";
+        noConnectionLabel.numberOfLines = 0;
+        noConnectionLabel.textColor = [UIColor grayColor];
+        noConnectionLabel.textAlignment = NSTextAlignmentCenter;
+        return noConnectionLabel;
     }
     else {
-        return nil;
+        UILabel *toCommentLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 25, screenWidth, 40)];
+        toCommentLabel.text = @"To comment, play this episode.";
+        toCommentLabel.numberOfLines = 2;
+        toCommentLabel.textColor = [UIColor lightGrayColor];
+        toCommentLabel.textAlignment = NSTextAlignmentCenter;
+        toCommentLabel.font = [UIFont systemFontOfSize:15];
+        
+        if (_commentsArray.count > 0 && section == 1) {
+            UILabel *noMoreLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 5, screenWidth, 20)];
+            noMoreLabel.text = @"That's everything.\n ";
+            noMoreLabel.numberOfLines = 0;
+            noMoreLabel.textColor = [UIColor grayColor];
+            noMoreLabel.textAlignment = NSTextAlignmentCenter;
+            if (_episodeEntity.isNowPlaying.boolValue) {
+                return noMoreLabel;
+            }
+            UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 60)];
+            [commentFooterView addSubview:noMoreLabel];
+            [commentFooterView addSubview:toCommentLabel];
+            return commentFooterView;
+        }
+        else if (_noResults && section == 1) {
+            UILabel *noCommentsLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 5, screenWidth, 20)];
+            noCommentsLabel.text = @"No comments yet.";
+            noCommentsLabel.textColor = [UIColor grayColor];
+            noCommentsLabel.textAlignment = NSTextAlignmentCenter;
+            noCommentsLabel.font = [UIFont systemFontOfSize:15];
+            if (_episodeEntity.isNowPlaying.boolValue) {
+                return noCommentsLabel;
+            }
+            UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 60)];
+            [commentFooterView addSubview:noCommentsLabel];
+            [commentFooterView addSubview:toCommentLabel];
+            return commentFooterView;
+        }
+        else {
+            return nil;
+        }
     }
 }
 
@@ -328,6 +339,8 @@ UILabel *prototypeLabel;
 -(void) requestCommentsForEpisodeEntity:(EpisodeEntity *)episodeEntity
                               NewerThan:(NSNumber *)afterTime
                             orOlderThan:(NSNumber *)beforeTime {
+    
+    if (!_tung.connectionAvailable.boolValue) return;
     
     self.requestStatus = @"initiated";
     _episodeEntity = episodeEntity;

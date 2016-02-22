@@ -75,13 +75,13 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        _apiRootUrl = @"https://api.tung.fm/";
-        //_apiRootUrl = @"https://staging-api.tung.fm/";
+        //_apiRootUrl = @"https://api.tung.fm/";
+        _apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
         
-        _connectionAvailable = [NSNumber numberWithInt:-1];
+        _connectionAvailable = [NSNumber numberWithBool:NO];
         
         _trackInfo = [[NSMutableDictionary alloc] init];
         
@@ -610,7 +610,7 @@
         _npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:YES];
         [TungCommonObjects saveContextWithReason:@"now playing changed"];
         // find index of episode in current feed for prev/next track fns
-        _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO]];
+        _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO reachable:_connectionAvailable.boolValue]];
         _currentFeedIndex = [TungCommonObjects getIndexOfEpisodeWithGUID:_npEpisodeEntity.guid inFeed:_currentFeed];
         
         //NSLog(@"now playing episode: %@", [TungCommonObjects entityToDict:_npEpisodeEntity]);
@@ -774,7 +774,7 @@
     else {
         if (!_currentFeed) {
             NSLog(@"current feed was not set");
-            _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO]];
+            _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO reachable:_connectionAvailable.boolValue]];
         }
         // first see if there is a newer one and if it has been listened to yet
         if (_currentFeedIndex - 1 > -1) {
@@ -799,7 +799,7 @@
 - (void) playNextOlderEpisodeInFeed {
     
     if (!_currentFeed) {
-    	_currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO]];
+    	_currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO reachable:_connectionAvailable.boolValue]];
     }
 
     if (_currentFeedIndex + 1 >= 0) {
@@ -820,7 +820,7 @@
 - (void) playNextNewerEpisodeInFeed {
     
     if (!_currentFeed) {
-        _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO]];
+        _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO reachable:_connectionAvailable.boolValue]];
     }
     
     if (_currentFeedIndex - 1 >= 0) {
@@ -842,18 +842,12 @@
 - (void) playerError:(NSNotification *)notification {
     JPLog(@"PLAYER ERROR: %@ ...attempting to recover playback", [notification userInfo]);
     
-    [TungCommonObjects showBannerAlertForText:[NSString stringWithFormat:@"Player error: %@ ...attempting to recover playback", [notification userInfo]] andWidth:_screenWidth];
-    // try to recover playback
-    if (_fileIsStreaming && _fileIsLocal) {
-        [self replacePlayerItemWithLocalCopy];
-    }
-    else {
-        JPLog(@"- attempt to reload episode");
-        // do not need timestamp bc eject current episode saves position
-        NSString *urlString = _npEpisodeEntity.url;
-        [self ejectCurrentEpisode];
-        [self queueAndPlaySelectedEpisode:urlString fromTimestamp:nil];
-    }
+    [TungCommonObjects showBannerAlertForText:[NSString stringWithFormat:@"Player error: \"%@\" ...attempting to recover playback", [notification userInfo]] andWidth:_screenWidth];
+
+    // re-queue now playing
+    [self savePositionForNowPlayingAndSync:NO];
+    NSString *urlString = _npEpisodeEntity.url;
+    [self queueAndPlaySelectedEpisode:urlString fromTimestamp:nil];
 }
 
 // looks for local file, else returns url with custom scheme
@@ -913,6 +907,7 @@
 }
 
 // replace player file with local cached copy
+// NOT USED since AVPlayer caches whatever it's playing, also, may cause issues
 - (void) replacePlayerItemWithLocalCopy {
     JPLog(@"replace player item with local copy");
     CMTime currentTime = _player.currentTime;
@@ -1129,6 +1124,7 @@ static NSString *episodeDirName = @"episodes";
             [fileManager removeItemAtPath:episodeFilepath error:&error];
         }
         
+        // update entity
         epEntity.isSaved = [NSNumber numberWithBool:NO];
         [TungCommonObjects saveContextWithReason:@"deleted saved episode file"];
         
@@ -1137,6 +1133,18 @@ static NSString *episodeDirName = @"episodes";
         //JPLog(@"deleted episode with url: %@", urlString);
         if (confirm) {
             [TungCommonObjects showBannerAlertForText:@"Your saved copy of this episode has been deleted." andWidth:_screenWidth];
+        }
+        
+        // safe to remove feed from saved?
+        BOOL safeToRemoveFeed = YES;
+        for (EpisodeEntity *ep in epEntity.podcast.episodes) {
+            if (ep.isSaved.boolValue) {
+                safeToRemoveFeed = NO;
+                break;
+            }
+        }
+        if (safeToRemoveFeed) {
+            [TungPodcast removeFeedFromSavedForEntity:epEntity.podcast];
         }
     }
 }
@@ -1337,6 +1345,9 @@ static NSString *episodeDirName = @"episodes";
         
         if ([_saveTrackData writeToFile:episodeFilepath options:0 error:&error]) {
             //JPLog(@"-- saved podcast track");
+            
+            // save feed
+            [TungPodcast saveFeedForEntity:_episodeToSaveEntity.podcast];
             
             _saveTrackData = nil;
             _saveTrackConnection = nil;
@@ -2276,6 +2287,36 @@ static NSArray *colors;
 
 #pragma mark - Session instance methods
 
+- (void) checkReachabilityWithCallback:(void (^)(BOOL reachable))callback {
+    
+    Reachability *internetReachability = [Reachability reachabilityForInternetConnection];
+    NetworkStatus netStatus = [internetReachability currentReachabilityStatus];
+    
+    switch (netStatus) {
+        case NotReachable: {
+            JPLog(@"Network not reachable");
+            _connectionAvailable = [NSNumber numberWithBool:NO];
+            callback(NO);
+            break;
+        }
+        case ReachableViaWWAN:
+            //JPLog(@"Network reachable via cellular data");
+            _connectionAvailable = [NSNumber numberWithBool:YES];
+            callback(YES);
+            break;
+        case ReachableViaWiFi:
+            //JPLog(@"Network reachable via wifi");
+            _connectionAvailable = [NSNumber numberWithBool:YES];
+            callback(YES);
+            break;
+            
+        default: {
+            callback(NO);
+            break;
+        }
+    }
+}
+
 - (void) establishCred {
     NSString *tungCred = [TungCommonObjects getKeychainCred];
     NSArray *components = [tungCred componentsSeparatedByString:@":"];
@@ -2283,19 +2324,6 @@ static NSArray *colors;
     _tungToken = [components objectAtIndex:1];
     //JPLog(@"id: %@", _tungId);
     //JPLog(@"token: %@", _tungToken);
-}
-
-- (void) checkConnectionStatus {
-    [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
-        if (reachable) {
-            _connectionAvailable = [NSNumber numberWithBool:YES];
-        }
-        else {
-            // unreachable
-            _connectionAvailable = [NSNumber numberWithBool:NO];
-            [self showNoConnectionAlert];
-        }
-    }];
 }
 
 - (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
@@ -4113,32 +4141,6 @@ static NSArray *colors;
         [[NSFileManager defaultManager] removeItemAtPath:[NSString stringWithFormat:@"%@%@", NSTemporaryDirectory(), file] error:NULL];
     }
     JPLog(@"cleared temporary directory");
-}
-
-+ (void) checkReachabilityWithCallback:(void (^)(BOOL reachable))callback {
-    
-    Reachability *internetReachability = [Reachability reachabilityForInternetConnection];
-    NetworkStatus netStatus = [internetReachability currentReachabilityStatus];
-
-    switch (netStatus) {
-        default: {
-            callback(NO);
-            break;
-        }
-        case NotReachable: {
-            JPLog(@"Network not reachable");
-            callback(NO);
-            break;
-        }
-        case ReachableViaWWAN:
-            //JPLog(@"Network reachable via cellular data");
-            callback(YES);
-            break;
-        case ReachableViaWiFi:
-            //JPLog(@"Network reachable via wifi");
-            callback(YES);
-            break;
-    }
 }
 
 /*

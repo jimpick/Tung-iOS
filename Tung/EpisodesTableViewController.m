@@ -39,10 +39,17 @@
     [tableSpinner startAnimating];
     self.tableView.backgroundView = tableSpinner;
     
+    [self.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
+    
     _downloadingEpisodeIndex = -1;
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveStatusChanged) name:@"saveStatusDidChange" object:nil];
     
+}
+
+- (void) viewDidAppear:(BOOL)animated {
+    [super viewDidAppear:animated];
+    [self saveStatusChanged];
 }
 
 - (void) viewWillDisappear:(BOOL)animated {
@@ -57,6 +64,24 @@
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
+}
+
+- (void) getNewestFeed {
+    if (_tung.connectionAvailable.boolValue) {
+        
+        NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:YES reachable:_tung.connectionAvailable.boolValue];
+        _episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
+        [self assignSavedPropertiesToEpisodeArray];
+        
+        [self.refreshControl endRefreshing];
+        
+    	[self.tableView reloadData];
+    }
+    else {
+        [self.refreshControl endRefreshing];
+        [_tung showNoConnectionAlert];
+    }
+    
 }
 
 - (void) assignSavedPropertiesToEpisodeArray {

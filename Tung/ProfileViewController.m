@@ -543,9 +543,8 @@ NSTimer *sessionCheckTimer;
     }
     [sessionCheckTimer invalidate];
     sessionCheckTimer = nil;
-    [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
+    [_tung checkReachabilityWithCallback:^(BOOL reachable) {
         if (reachable) {
-            _tung.connectionAvailable = [NSNumber numberWithBool:YES];
         
             if (_isLoggedInUser) {
                 _profiledUserData = [[_tung getLoggedInUserData] mutableCopy];
@@ -609,10 +608,7 @@ NSTimer *sessionCheckTimer;
         }
         // unreachable
         else {
-            _tung.connectionAvailable = [NSNumber numberWithBool:NO];
-            
-            UIAlertView *noReachabilityAlert = [[UIAlertView alloc] initWithTitle:@"No Connection" message:@"tung requires an internet connection" delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-            [noReachabilityAlert show];
+            [_tung showNoConnectionAlert];
         }
     }];
 }

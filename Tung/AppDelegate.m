@@ -91,7 +91,7 @@
     	
         for (int i = 0; i < result.count; i++) {
             PodcastEntity *podEntity = [result objectAtIndex:i];
-            NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:podEntity forceNewest:YES];
+            NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:podEntity forceNewest:YES reachable:_tung.connectionAvailable.boolValue];
             NSArray *episodes = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
             
             //NSLog(@"PODCAST: %@", podEntity.collectionName);
@@ -329,6 +329,7 @@
 {
     // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later. 
     // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
+    JPLog(@"application did enter background");
     [JPLogRecorder saveLogArray];
 }
 
@@ -343,6 +344,8 @@
 {
     JPLog(@"Application did become active");
     [_tung checkForNowPlaying];
+    // check reachability
+    [_tung checkReachabilityWithCallback:nil];
     // if feed hasn't been fetched in the last 5 minutes
     [_tung checkFeedLastFetchedTime];
     
@@ -351,6 +354,7 @@
 - (void)applicationWillTerminate:(UIApplication *)application
 {
     // Saves changes in the application's managed object context before the application terminates.
+    JPLog(@"CRASH OR FORCE-QUIT - application will terminate");
     [self saveContext];
     [JPLogRecorder saveLogArray];
 }
@@ -372,11 +376,11 @@
 
 - (BOOL)application:(UIApplication *)application handleOpenURL:(NSURL *)url {
     JPLog(@"url recieved: %@", url);
-    JPLog(@"- query string: %@", [url query]);
-    JPLog(@"- host: %@", [url host]);
-    JPLog(@"- url path: %@", [url path]);
-    NSDictionary *dict = [self parseQueryString:[url query]];
-    JPLog(@"- query dict: %@", dict);
+    //NSLog(@"- query string: %@", [url query]);
+    //NSLog(@"- host: %@", [url host]);
+    //NSLog(@"- url path: %@", [url path]);
+    //NSDictionary *dict = [self parseQueryString:[url query]];
+    //NSLog(@"- query dict: %@", dict);
     return YES;
 }
 

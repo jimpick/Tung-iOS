@@ -52,10 +52,9 @@
     _tung = [TungCommonObjects establishTungObjects];
     
     // check reachability
-    [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
+    [_tung checkReachabilityWithCallback:^(BOOL reachable) {
         if (!reachable) {
-            UIAlertView *noReachabilityAlert = [[UIAlertView alloc] initWithTitle:@"No Connection" message:@"Please make sure you have an internet connection before proceeding to sign-up or sign-in." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-            [noReachabilityAlert show];
+            [_tung showNoConnectionAlert];
         }
     }];
     

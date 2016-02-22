@@ -264,8 +264,6 @@ UIActivityIndicatorView *backgroundSpinner;
     [self addChildViewController:_episodesView];
     [self.view insertSubview:_episodesView.view atIndex:1];
     _episodesView.navController = self.navigationController;
-    _episodesView.refreshControl = [UIRefreshControl new];
-    [_episodesView.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
     _episodesView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
@@ -558,10 +556,16 @@ NSTimer *markAsSeenTimer;
     _switcher.tintColor = episodeEntity.podcast.keyColor2;
     
     // COMMENTS
-    [self refreshComments:YES];
+    [_tung checkReachabilityWithCallback:^(BOOL reachable) {
+        if (reachable) {
+            [self refreshComments:YES];
+        } else {
+            [_commentsView.tableView reloadData];
+        }
+    }];
     
     // episodes and description
-    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:episodeEntity.podcast forceNewest:NO];
+    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:episodeEntity.podcast forceNewest:NO reachable:_tung.connectionAvailable.boolValue];
     
     _episodesView.tableView.backgroundView = nil;
     _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
@@ -657,21 +661,6 @@ NSTimer *markAsSeenTimer;
     }*/
     [_commentsView requestCommentsForEpisodeEntity:_episodeEntity NewerThan:mostRecent orOlderThan:[NSNumber numberWithInt:0]];
 }
-
-#pragma mark - Episodes view
-
-// for refreshControl
-- (void) getNewestFeed {
-    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_episodeEntity.podcast forceNewest:YES];
-    _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
-    [_episodesView assignSavedPropertiesToEpisodeArray];
-    
-    [_episodesView.refreshControl endRefreshing];
-    
-    [_episodesView.tableView reloadData];
-    
-}
-
 
 #pragma mark Description web views
 
@@ -1063,7 +1052,11 @@ static CGRect buttonsScrollViewHomeRect;
         
         // open web browsing modal
         _urlToPass = request.URL;
-        [self performSegueWithIdentifier:@"presentWebView" sender:self];
+        if (_tung.connectionAvailable.boolValue) {
+        	[self performSegueWithIdentifier:@"presentWebView" sender:self];
+        } else {
+            [_tung showNoConnectionAlert];
+        }
         
         return NO;
     }
@@ -1463,14 +1456,9 @@ static CGRect buttonsScrollViewHomeRect;
 
     // disable posbar and show spinner while player seeks
     if (_tung.fileIsStreaming) {
-        // see if file is cached yet
-        if (_tung.fileIsLocal) {
-            [_tung replacePlayerItemWithLocalCopy];
-        } else {
-            [_posbar setEnabled:NO];
-            //[_tung playerPause];
-        }
+        [_posbar setEnabled:NO];
     }
+    
     [_tung.player seekToTime:time completionHandler:^(BOOL finished) {
         //JPLog(@"finished seeking to time (%@)", (finished) ? @"yes" : @"no");
         [_tung.trackInfo setObject:[NSNumber numberWithFloat:CMTimeGetSeconds(time)] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];

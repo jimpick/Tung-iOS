@@ -172,8 +172,8 @@
 + (UIColor *) twitterColor;
 
 // requests
+- (void) checkReachabilityWithCallback:(void (^)(BOOL reachable))callback;
 - (void) establishCred;
-- (void) checkConnectionStatus;
 - (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) verifyCredWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) getSessionWithCallback:(void (^)(void))callback;
@@ -224,7 +224,6 @@
 // misc class methods
 + (id) establishTungObjects;
 + (void) clearTempDirectory;
-+ (void) checkReachabilityWithCallback:(void (^)(BOOL reachable))callback;
 + (NSString *) generateHash;
 + (NSString *) getKeychainCred;
 + (void) saveKeychainCred: (NSString *)cred;

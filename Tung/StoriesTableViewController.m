@@ -104,35 +104,50 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
 }
 
 - (void) refreshFeed {
-    JPLog(@"refresh feed");
     
-    NSNumber *mostRecent;
+    if (_tung.connectionAvailable.boolValue) {
+    
+        NSNumber *mostRecent;
 
-    if (_storiesArray.count > 0) {
-        // animate refresh control if table is scrolled to top
-        if (self.tableView.contentOffset.y <= _contentOffset.y) {
-            [self.refreshControl beginRefreshing];
-            [self.tableView setContentOffset:CGPointMake(0, - (self.refreshControl.frame.size.height - _contentOffset.y)) animated:YES];
+        if (_storiesArray.count > 0) {
+            // animate refresh control if table is scrolled to top
+            if (self.tableView.contentOffset.y <= _contentOffset.y) {
+                [self.refreshControl beginRefreshing];
+                [self.tableView setContentOffset:CGPointMake(0, - (self.refreshControl.frame.size.height - _contentOffset.y)) animated:YES];
+            }
+            mostRecent = [[[_storiesArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
+            
         }
-        mostRecent = [[[_storiesArray objectAtIndex:0] objectAtIndex:0] objectForKey:@"time_secs"];
-        
-    }
-    // if initial request timed out and they are trying again
-    else {
-        mostRecent = [NSNumber numberWithInt:0];
-    }
+        // if initial request timed out and they are trying again
+        else {
+            mostRecent = [NSNumber numberWithInt:0];
+        }
 
-    [self requestPostsNewerThan:mostRecent
-                    orOlderThan:[NSNumber numberWithInt:0]
-                       fromUser:_profiledUserId
-                       withCred:NO];
+        [self requestPostsNewerThan:mostRecent
+                        orOlderThan:[NSNumber numberWithInt:0]
+                           fromUser:_profiledUserId
+                           withCred:NO];
+    }
+    else {
+        [_tung checkReachabilityWithCallback:^(BOOL reachable) {
+            if (reachable) [self refreshFeed];
+        }];
+    }
 }
 
 -(void) getSessionAndFeed {
-    [self requestPostsNewerThan:[NSNumber numberWithInt:0]
-                    orOlderThan:[NSNumber numberWithInt:0]
-                       fromUser:_profiledUserId
-                       withCred:YES];
+    
+    if (_tung.connectionAvailable.boolValue) {
+        [self requestPostsNewerThan:[NSNumber numberWithInt:0]
+                        orOlderThan:[NSNumber numberWithInt:0]
+                           fromUser:_profiledUserId
+                           withCred:YES];
+    }
+    else {
+        [_tung checkReachabilityWithCallback:^(BOOL reachable) {
+            if (reachable) [self getSessionAndFeed];
+        }];
+    }
 }
 
 - (void) pushEpisodeViewForIndexPath:(NSIndexPath *)indexPath withFocusedEventId:(NSString *)eventId {
@@ -1316,10 +1331,8 @@ CGFloat labelWidth = 0;
     // toggle play/pause
     if (_selectedSectionIndex == _activeSectionIndex && _selectedRowIndex == _activeRowIndex) {
         if ([_tung.clipPlayer isPlaying]) {
-            JPLog(@"pause");
             [self pauseClipPlayback];
         } else {
-            JPLog(@"play");
             [self playbackClip];
         }
     }
@@ -1385,7 +1398,6 @@ CGFloat labelWidth = 0;
 - (void) pauseClipPlayback {
 	
     if ([_tung.clipPlayer isPlaying]) {
-        JPLog(@"pause clip playback");
         [_tung.clipPlayer pause];
     }
     // stop "onEnterFrame"

@@ -157,10 +157,8 @@
 
 - (void) refreshFeed {
     
-    [TungCommonObjects checkReachabilityWithCallback:^(BOOL reachable) {
+    [_tung checkReachabilityWithCallback:^(BOOL reachable) {
         if (reachable) {
-            
-            _tung.connectionAvailable = [NSNumber numberWithBool:YES];
             // refresh feed
             if (_tung.sessionId && _tung.sessionId.length > 0) {
                 [_storiesView refreshFeed];
@@ -172,7 +170,6 @@
         }
         // unreachable
         else {
-            _tung.connectionAvailable = [NSNumber numberWithBool:NO];
             [_tung showNoConnectionAlert];
             [_storiesView endRefreshing];
         }

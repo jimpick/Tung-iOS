@@ -503,6 +503,26 @@ static NSString *cellIdentifier = @"PodcastResultCell";
 
 static NSString *feedDictsDirName = @"feedDicts";
 
++ (NSString *) getCachedFeedsDirectoryPath {
+        
+    NSString *feedDir = [NSTemporaryDirectory() stringByAppendingPathComponent:feedDictsDirName];
+    NSError *error;
+    [[NSFileManager defaultManager] createDirectoryAtPath:feedDir withIntermediateDirectories:YES attributes:nil error:&error];
+    return feedDir;
+    
+}
+
++ (NSString *) getSavedFeedsDirectoryPath {
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
+    NSURL *libraryDir = [folders objectAtIndex:0];
+    NSString *savedFeedsDir = [libraryDir.path stringByAppendingPathComponent:feedDictsDirName];
+    NSError *error;
+    [fileManager createDirectoryAtPath:savedFeedsDir withIntermediateDirectories:YES attributes:nil error:&error];
+    return savedFeedsDir;
+}
+
 + (void) cacheFeed:(NSDictionary *)feed forEntity:(PodcastEntity *)entity {
     
     NSString *feedDir = [NSTemporaryDirectory() stringByAppendingPathComponent:feedDictsDirName];
@@ -525,43 +545,92 @@ static NSString *feedDictsDirName = @"feedDicts";
     }
 }
 
-// Will retrieve a cached feed no older than a day, else refetches. Caches feed.
-+ (NSDictionary*) retrieveAndCacheFeedForPodcastEntity:(PodcastEntity *)entity forceNewest:(BOOL)forceNewest {
++ (BOOL) saveFeedForEntity:(PodcastEntity *)entity {
+    
+    // copy to saved from temp
+    NSString *feedFileName = [NSString stringWithFormat:@"%@.txt", entity.collectionId];
+    NSString *cachedFeedPath = [[self getCachedFeedsDirectoryPath] stringByAppendingPathComponent:feedFileName];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    
+    if ([fileManager fileExistsAtPath:cachedFeedPath]) {
+        
+        NSString *savedFeedPath = [[self getSavedFeedsDirectoryPath] stringByAppendingPathComponent:feedFileName];
+        NSError *error;
+        return [fileManager copyItemAtPath:cachedFeedPath toPath:savedFeedPath error:&error];
+
+    } else {
+        JPLog(@"could not save feed dict, does not exist in temp");
+        return NO;
+    }
+}
+
++ (void) removeFeedFromSavedForEntity:(PodcastEntity *)entity {
+    
+    NSString *feedFileName = [NSString stringWithFormat:@"%@.txt", entity.collectionId];
+    NSString *savedFeedPath = [[self getSavedFeedsDirectoryPath] stringByAppendingPathComponent:feedFileName];
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    
+    if ([fileManager fileExistsAtPath:savedFeedPath]) {
+        NSError *error;
+        [fileManager removeItemAtPath:savedFeedPath error:&error];
+    }
+}
+
+// Will retrieve a cached feed no older than a day, if reachable, else refetches. Caches feed.
++ (NSDictionary*) retrieveAndCacheFeedForPodcastEntity:(PodcastEntity *)entity forceNewest:(BOOL)forceNewest reachable:(BOOL)reachable {
     
     NSDictionary *feedDict;
     
-    if (forceNewest) {
+    if (forceNewest && reachable) {
         //JPLog(@"retrieve cached feed for entity :: force newest");
         feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
     }
     else if (entity.feedLastCached) {
         long timeSinceLastCached = fabs([entity.feedLastCached timeIntervalSinceNow]);
-        if (timeSinceLastCached > 60 * 60 * 24) {
-            //JPLog(@"retrieve cached feed for entity :: cached feed dict was stale - refetch");
+        if (timeSinceLastCached > 60 * 60 * 24 && reachable) {
+            // cached feed dict was stale - refetch
             feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
-        } else {
+        }
+        else {
             // pull feed dict from cache
             NSString *feedDir = [NSTemporaryDirectory() stringByAppendingPathComponent:feedDictsDirName];
             NSError *error;
-            [[NSFileManager defaultManager] createDirectoryAtPath:feedDir withIntermediateDirectories:YES attributes:nil error:&error];
+            NSFileManager *fileManager = [NSFileManager defaultManager];
+            [fileManager createDirectoryAtPath:feedDir withIntermediateDirectories:YES attributes:nil error:&error];
             NSString *feedFileName = [NSString stringWithFormat:@"%@.txt", entity.collectionId];
             NSString *feedFilePath = [feedDir stringByAppendingPathComponent:feedFileName];
             NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:feedFilePath];
             if (dict) {
-                // return cached feed
-                //JPLog(@"retrieve cached feed for entity :: found fresh cached feed dictionary");
+                // found fresh cached feed dictionary
                 return dict;
-            } else {
-                //JPLog(@"retrieve cached feed for entity :: tmp dir must have been cleared, fetching feed");
-                feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
+            }
+            else {
+                // look for saved feed dict
+                NSString *savedFeedPath = [[self getSavedFeedsDirectoryPath] stringByAppendingPathComponent:feedFileName];
+                if ([fileManager fileExistsAtPath:savedFeedPath]) {
+                    
+                    dict = [[NSDictionary alloc] initWithContentsOfFile:savedFeedPath];
+                    if (dict) {
+                        return dict;
+                    } else {
+                        // no file in saved or temp. fetch feed
+                        feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
+                    }
+                }
             }
         }
-    } else {
-        //JPLog(@"retrieve cached feed for entity :: need to request new");
+    }
+    else if (reachable) {
+        // need to request new
         feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
     }
-    [self cacheFeed:feedDict forEntity:entity];
-    return feedDict;
+    
+    if (feedDict) {
+    	[self cacheFeed:feedDict forEntity:entity];
+    	return feedDict;
+    } else {
+        return nil;
+    }
     
 }
 
