@@ -1084,11 +1084,7 @@ static CGRect buttonsScrollViewHomeRect;
 - (BOOL) trimAudioFrom:(CGFloat)startMarker to:(CGFloat)endMarker {
 
     JPLog(@"//// trim audio from %f to %f", startMarker, endMarker);
-    // input
-//    NSString *audioFile = [NSString stringWithFormat:@"%@", _tung.streamer.outputFile];
-//    //JPLog(@"//// audio file to trim: %@", audioFile);
-//    NSURL *audioFileUrl = [NSURL URLWithString:audioFile];
-    
+    // input    
     NSURL *audioFileUrl = [_tung getEpisodeUrl:[_tung.playQueue objectAtIndex:0]];
     // test if input file has any bytes
     //NSData *audioURLData = [NSData dataWithContentsOfURL:audioFileUrl];

@@ -515,7 +515,7 @@ static NSString *feedDictsDirName = @"feedDicts";
 + (NSString *) getSavedFeedsDirectoryPath {
     
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
+    NSArray *folders = [fileManager URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask];
     NSURL *libraryDir = [folders objectAtIndex:0];
     NSString *savedFeedsDir = [libraryDir.path stringByAppendingPathComponent:feedDictsDirName];
     NSError *error;
@@ -556,7 +556,12 @@ static NSString *feedDictsDirName = @"feedDicts";
         
         NSString *savedFeedPath = [[self getSavedFeedsDirectoryPath] stringByAppendingPathComponent:feedFileName];
         NSError *error;
-        return [fileManager copyItemAtPath:cachedFeedPath toPath:savedFeedPath error:&error];
+        if ([fileManager copyItemAtPath:cachedFeedPath toPath:savedFeedPath error:&error]) {
+            return YES;
+        } else {
+            JPLog(@"Error saving feed dict: %@", error);
+            return NO;
+        }
 
     } else {
         JPLog(@"could not save feed dict, does not exist in temp");
@@ -599,9 +604,9 @@ static NSString *feedDictsDirName = @"feedDicts";
             [fileManager createDirectoryAtPath:feedDir withIntermediateDirectories:YES attributes:nil error:&error];
             NSString *feedFileName = [NSString stringWithFormat:@"%@.txt", entity.collectionId];
             NSString *feedFilePath = [feedDir stringByAppendingPathComponent:feedFileName];
-            NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:feedFilePath];
-            if (dict) {
-                // found fresh cached feed dictionary
+            
+            if ([fileManager fileExistsAtPath:feedFilePath]) {
+            	NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:feedFilePath];
                 return dict;
             }
             else {
@@ -609,13 +614,17 @@ static NSString *feedDictsDirName = @"feedDicts";
                 NSString *savedFeedPath = [[self getSavedFeedsDirectoryPath] stringByAppendingPathComponent:feedFileName];
                 if ([fileManager fileExistsAtPath:savedFeedPath]) {
                     
-                    dict = [[NSDictionary alloc] initWithContentsOfFile:savedFeedPath];
+                    NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:savedFeedPath];
                     if (dict) {
                         return dict;
                     } else {
                         // no file in saved or temp. fetch feed
                         feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
                     }
+                }
+                else {
+                    // no file in saved or temp. fetch feed
+                    feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
                 }
             }
         }
@@ -675,6 +684,7 @@ static NSString *feedDictsDirName = @"feedDicts";
 
 // get an episode array from a feed dict.
 + (NSArray *) extractFeedArrayFromFeedDict:(NSDictionary *)feedDict {
+    
     id item = [[feedDict objectForKey:@"channel"] objectForKey:@"item"];
     if ([item isKindOfClass:[NSArray class]]) {
         NSArray *array = item;

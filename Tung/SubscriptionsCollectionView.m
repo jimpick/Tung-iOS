@@ -390,7 +390,7 @@ UILabel static *prototypeBadge;
     // new episodes badge
     cell.badge.type = kMiscViewTypeSubscribeBadge;
     cell.badge.text = @"";
-    if (podcastEntity.numNewEpisodes.integerValue > 0) {
+    if (podcastEntity.notifyOfNewEpisodes.boolValue && podcastEntity.numNewEpisodes.integerValue > 0) {
         cell.badge.hidden = NO;
         if (podcastEntity.numNewEpisodes.integerValue > 20) {
             cell.badge.text = @"20+";

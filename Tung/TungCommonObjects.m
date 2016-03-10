@@ -97,7 +97,8 @@
             [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
         }
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleAudioSessionInterruption:) name:AVAudioSessionInterruptionNotification object:nil];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleMediaServicesReset) name:AVAudioSessionMediaServicesWereResetNotification object:nil];        
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleMediaServicesReset) name:AVAudioSessionMediaServicesWereResetNotification object:nil];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleRouteChange:) name:AVAudioSessionRouteChangeNotification object:nil];
         
         // command center events
         MPRemoteCommandCenter *commandCenter = [MPRemoteCommandCenter sharedCommandCenter];
@@ -251,6 +252,17 @@
     [self checkForNowPlaying];
 }
 
+- (void) handleRouteChange:(NSNotification *)notification {
+    
+    NSNumber *reason = [notification.userInfo valueForKey:AVAudioSessionRouteChangeReasonKey];
+    if (reason.intValue == 2) {
+        _shouldStayPaused = YES;
+        [self setControlButtonStateToPlay];
+        [self savePositionForNowPlayingAndSync:YES];
+    }
+    
+}
+
 #pragma mark - Player instance methods
 
 - (BOOL) isPlaying {
@@ -374,8 +386,10 @@
                         [_player prerollAtRate:1.0 completionHandler:^(BOOL finished) {
                             JPLog(@"-- finished preroll: %d", finished);
                             if ([self isPlaying]) {
+                                JPLog(@"--- isPlaying");
                                 [self setControlButtonStateToPause];
                             } else {
+                                JPLog(@"--- playerPlay");
                                 [self playerPlay];
                             }
                             [self determineTotalSeconds];
@@ -633,7 +647,6 @@
         AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
         [asset.resourceLoader setDelegate:self queue:dispatch_get_main_queue()];
         AVPlayerItem *playerItem = [AVPlayerItem playerItemWithAsset:asset];
-        
         _player = [[AVPlayer alloc] initWithPlayerItem:playerItem];
         // add observers
         [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
@@ -715,7 +728,6 @@
     }
     if (round(currentTimeSecs) < floor(_totalSeconds)) {
         JPLog(@"completed playback called prematurely.");
-        /*
         if (_fileIsStreaming && _fileIsLocal) {
             [self replacePlayerItemWithLocalCopy];
         }
@@ -725,7 +737,7 @@
             NSString *urlString = _npEpisodeEntity.url;
             [self ejectCurrentEpisode];
             [self queueAndPlaySelectedEpisode:urlString fromTimestamp:nil];
-        }*/
+        }
         return;
     }
     //[TungCommonObjects showBannerAlertForText:[NSString stringWithFormat:@"completed playback. current secs: %f, total secs: %f", currentTimeSecs, _totalSeconds] andWidth:325.0];
@@ -907,7 +919,6 @@
 }
 
 // replace player file with local cached copy
-// NOT USED since AVPlayer caches whatever it's playing, also, may cause issues
 - (void) replacePlayerItemWithLocalCopy {
     JPLog(@"replace player item with local copy");
     CMTime currentTime = _player.currentTime;
@@ -999,11 +1010,6 @@ static NSString *episodeDirName = @"episodes";
     NSNotification *saveStatusChangedNotif = [NSNotification notificationWithName:@"saveStatusDidChange" object:nil userInfo:nil];
     [[NSNotificationCenter defaultCenter] postNotification:saveStatusChangedNotif];
 }
-/*
- // TODO:
- - make save button in now playing controls reflect saved state
- - implement saving from now playing controls
- */
 
 - (void) cacheNowPlayingEpisodeAndMoveToSaved:(BOOL)moveToSaved {
     // we use the _trackDataConnection because this is specifically for now playing,
@@ -1317,9 +1323,13 @@ static NSString *episodeDirName = @"episodes";
         NSError *error;
         if ([_trackData writeToFile:episodeFilepath options:0 error:&error]) {
             JPLog(@"-- saved podcast track in temp episode dir: %@", episodeFilepath);
+            
+            // exchange downloaded data for cached data so resource loader can access it
+            NSURL *audioFileUrl = [self getEpisodeUrl:[self.playQueue objectAtIndex:0]];
+            _trackData = [[NSData dataWithContentsOfURL:audioFileUrl] mutableCopy];
+            
             _fileIsLocal = YES;
-            // we can safely release these
-            _trackData = nil;
+            //_trackData = nil;
             _trackDataConnection = nil;
             // move to saved?
             if (_saveOnDownloadComplete) {
@@ -1465,9 +1475,11 @@ static NSString *episodeDirName = @"episodes";
 
 - (BOOL)resourceLoader:(AVAssetResourceLoader *)resourceLoader shouldWaitForLoadingOfRequestedResource:(AVAssetResourceLoadingRequest *)loadingRequest
 {
-    if (_trackDataConnection == nil)
+    //JPLog(@"[AVAssetResourceLoaderDelegate] should wait for loading of requested resource");
+    
+    // initiate connection only if we haven't already downloaded the file
+    if (_trackDataConnection == nil && !_fileIsLocal)
     {
-        //JPLog(@"[AVAssetResourceLoaderDelegate] should wait for loading of requested resource");
         NSURL *interceptedURL = [loadingRequest.request URL];
         NSURLComponents *actualURLComponents = [[NSURLComponents alloc] initWithURL:interceptedURL resolvingAgainstBaseURL:NO];
         // TODO: scheme may be https...
@@ -1481,6 +1493,8 @@ static NSString *episodeDirName = @"episodes";
     }
     
     [self.pendingRequests addObject:loadingRequest];
+    
+    [self processPendingRequests]; // necessary? 
     
     return YES;
 }
@@ -2296,22 +2310,23 @@ static NSArray *colors;
         case NotReachable: {
             JPLog(@"Network not reachable");
             _connectionAvailable = [NSNumber numberWithBool:NO];
-            callback(NO);
+             if (callback) callback(NO);
             break;
         }
-        case ReachableViaWWAN:
+        case ReachableViaWWAN: {
             //JPLog(@"Network reachable via cellular data");
             _connectionAvailable = [NSNumber numberWithBool:YES];
-            callback(YES);
+             if (callback) callback(YES);
             break;
-        case ReachableViaWiFi:
+        }
+        case ReachableViaWiFi: {
             //JPLog(@"Network reachable via wifi");
             _connectionAvailable = [NSNumber numberWithBool:YES];
-            callback(YES);
+             if (callback) callback(YES);
             break;
-            
+        }
         default: {
-            callback(NO);
+             if (callback) callback(NO);
             break;
         }
     }
