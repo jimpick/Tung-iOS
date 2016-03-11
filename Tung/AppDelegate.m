@@ -24,31 +24,9 @@
 {
     _tung = [TungCommonObjects establishTungObjects];
     
-    BOOL isLoggedIn = NO;
-    
-    NSString *key = @"tung credentials";
-    NSString *service = [[NSBundle mainBundle] bundleIdentifier];
-    
     // look for tung cred in keychain
-    
-    NSDictionary *query = @{
-                           (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
-                           (__bridge id)kSecAttrService : service,
-                           (__bridge id)kSecAttrAccount : key,
-                           (__bridge id)kSecReturnAttributes : (__bridge id)kCFBooleanTrue,
-                           (__bridge id)kSecAttrSynchronizable : (__bridge id)kCFBooleanTrue // iCloud sync
-                           };
-    CFDictionaryRef valueAttributes = NULL;
-    OSStatus results = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&valueAttributes);
-    NSDictionary *attributes = (__bridge_transfer NSDictionary *)valueAttributes;
-    if (results == errSecSuccess) {
-        NSString *creationDate = attributes[(__bridge id)kSecAttrCreationDate];
-        JPLog(@"application did finish launching: Credentials found. Created on: %@", creationDate);
-        isLoggedIn = YES;
-    }
-    else {
-    	JPLog(@"application did finish launching: No credentials found");
-    }
+    BOOL isLoggedIn = NO;
+    if ([TungCommonObjects getKeychainCred]) isLoggedIn = YES;
     
     // delete keychain value for cred
     //[TungCommonObjects deleteCredentials];

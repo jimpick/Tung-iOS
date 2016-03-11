@@ -75,8 +75,8 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        //_apiRootUrl = @"https://api.tung.fm/";
-        _apiRootUrl = @"https://staging-api.tung.fm/";
+        _apiRootUrl = @"https://api.tung.fm/";
+        //_apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
@@ -663,22 +663,6 @@
         
         NSNotification *nowPlayingDidChangeNotif = [NSNotification notificationWithName:@"nowPlayingDidChange" object:nil userInfo:nil];
         [[NSNotificationCenter defaultCenter] postNotification:nowPlayingDidChangeNotif];
-        
-        
-        // find playing episodes
-        /*
-        NSFetchRequest *npRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
-        NSPredicate *npPredicate = [NSPredicate predicateWithFormat: @"isNowPlaying == YES"];
-        [npRequest setPredicate:npPredicate];
-        NSError *npError = nil;
-        NSArray *npResult = [appDelegate.managedObjectContext executeFetchRequest:npRequest error:&npError];
-        if (npResult.count > 0) {
-            for (int i = 0; i < npResult.count; i++) {
-                EpisodeEntity *epEntity = [npResult objectAtIndex:i];
-                JPLog(@"now playing: %@", epEntity.title);
-            }
-        }
-         */
         
     }
     //JPLog(@"play queue: %@", _playQueue);
@@ -1816,8 +1800,7 @@ UILabel *prototypeBadge;
     	url = [[enclosureDict objectForKey:@"el:attributes"] objectForKey:@"url"];
     }
     else if (!episodeEntity.url) {
-        JPLog(@"episode dict missing url: %@", episodeDict);
-        //NSLog(@"%@",[NSThread callStackSymbols]);
+        //JPLog(@"episode dict missing url: %@", episodeDict);
         url = @"";
     }
     episodeEntity.url = url;
@@ -4320,8 +4303,7 @@ static NSArray *colors;
                             (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
                             (__bridge id)kSecAttrService : service,
                             (__bridge id)kSecAttrAccount : key,
-                            (__bridge id)kSecReturnData : (__bridge id)kCFBooleanTrue,
-                            (__bridge id)kSecAttrSynchronizable : (__bridge id)kCFBooleanTrue
+                            (__bridge id)kSecReturnData : (__bridge id)kCFBooleanTrue
                             };
     CFDataRef cfValue = NULL;
     OSStatus results = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&cfValue);
@@ -4347,8 +4329,7 @@ static NSArray *colors;
                                        (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
                                        (__bridge id)kSecAttrService : service,
                                        (__bridge id)kSecAttrAccount : key,
-                                       (__bridge id)kSecValueData : valueData,
-                                       (__bridge id)kSecAttrSynchronizable : (__bridge id)kCFBooleanTrue // iCloud sync
+                                       (__bridge id)kSecValueData : valueData
                                        };
     CFTypeRef result = NULL;
     OSStatus status = SecItemAdd((__bridge CFDictionaryRef)id_security_item, &result);
@@ -4369,8 +4350,7 @@ static NSArray *colors;
     NSDictionary *deleteQuery = @{
                                   (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
                                   (__bridge id)kSecAttrService : service,
-                                  (__bridge id)kSecAttrAccount : key,
-                                  (__bridge id)kSecAttrSynchronizable : (__bridge id)kCFBooleanTrue // iCloud sync
+                                  (__bridge id)kSecAttrAccount : key
                                   };
     OSStatus foundExisting = SecItemCopyMatching((__bridge CFDictionaryRef)deleteQuery, NULL);
     if (foundExisting == errSecSuccess) {
