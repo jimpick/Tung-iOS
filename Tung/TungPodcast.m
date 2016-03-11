@@ -515,7 +515,7 @@ static NSString *feedDictsDirName = @"feedDicts";
 + (NSString *) getSavedFeedsDirectoryPath {
     
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSArray *folders = [fileManager URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask];
+    NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
     NSURL *libraryDir = [folders objectAtIndex:0];
     NSString *savedFeedsDir = [libraryDir.path stringByAppendingPathComponent:feedDictsDirName];
     NSError *error;
@@ -587,13 +587,14 @@ static NSString *feedDictsDirName = @"feedDicts";
     NSDictionary *feedDict;
     
     if (forceNewest && reachable) {
-        //JPLog(@"retrieve cached feed for entity :: force newest");
+        //JPLog(@"- - - retrieve cached feed for entity :: force newest");
         feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
     }
     else if (entity.feedLastCached) {
         long timeSinceLastCached = fabs([entity.feedLastCached timeIntervalSinceNow]);
         if (timeSinceLastCached > 60 * 60 * 24 && reachable) {
             // cached feed dict was stale - refetch
+            JPLog(@"- - - cached feed dict was stale - refetch");
             feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
         }
         else {
@@ -607,6 +608,7 @@ static NSString *feedDictsDirName = @"feedDicts";
             
             if ([fileManager fileExistsAtPath:feedFilePath]) {
             	NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:feedFilePath];
+                JPLog(@"- - - retrieved cached feed dict");
                 return dict;
             }
             else {
@@ -616,14 +618,17 @@ static NSString *feedDictsDirName = @"feedDicts";
                     
                     NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:savedFeedPath];
                     if (dict) {
+                        JPLog(@"- - - retrieved SAVED feed dict");
                         return dict;
                     } else {
                         // no file in saved or temp. fetch feed
+                        JPLog(@"- - - saved dict missing, fetch feed");
                         feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
                     }
                 }
                 else {
                     // no file in saved or temp. fetch feed
+                    JPLog(@"- - - feedLastCached present but no feed. refetch");
                     feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
                 }
             }
@@ -631,6 +636,7 @@ static NSString *feedDictsDirName = @"feedDicts";
     }
     else if (reachable) {
         // need to request new
+        JPLog(@"- - - fetch feed");
         feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
     }
     

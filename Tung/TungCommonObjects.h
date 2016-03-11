@@ -97,6 +97,7 @@
 - (void) setControlButtonStateToPause;
 - (void) setControlButtonStateToFauxDisabled;
 - (void) setControlButtonStateToBuffering;
+- (void) removeNowPlayingStatusFromAllEpisodes;
 - (NSURL *) getEpisodeUrl:(NSURL *)url;
 - (void) replacePlayerItemWithLocalCopy;
 
@@ -112,7 +113,8 @@
 - (void) deleteAllSavedEpisodes;
 - (void) deleteAllCachedEpisodes;
 - (void) showSavedInfoAlertForEpisode:(EpisodeEntity *)episodeEntity;
-- (void) moveEpisodeToSaved:(EpisodeEntity *)episodeEntity;
+- (BOOL) moveEpisodeToSaved:(EpisodeEntity *)episodeEntity;
++ (NSString *) getEpisodeFilenameFromUrl:(NSURL *)url;
 
 // badges
 @property (strong, nonatomic) TungMiscView *subscriptionsBadge;
@@ -215,11 +217,14 @@
 + (NSData*) retrieveSmallAvatarDataWithUrlString:(NSString *)urlString;
 + (void) replaceCachedSmallAvatarWithDataAtUrlString:(NSString *)urlString;
 + (NSData*) retrieveAudioClipDataWithUrlString:(NSString *)urlString;
++ (NSString *) getCachedPodcastArtDirectoryPath;
++ (NSString *) getSavedPodcastArtDirectoryPath;
++ (BOOL) savePodcastArtForEntity:(PodcastEntity *)podcastEntity;
++ (void) unsavePodcastArtForEntity:(PodcastEntity *)podcastEntity;
 + (NSData*) retrieveSSLPodcastArtDataWithUrlString:(NSString *)urlString;
 + (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (NSString *) getPodcastArtPathWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (NSURL *) getClipFileURL;
-+ (NSString *) getAlbumArtFilenameFromUrlString:(NSString *)artURLString;
 
 // misc class methods
 + (id) establishTungObjects;

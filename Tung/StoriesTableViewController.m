@@ -545,7 +545,8 @@ NSInteger requestTries = 0;
             [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avatarURLString];
             // album art
             NSString *artURLString = [[headerDict objectForKey:@"episode"] objectForKey:@"artworkUrlSSL"];
-            [TungCommonObjects retrieveSSLPodcastArtDataWithUrlString:artURLString];
+            NSNumber *collectionId = [[headerDict objectForKey:@"episode"] objectForKey:@"collectionId"];
+            [TungCommonObjects retrievePodcastArtDataWithUrlString:artURLString andCollectionId:collectionId];
         }];
         
         int eventLimit = 5;
@@ -847,7 +848,8 @@ CGFloat labelWidth = 0;
     
     // album art
     NSString *artUrlString = [episodeMiniDict objectForKey:@"artworkUrlSSL"];
-    NSData *artImageData = [TungCommonObjects retrieveSSLPodcastArtDataWithUrlString:artUrlString];
+    NSNumber *collectionId = [episodeMiniDict objectForKey:@"collectionId"];
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString andCollectionId:collectionId];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     headerCell.albumArt.image = artImage;
     

@@ -166,7 +166,7 @@
         // log all podcast and episode entities
         //[TungCommonObjects checkForPodcastData];
         
-        //[TungCommonObjects clearTempDirectory];
+        [TungCommonObjects clearTempDirectory];
         
         //NSLog(@"notification settings: %@", [[UIApplication sharedApplication] currentUserNotificationSettings]);
         
@@ -867,8 +867,7 @@
     
     // first look for file in episode temp dir
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSString *episodeFilename = [url.path lastPathComponent];
-    episodeFilename = [episodeFilename stringByRemovingPercentEncoding];
+    NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrl:url];
     
     NSString *cachedEpisodesDir = [self getCachedEpisodesDirectoryPath];
     NSString *cachedEpisodeFilepath = [cachedEpisodesDir stringByAppendingPathComponent:episodeFilename];
@@ -1026,6 +1025,12 @@ static NSString *episodeDirName = @"episodes";
     
     //JPLog(@"queue episode for saving: %@", episodeEntity.title);
     
+    // check if episode is cached and if so just move episode
+    if ([self moveEpisodeToSaved:episodeEntity]) {
+        
+        return;
+    }
+    
     // check if there is enough disk space
     CGFloat freeDiskSpace = [ALDisk freeDiskSpaceInBytes];
     _bytesToSave += episodeEntity.dataLength.doubleValue;
@@ -1082,6 +1087,7 @@ static NSString *episodeDirName = @"episodes";
     [self queueSaveStatusDidChangeNotification];
     
     // cancel download
+    
     if ([episodeEntity.url isEqualToString:_episodeToSaveEntity.url]) {
         [_saveTrackConnection cancel];
         _saveTrackConnection = nil;
@@ -1213,34 +1219,34 @@ static NSString *episodeDirName = @"episodes";
     [episodeSavedInfoAlert addAction:[UIAlertAction actionWithTitle:@"Remove" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         [self deleteSavedEpisodeWithUrl:episodeEntity.url confirm:YES];
     }]];
-    UIAlertAction *keepAction = [UIAlertAction actionWithTitle:@"Keep" style:UIAlertActionStyleDefault handler:nil];
+    UIAlertAction *keepAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
     [episodeSavedInfoAlert addAction:keepAction];
     episodeSavedInfoAlert.preferredAction = keepAction;
     [_viewController presentViewController:episodeSavedInfoAlert animated:YES completion:nil];
 }
 
-- (void) moveEpisodeToSaved:(EpisodeEntity *)episodeEntity {
+- (BOOL) moveEpisodeToSaved:(EpisodeEntity *)episodeEntity {
     
     // find in temp
     NSFileManager *fileManager = [NSFileManager defaultManager];
     
+    
     // strip out query string
     NSURL *url = [NSURL URLWithString:episodeEntity.url];
-    NSURLComponents *urlComponents = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
-    urlComponents.query = nil;
-    NSString *episodeFilename = [urlComponents.string lastPathComponent];
+    NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrl:url];
     
     //NSString *episodeFilename = [[episodeEntity.url lastPathComponent] stringByRemovingPercentEncoding];
     NSString *cachedEpisodesDir = [self getCachedEpisodesDirectoryPath];
     NSString *cachedEpisodeFilepath = [cachedEpisodesDir stringByAppendingPathComponent:episodeFilename];
     //NSLog(@"move episode - path: %@", cachedEpisodeFilepath);
     
+    BOOL result = NO;
     if ([fileManager fileExistsAtPath:cachedEpisodeFilepath]) {
         // save in docs directory
         NSString *episodesDir = [self getSavedEpisodesDirectoryPath];
         NSString *savedEpisodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
         NSError *error;
-        BOOL result = [fileManager moveItemAtPath:cachedEpisodeFilepath toPath:savedEpisodeFilepath error:&error];
+        result = [fileManager moveItemAtPath:cachedEpisodeFilepath toPath:savedEpisodeFilepath error:&error];
         //JPLog(@"moved episode to saved from temp: %@", (result) ? @"Success" : @"Failed");
         if (result) {
             episodeEntity.isSaved = [NSNumber numberWithBool:YES];
@@ -1254,12 +1260,20 @@ static NSString *episodeDirName = @"episodes";
     } else {
         JPLog(@"move episode: file does not exist in temp path");
         episodeEntity.isSaved = [NSNumber numberWithBool:NO];
-        [self simpleErrorAlertWithMessage:@"Could not move episode to saved"];
     }
     [TungCommonObjects saveContextWithReason:@"moved episode to saved"];
     [self queueSaveStatusDidChangeNotification];
+    return result;
 }
 
++ (NSString *) getEpisodeFilenameFromUrl:(NSURL *)url {
+    
+    NSURLComponents *urlComponents = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
+    urlComponents.query = nil;
+    NSString *episodeFilename = [[urlComponents.string lastPathComponent] stringByRemovingPercentEncoding];
+    JPLog(@"get episode filename: %@", episodeFilename);
+    return episodeFilename;
+}
 
 
 #pragma mark - NSURLConnection delegate
@@ -1317,8 +1331,7 @@ static NSString *episodeDirName = @"episodes";
         [self processPendingRequests];
         
         NSString *episodesDir = [self getCachedEpisodesDirectoryPath];
-        NSString *episodeFilename = [[_playQueue objectAtIndex:0] lastPathComponent];
-        episodeFilename = [episodeFilename stringByRemovingPercentEncoding]; // is this necessary?
+        NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrl:[_playQueue objectAtIndex:0]];
         NSString *episodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
         NSError *error;
         if ([_trackData writeToFile:episodeFilepath options:0 error:&error]) {
@@ -2842,6 +2855,7 @@ static NSArray *colors;
                 // success
                 else if ([responseDict objectForKey:@"success"]) {
                     [button setEnabled:YES];
+                    [TungCommonObjects savePodcastArtForEntity:podcastEntity];
                     NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
                     UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
                     if (loggedUser) {
@@ -2905,6 +2919,7 @@ static NSArray *colors;
                 // success
                 else if ([responseDict objectForKey:@"success"]) {
                     [button setEnabled:YES];
+                    [TungCommonObjects unsavePodcastArtForEntity:podcastEntity];
                     UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
                     if (loggedUser) {
                         NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
@@ -4076,6 +4091,7 @@ static NSArray *colors;
 }
 
 // for podcast art that is saved in tung CDN
+// TODO: delete
 + (NSData*) retrieveSSLPodcastArtDataWithUrlString:(NSString *)urlString {
     
     NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"SSLPodcastArt"];
@@ -4097,29 +4113,90 @@ static NSArray *colors;
     return nil;
 }
 
-// for podcast art url from feed
-+ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId {
++ (NSString *) getCachedPodcastArtDirectoryPath {
     
     NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
     NSError *error;
-    if ([[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error]) {
-        
-        NSString *extension = [[urlString lastPathComponent] pathExtension];
-        if (!extension) extension = @"jpg";
-        NSString *artFilename = [NSString stringWithFormat:@"%@.%@", collectionId, extension];
-        NSString *artFilepath = [podcastArtDir stringByAppendingPathComponent:artFilename];
-        NSData *artImageData;
-        if ([[NSFileManager defaultManager] fileExistsAtPath:artFilepath]) {
-            artImageData = [NSData dataWithContentsOfFile:artFilepath];
-        } else {
-            artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
-            [artImageData writeToFile:artFilepath atomically:YES];
-        }
-        return artImageData;
-    }
-    return nil;
+    [[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error];
+    return podcastArtDir;
+    
 }
 
++ (NSString *) getSavedPodcastArtDirectoryPath {
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
+    NSURL *libraryDir = [folders objectAtIndex:0];
+    NSString *savedArtDir = [libraryDir.path stringByAppendingPathComponent:@"podcastArt"];
+    NSError *error;
+    [fileManager createDirectoryAtPath:savedArtDir withIntermediateDirectories:YES attributes:nil error:&error];
+    return savedArtDir;
+}
+
++ (BOOL) savePodcastArtForEntity:(PodcastEntity *)podcastEntity {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *extension = [[podcastEntity.artworkUrl600 lastPathComponent] pathExtension];
+    if (!extension) extension = @"jpg";
+    NSString *artFilename = [NSString stringWithFormat:@"%@.%@", podcastEntity.collectionId, extension];
+    
+    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    NSError *error;
+    if ([fileManager fileExistsAtPath:artFilepath]) {
+        return [fileManager moveItemAtPath:artFilepath toPath:savedArtPath error:&error];
+    }
+    else {
+        NSData *artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:podcastEntity.artworkUrl600]];
+        return [artImageData writeToFile:savedArtPath atomically:YES];
+    }
+}
+
++ (void) unsavePodcastArtForEntity:(PodcastEntity *)podcastEntity {
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *extension = [[podcastEntity.artworkUrl600 lastPathComponent] pathExtension];
+    if (!extension) extension = @"jpg";
+    NSString *artFilename = [NSString stringWithFormat:@"%@.%@", podcastEntity.collectionId, extension];
+    
+    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    NSError *error;
+    if ([fileManager fileExistsAtPath:savedArtPath]) {
+        [fileManager moveItemAtPath:artFilepath toPath:artFilepath error:&error];
+    }
+}
+
+// for podcast art url from feed, stores SSL (tung CDN) art and feed url art agnostically
++ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId {
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *extension = [[urlString lastPathComponent] pathExtension];
+    if (!extension) extension = @"jpg";
+    NSString *artFilename = [NSString stringWithFormat:@"%@.%@", collectionId, extension];
+    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    // check for cached art data
+    NSData *artImageData;
+    if ([fileManager fileExistsAtPath:artFilepath]) {
+        //JPLog(@"retrieved podcast art from cached for id: %@", collectionId);
+        artImageData = [NSData dataWithContentsOfFile:artFilepath];
+    }
+    else {
+        // look for saved art data
+        NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+        if ([fileManager fileExistsAtPath:savedArtPath]) {
+            //JPLog(@"retrieved podcast art from saved for id: %@", collectionId);
+            artImageData = [NSData dataWithContentsOfFile:savedArtPath];
+        }
+        else {
+            // download and cache
+            //JPLog(@"downloaded podcast art for id: %@", collectionId);
+        	artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString: urlString]];
+        	[artImageData writeToFile:artFilepath atomically:YES];
+        }
+    }
+    return artImageData;
+}
+
+// used for html markup for podcast description page
 + (NSString *) getPodcastArtPathWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId {
     
     NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
@@ -4141,11 +4218,6 @@ static NSArray *colors;
     
     NSString *clipFilePath = [NSTemporaryDirectory() stringByAppendingPathComponent:@"recording.m4a"];
     return [NSURL fileURLWithPath:clipFilePath];
-}
-
-+ (NSString *) getAlbumArtFilenameFromUrlString:(NSString *)artURLString {
-    NSArray *components = [artURLString pathComponents];
-    return [NSString stringWithFormat:@"%@%@", components[components.count-2], components[components.count-1]];
 }
 
 #pragma mark - class methods

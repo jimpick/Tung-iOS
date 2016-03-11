@@ -53,7 +53,8 @@
     
     // art image
     NSString *artUrlString = [miniDict objectForKey:@"artworkUrlSSL"];
-    NSData *artImageData = [TungCommonObjects retrieveSSLPodcastArtDataWithUrlString:artUrlString];
+    NSNumber *collectionId = [miniDict objectForKey:@"collectionId"];
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString andCollectionId:collectionId];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     self.albumArt.image = artImage;
     

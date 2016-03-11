@@ -10,6 +10,7 @@
 #import "TungPodcast.h"
 #import "AppDelegate.h"
 #import "EpisodesTableViewController.h"
+#import "BrowserViewController.h"
 
 
 @class TungCommonObjects;
@@ -145,11 +146,26 @@
     [_headerView sizeAndConstrainHeaderViewInViewController:self];
     [_headerView.subscribeButton addTarget:self action:@selector(subscribeToPodcastViaSender:) forControlEvents:UIControlEventTouchUpInside];
     [_headerView.podcastButton addTarget:self action:@selector(pushPodcastDescription) forControlEvents:UIControlEventTouchUpInside];
+    [_headerView.largeButton addTarget:self action:@selector(largeButtonInHeaderTapped) forControlEvents:UIControlEventTouchUpInside];
     
     [_episodesView.tableView reloadData];
     
     if (_focusedGUID) {
         [_episodesView.tableView scrollToRowAtIndexPath:_episodesView.focusedIndexPath atScrollPosition:UITableViewScrollPositionMiddle animated:YES];
+    }
+}
+
+- (void) largeButtonInHeaderTapped {
+    
+    // support button
+    if (_tung.connectionAvailable.boolValue) {
+        // url unique to this podcast
+        NSString *fundraiseUrlString = [NSString stringWithFormat:@"%@fundraising?id=%@", _tung.tungSiteRootUrl, _podcastEntity.collectionId];
+        BrowserViewController *webView = [self.storyboard instantiateViewControllerWithIdentifier:@"webView"];
+        webView.urlToNavigateTo = [NSURL URLWithString:fundraiseUrlString];
+        [self presentViewController:webView animated:YES completion:nil];
+    } else {
+        [_tung showNoConnectionAlert];
     }
 }
 
