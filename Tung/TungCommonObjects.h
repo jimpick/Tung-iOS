@@ -99,7 +99,7 @@
 - (void) setControlButtonStateToBuffering;
 - (void) removeNowPlayingStatusFromAllEpisodes;
 - (NSURL *) getEpisodeUrl:(NSURL *)url;
-- (void) replacePlayerItemWithLocalCopy;
+- (void) reestablishPlayerItemAndReplace;
 
 // caching/saving episodes
 @property EpisodeEntity *episodeToSaveEntity;
@@ -221,7 +221,6 @@
 + (NSString *) getSavedPodcastArtDirectoryPath;
 + (BOOL) savePodcastArtForEntity:(PodcastEntity *)podcastEntity;
 + (void) unsavePodcastArtForEntity:(PodcastEntity *)podcastEntity;
-+ (NSData*) retrieveSSLPodcastArtDataWithUrlString:(NSString *)urlString;
 + (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (NSString *) getPodcastArtPathWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (NSURL *) getClipFileURL;

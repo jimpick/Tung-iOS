@@ -532,10 +532,7 @@ static NSString *feedDictsDirName = @"feedDicts";
         // cache feed
         NSString *feedFileName = [NSString stringWithFormat:@"%@.txt", entity.collectionId];
         NSString *feedFilePath = [feedDir stringByAppendingPathComponent:feedFileName];
-        // delete file if exists.
-        if ([[NSFileManager defaultManager] fileExistsAtPath:feedFilePath]) {
-            [[NSFileManager defaultManager] removeItemAtPath:feedFilePath error:nil];
-        }
+
         if ([feed writeToFile:feedFilePath atomically:YES]) {
             
             entity.feedLastCached = [NSDate date];
@@ -556,7 +553,9 @@ static NSString *feedDictsDirName = @"feedDicts";
         
         NSString *savedFeedPath = [[self getSavedFeedsDirectoryPath] stringByAppendingPathComponent:feedFileName];
         NSError *error;
-        if ([fileManager copyItemAtPath:cachedFeedPath toPath:savedFeedPath error:&error]) {
+        if ([fileManager fileExistsAtPath:savedFeedPath]) [fileManager removeItemAtPath:savedFeedPath error:&error];
+        error = nil;
+        if ([fileManager moveItemAtPath:cachedFeedPath toPath:savedFeedPath error:&error]) {
             return YES;
         } else {
             JPLog(@"Error saving feed dict: %@", error);
@@ -569,15 +568,21 @@ static NSString *feedDictsDirName = @"feedDicts";
     }
 }
 
-+ (void) removeFeedFromSavedForEntity:(PodcastEntity *)entity {
++ (void) unsaveFeedForEntity:(PodcastEntity *)entity {
     
     NSString *feedFileName = [NSString stringWithFormat:@"%@.txt", entity.collectionId];
     NSString *savedFeedPath = [[self getSavedFeedsDirectoryPath] stringByAppendingPathComponent:feedFileName];
     NSFileManager *fileManager = [NSFileManager defaultManager];
     
     if ([fileManager fileExistsAtPath:savedFeedPath]) {
+        NSString *cachedFeedPath = [[self getCachedFeedsDirectoryPath] stringByAppendingPathComponent:feedFileName];
         NSError *error;
-        [fileManager removeItemAtPath:savedFeedPath error:&error];
+        // move to cached but prefer cached if it exists
+        if ([fileManager fileExistsAtPath:cachedFeedPath]) {
+            [fileManager removeItemAtPath:savedFeedPath error:&error];
+        } else {
+        	[fileManager moveItemAtPath:savedFeedPath toPath:cachedFeedPath error:&error];
+        }
     }
 }
 

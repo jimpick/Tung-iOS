@@ -62,6 +62,17 @@
     
     // background fetch
     [application setMinimumBackgroundFetchInterval:UIApplicationBackgroundFetchIntervalMinimum];
+    
+    // local notification
+    if (launchOptions[UIApplicationLaunchOptionsLocalNotificationKey] != nil) {
+        UILocalNotification *notif = launchOptions[UIApplicationLaunchOptionsLocalNotificationKey];
+        [self application:application didReceiveLocalNotification:notif];
+    }
+    // remote notification
+    if (launchOptions[UIApplicationLaunchOptionsRemoteNotificationKey] != nil) {
+        NSDictionary *userInfo = launchOptions[UIApplicationLaunchOptionsRemoteNotificationKey];
+        [self application:application didReceiveRemoteNotification:userInfo];
+    }
 
     //return YES;
     return [[FBSDKApplicationDelegate sharedInstance] application:application

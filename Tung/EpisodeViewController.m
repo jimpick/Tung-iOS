@@ -475,7 +475,7 @@ NSTimer *markAsSeenTimer;
         [_commentsView.tableView reloadData]; // for footer message change
         
         if (_episodeEntity.isNowPlaying.boolValue) {
-            JPLog(@"//////// nowPlayingDidChange: episode is just started playing");
+            JPLog(@"//////// nowPlayingDidChange: episode just started playing");
             [self revealNowPlayingControls];
         }
         else {
@@ -501,6 +501,10 @@ NSTimer *markAsSeenTimer;
     _saveButton.on = _episodeEntity.isSaved.boolValue;
     _saveLabel.text = (_saveButton.on) ? @"Saved" : @"Save";
     [_saveButton setNeedsDisplay];
+    
+    if (!_saveButton.on) {
+        _progressBar.progress = 0;
+    }
 }
 
 #pragma mark - Set up view
@@ -1096,7 +1100,7 @@ static CGRect buttonsScrollViewHomeRect;
             else {
                 // currently downloading
                 _tung.saveOnDownloadComplete = !_tung.saveOnDownloadComplete;
-                _saveButton.on = NO;
+                _saveButton.on = !_saveButton.on;
                 if (_tung.saveOnDownloadComplete) {
                 	_saveLabel.text = @"Downloading…";
                 }
@@ -1104,7 +1108,6 @@ static CGRect buttonsScrollViewHomeRect;
                     // episode will continue to download, but it will only be cached.
                     // cancelling this download could jeopardize the data of the track
                     // if the file was streaming with a custom protocol.
-                    [_tung cancelDownloadForEpisode:_episodeEntity];
                     _saveLabel.text = @"Save";
                     
                 }
