@@ -1383,17 +1383,20 @@ CGFloat labelWidth = 0;
 
 - (void) stopClipPlayback {
     //JPLog(@"stop");
-    // stop "onEnterFrame"
-    [_onEnterFrame invalidate];
-    //JPLog(@"%@",[NSThread callStackSymbols]);
-    [_tung stopClipPlayback];
     
-    // reset GUI
-    NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_activeSectionIndex] objectAtIndex:_activeRowIndex]];
-    
-    _activeClipProgressView.seconds = [NSString stringWithFormat:@":%@", [eventDict objectForKey:@"duration"]];
-    _activeClipProgressView.arc = 0.0f;
-    [_activeClipProgressView setNeedsDisplay];
+    if (_activeSectionIndex >= 0 && _activeRowIndex >= 0) {
+        // stop "onEnterFrame"
+        [_onEnterFrame invalidate];
+        //JPLog(@"%@",[NSThread callStackSymbols]);
+        [_tung stopClipPlayback];
+        
+        // reset GUI
+        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_activeSectionIndex] objectAtIndex:_activeRowIndex]];
+        
+        _activeClipProgressView.seconds = [NSString stringWithFormat:@":%@", [eventDict objectForKey:@"duration"]];
+        _activeClipProgressView.arc = 0.0f;
+        [_activeClipProgressView setNeedsDisplay];
+    }
 
 }
 
