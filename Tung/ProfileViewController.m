@@ -838,10 +838,10 @@ NSTimer *sessionCheckTimer;
         [_tung deleteAllCachedEpisodes];
         [TungCommonObjects showBannerAlertForText:@"All cached episodes have been deleted." andWidth:screenWidth];
     }]];
-    /*
+    
     [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Application log"	 style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [self performSegueWithIdentifier:@"presentLogView" sender:self];
-    }]];*/
+    }]];
     [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Sign out" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         [_tung signOut];
     }]];
