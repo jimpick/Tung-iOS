@@ -185,7 +185,7 @@
     if (npResult.count > 0) {
         EpisodeEntity *epEntity = [npResult lastObject];
         
-        if (epEntity.title) {
+        if (epEntity.title && epEntity.url) {
             _npEpisodeEntity = epEntity;
             NSURL *url = [NSURL URLWithString:_npEpisodeEntity.url];
             _playQueue = [@[url] mutableCopy];

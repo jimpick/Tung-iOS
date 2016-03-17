@@ -426,7 +426,6 @@ NSInteger requestTries = 0;
                         }
                         // initial request
                         else {
-                            //JPLog(@"%@", newStories);
                             if (newStories.count > 0) {
                                 _storiesArray = [self processStories:newStories];
                                 _noResults = NO;
@@ -441,6 +440,8 @@ NSInteger requestTries = 0;
                                 [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(showWelcomePopup) userInfo:nil repeats:NO];
                             }
                         }
+                        
+                        JPLog(@"stories array: %@", _storiesArray);
                         
                         // feed is now refreshed
                         self.requestStatus = @"finished";
@@ -513,8 +514,9 @@ NSInteger requestTries = 0;
     }
 }
 
-// break events apart from story and into their own array items in _storiesArray,
-// while we're at it, preload avatars, album art and clips.
+/*	break events apart from story and into their own array items in story sections in _storiesArray,
+	while we're at it, preload avatars, album art and clips.
+ */
 - (NSMutableArray *) processStories:(NSArray *)stories {
     
     NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
@@ -556,6 +558,7 @@ NSInteger requestTries = 0;
             
             NSMutableDictionary *eventDict = [[events objectAtIndex:e] mutableCopy];
             [eventDict setObject:keyColor forKey:@"keyColor"];
+            [eventDict setObject:[headerDict objectForKey:@"user"] forKey:@"user"];
             NSString *type = [eventDict objectForKey:@"type"];
             // preload clip
             if ([type isEqualToString:@"clip"]) {
@@ -585,14 +588,12 @@ NSInteger requestTries = 0;
 
 
 /* 	new stories fetched after feed has already been fetched may be part of those already fetched.
-	if the same story id comes down again, this method removes the old one so the new stories can 
- 	be added to the front.
-*/
+	if the same story id comes down again, this method removes the older duplicate.
+ */
 - (void) removeOlderDuplicatesOfNewStories:(NSArray *)newStories {
     
     for (int i = 0; i < newStories.count; i++) {
-        NSDictionary *storyDict = [newStories objectAtIndex:i];
-        NSString *storyIdToMatch = [[storyDict objectForKey:@"_id"] objectForKey:@"$id"];
+        NSString *storyIdToMatch = [[[newStories objectAtIndex:i] objectForKey:@"_id"] objectForKey:@"$id"];
         
         // check for story id match in main stories array
         for (int j = 0; j < _storiesArray.count; j++) {
@@ -612,7 +613,84 @@ NSInteger requestTries = 0;
             }
         }
     }
+}
+
+
+/*	group stories by episode across entire _storiesArray so that all users who listened to it appear in one story.
+ 	tableRange is a range where stories already exist in the table, where table updates will need to be made
+ */
+- (void) groupStoriesByEpisodeWithTableRange:(NSRange)tableRange {
     
+    for (int i = 0; i < _storiesArray.count; i++) {
+        NSMutableArray *story = [_storiesArray objectAtIndex:i];
+        NSMutableDictionary *dict = [story objectAtIndex:0];
+        NSString *episodeId = [[[dict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
+        
+        // check for match
+        for (int j = 0; j < _storiesArray.count; j++) {
+            
+            if (j != i) {
+                NSArray *comparedStory = [_storiesArray objectAtIndex:j];
+                NSDictionary *comparedDict = [comparedStory objectAtIndex:0];
+                NSString *comparedEpisodeId = [[[comparedDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
+                
+                // story match
+                if ([episodeId isEqualToString:comparedEpisodeId]) {
+                    
+                    JPLog(@"several users listened to %@", [[dict objectForKey:@"episode"] objectForKey:@"title"]);
+                    NSDictionary *userDict = [comparedDict objectForKey:@"user"];
+                    
+                    // add user dict to story header for avatars
+                    NSMutableArray *users = [NSMutableArray array];
+                    // was the story previously grouped?
+                    if ([comparedDict objectForKey:@"users"]) {
+                        [users addObjectsFromArray:[comparedDict objectForKey:@"users"]];
+                    }
+                 	else {
+                        [users addObject:userDict];
+                    }
+                    // add newer occurences after older, so oldest appears first
+                    if ([dict objectForKey:@"users"]) {
+                        [users addObjectsFromArray:[dict objectForKey:@"users"]];
+                    }
+                    else {
+                        // this is the first match found
+                        [users addObject:[dict objectForKey:@"user"]];
+                    }
+                    
+                    [users addObject:[dict objectForKey:@"user"]];
+                    [dict setObject:users forKey:@"users"];
+                    [story replaceObjectAtIndex:0 withObject:dict];
+                    
+                    // add events of compared story into *story
+                    int indexToInsert = 1;
+                    for (int k = 1; k < comparedStory.count -1; k++) {
+                        [story insertObject:[comparedStory objectAtIndex:k] atIndex:indexToInsert];
+                        indexToInsert++;
+                    }
+                    
+                    // remove match
+                    [_storiesArray removeObjectAtIndex:j];
+                    if (NSLocationInRange(j, tableRange)) {
+                        [UIView setAnimationsEnabled:NO];
+                        [self.tableView beginUpdates];
+                        [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:j]withRowAnimation:UITableViewRowAnimationNone];
+                        [self.tableView endUpdates];
+                        [UIView setAnimationsEnabled:YES];
+                    }
+                    j--;
+                    
+                    // finally, replace *story with grouped story.
+                    [_storiesArray replaceObjectAtIndex:i withObject:story];
+                    if (NSLocationInRange(i, tableRange)) {
+                    	[self.tableView beginUpdates];
+                        [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                    	[self.tableView endUpdates];
+                    }
+                }
+            }
+        }
+    }
 }
 
 - (void) showWelcomePopup {
