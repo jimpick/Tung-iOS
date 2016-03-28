@@ -19,6 +19,7 @@
     if (self) {
         // initialization
         _borderColor = [UIColor whiteColor];
+        self.backgroundColor = [UIColor clearColor];
     }
     return self;
 }

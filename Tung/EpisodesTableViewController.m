@@ -190,7 +190,7 @@
         }
         else {
             // initiate download
-            [_tung queueEpisodeForDownload:epEntity];
+            [_tung moveToSavedOrQueueDownloadForEpisode:epEntity];
         }
         
     }

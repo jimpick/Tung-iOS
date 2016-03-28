@@ -17,5 +17,6 @@
 @property (strong, nonatomic) IBOutlet UIButton *avatarButton;
 @property (strong, nonatomic) IBOutlet AvatarContainerView *avatarContainerView;
 @property (strong, nonatomic) IBOutlet UILabel *title;
+@property (strong, nonatomic) IBOutlet NSLayoutConstraint *usernameBtnLeftConstraint;
 
 @end

@@ -706,6 +706,7 @@
                                     <outlet property="avatarContainerView" destination="NRi-RS-eos" id="ytC-mf-5z7"/>
                                     <outlet property="postedDateLabel" destination="zPd-F9-FXs" id="RMR-1O-Rng"/>
                                     <outlet property="title" destination="etY-gk-eFl" id="PFv-kf-cNn"/>
+                                    <outlet property="usernameBtnLeftConstraint" destination="zsO-nE-CMc" id="C6d-lv-JO0"/>
                                     <outlet property="usernameButton" destination="L4C-v0-Rbe" id="gNg-Qn-l6N"/>
                                 </connections>
                             </tableViewCell>
@@ -829,7 +830,7 @@
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="5H4-8Y-wuN" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="288.5333333333333" y="101.29333333333334"/>
+            <point key="canvasLocation" x="288" y="101"/>
         </scene>
         <!--Tung Nav Controller-->
         <scene sceneID="UG4-En-PYC">

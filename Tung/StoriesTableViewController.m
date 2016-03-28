@@ -28,6 +28,8 @@
 @property CGPoint contentOffset;
 @property BOOL contentOffsetSet;
 
+- (void) groupStoriesByEpisodeAndInsertInTable:(UITableView *)tableView withRange:(NSRange)tableRange;
+
 @end
 
 @implementation StoriesTableViewController
@@ -384,6 +386,9 @@ NSInteger requestTries = 0;
                                 NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
                                 _storiesArray = [newFeedArray mutableCopy];
                                 
+                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(newStories.count, _storiesArray.count)];
+                                
+                                /*
                                 [UIView setAnimationsEnabled:NO];
                                 [self.tableView beginUpdates];
                                 for (NSInteger i = 0; i < newStories.count; i++) {
@@ -391,16 +396,17 @@ NSInteger requestTries = 0;
                                 }
                                 [self.tableView endUpdates];
                                 [UIView setAnimationsEnabled:YES];
+                                */
                                 
-                                [self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
+                                //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
                             }
                         }
                         // auto-loaded posts as user scrolls down
                         else if ([beforeTime intValue] > 0) {
                             
-                            if (newStories.count == 0) {
+                            _reachedEndOfPosts = (newStories.count == 0);
+                            if (_reachedEndOfPosts) {
                                 //JPLog(@"no more stories to get");
-                                _reachedEndOfPosts = YES;
                                 // hide footer
                                 //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:_storiesArray.count-1 inSection:_feedSection] atScrollPosition:UITableViewScrollPositionMiddle animated:YES]; // causes crash on search page
                                 [self.tableView reloadData];
@@ -413,6 +419,8 @@ NSInteger requestTries = 0;
                                 _storiesArray = [newFeedArray mutableCopy];
                                 newFeedArray = nil;
                                 
+                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(0, startingIndex - 1)];
+                                /*
                                 [UIView setAnimationsEnabled:NO];
                                 [self.tableView beginUpdates];
                                 for (int i = startingIndex; i < _storiesArray.count; i++) {
@@ -420,18 +428,20 @@ NSInteger requestTries = 0;
                                 }
                                 [self.tableView endUpdates];
                                 [UIView setAnimationsEnabled:YES];
+                                 */
                                 
                                 
                             }
                         }
                         // initial request
                         else {
-                            if (newStories.count > 0) {
+                            _noResults = (newStories.count == 0);
+                            if (!_noResults) {
                                 _storiesArray = [self processStories:newStories];
-                                _noResults = NO;
-                            } else {
-                                _noResults = YES;
                             }
+                            
+                            [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(0, 0)];
+                            
                             [self.tableView reloadData];
                             
                             // welcome tutorial
@@ -441,7 +451,8 @@ NSInteger requestTries = 0;
                             }
                         }
                         
-                        JPLog(@"stories array: %@", _storiesArray);
+                        
+                        //JPLog(@"stories array: %@", _storiesArray);
                         
                         // feed is now refreshed
                         self.requestStatus = @"finished";
@@ -558,7 +569,7 @@ NSInteger requestTries = 0;
             
             NSMutableDictionary *eventDict = [[events objectAtIndex:e] mutableCopy];
             [eventDict setObject:keyColor forKey:@"keyColor"];
-            [eventDict setObject:[headerDict objectForKey:@"user"] forKey:@"user"];
+            [eventDict setObject:username forKey:@"username"];
             NSString *type = [eventDict objectForKey:@"type"];
             // preload clip
             if ([type isEqualToString:@"clip"]) {
@@ -617,9 +628,14 @@ NSInteger requestTries = 0;
 
 
 /*	group stories by episode across entire _storiesArray so that all users who listened to it appear in one story.
- 	tableRange is a range where stories already exist in the table, where table updates will need to be made
+ 	tableRange is a range where stories already exist in the table, where table updates will need to be made.
+ 	Finally, this methods inserts story sections into the table where necessary.
  */
-- (void) groupStoriesByEpisodeWithTableRange:(NSRange)tableRange {
+- (void) groupStoriesByEpisodeAndInsertInTable:(UITableView *)tableView withRange:(NSRange)tableRange {
+    
+    
+    [UIView setAnimationsEnabled:NO];
+    [tableView beginUpdates];
     
     for (int i = 0; i < _storiesArray.count; i++) {
         NSMutableArray *story = [_storiesArray objectAtIndex:i];
@@ -658,7 +674,6 @@ NSInteger requestTries = 0;
                         [users addObject:[dict objectForKey:@"user"]];
                     }
                     
-                    [users addObject:[dict objectForKey:@"user"]];
                     [dict setObject:users forKey:@"users"];
                     [story replaceObjectAtIndex:0 withObject:dict];
                     
@@ -672,25 +687,26 @@ NSInteger requestTries = 0;
                     // remove match
                     [_storiesArray removeObjectAtIndex:j];
                     if (NSLocationInRange(j, tableRange)) {
-                        [UIView setAnimationsEnabled:NO];
-                        [self.tableView beginUpdates];
-                        [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:j]withRowAnimation:UITableViewRowAnimationNone];
-                        [self.tableView endUpdates];
-                        [UIView setAnimationsEnabled:YES];
+                        [tableView deleteSections:[NSIndexSet indexSetWithIndex:j]withRowAnimation:UITableViewRowAnimationNone];
                     }
                     j--;
                     
-                    // finally, replace *story with grouped story.
+                    // replace *story with grouped story.
                     [_storiesArray replaceObjectAtIndex:i withObject:story];
                     if (NSLocationInRange(i, tableRange)) {
-                    	[self.tableView beginUpdates];
-                        [self.tableView reloadSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
-                    	[self.tableView endUpdates];
+                        [tableView reloadSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
                     }
                 }
             }
         }
+        // if story needs table insertion
+        if (!NSLocationInRange(i, tableRange)) {
+            [tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+        }
     }
+    
+    [tableView endUpdates];
+    [UIView setAnimationsEnabled:YES];
 }
 
 - (void) showWelcomePopup {
@@ -908,17 +924,63 @@ CGFloat labelWidth = 0;
     bgColorView.backgroundColor = [TungCommonObjects darkenKeyColor:keyColor];
     [headerCell setSelectedBackgroundView:bgColorView];
     
-    // user
-    headerCell.usernameButton.tag = 101;
-    [headerCell.usernameButton addTarget:self action:@selector(headerCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
-    [headerCell.usernameButton setTitle:[userDict objectForKey:@"username"] forState:UIControlStateNormal];
-    headerCell.avatarButton.tag = 101;
-    [headerCell.avatarButton addTarget:self action:@selector(headerCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+    // user or users
+    NSString *avatarUrlString;
     
+    // remove any extra avatars since this view is being recycled
+    for (UIView *subview in headerCell.contentView.subviews) {
+        if ([subview isKindOfClass:[AvatarContainerView class]] && subview != headerCell.avatarContainerView) {
+            [subview removeFromSuperview];
+        }
+    }
+    if ([storyDict objectForKey:@"users"]) {
+        // users
+        CGRect avatarRect = CGRectMake(12, 12, 40, 40);
+        NSArray *users = [storyDict objectForKey:@"users"];
+        JPLog(@"story has group: %@", users);
+        // avatar spacing
+        int spacing = 30;
+        int threshold = 4;
+        int max = 6;
+        if (screenWidth > 320) {
+            threshold = 5;
+            max = 8;
+        }
+        if (users.count > threshold) {
+            spacing = 20;
+        }
+        
+        headerCell.usernameButton.hidden = YES;
+        avatarUrlString = [[users objectAtIndex:0] objectForKey:@"small_av_url"];
+        
+        AvatarContainerView *lastAvatar = headerCell.avatarContainerView;
+        NSUInteger limit = MIN(users.count, max);
+        for (int i = 1; i < limit; i++) {
+            
+            NSString *avUrlString = [[users objectAtIndex:i] objectForKey:@"small_av_url"];
+            NSData *avImageData = [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avUrlString];
+            AvatarContainerView *avContainerView = [[AvatarContainerView alloc] initWithFrame:avatarRect];
+            avContainerView.avatar = [[UIImage alloc] initWithData:avImageData];
+            [headerCell.contentView insertSubview:avContainerView belowSubview:lastAvatar];
+            [avContainerView setNeedsDisplay];
+            lastAvatar = avContainerView;
+            avatarRect.origin.x += spacing;
+        }
+    }
+    else {
+        // user
+        headerCell.usernameButton.hidden = NO;
+        headerCell.usernameButton.tag = 101;
+        [headerCell.usernameButton addTarget:self action:@selector(headerCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+        [headerCell.usernameButton setTitle:[userDict objectForKey:@"username"] forState:UIControlStateNormal];
+        headerCell.avatarButton.tag = 101;
+        [headerCell.avatarButton addTarget:self action:@selector(headerCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
+        
+        avatarUrlString = [userDict objectForKey:@"small_av_url"];
+        
+    }
     // avatar
-    NSString *avatarUrlString = [userDict objectForKey:@"small_av_url"];
     NSData *avatarImageData = [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avatarUrlString];
-    headerCell.avatarContainerView.backgroundColor = [UIColor clearColor];
     headerCell.avatarContainerView.avatar = nil;
     headerCell.avatarContainerView.avatar = [[UIImage alloc] initWithData:avatarImageData];
     headerCell.avatarContainerView.borderColor = [UIColor whiteColor];
@@ -976,6 +1038,11 @@ CGFloat labelWidth = 0;
     StoryEventCell *eventCell = (StoryEventCell *)cell;
     
     NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
+    NSDictionary *headerDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0]];
+    BOOL isGroup = NO;
+    if ([headerDict objectForKey:@"users"]) {
+        isGroup = YES;
+    }
     
     // color
     UIColor *keyColor = (UIColor *)[eventDict objectForKey:@"keyColor"];
@@ -986,18 +1053,15 @@ CGFloat labelWidth = 0;
     
     // event
     NSString *type = [eventDict objectForKey:@"type"];
+    NSString *username = [eventDict objectForKey:@"username"];
+    
     if ([type isEqualToString:@"recommended"]) {
         eventCell.iconView.type = kIconTypeRecommend;
         eventCell.simpleEventLabel.hidden = NO;
-        eventCell.simpleEventLabel.text = @"Recommended this episode";
-        eventCell.eventDetailLabel.hidden = YES;
-        eventCell.commentLabel.hidden = YES;
-        eventCell.clipProgress.hidden = YES;
-    }
-    else if ([type isEqualToString:@"subscribed"]) { // not used
-        eventCell.iconView.type = kIconTypeSubscribe;
-        eventCell.simpleEventLabel.hidden = NO;
-        eventCell.simpleEventLabel.text = @"Subscribed to this podcast";
+        eventCell.simpleEventLabel.text =  @"Recommended this episode";
+        if (isGroup) {
+            eventCell.simpleEventLabel.text =  [NSString stringWithFormat:@"%@ recommended this episode", username];
+        }
         eventCell.eventDetailLabel.hidden = YES;
         eventCell.commentLabel.hidden = YES;
         eventCell.clipProgress.hidden = YES;
@@ -1005,7 +1069,10 @@ CGFloat labelWidth = 0;
     else if ([type isEqualToString:@"comment"]) {
         eventCell.iconView.type = kIconTypeComment;
         eventCell.simpleEventLabel.hidden = YES;
-        eventCell.eventDetailLabel.text = [eventDict objectForKey:@"timestamp"];
+        eventCell.eventDetailLabel.text = [NSString stringWithFormat:@"%@", [eventDict objectForKey:@"timestamp"]];
+        if (isGroup) {
+            eventCell.eventDetailLabel.text = [NSString stringWithFormat:@"%@ at %@", username, [eventDict objectForKey:@"timestamp"]];
+        }
         eventCell.eventDetailLabel.hidden = NO;
         eventCell.commentLabel.text = [eventDict objectForKey:@"comment"];
         eventCell.commentLabel.hidden = NO;
@@ -1013,15 +1080,19 @@ CGFloat labelWidth = 0;
     }
     else if ([type isEqualToString:@"clip"]) {
         eventCell.iconView.type = kIconTypeClip;
+        NSString *eventLabelString = [NSString stringWithFormat:@"%@ - tap to play", [eventDict objectForKey:@"timestamp"]];
+        if (isGroup) {
+            eventLabelString = [NSString stringWithFormat:@"%@ at %@ - tap to play", username, [eventDict objectForKey:@"timestamp"]];
+        }
         if ([[eventDict objectForKey:@"comment"] length] > 0) {
             eventCell.simpleEventLabel.hidden = YES;
-            eventCell.eventDetailLabel.text = [NSString stringWithFormat:@"%@ - tap to play", [eventDict objectForKey:@"timestamp"]];
+            eventCell.eventDetailLabel.text = eventLabelString;
             eventCell.eventDetailLabel.hidden = NO;
             eventCell.commentLabel.text = [eventDict objectForKey:@"comment"];
             eventCell.commentLabel.hidden = NO;
         } else {
             eventCell.simpleEventLabel.hidden = NO;
-            eventCell.simpleEventLabel.text = [NSString stringWithFormat:@"%@ - tap to play", [eventDict objectForKey:@"timestamp"]];
+            eventCell.simpleEventLabel.text = eventLabelString;
             eventCell.eventDetailLabel.hidden = YES;
             eventCell.commentLabel.hidden = YES;
         }

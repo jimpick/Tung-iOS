@@ -113,7 +113,7 @@
 - (void) deleteAllSavedEpisodes;
 - (void) deleteAllCachedEpisodes;
 - (void) showSavedInfoAlertForEpisode:(EpisodeEntity *)episodeEntity;
-- (BOOL) moveEpisodeToSaved:(EpisodeEntity *)episodeEntity;
+- (BOOL) moveToSavedOrQueueDownloadForEpisode:(EpisodeEntity *)episodeEntity;
 + (NSString *) getEpisodeFilenameFromUrl:(NSURL *)url;
 
 // badges

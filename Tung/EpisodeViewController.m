@@ -1093,7 +1093,7 @@ static CGRect buttonsScrollViewHomeRect;
         else {
             if (_tung.fileIsLocal) {
                 // already cached
-                [_tung moveEpisodeToSaved:_episodeEntity];
+                [_tung moveToSavedOrQueueDownloadForEpisode:_episodeEntity];
                 _saveButton.on = YES;
                 _saveLabel.text = @"Saved";
             }

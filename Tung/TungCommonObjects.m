@@ -857,7 +857,7 @@
 - (void) playerError:(NSNotification *)notification {
     JPLog(@"PLAYER ERROR: %@ ...attempting to recover playback", [notification userInfo]);
     
-    [TungCommonObjects showBannerAlertForText:[NSString stringWithFormat:@"Player error: \"%@\" ...attempting to recover playback", [notification userInfo]] andWidth:_screenWidth];
+    [self simpleErrorAlertWithMessage:[NSString stringWithFormat:@"Player error: \"%@\"\n\nAttempting to recover playback.", [notification userInfo]]];
 
     // re-queue now playing
     [self savePositionForNowPlayingAndSync:NO];
@@ -1029,12 +1029,6 @@ static NSString *episodeDirName = @"episodes";
 - (void) queueEpisodeForDownload:(EpisodeEntity *)episodeEntity {
     
     //JPLog(@"queue episode for saving: %@", episodeEntity.title);
-    
-    // check if episode is cached and if so just move episode
-    if ([self moveEpisodeToSaved:episodeEntity]) {
-        
-        return;
-    }
     
     // check if there is enough disk space
     CGFloat freeDiskSpace = [ALDisk freeDiskSpaceInBytes];
@@ -1259,11 +1253,12 @@ static NSString *episodeDirName = @"episodes";
     [_viewController presentViewController:episodeSavedInfoAlert animated:YES completion:nil];
 }
 
-- (BOOL) moveEpisodeToSaved:(EpisodeEntity *)episodeEntity {
+// move episode from temp dir to saved dir
+// if it's not in temp, queues episode for download
+- (BOOL) moveToSavedOrQueueDownloadForEpisode:(EpisodeEntity *)episodeEntity {
     
     // find in temp
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    
     
     // strip out query string
     NSURL *url = [NSURL URLWithString:episodeEntity.url];
@@ -1297,7 +1292,7 @@ static NSString *episodeDirName = @"episodes";
             episodeEntity.isSaved = [NSNumber numberWithBool:NO];
         }
     } else {
-        JPLog(@"move episode: file does not exist in temp path");
+        // file does not exist in temp path
         episodeEntity.isSaved = [NSNumber numberWithBool:NO];
         [self queueEpisodeForDownload:episodeEntity];
     }
@@ -1382,7 +1377,7 @@ static NSString *episodeDirName = @"episodes";
             _trackDataConnection = nil;
             // move to saved?
             if (_saveOnDownloadComplete) {
-                [self moveEpisodeToSaved:_npEpisodeEntity];
+                [self moveToSavedOrQueueDownloadForEpisode:_npEpisodeEntity];
                 _saveOnDownloadComplete = NO; // reset
             }
         }

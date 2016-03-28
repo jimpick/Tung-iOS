@@ -9,6 +9,7 @@
 
 static BOOL JPLogRecorder_shouldLogInProduction = YES;
 static NSInteger JPLogRecorder_maxLogsRetained = 50;
+NSTimer *JPLogRecorder_saveLogTimer;
 
 @implementation JPLogRecorder
 
@@ -37,6 +38,10 @@ static NSInteger JPLogRecorder_maxLogsRetained = 50;
         if ([logArray count] > JPLogRecorder_maxLogsRetained) {
             logArray = [[logArray subarrayWithRange:NSMakeRange(0, JPLogRecorder_maxLogsRetained)] mutableCopy];
         }
+        
+        // debounce saving log
+        [JPLogRecorder_saveLogTimer invalidate];
+        JPLogRecorder_saveLogTimer = [NSTimer scheduledTimerWithTimeInterval:0.05 target:self selector:@selector(saveLogArray) userInfo:nil repeats:NO];
     }
 }
 
