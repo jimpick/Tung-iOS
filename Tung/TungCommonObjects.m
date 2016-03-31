@@ -57,6 +57,7 @@
 
 @property (nonatomic, strong) NSDateFormatter *ISODateFormatter;
 @property (strong, nonatomic) NSTimer *syncProgressTimer;
+@property (strong, nonatomic) NSNumber *gettingSession;
 
 @end
 
@@ -2464,6 +2465,12 @@ static NSArray *colors;
         [self establishCred];
     }
     
+    if (_gettingSession.boolValue) {
+        JPLog(@"Debounced a getSession request");
+        return;
+    }
+    _gettingSession = [NSNumber numberWithBool:YES];
+    
     NSURL *getSessionRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/session.php", _apiRootUrl]];
     NSMutableURLRequest *getSessionRequest = [NSMutableURLRequest requestWithURL:getSessionRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [getSessionRequest setHTTPMethod:@"POST"];
@@ -2484,6 +2491,7 @@ static NSArray *colors;
                 if ([responseDict objectForKey:@"sessionId"]) {
                     
                     dispatch_async(dispatch_get_main_queue(), ^{
+                        _gettingSession = [NSNumber numberWithBool:NO];
                         _sessionId = [responseDict objectForKey:@"sessionId"];
                         //JPLog(@"got new session: %@", _sessionId);
                         _connectionAvailable = [NSNumber numberWithInt:1];
@@ -2492,8 +2500,9 @@ static NSArray *colors;
                     });
                 }
                 else if ([responseDict objectForKey:@"error"]) {
-                    JPLog(@"Error getting session: response: %@", responseDict);
+                    JPLog(@"Error getting session: response: %@", [responseDict objectForKey:@"error"]);
                     dispatch_async(dispatch_get_main_queue(), ^{
+                        _gettingSession = [NSNumber numberWithBool:NO];
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Unauthorized"]) {
                             // attempt to automatically sign back in or sign out
                             [self handleUnauthorizedWithCallback:^{
@@ -2507,13 +2516,17 @@ static NSArray *colors;
                 JPLog(@"no response");
             }
             else if (error != nil) {
-                //JPLog(@"Error: %@", error);
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"HTML: %@", html);
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    JPLog(@"Error getting session: %@", error);
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"HTML: %@", html);
+                    _gettingSession = [NSNumber numberWithBool:NO];
+                });
             }
         } else {
             dispatch_async(dispatch_get_main_queue(), ^{
                 // _tableView.backgroundView = nil;
+                _gettingSession = [NSNumber numberWithBool:NO];
                 [self showConnectionErrorAlertForError:error];
             });
         }
