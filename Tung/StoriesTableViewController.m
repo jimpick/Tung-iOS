@@ -536,7 +536,7 @@ NSInteger requestTries = 0;
         }];
         
         int eventLimit = 5;
-        if (_episodeId) eventLimit = 100;
+        if (_episodeId) eventLimit = 50; // per story event limit
         
         for (int e = 0; e < events.count; e++) {
             

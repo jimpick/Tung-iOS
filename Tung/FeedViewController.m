@@ -78,6 +78,9 @@
     // first load
     _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
     
+    // notifs
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
+    
 }
 
 - (void)didReceiveMemoryWarning {
@@ -96,6 +99,11 @@
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
+    [self prepareView];
+        
+}
+
+- (void) prepareView {
     // if feed hasn't been fetched in the last 5 minutes
     [_tung checkFeedLastFetchedTime];
     
@@ -107,7 +115,6 @@
         // let's get retarded in here
         [self refreshFeed];
     }
-        
 }
 
 - (void) viewWillDisappear:(BOOL)animated {

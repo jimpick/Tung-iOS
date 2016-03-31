@@ -97,10 +97,18 @@ CGFloat screenWidth;
     _subscribedQuery.sortDescriptors = @[dateSort];
     _resultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:_subscribedQuery managedObjectContext:appDelegate.managedObjectContext sectionNameKeyPath:nil cacheName:nil];
     _resultsController.delegate = self;
+    
+    // notifs
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
 }
 
 - (void) viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+    
+    [self prepareView];
+}
+
+- (void) prepareView {
     
     // preload podcast art
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];

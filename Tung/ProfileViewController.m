@@ -224,6 +224,9 @@ CGFloat screenWidth;
     _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES];
     _tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
     
+    // notifs
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
+    
 }
 
 NSTimer *promptTimer;
@@ -241,6 +244,11 @@ NSTimer *promptTimer;
         _profileHeader.contentSizeSet = YES;
     }
     
+    [self prepareView];
+
+}
+
+- (void) prepareView {
     SettingsEntity *settings = [TungCommonObjects settings];
     
     // refresh based on flags

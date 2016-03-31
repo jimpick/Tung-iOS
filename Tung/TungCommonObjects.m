@@ -1976,8 +1976,8 @@ static NSDateFormatter *ISODateInterpreter = nil;
         NSString *twitter_id = [userDict objectForKey:@"twitter_id"]; //ensure string
         userEntity.twitter_id = twitter_id;
     }
-    NSString *twitter_username = [userDict objectForKey:@"twitter_username"];
-    if (twitter_username.length > 0) {
+    if ([userDict objectForKey:@"twitter_username"] != (id)[NSNull null]) {
+    	NSString *twitter_username = [userDict objectForKey:@"twitter_username"];
     	userEntity.twitter_username = twitter_username;
     }
     if ([userDict objectForKey:@"facebook_id"] != (id)[NSNull null]) {

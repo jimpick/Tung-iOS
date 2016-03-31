@@ -170,11 +170,6 @@ UIActivityIndicatorView *backgroundSpinner;
      _progressBar.transform = transform;
      */
     
-    // get keyboard height when keyboard is shown and will hide
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillAppear:) name:UIKeyboardWillShowNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillBeHidden:) name:UIKeyboardWillHideNotification object:nil];
-    //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillChangeFrame:) name:UIKeyboardWillChangeFrameNotification object:nil];
-    
     playbackRateStrings = @[@".75x", @"1.0x", @"1.5x", @"2.0x"];
     
     // share label
@@ -275,6 +270,9 @@ UIActivityIndicatorView *backgroundSpinner;
     // listen for notifications
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(nowPlayingDidChange) name:@"nowPlayingDidChange" object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveStatusChanged) name:@"saveStatusDidChange" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillAppear:) name:UIKeyboardWillShowNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillBeHidden:) name:UIKeyboardWillHideNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
     
     if (!_isNowPlayingView) {
         
@@ -318,6 +316,10 @@ UIActivityIndicatorView *backgroundSpinner;
 - (void) viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     self.navigationController.navigationBar.translucent = NO;
+    [self prepareView];
+}
+
+- (void) prepareView {
     if (_isNowPlayingView) {
         [self updateTimeElapsedAndPosbar];
         [self beginOnEnterFrame];
