@@ -99,10 +99,15 @@
     // if feed hasn't been fetched in the last 5 minutes
     [_tung checkFeedLastFetchedTime];
     
-    // let's get retarded in here
-    if (_tung.feedNeedsRefresh.boolValue) {
+    
+    if (_tung.feedNeedsRefetch.boolValue) {
+        [_storiesView refetchFeed];
+    }
+    else if (_tung.feedNeedsRefresh.boolValue) {
+        // let's get retarded in here
         [self refreshFeed];
     }
+        
 }
 
 - (void) viewWillDisappear:(BOOL)animated {

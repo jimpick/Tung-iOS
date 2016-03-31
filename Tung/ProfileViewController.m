@@ -250,6 +250,9 @@ NSTimer *promptTimer;
             //JPLog(@"profile feed and data need refresh");
             [self requestPageData];
         }
+        else if (_tung.profileFeedNeedsRefetch.boolValue) {
+            [_storiesView refetchFeed];
+        }
         else if (_tung.profileFeedNeedsRefresh.boolValue) {
             //JPLog(@"profile feed needs refresh");
             [_storiesView refreshFeed];

@@ -3106,8 +3106,8 @@ static NSArray *colors;
                         loggedUser.lastDataChange = lastDataChange;
                     }
                     [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user"];
-                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
-                    _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
+                    _feedNeedsRefetch = [NSNumber numberWithBool:YES];
+                    _profileFeedNeedsRefetch = [NSNumber numberWithBool:YES];
                 }
             }
             else {

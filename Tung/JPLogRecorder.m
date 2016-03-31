@@ -41,7 +41,7 @@ NSTimer *JPLogRecorder_saveLogTimer;
         
         // debounce saving log
         [JPLogRecorder_saveLogTimer invalidate];
-        JPLogRecorder_saveLogTimer = [NSTimer scheduledTimerWithTimeInterval:0.05 target:self selector:@selector(saveLogArray) userInfo:nil repeats:NO];
+        JPLogRecorder_saveLogTimer = [NSTimer scheduledTimerWithTimeInterval:0.025 target:self selector:@selector(saveLogArray) userInfo:nil repeats:NO];
     }
 }
 

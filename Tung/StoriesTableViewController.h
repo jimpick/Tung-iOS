@@ -21,7 +21,7 @@
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
 
 @property (strong, nonatomic) NSString *profiledUserId;
-@property (strong, nonatomic) NSString *storyId;
+@property (strong, nonatomic) NSString *episodeId;
 
 // request flags
 @property (nonatomic, assign) BOOL requestingMore;
@@ -51,6 +51,7 @@
 
 // feed related methods
 - (void) refreshFeed;
+- (void) refetchFeed;
 - (void) getSessionAndFeed;
 - (void) endRefreshing;
 - (void) configureHeaderCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;

@@ -21,10 +21,6 @@
 
 @interface StoriesTableViewController()
 
-@property NSIndexPath *buttonPressIndexPath;
-@property NSString *shareLink;
-@property NSString *shareText;
-@property NSString *timestamp;
 @property CGPoint contentOffset;
 @property BOOL contentOffsetSet;
 
@@ -65,7 +61,7 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
     self.tableView.separatorColor = [UIColor colorWithWhite:1 alpha:.7];
     // refresh control
-    if (!_storyId) {
+    if (!_episodeId) {
         self.refreshControl = [[UIRefreshControl alloc] init];
         [self.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
     }
@@ -89,9 +85,10 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     screenWidth = self.view.frame.size.width;
     _tung.screenWidth = screenWidth;
     
-    if (_storyId) {
-        self.navigationItem.title = @"Interaction";
-        [self getStory];
+    if (_episodeId) {
+        self.navigationItem.title = @"Episode";
+        self.tableView.bounces = NO;
+        [self getStoriesForEpisodeWithId:_episodeId fromUser:_profiledUserId];
     }
         
 }
@@ -137,6 +134,15 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     }
 }
 
+- (void) refetchFeed {
+    
+    [self requestPostsNewerThan:[NSNumber numberWithInt:0]
+                    orOlderThan:[NSNumber numberWithInt:0]
+                       fromUser:_profiledUserId
+                       withCred:NO];
+
+}
+
 -(void) getSessionAndFeed {
     
     if (_tung.connectionAvailable.boolValue) {
@@ -153,17 +159,6 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
 }
 
 - (void) pushEpisodeViewForIndexPath:(NSIndexPath *)indexPath withFocusedEventId:(NSString *)eventId {
-    
-    /* entity method
-    NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
-    NSDictionary *podcastDict = [NSDictionary dictionaryWithDictionary:[storyDict objectForKey:@"podcast"]];
-    NSDictionary *episodeDict = [NSDictionary dictionaryWithDictionary:[storyDict objectForKey:@"episode"]];
-    EpisodeEntity *episodeEntity = [TungCommonObjects getEntityForPodcast:podcastDict andEpisode:episodeDict save:YES];
-    
-    EpisodeViewController *episodeView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"episodeView"];
-    episodeView.episodeEntity = episodeEntity;
-    episodeView.focusedEventId = eventId;
-     */
     
     // id method
     NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
@@ -182,14 +177,16 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
 NSInteger requestTries = 0;
 
 // single story request
-- (void) getStory {
-    requestTries++;
-    NSURL *storyURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/one-story.php", _tung.apiRootUrl]];
+- (void) getStoriesForEpisodeWithId:(NSString *)episodeId fromUser:(NSString *)userId {
+    
+    NSLog(@"get stories for episode with id: %@, from user: %@", episodeId, userId);
+    NSURL *storyURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/stories-for-episode.php", _tung.apiRootUrl]];
     NSMutableURLRequest *storyRequest = [NSMutableURLRequest requestWithURL:storyURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [storyRequest setHTTPMethod:@"POST"];
     NSDictionary *params = @{
                              @"sessionId": _tung.sessionId,
-                             @"story_id": _storyId
+                             @"episode_id": episodeId,
+                             @"profiled_user_id": userId
                              };
     //JPLog(@"request for stories with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
@@ -198,43 +195,40 @@ NSInteger requestTries = 0;
     [NSURLConnection sendAsynchronousRequest:storyRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
         if (error == nil) {
             id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-            //JPLog(@"got response: %@", jsonData);
+            
             if (jsonData != nil && error == nil) {
-                if ([jsonData isKindOfClass:[NSDictionary class]]) {
-                    NSDictionary *responseDict = jsonData;
-                    if ([responseDict objectForKey:@"error"]) {
-                        dispatch_async(dispatch_get_main_queue(), ^{
-                            if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                                // get new session and re-request
-                                //JPLog(@"SESSION EXPIRED");
-                                [_tung getSessionWithCallback:^{
-                                    [self getStory];
-                                }];
-                            } else {
-                                [self endRefreshing];
-                                // other error - alert user
-                                UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                                [errorAlert show];
-                            }
-                        });
-                    }
+                
+                NSDictionary *responseDict = jsonData;
+                
+                if ([responseDict objectForKey:@"error"]) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            //JPLog(@"SESSION EXPIRED");
+                            [_tung getSessionWithCallback:^{
+                                [self getStoriesForEpisodeWithId:episodeId fromUser:userId];
+                            }];
+                        } else {
+                            [self endRefreshing];
+                            // other error - alert user
+                            [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                        }
+                    });
                 }
-                else if ([jsonData isKindOfClass:[NSArray class]]) {
-                    
+                else if ([responseDict objectForKey:@"success"]) {
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
-                        NSArray *newStories = jsonData;
+                        [self endRefreshing];
+                        
+                        NSArray *newStories = [responseDict objectForKey:@"stories"];
                         if (newStories.count > 0) {
                             _storiesArray = [self processStories:newStories];
                             _noResults = NO;
                         } else {
                             _noResults = YES;
                         }
-                        //JPLog(@"got story");
-                        //JPLog(@"%@", _storiesArray);
-                        [self.tableView reloadData];
                         
-                        [self endRefreshing];
+                        [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(0, 0)];
                         
                     });
                 }
@@ -253,15 +247,7 @@ NSInteger requestTries = 0;
         else {
             dispatch_async(dispatch_get_main_queue(), ^{
                 
-                if (requestTries < 3) {
-                    JPLog(@"request %ld failed, trying again", (long)requestTries);
-                    [self getStory];
-                }
-                else {
-                    [self endRefreshing];
-                    
-                    [_tung showConnectionErrorAlertForError:error];
-                }
+                [self endRefreshing];
             });
         }
     }];
@@ -326,8 +312,7 @@ NSInteger requestTries = 0;
                             [self endRefreshing];
                             self.requestStatus = @"finished";
                             // other error - alert user
-                            UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                            [errorAlert show];
+                            [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
@@ -335,7 +320,7 @@ NSInteger requestTries = 0;
                         NSTimeInterval requestDuration = [requestStarted timeIntervalSinceNow];
                         NSArray *newStories = [responseDict objectForKey:@"stories"];
                         //NSLog(@"new stories: %@", newStories);
-                        //JPLog(@"new stories count: %lu", (unsigned long)newStories.count);
+                        NSLog(@"new stories count: %lu", (unsigned long)newStories.count);
                         
                         // if this is for the main feed, set feedLastFetched date (seconds)
                         if (user_id.length == 0) {
@@ -386,19 +371,8 @@ NSInteger requestTries = 0;
                                 NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
                                 _storiesArray = [newFeedArray mutableCopy];
                                 
-                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(newStories.count, _storiesArray.count)];
+                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(0, 0)];
                                 
-                                /*
-                                [UIView setAnimationsEnabled:NO];
-                                [self.tableView beginUpdates];
-                                for (NSInteger i = 0; i < newStories.count; i++) {
-                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
-                                }
-                                [self.tableView endUpdates];
-                                [UIView setAnimationsEnabled:YES];
-                                */
-                                
-                                //[self.tableView scrollToRowAtIndexPath:[NSIndexPath indexPathForRow:0 inSection:0] atScrollPosition:UITableViewScrollPositionTop animated:YES];
                             }
                         }
                         // auto-loaded posts as user scrolls down
@@ -419,30 +393,28 @@ NSInteger requestTries = 0;
                                 _storiesArray = [newFeedArray mutableCopy];
                                 newFeedArray = nil;
                                 
-                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(0, startingIndex - 1)];
-                                /*
-                                [UIView setAnimationsEnabled:NO];
-                                [self.tableView beginUpdates];
-                                for (int i = startingIndex; i < _storiesArray.count; i++) {
-                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
-                                }
-                                [self.tableView endUpdates];
-                                [UIView setAnimationsEnabled:YES];
-                                 */
-                                
+                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(0, startingIndex)];
                                 
                             }
                         }
                         // initial request
                         else {
+                            
+                            // feed is now reFETCHED
+                            if (_profiledUserId.length && [_profiledUserId isEqualToString:_tung.tungId]) {
+                                _tung.profileFeedNeedsRefetch = [NSNumber numberWithBool:NO];
+                            }
+                            else if (!_profiledUserId.length && !_episodeId) {
+                                _tung.feedNeedsRefetch = [NSNumber numberWithBool:NO];
+                            }
+
+                            
                             _noResults = (newStories.count == 0);
                             if (!_noResults) {
                                 _storiesArray = [self processStories:newStories];
                             }
                             
                             [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(0, 0)];
-                            
-                            [self.tableView reloadData];
                             
                             // welcome tutorial
                             SettingsEntity *settings = [TungCommonObjects settings];
@@ -461,7 +433,7 @@ NSInteger requestTries = 0;
                             // profile feed has been refreshed
                             _tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:NO];
                         }
-                        else if (!_profiledUserId.length && !_storyId) {
+                        else if (!_profiledUserId.length && !_episodeId) {
                             // main feed page has been refreshed
                             _tung.feedNeedsRefresh = [NSNumber numberWithBool:NO];
                         }
@@ -548,6 +520,7 @@ NSInteger requestTries = 0;
         [headerDict setObject:episodeLink forKey:@"episodeLink"];
         NSString *storyLink = [NSString stringWithFormat:@"%@e/%@/%@", _tung.tungSiteRootUrl, episodeShortlink, username];
         [headerDict setObject:storyLink forKey:@"storyLink"];
+        [headerDict setObject:[headerDict objectForKey:@"time_secs"] forKey:@"time_secs_end"];
         
         [storyArray addObject:headerDict];
         
@@ -563,13 +536,13 @@ NSInteger requestTries = 0;
         }];
         
         int eventLimit = 5;
-        if (_storyId) eventLimit = 100;
+        if (_episodeId) eventLimit = 100;
         
         for (int e = 0; e < events.count; e++) {
             
             NSMutableDictionary *eventDict = [[events objectAtIndex:e] mutableCopy];
             [eventDict setObject:keyColor forKey:@"keyColor"];
-            [eventDict setObject:username forKey:@"username"];
+            [eventDict setObject:[headerDict objectForKey:@"user"] forKey:@"user"];
             NSString *type = [eventDict objectForKey:@"type"];
             // preload clip
             if ([type isEqualToString:@"clip"]) {
@@ -585,11 +558,8 @@ NSInteger requestTries = 0;
             }
         }
         [headerDict removeObjectForKey:@"events"];
-        NSNumber *moreEvents = [NSNumber numberWithBool:events.count > 5];
-        NSDictionary *footerDict = [NSDictionary dictionaryWithObjects:@[keyColor,
-                                                                         moreEvents]
-                                                               forKeys:@[@"keyColor",
-                                                                         @"moreEvents"]];
+        NSDictionary *footerDict = [NSDictionary dictionaryWithObjects:@[keyColor]
+                                                               forKeys:@[@"keyColor"]];
         [storyArray addObject:footerDict];
         [results addObject:storyArray];
         
@@ -633,14 +603,17 @@ NSInteger requestTries = 0;
  */
 - (void) groupStoriesByEpisodeAndInsertInTable:(UITableView *)tableView withRange:(NSRange)tableRange {
     
+    //NSLog(@"group stories with range (%lu, %lu) begin: %lu", (unsigned long)tableRange.location, (unsigned long)tableRange.length, (unsigned long)_storiesArray.count);
     
-    [UIView setAnimationsEnabled:NO];
-    [tableView beginUpdates];
+    NSMutableIndexSet *indexesToDelete = [NSMutableIndexSet indexSet];
+    NSMutableIndexSet *indexesToReload = [NSMutableIndexSet indexSet];
+    NSMutableIndexSet *indexesToInsert = [NSMutableIndexSet indexSet];
     
     for (int i = 0; i < _storiesArray.count; i++) {
         NSMutableArray *story = [_storiesArray objectAtIndex:i];
         NSMutableDictionary *dict = [story objectAtIndex:0];
         NSString *episodeId = [[[dict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
+        //NSLog(@"check for match against story %@ at index %d", [[dict objectForKey:@"episode"] objectForKey:@"title"], i);
         
         // check for match
         for (int j = 0; j < _storiesArray.count; j++) {
@@ -653,7 +626,7 @@ NSInteger requestTries = 0;
                 // story match
                 if ([episodeId isEqualToString:comparedEpisodeId]) {
                     
-                    JPLog(@"several users listened to %@", [[dict objectForKey:@"episode"] objectForKey:@"title"]);
+                    //NSLog(@"several users listened to %@", [[dict objectForKey:@"episode"] objectForKey:@"title"]);
                     NSDictionary *userDict = [comparedDict objectForKey:@"user"];
                     
                     // add user dict to story header for avatars
@@ -675,38 +648,67 @@ NSInteger requestTries = 0;
                     }
                     
                     [dict setObject:users forKey:@"users"];
+                    [dict setObject:[comparedDict objectForKey:@"time_secs_end"] forKey:@"time_secs_end"];
                     [story replaceObjectAtIndex:0 withObject:dict];
                     
                     // add events of compared story into *story
-                    int indexToInsert = 1;
+                    int insertIndex = 1;
                     for (int k = 1; k < comparedStory.count -1; k++) {
-                        [story insertObject:[comparedStory objectAtIndex:k] atIndex:indexToInsert];
-                        indexToInsert++;
+                        [story insertObject:[comparedStory objectAtIndex:k] atIndex:insertIndex];
+                        insertIndex++;
                     }
                     
                     // remove match
                     [_storiesArray removeObjectAtIndex:j];
                     if (NSLocationInRange(j, tableRange)) {
-                        [tableView deleteSections:[NSIndexSet indexSetWithIndex:j]withRowAnimation:UITableViewRowAnimationNone];
+                        //NSLog(@"••• delete section at index: %d", j);
+                        [indexesToDelete addIndex:j];
                     }
                     j--;
                     
                     // replace *story with grouped story.
                     [_storiesArray replaceObjectAtIndex:i withObject:story];
                     if (NSLocationInRange(i, tableRange)) {
-                        [tableView reloadSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                        //NSLog(@"••• reload section at index: %d", i);
+                        [indexesToReload addIndex:i];
                     }
                 }
             }
         }
-        // if story needs table insertion
-        if (!NSLocationInRange(i, tableRange)) {
-            [tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+        
+        if (!NSLocationInRange(i, tableRange) && tableRange.length) {
+            //NSLog(@"••• insert story at index: %d (has %lu rows)", i, (unsigned long)[[_storiesArray objectAtIndex:i] count]);
+            [indexesToInsert addIndex:i];
         }
     }
     
-    [tableView endUpdates];
-    [UIView setAnimationsEnabled:YES];
+    //NSLog(@"group stories end: %lu", (unsigned long)_storiesArray.count);
+    
+    if (tableRange.length) {
+        
+        [UIView setAnimationsEnabled:NO];
+        [tableView beginUpdates];
+        
+        if (indexesToDelete.count) {
+            //NSLog(@"deleting indexes: %@", indexesToDelete);
+            [tableView deleteSections:indexesToDelete withRowAnimation:UITableViewRowAnimationNone];
+        }
+        if (indexesToReload.count) {
+            //NSLog(@"reloading indexes: %@", indexesToReload);
+            [tableView reloadSections:indexesToReload withRowAnimation:UITableViewRowAnimationNone];
+        }
+        if (indexesToInsert.count) {
+            //NSLog(@"inserting indexes: %@", indexesToInsert);
+            [tableView insertSections:indexesToInsert withRowAnimation:UITableViewRowAnimationNone];
+        }
+
+        [tableView endUpdates];
+        [UIView setAnimationsEnabled:YES];
+    }
+    else {
+        [tableView reloadData];
+    }
+    
 }
 
 - (void) showWelcomePopup {
@@ -771,8 +773,8 @@ static NSString *footerCellIdentifier = @"storyFooterCell";
 #pragma mark - Table view delegate methods
 
 - (NSIndexPath *)tableView:(UITableView *)tableView willSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    // don't select footer cell bc if _storyId, already on story detail view.
-    if (_storyId && indexPath.row == [[_storiesArray objectAtIndex:indexPath.section] count] - 1) {
+    // don't select footer cell bc if _episodeId, already on story detail view.
+    if (_episodeId && indexPath.row == [[_storiesArray objectAtIndex:indexPath.section] count] - 1) {
         return nil;
     } else {
         return indexPath;
@@ -783,20 +785,22 @@ static NSString *footerCellIdentifier = @"storyFooterCell";
     
     //JPLog(@"selected cell at row %ld", (long)[indexPath row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
+    NSInteger footerIndex = [[_storiesArray objectAtIndex:indexPath.section] count] - 1;
     
     if (indexPath.row == 0) {
         // header
         [self pushEpisodeViewForIndexPath:indexPath withFocusedEventId:nil];
         
     }
-    else if (indexPath.row == [[_storiesArray objectAtIndex:indexPath.section] count] - 1) {
+    else if (indexPath.row == footerIndex) {
         // footer
-        // push story detail view
-        NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
-        NSString *storyId = [[storyDict objectForKey:@"_id"] objectForKey:@"$id"];
+        // view all events for episode id
+        NSDictionary *headerDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
+        NSString *episodeId = [[[headerDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
+        NSLog(@"episodeId: %@", episodeId);
         StoriesTableViewController *storyDetailView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"storiesTableView"];
-        storyDetailView.storyId = storyId;
-        
+        storyDetailView.episodeId = episodeId;
+    
         [_navController pushViewController:storyDetailView animated:YES];
     }
     else {
@@ -937,7 +941,7 @@ CGFloat labelWidth = 0;
         // users
         CGRect avatarRect = CGRectMake(12, 12, 40, 40);
         NSArray *users = [storyDict objectForKey:@"users"];
-        JPLog(@"story has group: %@", users);
+        
         // avatar spacing
         int spacing = 30;
         int threshold = 4;
@@ -955,16 +959,16 @@ CGFloat labelWidth = 0;
         
         AvatarContainerView *lastAvatar = headerCell.avatarContainerView;
         NSUInteger limit = MIN(users.count, max);
+        
         for (int i = 1; i < limit; i++) {
-            
             NSString *avUrlString = [[users objectAtIndex:i] objectForKey:@"small_av_url"];
             NSData *avImageData = [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avUrlString];
+            avatarRect.origin.x += spacing;
             AvatarContainerView *avContainerView = [[AvatarContainerView alloc] initWithFrame:avatarRect];
             avContainerView.avatar = [[UIImage alloc] initWithData:avImageData];
             [headerCell.contentView insertSubview:avContainerView belowSubview:lastAvatar];
             [avContainerView setNeedsDisplay];
             lastAvatar = avContainerView;
-            avatarRect.origin.x += spacing;
         }
     }
     else {
@@ -1053,14 +1057,14 @@ CGFloat labelWidth = 0;
     
     // event
     NSString *type = [eventDict objectForKey:@"type"];
-    NSString *username = [eventDict objectForKey:@"username"];
+    NSString *username = [[eventDict objectForKey:@"user"] objectForKey:@"username"];
     
     if ([type isEqualToString:@"recommended"]) {
         eventCell.iconView.type = kIconTypeRecommend;
         eventCell.simpleEventLabel.hidden = NO;
-        eventCell.simpleEventLabel.text =  @"Recommended this episode";
+        eventCell.simpleEventLabel.text =  @"Recommended";
         if (isGroup) {
-            eventCell.simpleEventLabel.text =  [NSString stringWithFormat:@"%@ recommended this episode", username];
+            eventCell.simpleEventLabel.text =  [NSString stringWithFormat:@"%@ recommended", username];
         }
         eventCell.eventDetailLabel.hidden = YES;
         eventCell.commentLabel.hidden = YES;
@@ -1124,10 +1128,10 @@ CGFloat labelWidth = 0;
     
     NSDictionary *footerDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
     
-    // view all
-    NSNumber *moreEvents = [footerDict objectForKey:@"moreEvents"];
-    footerCell.viewAllLabel.hidden = YES;
-    if (moreEvents.boolValue && !_storyId) {
+    // hide view all if we are alreadying viewing all
+    if (_episodeId) {
+        footerCell.viewAllLabel.hidden = YES;
+    } else {
         footerCell.viewAllLabel.hidden = NO;
     }
     
@@ -1182,35 +1186,32 @@ CGFloat labelWidth = 0;
     
     if (gestureRecognizer.state == UIGestureRecognizerStateEnded) {
         CGPoint loc = [gestureRecognizer locationInView:self.tableView];
-    	_buttonPressIndexPath = [self.tableView indexPathForRowAtPoint:loc];
+    	NSIndexPath *indexPath = [self.tableView indexPathForRowAtPoint:loc];
         
-        if (_buttonPressIndexPath) {
+        if (indexPath) {
             
-            NSUInteger footerIndex = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] count] - 1;
-            if (_buttonPressIndexPath.row == 0 || _buttonPressIndexPath.row == footerIndex) {
+            NSUInteger footerIndex = [[_storiesArray objectAtIndex:indexPath.section] count] - 1;
+            if (indexPath.row == 0 || indexPath.row == footerIndex) {
                 // story header/footer
                 return;
             }
-            
-            NSDictionary *headerDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
+            NSDictionary *headerDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
             //JPLog(@"header dict: %@", headerDict);
             
-            NSArray *options;
-            
             // story event
-            NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:_buttonPressIndexPath.row]];
-            _timestamp = [eventDict objectForKey:@"timestamp"];
-            NSString *playFromString = [NSString stringWithFormat:@"Play from %@", _timestamp];
-            //JPLog(@"event dict: %@", eventDict);
+            NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
+            NSString *timestamp = [eventDict objectForKey:@"timestamp"];
+            NSString *playFromString = [NSString stringWithFormat:@"Play from %@", timestamp];
             NSString *type = [eventDict objectForKey:@"type"];
-            NSString *destructiveOption;
-            NSString *userId = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+            NSString *shareItemOption, *copyLinkOption, *destructiveOption, *shareLink, *shareText;
+            NSString *userId = [[[eventDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
             
             if ([type isEqualToString:@"clip"]) {
-                options = @[@"Share this clip", @"Copy link to clip", playFromString];
+                shareItemOption = @"Share this clip";
+                copyLinkOption = @"Copy link to clip";
                 NSString *clipShortlink = [eventDict objectForKey:@"shortlink"];
-                _shareLink = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, clipShortlink];
-                _shareText = [NSString stringWithFormat:@"Here's a clip from %@: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], _shareLink];
+                shareLink = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, clipShortlink];
+                shareText = [NSString stringWithFormat:@"Here's a clip from %@: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
                 NSString *comment = [eventDict objectForKey:@"comment"];
                 if ([userId isEqualToString:_tung.tungId]) {
                     if (comment.length > 0) {
@@ -1227,9 +1228,10 @@ CGFloat labelWidth = 0;
                 }
             }
             else if ([type isEqualToString:@"comment"]) {
-                options = @[@"Share this interaction", @"Copy link to interaction", playFromString];
-                _shareLink = [headerDict objectForKey:@"storyLink"];
-                _shareText = [self getShareTextForStoryWithDict:headerDict];
+                shareItemOption = @"Share this comment";
+                copyLinkOption = @"Copy link to comment";
+                shareLink = [headerDict objectForKey:@"storyLink"];
+                shareText = [self getShareTextForStoryWithDict:headerDict];
                 if ([userId isEqualToString:_tung.tungId]) {
                     destructiveOption = @"Delete this comment";
                 } else {
@@ -1239,31 +1241,165 @@ CGFloat labelWidth = 0;
             else {
                 return;
             }
+
+            UIAlertController *storyOptionSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
             
-            UIActionSheet *storyOptionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:destructiveOption otherButtonTitles:nil];
-            for (NSString *option in options) {
-                [storyOptionSheet addButtonWithTitle:option];
+            // share option
+            [storyOptionSheet addAction:[UIAlertAction actionWithTitle:shareItemOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[shareText] applicationActivities:nil];
+                [self presentViewController:shareSheet animated:YES completion:nil];
+                
+            }]];
+            // copy link option
+            [storyOptionSheet addAction:[UIAlertAction actionWithTitle:copyLinkOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                [[UIPasteboard generalPasteboard] setString:shareLink];
+            }]];
+            // play from timestamp
+            [storyOptionSheet addAction:[UIAlertAction actionWithTitle:playFromString style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                
+                NSString *episodeId = [[[headerDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
+                NSString *collectionId = [[headerDict objectForKey:@"episode"] objectForKey:@"collectionId"];
+                [self playFromTimestamp:timestamp forEpisodeWithId:episodeId andCollectionId:collectionId];
+                
+            }]];
+            // delete or flag
+            if (destructiveOption) {
+                [storyOptionSheet addAction:[UIAlertAction actionWithTitle:destructiveOption style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+                    // delete story event
+                    if ([userId isEqualToString:_tung.tungId]) {
+                        
+                        UIAlertController *confirmDelete = [UIAlertController alertControllerWithTitle:@"Delete" message:@"Are you sure? This can't be undone." preferredStyle:UIAlertControllerStyleAlert];
+                        [confirmDelete addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+                        [confirmDelete addAction:[UIAlertAction actionWithTitle:@"Delete" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+                            [self deleteEventAtIndexPath:indexPath];
+                            
+                        }]];
+                        [self presentViewController:confirmDelete animated:YES completion:nil];
+                    }
+                    // request moderation
+                    else {
+                        // can only flag comments
+                        if ([[eventDict objectForKey:@"comment"] length] > 0) {
+                            
+                            NSString *quotedComment = [NSString stringWithFormat:@"\"%@\"", [eventDict objectForKey:@"comment"]];
+                            UIAlertController *confirmFlag = [UIAlertController alertControllerWithTitle:@"Flag for moderation?" message:quotedComment preferredStyle:UIAlertControllerStyleAlert];
+                            [confirmFlag addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+                            [confirmFlag addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+                                
+                                 NSString *eventId = [[eventDict objectForKey:@"id"] objectForKey:@"$id"];
+                                 [_tung flagCommentWithId:eventId];
+                                
+                            }]];
+                            [self presentViewController:confirmFlag animated:YES completion:nil];
+                        }
+                    }
+                }]];
             }
-            [storyOptionSheet setTag:1];
-            [storyOptionSheet showInView:self.view];
+            
+            [storyOptionSheet addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+            [self presentViewController:storyOptionSheet animated:YES completion:nil];
         }
     }
+}
+
+- (void) playFromTimestamp:(NSString *)timestamp forEpisodeWithId:(NSString *)episodeId andCollectionId:(NSString *)collectionId {
+    // check for episode entity
+    EpisodeEntity *epEntity = [TungCommonObjects getEpisodeEntityFromEpisodeId:episodeId];
+    
+    if (epEntity) {
+        //NSLog(@"play from timestamp, episode entity exists");
+        [_tung playUrl:epEntity.url fromTimestamp:timestamp];
+    }
+    else {
+        //NSLog(@"play from timestamp, fetch episode entity");
+        [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
+            NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
+            NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
+            PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
+            [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:podcastEntity save:YES];
+            
+            NSString *urlString = [episodeDict objectForKey:@"url"];
+            
+            if (urlString) {
+                [_tung playUrl:urlString fromTimestamp:timestamp];
+            }
+        }];
+    }
+
+}
+
+- (void) deleteEventAtIndexPath:(NSIndexPath *)indexPath {
+    
+	NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
+    NSString *eventId = [[eventDict objectForKey:@"id"] objectForKey:@"$id"];
+    
+    [_tung deleteStoryEventWithId:eventId withCallback:^(BOOL success) {
+        if (success) {
+            // remove story or just event
+            NSArray *storyArray = [_storiesArray objectAtIndex:indexPath.section];
+            if (storyArray.count == 3) {
+                [_storiesArray removeObjectAtIndex:indexPath.section];
+                // remove section (story)
+                [self.tableView beginUpdates];
+                [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:indexPath.section]withRowAnimation:UITableViewRowAnimationRight];
+                [self.tableView endUpdates];
+            }
+            // remove just event
+            else {
+                [[_storiesArray objectAtIndex:indexPath.section] removeObjectAtIndex:indexPath.row];
+                // remove table row
+                [self.tableView beginUpdates];
+                [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationRight];
+                [self.tableView endUpdates];
+            }
+        }
+    }];
+
 }
 
 - (void) optionsButtonTapped:(id)sender {
     
 	StoryFooterCell* cell  = (StoryFooterCell*)[[sender superview] superview];
-    _buttonPressIndexPath = [self.tableView indexPathForCell:cell];
+    NSIndexPath *indexPath = [self.tableView indexPathForCell:cell];
     
-    //JPLog(@"set button press index path: %@", _buttonPressIndexPath);
+    NSDictionary *headerDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
+    //NSLog(@"header dict: %@", headerDict);
     
-    UIActionSheet *optionsOptionSheet = [[UIActionSheet alloc] initWithTitle:nil delegate:self cancelButtonTitle:@"Cancel" destructiveButtonTitle:@"Flag this" otherButtonTitles:nil];
-    NSArray *options = @[@"Share episode", @"Copy link to episode", @"Share this interaction", @"Copy link to interaction"];
-    for (NSString *option in options) {
-        [optionsOptionSheet addButtonWithTitle:option];
-    }
-    [optionsOptionSheet setTag:2];
-    [optionsOptionSheet showInView:self.view];
+    UIAlertController *optionSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    // share option
+    [optionSheet addAction:[UIAlertAction actionWithTitle:@"Share episode" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        NSString *episodeShareText = [self getShareTextForEpisodeWithDict:headerDict];
+        UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[episodeShareText] applicationActivities:nil];
+        [self presentViewController:shareSheet animated:YES completion:nil];
+    }]];
+    // copy link
+    [optionSheet addAction:[UIAlertAction actionWithTitle:@"Copy link to episode" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        NSString *episodeLink = [headerDict objectForKey:@"episodeLink"];
+        [[UIPasteboard generalPasteboard] setString:episodeLink];
+        
+    }]];
+    // share interaction
+    /*
+    [optionSheet addAction:[UIAlertAction actionWithTitle:@"Share this interaction" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        NSString *storyShareText = [self getShareTextForStoryWithDict:headerDict];
+        UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[storyShareText] applicationActivities:nil];
+        [self presentViewController:shareSheet animated:YES completion:nil];
+    }]];
+    // copy link for interaction
+    [optionSheet addAction:[UIAlertAction actionWithTitle:@"Copy link to interaction" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        NSString *storyLink = [headerDict objectForKey:@"storyLink"];
+        [[UIPasteboard generalPasteboard] setString:storyLink];
+    }]]; 
+     */
+    // flag
+    [optionSheet addAction:[UIAlertAction actionWithTitle:@"Flag this" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+        UIAlertController *howToFlagAlert = [UIAlertController alertControllerWithTitle:@"Flagging" message:@"To flag a comment for moderation, long press on the comment, and select 'Flag this comment'.\n\nPlease remember Tung cannot moderate the content of podcasts." preferredStyle:UIAlertControllerStyleAlert];
+        [howToFlagAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [self presentViewController:howToFlagAlert animated:YES completion:nil];
+    }]];
+    
+    [optionSheet addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:optionSheet animated:YES completion:nil];
 }
 
 - (NSString *) getShareTextForStoryWithDict:(NSDictionary *)headerDict {
@@ -1279,182 +1415,8 @@ CGFloat labelWidth = 0;
 }
 - (NSString *) getShareTextForEpisodeWithDict:(NSDictionary *)headerDict {
     NSString *shareLink = [headerDict objectForKey:@"episodeLink"];
-    NSString *shareText;
-    NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
-    if ([uid isEqualToString:_tung.tungId]) {
-        shareText = [NSString stringWithFormat:@"I listened to %@ on #tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
-    } else {
-        shareText = [NSString stringWithFormat:@"%@ listened to %@ on #tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
-    }
+    NSString *shareText = [NSString stringWithFormat:@"Check out %@ on #tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
     return shareText;
-}
-
-#pragma mark - Handle alerts/action sheets
-
-- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
-    
-    //JPLog(@"dismissed action sheet with tag: %ld and button: %ld", (long)actionSheet.tag, (long)buttonIndex);
-    
-    // long press table cell
-    if (actionSheet.tag == 1) {
-        
-        switch (buttonIndex) {
-            case 0: { // destructive option
-                NSDictionary *headerDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
-                NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:_buttonPressIndexPath.row]];
-                NSString *userId = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
-                // delete story event
-                if ([userId isEqualToString:_tung.tungId]) {
-                    
-                    UIAlertView *confirmDelete = [[UIAlertView alloc] initWithTitle:@"Delete" message:@"Are you sure? This can't be undone." delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Delete", nil];
-                    [confirmDelete setTag:59];
-                    [confirmDelete show];
-                }
-                // request moderation
-                else {
-                    // can only flag comments
-                    if ([[eventDict objectForKey:@"comment"] length] > 0) {
-                        
-                        UIAlertView *confirmFlag = [[UIAlertView alloc] initWithTitle:@"Flag for moderation?" message:nil delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Yes", nil];
-                        [confirmFlag setTag:49];
-                        [confirmFlag show];
-                        
-                    }
-                }
-                break;
-            }
-            case 2: { // share this clip/interaction
-                
-                UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[_shareText] applicationActivities:nil];
-                [self presentViewController:shareSheet animated:YES completion:nil];
-                break;
-            }
-            case 3: { // copy link
-                [[UIPasteboard generalPasteboard] setString:_shareLink];
-                break;
-            }
-            case 4: { // play from timestamp
-                
-                NSDictionary *storyDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
-                NSString *episodeId = [[[storyDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
-                NSString *collectionId = [[storyDict objectForKey:@"episode"] objectForKey:@"collectionId"];
-                
-                // check for episode entity
-                EpisodeEntity *epEntity = [TungCommonObjects getEpisodeEntityFromEpisodeId:episodeId];
-                
-                if (epEntity) {
-                    //NSLog(@"play from timestamp, episode entity exists");
-                    [_tung playUrl:epEntity.url fromTimestamp:_timestamp];
-                }
-                else {
-                    //NSLog(@"play from timestamp, fetch episode entity");
-                    [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
-                        NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
-                        NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
-                        PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
-                        [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:podcastEntity save:YES];
-                        
-                        NSString *urlString = [episodeDict objectForKey:@"url"];
-                        
-                        if (urlString) {
-                            [_tung playUrl:urlString fromTimestamp:_timestamp];
-                        }
-                    }];
-                }
-                break;
-            }
-            default:
-                break;
-        }
-    }
-    
-    // options button
-    else if (actionSheet.tag == 2) {
-        //@"Share episode", @"Copy link to episode", @"Share this interaction", @"Copy link to interaction"
-        
-        NSDictionary *headerDict = [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:0];
-        //JPLog(@"header dict: %@", headerDict);
-        NSString *episodeLink = [headerDict objectForKey:@"episodeLink"];
-        NSString *episodeShareText = [self getShareTextForEpisodeWithDict:headerDict];
-        
-        NSString *storyLink = [headerDict objectForKey:@"storyLink"];
-        NSString *storyShareText = [self getShareTextForStoryWithDict:headerDict];
-        
-        switch (buttonIndex) {
-            case 0 : {
-                UIAlertView *howToFlagAlert = [[UIAlertView alloc] initWithTitle:@"Flagging" message:@"To flag a comment for moderation, long press on the comment, and select 'Flag this comment'.\n\nPlease remember Tung cannot moderate the content of podcasts." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                [howToFlagAlert show];
-                break;
-            }
-            case 1 : {
-                UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[episodeShareText] applicationActivities:nil];
-                [self presentViewController:shareSheet animated:YES completion:nil];
-                break;
-            }
-            case 2 : {
-                [[UIPasteboard generalPasteboard] setString:episodeLink];
-                break;
-            }
-            case 3 : {
-                UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[storyShareText] applicationActivities:nil];
-                [self presentViewController:shareSheet animated:YES completion:nil];
-                break;
-            }
-            case 4 : {
-                [[UIPasteboard generalPasteboard] setString:storyLink];
-                break;
-            }
-            default: { // used for 0, since case 0 doesn't work
-                break;
-            }
-        }
-        
-    }
-}
-
--(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    //JPLog(@"dismissed alert with button index: %ld", (long)buttonIndex);
-    
-    if (alertView.tag == 99) { // unauthorized alert
-        // sign out
-        [_tung signOut];
-    }
-    else if (alertView.tag == 59 && buttonIndex == 1) { // delete event
-        
-        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:_buttonPressIndexPath.row]];
-        NSString *eventId = [[eventDict objectForKey:@"id"] objectForKey:@"$id"];
-        
-        [_tung deleteStoryEventWithId:eventId withCallback:^(BOOL success) {
-            if (success) {
-                // remove story or just event
-                NSArray *storyArray = [_storiesArray objectAtIndex:_buttonPressIndexPath.section];
-                if (storyArray.count == 3) {
-                    [_storiesArray removeObjectAtIndex:_buttonPressIndexPath.section];
-                    // remove section (story)
-                    [self.tableView beginUpdates];
-                    [self.tableView deleteSections:[NSIndexSet indexSetWithIndex:_buttonPressIndexPath.section]withRowAnimation:UITableViewRowAnimationRight];
-                    [self.tableView endUpdates];
-                }
-                // remove just event
-                else {
-                    [[_storiesArray objectAtIndex:_buttonPressIndexPath.section] removeObjectAtIndex:_buttonPressIndexPath.row];
-                    // remove table row
-                    [self.tableView beginUpdates];
-                    [self.tableView deleteRowsAtIndexPaths:@[_buttonPressIndexPath] withRowAnimation:UITableViewRowAnimationRight];
-                    [self.tableView endUpdates];
-                }
-            }
-        }];
-
-    }
-    else if (alertView.tag == 49 && buttonIndex == 1) { // flag for moderation
-        
-        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_buttonPressIndexPath.section] objectAtIndex:_buttonPressIndexPath.row]];
-        NSString *eventId = [[eventDict objectForKey:@"id"] objectForKey:@"$id"];
-        
-        [_tung flagCommentWithId:eventId];
-        
-    }
 }
 
 #pragma mark - Feed cell controls
@@ -1515,7 +1477,7 @@ CGFloat labelWidth = 0;
 
 - (void) playbackClip {
     
-    //[_tung playerPause];
+    [_tung playerPause];
     
     [_tung.clipPlayer prepareToPlay];
     [_tung.clipPlayer play]; // play on, player
@@ -1607,7 +1569,7 @@ CGFloat labelWidth = 0;
             [_profileHeader layoutIfNeeded];
         }
         // detect when user hits bottom of feed
-        if (!_storyId) {
+        if (!_episodeId) {
             float bottomOffset = scrollView.contentSize.height - scrollView.frame.size.height;
             if (scrollView.contentOffset.y >= bottomOffset) {
                 // request more posts if they didn't reach the end
@@ -1616,7 +1578,7 @@ CGFloat labelWidth = 0;
                     _requestingMore = YES;
                     _loadMoreIndicator.alpha = 1;
                     [_loadMoreIndicator startAnimating];
-                    NSNumber *oldest = [[[_storiesArray objectAtIndex:_storiesArray.count-1] objectAtIndex:0] objectForKey:@"time_secs"];
+                    NSNumber *oldest = [[[_storiesArray objectAtIndex:_storiesArray.count-1] objectAtIndex:0] objectForKey:@"time_secs_end"];
                     
                     [self requestPostsNewerThan:[NSNumber numberWithInt:0]
                                     orOlderThan:oldest
