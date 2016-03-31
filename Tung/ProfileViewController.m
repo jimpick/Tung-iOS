@@ -812,7 +812,8 @@ NSTimer *sessionCheckTimer;
 }
 
 - (void) openSettings {
-    NSString *version = [[[NSBundle mainBundle] infoDictionary] objectForKey:@"CFBundleShortVersionString"];
+    NSString *version = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
+    NSString *build = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
     
     // saved files size
     NSString *savedEpisodesDir = [_tung getSavedEpisodesDirectoryPath];
@@ -840,7 +841,7 @@ NSTimer *sessionCheckTimer;
         error = nil;
     }
     
-    UIAlertController *settingsSheet = [UIAlertController alertControllerWithTitle:nil message:[NSString stringWithFormat:@"You are running v %@ of tung.", version] preferredStyle:UIAlertControllerStyleActionSheet];
+    UIAlertController *settingsSheet = [UIAlertController alertControllerWithTitle:nil message:[NSString stringWithFormat:@"You are running v %@ (%@) of tung.", version, build] preferredStyle:UIAlertControllerStyleActionSheet];
     [settingsSheet addAction:[UIAlertAction actionWithTitle:clearSavedDataOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [_tung deleteAllSavedEpisodes];
         [TungCommonObjects showBannerAlertForText:@"All saved episodes have been deleted." andWidth:screenWidth];

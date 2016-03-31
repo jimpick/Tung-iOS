@@ -320,7 +320,7 @@ NSInteger requestTries = 0;
                         NSTimeInterval requestDuration = [requestStarted timeIntervalSinceNow];
                         NSArray *newStories = [responseDict objectForKey:@"stories"];
                         //NSLog(@"new stories: %@", newStories);
-                        NSLog(@"new stories count: %lu", (unsigned long)newStories.count);
+                        //NSLog(@"new stories count: %lu", (unsigned long)newStories.count);
                         
                         // if this is for the main feed, set feedLastFetched date (seconds)
                         if (user_id.length == 0) {
@@ -999,6 +999,7 @@ CGFloat labelWidth = 0;
     
 	// title
     NSString *title = [episodeMiniDict objectForKey:@"title"];
+    //NSLog(@"configure header cell for %@ (%lu)", title, (unsigned long)title.length);
     headerCell.title.text = title;
     if (screenWidth >= 414) { // iPhone 6+/6s+
         headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
@@ -1015,7 +1016,7 @@ CGFloat labelWidth = 0;
         if (title.length > 54) {
             headerCell.title.font = [UIFont systemFontOfSize:16 weight:UIFontWeightLight];
         }
-        else if (title.length > 42) {
+        else if (title.length > 40) {
             headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
         }
     }
