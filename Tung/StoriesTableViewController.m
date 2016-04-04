@@ -24,8 +24,6 @@
 @property CGPoint contentOffset;
 @property BOOL contentOffsetSet;
 
-- (void) groupStoriesByEpisodeAndInsertInTable:(UITableView *)tableView withRange:(NSRange)tableRange;
-
 @end
 
 @implementation StoriesTableViewController
@@ -228,7 +226,7 @@ NSInteger requestTries = 0;
                             _noResults = YES;
                         }
                         
-                        [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(0, 0)];
+                        [self groupStoriesByEpisodeAndInsertInTable:self.tableView withStartingIndex:0];
                         
                     });
                 }
@@ -370,8 +368,7 @@ NSInteger requestTries = 0;
                                 NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
                                 _storiesArray = [newFeedArray mutableCopy];
                                 
-                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(0, 0)];
-                                //[self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(newItems.count, _storiesArray.count - 1)];
+                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView withStartingIndex:0];
                                 
                             }
                         }
@@ -393,7 +390,7 @@ NSInteger requestTries = 0;
                                 _storiesArray = [newFeedArray mutableCopy];
                                 newFeedArray = nil;
                                 
-                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(0, startingIndex)];
+                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView withStartingIndex:startingIndex];
                                 
                             }
                         }
@@ -414,7 +411,9 @@ NSInteger requestTries = 0;
                                 _storiesArray = [self processStories:newStories];
                             }
                             
-                            [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(0, 0)];
+                            [self groupStoriesByEpisodeAndInsertInTable:self.tableView withStartingIndex:0];
+                            
+                            //[self.tableView setContentOffset:_contentOffset animated:NO];
                             
                             // welcome tutorial
                             SettingsEntity *settings = [TungCommonObjects settings];
@@ -597,26 +596,25 @@ NSInteger requestTries = 0;
 }
 
 
-/*	group stories by episode across entire _storiesArray so that all users who listened to it appear in one story.
- 	tableRange is a range where stories already exist in the table, where table updates will need to be made.
- 	Finally, this methods inserts story sections into the table where necessary.
+/*	group stories by episode from startingIndex so that all users who listened to it appear in one story.
+ 	If necessary insert stories in table.
  */
-- (void) groupStoriesByEpisodeAndInsertInTable:(UITableView *)tableView withRange:(NSRange)tableRange {
+- (void) groupStoriesByEpisodeAndInsertInTable:(UITableView *)tableView withStartingIndex:(NSInteger)startingIndex {
     
-    NSLog(@"group stories with range (%lu, %lu) begin count: %lu", (unsigned long)tableRange.location, (unsigned long)tableRange.length, (unsigned long)_storiesArray.count);
+    //NSLog(@"group stories with starting index: %ld, begin count: %lu", (long)startingIndex, (unsigned long)_storiesArray.count);
     
-    NSMutableIndexSet *indexesToDelete = [NSMutableIndexSet indexSet];
-    NSMutableIndexSet *indexesToReload = [NSMutableIndexSet indexSet];
+//    NSMutableIndexSet *indexesToDelete = [NSMutableIndexSet indexSet];
+//    NSMutableIndexSet *indexesToReload = [NSMutableIndexSet indexSet];
     NSMutableIndexSet *indexesToInsert = [NSMutableIndexSet indexSet];
     
-    for (int i = 0; i < _storiesArray.count; i++) {
+    for (NSInteger i = startingIndex; i < _storiesArray.count; i++) {
         NSMutableArray *story = [_storiesArray objectAtIndex:i];
         NSMutableDictionary *dict = [story objectAtIndex:0];
         NSString *episodeId = [[[dict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
-        NSLog(@"check for match against story %@ at index %d", [[dict objectForKey:@"episode"] objectForKey:@"title"], i);
+        //NSLog(@"check for match against story %@ at index %ld", [[dict objectForKey:@"episode"] objectForKey:@"title"], (long)i);
         
         // check for match
-        for (int j = 0; j < _storiesArray.count; j++) {
+        for (NSInteger j = startingIndex; j < _storiesArray.count; j++) {
             
             if (j != i) {
                 NSArray *comparedStory = [_storiesArray objectAtIndex:j];
@@ -626,7 +624,7 @@ NSInteger requestTries = 0;
                 // story match
                 if ([episodeId isEqualToString:comparedEpisodeId]) {
                     
-                    NSLog(@"several users listened to %@ at index %d", [[dict objectForKey:@"episode"] objectForKey:@"title"], j);
+                    //NSLog(@"several users listened to %@ at index %ld", [[dict objectForKey:@"episode"] objectForKey:@"title"], (long)i);
                     NSDictionary *userDict = [comparedDict objectForKey:@"user"];
                     
                     // add user dict to story header for avatars
@@ -661,46 +659,27 @@ NSInteger requestTries = 0;
                     // remove match
                     [_storiesArray removeObjectAtIndex:j];
                     j--;
-                    if (NSLocationInRange(j, tableRange)) {
-                        [indexesToDelete addIndex:j];
-                        NSLog(@"••• delete section at index: %d", j);
-                    }
                     
                     // replace *story with grouped story.
                     [_storiesArray replaceObjectAtIndex:i withObject:story];
-                    if (NSLocationInRange(i, tableRange)) {
-                        NSLog(@"••• reload section at index: %d", i);
-                        [indexesToReload addIndex:i];
-                    }
                 }
             }
         }
         
-        if (!NSLocationInRange(i, tableRange) && tableRange.length) {
-            NSLog(@"••• insert story at index: %d (has %lu rows)", i, (unsigned long)[[_storiesArray objectAtIndex:i] count]);
+        if (startingIndex > 0 && i >= startingIndex) {
+            //NSLog(@"••• insert story at index: %ld (has %lu rows)", (long)i, (unsigned long)[[_storiesArray objectAtIndex:i] count]);
             [indexesToInsert addIndex:i];
         }
     }
     
-    NSLog(@"group stories end: %lu", (unsigned long)_storiesArray.count);
+    //NSLog(@"group stories end: %lu", (unsigned long)_storiesArray.count);
     
-    if (tableRange.length) {
+    if (indexesToInsert.count) {
         
         [UIView setAnimationsEnabled:NO];
         [tableView beginUpdates];
         
-        if (indexesToDelete.count) {
-            //NSLog(@"deleting indexes: %@", indexesToDelete);
-            [tableView deleteSections:indexesToDelete withRowAnimation:UITableViewRowAnimationNone];
-        }
-        if (indexesToReload.count) {
-            //NSLog(@"reloading indexes: %@", indexesToReload);
-            [tableView reloadSections:indexesToReload withRowAnimation:UITableViewRowAnimationNone];
-        }
-        if (indexesToInsert.count) {
-            //NSLog(@"inserting indexes: %@", indexesToInsert);
-            [tableView insertSections:indexesToInsert withRowAnimation:UITableViewRowAnimationNone];
-        }
+        [tableView insertSections:indexesToInsert withRowAnimation:UITableViewRowAnimationNone];
 
         [tableView endUpdates];
         [UIView setAnimationsEnabled:YES];
