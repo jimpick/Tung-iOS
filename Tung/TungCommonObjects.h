@@ -240,7 +240,8 @@
 + (NSString *) cleanURLStringFromString:(NSString*)string;
 + (NSString *) formatNumberForCount:(NSNumber*)count;
 + (NSNumber *) stringToNumber:(NSString *)string;
-+ (NSString *) OSStatusToStr:(OSStatus)status;
++ (NSString *) audioFileStatusToString:(OSStatus)status;
++ (NSString *) keychainStatusToString:(OSStatus)status;
 + (void)fadeInView:(UIView *)view;
 + (void)fadeOutView:(UIView *)view;
 + (NSString *)timeElapsed: (NSString *)secondsString;

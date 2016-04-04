@@ -2093,7 +2093,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
 }
 - (void) recommendEpisode {
     
-    if (_tung.connectionAvailable) {
+    if (_tung.connectionAvailable.boolValue) {
         _recommendButton.recommended = !_recommendButton.recommended;
         [_recommendButton setNeedsDisplay];
         _recommendLabel.text = (_recommendButton.recommended) ? @"Recommended" : @"Recommend";

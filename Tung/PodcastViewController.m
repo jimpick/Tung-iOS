@@ -181,7 +181,7 @@
 - (void) subscribeToPodcastViaSender:(id)sender {
     
     // only allow subscribing with network connection
-    if (_tung.connectionAvailable) {
+    if (_tung.connectionAvailable.boolValue) {
         
         if (!_podcastEntity) return;
         

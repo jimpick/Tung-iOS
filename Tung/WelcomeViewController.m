@@ -179,7 +179,7 @@
                     if ([responseDict objectForKey:@"sessionId"]) {
                         JPLog(@"user exists. signing in...");
                         _tung.sessionId = [responseDict objectForKey:@"sessionId"];
-                        _tung.connectionAvailable = [NSNumber numberWithInt:1];
+                        _tung.connectionAvailable = [NSNumber numberWithBool:YES];
                         UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
                         //JPLog(@"logged in user: %@", [TungCommonObjects entityToDict:loggedUser]);
                         NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
@@ -279,7 +279,7 @@
                                                      
                                                      JPLog(@"user exists. signing in...");
                                                      _tung.sessionId = [responseDict objectForKey:@"sessionId"];
-                                                     _tung.connectionAvailable = [NSNumber numberWithInt:1];
+                                                     _tung.connectionAvailable = [NSNumber numberWithBool:YES];
                                                      UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
                                                      //JPLog(@"logged in user: %@", [TungCommonObjects entityToDict:loggedUser]);
                                                      NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];

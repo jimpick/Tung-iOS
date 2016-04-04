@@ -5,22 +5,7 @@
 //  Created by Jamie Perkins on 5/22/14.
 //  Copyright (c) 2014 Jamie Perkins. All rights reserved.
 //
-/*
- 
- Security Keychain Error codes:
- 
- 0 - No error.
- -4 - Function or operation not implemented.
- -50 - One or more parameters passed to the function were not valid.
- -108 - Failed to allocate memory.
- -2000 - username or servicename nil
- –25291 - No trust results are available.
- –25293 - Authorization/Authentication failed.
- –25299 - The item already exists.
- –25300 - The item cannot be found.
- –25308 - Interaction with the Security Server is not allowed.
- -26275 - Unable to decode the provided data.
- */
+
 
 #import "TungCommonObjects.h"
 #import "ALDisk.h"
@@ -4329,36 +4314,53 @@ static NSArray *colors;
 // save cred to keychain
 + (void) saveKeychainCred: (NSString *)cred {
     
-    NSString *key = @"tung credentials";
-    NSData *valueData = [cred dataUsingEncoding:NSUTF8StringEncoding];
+    NSString *account = @"tung credentials";
     NSString *service = [[NSBundle mainBundle] bundleIdentifier];
     
+    // delete any existing keychain cred first
+    NSDictionary *findExistingQuery = @{
+                                  (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
+                                  (__bridge id)kSecAttrService : service,
+                                  (__bridge id)kSecAttrAccount : account
+                                  };
+    
+    OSStatus foundExisting = SecItemCopyMatching((__bridge CFDictionaryRef)findExistingQuery, NULL);
+    if (foundExisting == errSecSuccess) {
+        OSStatus status = SecItemDelete((__bridge CFDictionaryRef)findExistingQuery);
+        if (status == errSecSuccess) {
+            JPLog(@"save cred: deleted existing keychain cred");
+        } else {
+            JPLog(@"save cred: failed to delete existing keychain cred: %@", [self keychainStatusToString:status]);
+        }
+    }
+    
+    NSData *valueData = [cred dataUsingEncoding:NSUTF8StringEncoding];
     NSDictionary *id_security_item = @{
                                        (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
                                        (__bridge id)kSecAttrService : service,
-                                       (__bridge id)kSecAttrAccount : key,
+                                       (__bridge id)kSecAttrAccount : account,
                                        (__bridge id)kSecValueData : valueData
                                        };
     CFTypeRef result = NULL;
     OSStatus status = SecItemAdd((__bridge CFDictionaryRef)id_security_item, &result);
     
     if (status == errSecSuccess) {
-        JPLog(@"successfully stored credentials");
+        JPLog(@"save cred: successfully stored credentials");
     } else {
-        JPLog(@"Failed to store cred with code: %ld", (long)status);
+        JPLog(@"save cred: failed to store cred with error: %@", [self keychainStatusToString:status]);
     }
 }
 
 + (void) deleteCredentials {
     
     // delete credentials from keychain
-    NSString *key = @"tung credentials";
+    NSString *account = @"tung credentials";
     NSString *service = [[NSBundle mainBundle] bundleIdentifier];
     
     NSDictionary *deleteQuery = @{
                                   (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
                                   (__bridge id)kSecAttrService : service,
-                                  (__bridge id)kSecAttrAccount : key
+                                  (__bridge id)kSecAttrAccount : account
                                   };
     OSStatus foundExisting = SecItemCopyMatching((__bridge CFDictionaryRef)deleteQuery, NULL);
     if (foundExisting == errSecSuccess) {
@@ -4366,7 +4368,7 @@ static NSArray *colors;
         if (status == errSecSuccess) {
             JPLog(@"deleted keychain cred");
         } else {
-            JPLog(@"failed to delete keychain cred: %@", (long)status);
+            JPLog(@"failed to delete keychain cred: %@", [self keychainStatusToString:status]);
         }
     } else {
         JPLog(@"failed to delete keychain cred - did not exist");
@@ -4478,11 +4480,11 @@ static NSNumberFormatter *stringToNum = nil;
     return [stringToNum numberFromString:string];
 }
 
-+ (NSString *)OSStatusToStr:(OSStatus)status {
++ (NSString *)audioFileStatusToString:(OSStatus)status {
     
     switch (status) {
         case 0:
-            return @"success";
+            return @"Success";
             
         case kAudioFileUnspecifiedError:
             return @"kAudioFileUnspecifiedError";
@@ -4533,7 +4535,37 @@ static NSNumberFormatter *stringToNum = nil;
             return @"kAudioFileFileNotFoundError";
             
         default:
-            return [NSString stringWithFormat:@"unknown error: %d", (int)status];
+            return [NSString stringWithFormat:@"Unknown error: %d", (int)status];
+    }
+}
+
++ (NSString *)keychainStatusToString:(OSStatus)status {
+    
+    switch (status) {
+        case 0:
+            return @"Success";
+        case -4:
+            return @"Function or operation not implemented.";
+        case -50:
+            return @"One or more parameters passed to the function were not valid.";
+        case -108:
+            return @"Failed to allocate memory.";
+        case -2000:
+            return @"Username or servicename nil";
+        case -25291:
+            return @"No trust results are available.";
+        case -25293:
+            return @"Authorization/Authentication failed.";
+        case -25299:
+            return @"The item already exists.";
+        case -25300:
+            return @"The item cannot be found.";
+        case -25308:
+            return @"Interaction with the Security Server is not allowed.";
+        case -26275:
+            return @"Unable to decode the provided data.";
+        default:
+            return [NSString stringWithFormat:@"Unknown error: %d", (int)status];
     }
 }
 

@@ -333,7 +333,7 @@ NSInteger requestTries = 0;
                             
                             JPLog(@"got stories AND session in %f seconds.", fabs(requestDuration));
                             _tung.sessionId = [responseDict objectForKey:@"sessionId"];
-                            _tung.connectionAvailable = [NSNumber numberWithInt:1];
+                            _tung.connectionAvailable = [NSNumber numberWithBool:YES];
                             // check if data needs syncing
                             UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
                             NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
@@ -352,10 +352,9 @@ NSInteger requestTries = 0;
                                 [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
                             }
                         }
-                        else {
-                            
+                        //else {
                             //JPLog(@"got stories in %f seconds.", fabs(requestDuration));
-                        }
+                        //}
                         
                         [self endRefreshing];
                         
@@ -372,6 +371,7 @@ NSInteger requestTries = 0;
                                 _storiesArray = [newFeedArray mutableCopy];
                                 
                                 [self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(0, 0)];
+                                //[self groupStoriesByEpisodeAndInsertInTable:self.tableView withRange:NSMakeRange(newItems.count, _storiesArray.count - 1)];
                                 
                             }
                         }
@@ -603,7 +603,7 @@ NSInteger requestTries = 0;
  */
 - (void) groupStoriesByEpisodeAndInsertInTable:(UITableView *)tableView withRange:(NSRange)tableRange {
     
-    //NSLog(@"group stories with range (%lu, %lu) begin: %lu", (unsigned long)tableRange.location, (unsigned long)tableRange.length, (unsigned long)_storiesArray.count);
+    NSLog(@"group stories with range (%lu, %lu) begin count: %lu", (unsigned long)tableRange.location, (unsigned long)tableRange.length, (unsigned long)_storiesArray.count);
     
     NSMutableIndexSet *indexesToDelete = [NSMutableIndexSet indexSet];
     NSMutableIndexSet *indexesToReload = [NSMutableIndexSet indexSet];
@@ -613,7 +613,7 @@ NSInteger requestTries = 0;
         NSMutableArray *story = [_storiesArray objectAtIndex:i];
         NSMutableDictionary *dict = [story objectAtIndex:0];
         NSString *episodeId = [[[dict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
-        //NSLog(@"check for match against story %@ at index %d", [[dict objectForKey:@"episode"] objectForKey:@"title"], i);
+        NSLog(@"check for match against story %@ at index %d", [[dict objectForKey:@"episode"] objectForKey:@"title"], i);
         
         // check for match
         for (int j = 0; j < _storiesArray.count; j++) {
@@ -626,7 +626,7 @@ NSInteger requestTries = 0;
                 // story match
                 if ([episodeId isEqualToString:comparedEpisodeId]) {
                     
-                    //NSLog(@"several users listened to %@", [[dict objectForKey:@"episode"] objectForKey:@"title"]);
+                    NSLog(@"several users listened to %@ at index %d", [[dict objectForKey:@"episode"] objectForKey:@"title"], j);
                     NSDictionary *userDict = [comparedDict objectForKey:@"user"];
                     
                     // add user dict to story header for avatars
@@ -660,16 +660,16 @@ NSInteger requestTries = 0;
                     
                     // remove match
                     [_storiesArray removeObjectAtIndex:j];
-                    if (NSLocationInRange(j, tableRange)) {
-                        //NSLog(@"••• delete section at index: %d", j);
-                        [indexesToDelete addIndex:j];
-                    }
                     j--;
+                    if (NSLocationInRange(j, tableRange)) {
+                        [indexesToDelete addIndex:j];
+                        NSLog(@"••• delete section at index: %d", j);
+                    }
                     
                     // replace *story with grouped story.
                     [_storiesArray replaceObjectAtIndex:i withObject:story];
                     if (NSLocationInRange(i, tableRange)) {
-                        //NSLog(@"••• reload section at index: %d", i);
+                        NSLog(@"••• reload section at index: %d", i);
                         [indexesToReload addIndex:i];
                     }
                 }
@@ -677,12 +677,12 @@ NSInteger requestTries = 0;
         }
         
         if (!NSLocationInRange(i, tableRange) && tableRange.length) {
-            //NSLog(@"••• insert story at index: %d (has %lu rows)", i, (unsigned long)[[_storiesArray objectAtIndex:i] count]);
+            NSLog(@"••• insert story at index: %d (has %lu rows)", i, (unsigned long)[[_storiesArray objectAtIndex:i] count]);
             [indexesToInsert addIndex:i];
         }
     }
     
-    //NSLog(@"group stories end: %lu", (unsigned long)_storiesArray.count);
+    NSLog(@"group stories end: %lu", (unsigned long)_storiesArray.count);
     
     if (tableRange.length) {
         
