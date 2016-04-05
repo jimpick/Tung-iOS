@@ -767,13 +767,11 @@ NSTimer *sessionCheckTimer;
         // unfollow
         [_tung unfollowUserWithId:_profiledUserId withCallback:^(BOOL success) {
             if (!success) {// fail
-                JPLog(@"error unfollowing user");
                 [_profiledUserData setValue:userFollowsStartingValue forKey:@"userFollows"];
                 [_profiledUserData setValue:followersStartingValue forKey:@"followerCount"];
                 [self updateUserFollowingData];
             }
             else {
-                JPLog(@"successfully unfollowed user");
                 _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
                 _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
             }
@@ -785,13 +783,11 @@ NSTimer *sessionCheckTimer;
         // follow
         [_tung followUserWithId:_profiledUserId withCallback:^(BOOL success) {
             if (!success) {// fail
-                JPLog(@"error following user");
                 [_profiledUserData setValue:userFollowsStartingValue forKey:@"userFollows"];
                 [_profiledUserData setValue:followersStartingValue forKey:@"followerCount"];
                 [self updateUserFollowingData];
             }
             else {
-                JPLog(@"success following user");
                 _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
                 _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
             }

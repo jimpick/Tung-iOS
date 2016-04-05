@@ -39,6 +39,7 @@
     [tableSpinner startAnimating];
     self.tableView.backgroundView = tableSpinner;
     
+    self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
     
     _downloadingEpisodeIndex = -1;
@@ -67,6 +68,8 @@
 }
 
 - (void) getNewestFeed {
+    
+    NSLog(@"get newest feed");
     if (_tung.connectionAvailable.boolValue) {
         
         NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:YES reachable:_tung.connectionAvailable.boolValue];

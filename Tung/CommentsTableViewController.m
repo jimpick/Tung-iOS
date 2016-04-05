@@ -172,17 +172,19 @@ static CGFloat commentBubbleMargins = 27;
                 
                 NSString *eventId = [[commentDict objectForKey:@"_id"] objectForKey:@"$id"];
                 [_tung deleteStoryEventWithId:eventId withCallback:^(BOOL success) {
-                    [_commentsArray removeObjectAtIndex:indexPath.row];
-                    if (_commentsArray.count > 0) {
-                        // remove table row
-                        [self.tableView beginUpdates];
-                        [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationRight];
-                        [self.tableView endUpdates];
-                    } else {
-                        _noResults = YES;
-                        [self.tableView reloadData];
+                    if (success) {
+                        [_commentsArray removeObjectAtIndex:indexPath.row];
+                        if (_commentsArray.count > 0) {
+                            // remove table row
+                            [self.tableView beginUpdates];
+                            [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationRight];
+                            [self.tableView endUpdates];
+                        } else {
+                            _noResults = YES;
+                            [self.tableView reloadData];
+                        }
+                        _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
                     }
-                    _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
                 }];
             }]];
             [_viewController presentViewController:confirmDeleteAlert animated:YES completion:nil];

@@ -42,6 +42,7 @@
 
 @property (nonatomic, strong) NSDateFormatter *ISODateFormatter;
 @property (strong, nonatomic) NSTimer *syncProgressTimer;
+@property (strong, nonatomic) NSTimer *showBufferingTimer;
 @property (strong, nonatomic) NSNumber *gettingSession;
 
 @end
@@ -334,13 +335,12 @@
         
         switch (_player.status) {
             case AVPlayerStatusFailed:
-                JPLog(@"-- AVPlayer status: Failed");
+                //JPLog(@"-- AVPlayer status: Failed");
                 [self ejectCurrentEpisode];
                 [self setControlButtonStateToFauxDisabled];;
                 break;
             case AVPlayerStatusReadyToPlay:
                 JPLog(@"-- AVPlayer status: ready to play");
-                [self setControlButtonStateToBuffering];
                 // check for track progress
                 float secs = 0;
                 CMTime time;
@@ -358,24 +358,27 @@
                     JPLog(@"seeking to time: %f (progress: %f)", secs, _npEpisodeEntity.trackProgress.floatValue);
                     [_trackInfo setObject:[NSNumber numberWithFloat:secs] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
                     [_player seekToTime:time completionHandler:^(BOOL finished) {
-                        JPLog(@"finished seeking: %@", (finished) ? @"Yes" : @"No");
+                        //JPLog(@"finished seeking: %@", (finished) ? @"Yes" : @"No");
+                        
+                        [_showBufferingTimer invalidate];
                         [_player play];
                     }];
                 } else {
                     [_trackInfo setObject:[NSNumber numberWithFloat:0] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
+                    [_showBufferingTimer invalidate];
                     [self setControlButtonStateToPause];
                     
                     if ([self isPlaying] && _fileIsLocal) {
-                        JPLog(@"play from beginning - already playing");
+                        //JPLog(@"play from beginning - already playing");
                     } else {
-                        JPLog(@"play from beginning - with preroll");
+                        //JPLog(@"play from beginning - with preroll");
                         [_player prerollAtRate:1.0 completionHandler:^(BOOL finished) {
-                            JPLog(@"-- finished preroll: %d", finished);
+                            //JPLog(@"-- finished preroll: %d", finished);
+                            [_showBufferingTimer invalidate];
                             if ([self isPlaying]) {
-                                JPLog(@"--- isPlaying");
-                                [self setControlButtonStateToPause];
+                                //JPLog(@"--- isPlaying");
                             } else {
-                                JPLog(@"--- playerPlay");
+                                //JPLog(@"--- playerPlay");
                                 [self playerPlay];
                             }
                             [self determineTotalSeconds];
@@ -645,7 +648,10 @@
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemPlaybackStalledNotification object:playerItem];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemFailedToPlayToEndTimeNotification object:playerItem];
         
-        [self setControlButtonStateToBuffering];
+        [self setControlButtonStateToPause];
+        
+        [_showBufferingTimer invalidate];
+        _showBufferingTimer = [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(setControlButtonStateToBuffering) userInfo:nil repeats:NO];
         
         NSNotification *nowPlayingDidChangeNotif = [NSNotification notificationWithName:@"nowPlayingDidChange" object:nil userInfo:nil];
         [[NSNotificationCenter defaultCenter] postNotification:nowPlayingDidChangeNotif];
@@ -2975,7 +2981,7 @@ static NSArray *colors;
  */
 
 // RECOMMENDING
-- (void) recommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+- (void) recommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success))callback {
 
     NSURL *recommendPodcastRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/recommend.php", _apiRootUrl]];
     NSMutableURLRequest *recommendPodcastRequest = [NSMutableURLRequest requestWithURL:recommendPodcastRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
@@ -3003,62 +3009,71 @@ static NSArray *colors;
     [recommendPodcastRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:recommendPodcastRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                if ([responseDict objectForKey:@"error"]) {
-                    // session expired
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self recommendEpisode:episodeEntity withCallback:callback];
-                        }];
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        // session expired
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self recommendEpisode:episodeEntity withCallback:callback];
+                            }];
+                        }
+                        // no podcast record
+                        else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
+                            __unsafe_unretained typeof(self) weakSelf = self;
+                            [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
+                                [weakSelf recommendEpisode:episodeEntity withCallback:callback];
+                            }];
+                        }
+                        else {
+                            JPLog(@"Error recommending episode: %@", [responseDict objectForKey:@"error"]);
+                            [self simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                            callback(NO);
+                        }
                     }
-                    // no podcast record
-                    else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
-                        __unsafe_unretained typeof(self) weakSelf = self;
-                        [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
-                            [weakSelf recommendEpisode:episodeEntity withCallback:callback];
-                        }];
-                    }
-                    else {
-                        JPLog(@"Error recommending episode: %@", [responseDict objectForKey:@"error"]);
-                        callback(NO, responseDict);
+                    else if ([responseDict objectForKey:@"success"]) {
+                        JPLog(@"successfully recommended episode");
+                        if (!episodeEntity.id) {
+                            // save episode id and shortlink
+                            NSString *episodeId = [responseDict objectForKey:@"episodeId"];
+                            NSString *shortlink = [responseDict objectForKey:@"shortlink"];
+                            episodeEntity.id = episodeId;
+                            episodeEntity.shortlink = shortlink;
+                        }
+                        episodeEntity.isRecommended = [NSNumber numberWithBool:YES];
+                        UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
+                        if (loggedUser) {
+                            NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                            loggedUser.lastDataChange = lastDataChange;
+                        }
+                        [TungCommonObjects saveContextWithReason:@"recommended episode"];
+                        _feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                        _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
+                        callback(YES);
                     }
                 }
-                else if ([responseDict objectForKey:@"success"]) {
-                    JPLog(@"successfully recommended episode");
-                    if (!episodeEntity.id) {
-                        // save episode id and shortlink
-                        NSString *episodeId = [responseDict objectForKey:@"episodeId"];
-                        NSString *shortlink = [responseDict objectForKey:@"shortlink"];
-                        episodeEntity.id = episodeId;
-                        episodeEntity.shortlink = shortlink;
-                    }
-                    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
-                    if (loggedUser) {
-                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                        loggedUser.lastDataChange = lastDataChange;
-                    }
-                    [TungCommonObjects saveContextWithReason:@"got episode shortlink and id, and lastDataChange"];
-                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
-                    _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
-                    callback(YES, responseDict);
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error. HTML: %@", html);
+                    [self simpleErrorAlertWithMessage:@"Server error"];
+                    callback(NO);
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error. HTML: %@", html);
-                callback(NO, @{@"error": @"Unspecified error"});
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error recommending episode: %@", error.localizedDescription);
+            [self simpleErrorAlertWithMessage:error.localizedDescription];
+            callback(NO);
+        }
     }];
 }
 
-- (void) unRecommendEpisode:(EpisodeEntity *)episodeEntity {
+- (void) unRecommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success))callback; {
     //JPLog(@"un-recommend episode");
     NSURL *unRecommendPodcastRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/un-recommend.php", _apiRootUrl]];
     NSMutableURLRequest *unRecommendPodcastRequest = [NSMutableURLRequest requestWithURL:unRecommendPodcastRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
@@ -3071,48 +3086,60 @@ static NSArray *colors;
     [unRecommendPodcastRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:unRecommendPodcastRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                //JPLog(@"%@", responseDict);
-                if ([responseDict objectForKey:@"error"]) {
-                    // session expired
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self unRecommendEpisode:episodeEntity];
-                        }];
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    //JPLog(@"%@", responseDict);
+                    if ([responseDict objectForKey:@"error"]) {
+                        // session expired
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self unRecommendEpisode:episodeEntity withCallback:callback];
+                            }];
+                        }
+                        else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need episode info"]) {
+                            // shouldn't ever happen...
+                            __unsafe_unretained typeof(self) weakSelf = self;
+                            [self addEpisode:episodeEntity withCallback:^{
+                                [weakSelf unRecommendEpisode:episodeEntity withCallback:callback];
+                            }];
+                        }
+                        else {
+                            JPLog(@"Error un-recommending episode: %@", [responseDict objectForKey:@"error"]);
+                            [self simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                            callback(NO);
+                        }
                     }
-                    else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need episode info"]) {
-                        // shouldn't ever happen...
-                        __unsafe_unretained typeof(self) weakSelf = self;
-                        [self addEpisode:episodeEntity withCallback:^{
-                            [weakSelf unRecommendEpisode:episodeEntity];
-                        }];
-                    }
-                    else {
-                        JPLog(@"Error un-recommending episode: %@", [responseDict objectForKey:@"error"]);
+                    else if ([responseDict objectForKey:@"success"]) {
+                        episodeEntity.isRecommended = [NSNumber numberWithBool:NO];
+                        UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
+                        if (loggedUser) {
+                            NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                            loggedUser.lastDataChange = lastDataChange;
+                        }
+                        [TungCommonObjects saveContextWithReason:@"un-recommended episode"];
+                        _feedNeedsRefetch = [NSNumber numberWithBool:YES];
+                        _profileFeedNeedsRefetch = [NSNumber numberWithBool:YES];
+                        callback(YES);
                     }
                 }
-                else if ([responseDict objectForKey:@"success"]) {
-                    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
-                    if (loggedUser) {
-                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                        loggedUser.lastDataChange = lastDataChange;
-                    }
-                    [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user"];
-                    _feedNeedsRefetch = [NSNumber numberWithBool:YES];
-                    _profileFeedNeedsRefetch = [NSNumber numberWithBool:YES];
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error. HTML: %@", html);
+                    [self simpleErrorAlertWithMessage:@"Server error"];
+                    callback(NO);
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error. HTML: %@", html);
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error un-recommending episode: %@", error.localizedDescription);
+            [self simpleErrorAlertWithMessage:error.localizedDescription];
+            callback(NO);
+        }
     }];
 }
 
@@ -3152,55 +3179,59 @@ static NSArray *colors;
     [syncProgressRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:syncProgressRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                if ([responseDict objectForKey:@"error"]) {
-                    // session expired
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self syncProgressForEpisode:episodeEntity];
-                        }];
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        // session expired
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self syncProgressForEpisode:episodeEntity];
+                            }];
+                        }
+                        // no podcast record
+                        else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
+                            __unsafe_unretained typeof(self) weakSelf = self;
+                            [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
+                                [weakSelf syncProgressForEpisode:episodeEntity];
+                            }];
+                        }
+                        else {
+                            JPLog(@"Error syncing progress: %@", [responseDict objectForKey:@"error"]);
+                        }
                     }
-                    // no podcast record
-                    else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
-                        __unsafe_unretained typeof(self) weakSelf = self;
-                        [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
-                            [weakSelf syncProgressForEpisode:episodeEntity];
-                        }];
-                    }
-                    else {
-                        JPLog(@"Error syncing progress: %@", [responseDict objectForKey:@"error"]);
+                    else if ([responseDict objectForKey:@"success"]) {
+                        //JPLog(@"%@", responseDict);
+                        if (!episodeEntity.id) {
+                            // save episode id and shortlink
+                            NSString *episodeId = [responseDict objectForKey:@"episodeId"];
+                            NSString *shortlink = [responseDict objectForKey:@"shortlink"];
+                            episodeEntity.id = episodeId;
+                            episodeEntity.shortlink = shortlink;
+                        }
+                        UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
+                        if (loggedUser) {
+                            NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                            loggedUser.lastDataChange = lastDataChange;
+                        }
+                        [TungCommonObjects saveContextWithReason:@"save lastDataChange"];
+                        _feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                        _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
                     }
                 }
-                else if ([responseDict objectForKey:@"success"]) {
-                    //JPLog(@"%@", responseDict);
-                    if (!episodeEntity.id) {
-                        // save episode id and shortlink
-                        NSString *episodeId = [responseDict objectForKey:@"episodeId"];
-                        NSString *shortlink = [responseDict objectForKey:@"shortlink"];
-                        episodeEntity.id = episodeId;
-                        episodeEntity.shortlink = shortlink;
-                    }
-                    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
-                    if (loggedUser) {
-                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                        loggedUser.lastDataChange = lastDataChange;
-                    }
-                    [TungCommonObjects saveContextWithReason:@"save lastDataChange"];
-                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
-                    _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error. HTML: %@", html);
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error. HTML: %@", html);
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error syncing progress: %@", error.localizedDescription);
+        }
     }];
 }
 
@@ -3238,54 +3269,59 @@ static NSArray *colors;
     [postCommentRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:postCommentRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                //JPLog(@"%@", responseDict);
-                if ([responseDict objectForKey:@"error"]) {
-                    // session expired
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self postComment:comment atTime:timestamp onEpisode:episodeEntity withCallback:callback];
-                        }];
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    //JPLog(@"%@", responseDict);
+                    if ([responseDict objectForKey:@"error"]) {
+                        // session expired
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self postComment:comment atTime:timestamp onEpisode:episodeEntity withCallback:callback];
+                            }];
+                        }
+                        // no podcast record
+                        else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
+                            __unsafe_unretained typeof(self) weakSelf = self;
+                            [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
+                                [weakSelf postComment:comment atTime:timestamp onEpisode:episodeEntity withCallback:callback];
+                            }];
+                        }
+                        else {
+                            JPLog(@"Error posting comment: %@", [responseDict objectForKey:@"error"]);
+                            callback(NO, responseDict);
+                        }
                     }
-                    // no podcast record
-                    else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
-                        __unsafe_unretained typeof(self) weakSelf = self;
-                        [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
-                            [weakSelf postComment:comment atTime:timestamp onEpisode:episodeEntity withCallback:callback];
-                        }];
-                    }
-                    else {
-                        JPLog(@"Error posting comment: %@", [responseDict objectForKey:@"error"]);
-                        callback(NO, responseDict);
+                    else if ([responseDict objectForKey:@"success"]) {
+                        JPLog(@"successfully posted comment");
+                        if (!episodeEntity.id) {
+                            // save episode id and shortlink
+                            NSString *episodeId = [responseDict objectForKey:@"episodeId"];
+                            NSString *shortlink = [responseDict objectForKey:@"shortlink"];
+                            episodeEntity.id = episodeId;
+                            episodeEntity.shortlink = shortlink;
+                            [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
+                        }
+                        _feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                        _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
+                        callback(YES, responseDict);
                     }
                 }
-                else if ([responseDict objectForKey:@"success"]) {
-                    JPLog(@"successfully posted comment");
-                    if (!episodeEntity.id) {
-                        // save episode id and shortlink
-                        NSString *episodeId = [responseDict objectForKey:@"episodeId"];
-                        NSString *shortlink = [responseDict objectForKey:@"shortlink"];
-                        episodeEntity.id = episodeId;
-                        episodeEntity.shortlink = shortlink;
-                        [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
-                    }
-                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
-                    _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
-                    callback(YES, responseDict);
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error. HTML: %@", html);
+                    callback(NO, @{@"error": @"Unspecified error"});
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error. HTML: %@", html);
-                callback(NO, @{@"error": @"Unspecified error"});
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error posting comment: %@", error.localizedDescription);
+            callback(NO, @{@"error": error.localizedDescription});
+        }
     }];
 }
 
@@ -3347,54 +3383,59 @@ static NSArray *colors;
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
 
     [NSURLConnection sendAsynchronousRequest:postClipRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                //JPLog(@"%@", responseDict);
-                if ([responseDict objectForKey:@"error"]) {
-                    // session expired
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self postClipWithComment:comment atTime:timestamp withDuration:duration onEpisode:episodeEntity withCallback:callback];
-                        }];
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    //JPLog(@"%@", responseDict);
+                    if ([responseDict objectForKey:@"error"]) {
+                        // session expired
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self postClipWithComment:comment atTime:timestamp withDuration:duration onEpisode:episodeEntity withCallback:callback];
+                            }];
+                        }
+                        // no podcast record
+                        else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
+                            __unsafe_unretained typeof(self) weakSelf = self;
+                            [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
+                                [weakSelf postClipWithComment:comment atTime:timestamp withDuration:duration onEpisode:episodeEntity withCallback:callback];
+                            }];
+                        }
+                        else {
+                            JPLog(@"Error posting clip: %@", [responseDict objectForKey:@"error"]);
+                            callback(NO, responseDict);
+                        }
                     }
-                    // no podcast record
-                    else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
-                        __unsafe_unretained typeof(self) weakSelf = self;
-                        [self addPodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
-                            [weakSelf postClipWithComment:comment atTime:timestamp withDuration:duration onEpisode:episodeEntity withCallback:callback];
-                        }];
-                    }
-                    else {
-                        JPLog(@"Error posting clip: %@", [responseDict objectForKey:@"error"]);
-                        callback(NO, responseDict);
+                    else if ([responseDict objectForKey:@"success"]) {
+                        JPLog(@"successfully posted clip");
+                        if (!episodeEntity.id) {
+                            // save episode id and shortlink
+                            NSString *episodeId = [responseDict objectForKey:@"episodeId"];
+                            NSString *shortlink = [responseDict objectForKey:@"shortlink"];
+                            episodeEntity.id = episodeId;
+                            episodeEntity.shortlink = shortlink;
+                            [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
+                        }
+                        _feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                        _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
+                        callback(YES, responseDict);
                     }
                 }
-                else if ([responseDict objectForKey:@"success"]) {
-                    JPLog(@"successfully posted clip");
-                    if (!episodeEntity.id) {
-                        // save episode id and shortlink
-                        NSString *episodeId = [responseDict objectForKey:@"episodeId"];
-                        NSString *shortlink = [responseDict objectForKey:@"shortlink"];
-                        episodeEntity.id = episodeId;
-                        episodeEntity.shortlink = shortlink;
-                        [TungCommonObjects saveContextWithReason:@"got episode shortlink and id"];
-                    }
-                    _feedNeedsRefresh = [NSNumber numberWithBool:YES];
-                    _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
-                    callback(YES, responseDict);
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error. HTML: %@", html);
+                    callback(NO, @{@"error": @"Unspecified error"});
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error. HTML: %@", html);
-                callback(NO, @{@"error": @"Unspecified error"});
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error posting clip: %@", error.localizedDescription);
+            callback(NO, @{@"error": error.localizedDescription});
+        }
     }];
 }
 
@@ -3411,36 +3452,43 @@ static NSArray *colors;
     [deleteEventRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:deleteEventRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                if ([responseDict objectForKey:@"error"]) {
-                    // session expired
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self deleteStoryEventWithId:eventId withCallback:callback];
-                        }];
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        // session expired
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self deleteStoryEventWithId:eventId withCallback:callback];
+                            }];
+                        }
+                        else {
+                            JPLog(@"Error deleting story event: %@", [responseDict objectForKey:@"error"]);
+                            [self simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                            callback(NO);
+                        }
                     }
-                    else {
-                        JPLog(@"Error deleting story event: %@", [responseDict objectForKey:@"error"]);
-                        callback(NO);
+                    else if ([responseDict objectForKey:@"success"]) {
+                        JPLog(@"successfully deleted story event");
+                        callback(YES);
                     }
                 }
-                else if ([responseDict objectForKey:@"success"]) {
-                    JPLog(@"successfully deleted story event");
-                    callback(YES);
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error. HTML: %@", html);
+                    callback(NO);
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error. HTML: %@", html);
-                callback(NO);
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error deleting story event: %@", error.localizedDescription);
+            [self simpleErrorAlertWithMessage:error.localizedDescription];
+            callback(NO);
+        }
     }];
 }
 
@@ -3457,39 +3505,44 @@ static NSArray *colors;
     [flagCommentRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:flagCommentRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                if ([responseDict objectForKey:@"error"]) {
-                    // session expired
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self flagCommentWithId:eventId];
-                        }];
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        // session expired
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self flagCommentWithId:eventId];
+                            }];
+                        }
+                        else {
+                            JPLog(@"Error flagging comment: %@", [responseDict objectForKey:@"error"]);
+                            UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Error flagging" message:[responseDict objectForKey:@"error"] preferredStyle:UIAlertControllerStyleAlert];
+                            [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+                            [_viewController presentViewController:alert animated:YES completion:nil];
+                        }
                     }
-                    else {
-                        JPLog(@"Error flagging comment: %@", [responseDict objectForKey:@"error"]);
-                        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Error flagging" message:[responseDict objectForKey:@"error"] preferredStyle:UIAlertControllerStyleAlert];
+                    else if ([responseDict objectForKey:@"success"]) {
+                        JPLog(@"successfully flagged comment");
+                        UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Successfully flagged" message:@"This comment will be moderated. Thank you for your feedback." preferredStyle:UIAlertControllerStyleAlert];
                         [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
                         [_viewController presentViewController:alert animated:YES completion:nil];
                     }
                 }
-                else if ([responseDict objectForKey:@"success"]) {
-                    JPLog(@"successfully flagged comment");
-                    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Successfully flagged" message:@"This comment will be moderated. Thank you for your feedback." preferredStyle:UIAlertControllerStyleAlert];
-                    [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
-                    [_viewController presentViewController:alert animated:YES completion:nil];
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error. HTML: %@", html);
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error. HTML: %@", html);
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error flagging comment: %@", error.localizedDescription);
+            [self simpleErrorAlertWithMessage:error.localizedDescription];
+        }
     }];
 }
 
@@ -3510,36 +3563,41 @@ static NSArray *colors;
     [feedRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:feedRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                if ([responseDict objectForKey:@"error"]) {
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:callback];
-                        }];
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:callback];
+                            }];
+                        }
+                        else {
+                            JPLog(@"Error requesting episode info: %@", [responseDict objectForKey:@"error"]);
+                            callback(NO, responseDict);
+                        }
                     }
-                    else {
-                        JPLog(@"Error requesting episode info: %@", [responseDict objectForKey:@"error"]);
-                        callback(NO, responseDict);
+                    else if ([responseDict objectForKey:@"success"]) {
+                        //NSTimeInterval requestDuration = [requestStart timeIntervalSinceNow];
+                        //JPLog(@"successfully retrieved episode info in %f seconds", fabs(requestDuration));
+                        callback(YES, responseDict);
                     }
                 }
-                else if ([responseDict objectForKey:@"success"]) {
-                    //NSTimeInterval requestDuration = [requestStart timeIntervalSinceNow];
-                    //JPLog(@"successfully retrieved episode info in %f seconds", fabs(requestDuration));
-                    callback(YES, responseDict);
+                else if (error != nil) {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error requesting episode info. HTML: %@", html);
+                    callback(NO, @{@"error": @"Unspecified error"});
                 }
-            }
-            else if (error != nil) {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error requesting episode info. HTML: %@", html);
-                callback(NO, @{@"error": @"Unspecified error"});
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error requesting episode info: %@", error.localizedDescription);
+            callback(NO, @{@"error": error.localizedDescription});
+        }
     }];
 }
 
@@ -3559,27 +3617,33 @@ static NSArray *colors;
     [getProfileDataRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:getProfileDataRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        if (jsonData != nil && error == nil) {
-            dispatch_async(dispatch_get_main_queue(), ^{
-                
-                NSDictionary *responseDict = jsonData;
-                if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                    // get new session and re-request
-                    JPLog(@"SESSION EXPIRED");
-                    [self getSessionWithCallback:^{
-                        [self getProfileDataForUser:target_id withCallback:callback];
-                    }];
-                }
-                else {
-            		callback(responseDict);
-                }
-            });
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            if (jsonData != nil && error == nil) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    
+                    NSDictionary *responseDict = jsonData;
+                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                        // get new session and re-request
+                        JPLog(@"SESSION EXPIRED");
+                        [self getSessionWithCallback:^{
+                            [self getProfileDataForUser:target_id withCallback:callback];
+                        }];
+                    }
+                    else {
+                        callback(responseDict);
+                    }
+                });
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                JPLog(@"HTML: %@", html);
+            }
+            
         }
         else {
-            NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-            JPLog(@"HTML: %@", html);
+            JPLog(@"Error getting profile: %@", error.localizedDescription);
+            [self simpleErrorAlertWithMessage:error.localizedDescription];
         }
     }];
 }
@@ -3599,34 +3663,39 @@ static NSArray *colors;
     [updateUserRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:updateUserRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                if ([responseDict objectForKey:@"error"]) {
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self updateUserWithDictionary:userInfo withCallback:^(NSDictionary *responseDict) {
-                                callback(responseDict);
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self updateUserWithDictionary:userInfo withCallback:^(NSDictionary *responseDict) {
+                                    callback(responseDict);
+                                }];
                             }];
-                        }];
-                    } else {
-                        callback(responseDict); 
+                        } else {
+                            callback(responseDict); 
+                        }
+                    }
+                    else {
+                        JPLog(@"user updated successfully: %@", responseDict);
+                        callback(responseDict);
                     }
                 }
                 else {
-                    JPLog(@"user updated successfully: %@", responseDict);
-                    callback(responseDict);
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"HTML: %@", html);
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"HTML: %@", html);
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error updating user: %@", error.localizedDescription);
+            [self simpleErrorAlertWithMessage:error.localizedDescription];
+        }
     }];
 }
 
@@ -3641,36 +3710,42 @@ static NSArray *colors;
     [followUserRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:followUserRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                if ([responseDict objectForKey:@"error"]) {
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self followUserWithId:target_id withCallback:^(BOOL success) {
-                                callback(success);
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self followUserWithId:target_id withCallback:^(BOOL success) {
+                                    callback(success);
+                                }];
                             }];
-                        }];
+                        } else {
+                            callback(NO);
+                        }
+                    }
+                    else if ([responseDict objectForKey:@"success"]) {
+                        callback(YES);
                     } else {
                         callback(NO);
                     }
                 }
-                else if ([responseDict objectForKey:@"success"]) {
-                    callback(YES);
-                } else {
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"HTML: %@", html);
                     callback(NO);
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"HTML: %@", html);
-                callback(NO);
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error following user: %@", error.localizedDescription);
+            callback(NO);
+            [self simpleErrorAlertWithMessage:error.localizedDescription];
+        }
     }];
     
 }
@@ -3685,36 +3760,42 @@ static NSArray *colors;
     [unfollowUserRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:unfollowUserRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                if ([responseDict objectForKey:@"error"]) {
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self unfollowUserWithId:target_id withCallback:^(BOOL success) {
-                                callback(success);
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self unfollowUserWithId:target_id withCallback:^(BOOL success) {
+                                    callback(success);
+                                }];
                             }];
-                        }];
+                        } else {
+                            callback(NO);
+                        }
+                    }
+                    else if ([responseDict objectForKey:@"success"]) {
+                        callback(YES);
                     } else {
                         callback(NO);
                     }
                 }
-                else if ([responseDict objectForKey:@"success"]) {
-                    callback(YES);
-                } else {
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"HTML: %@", html);
                     callback(NO);
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"HTML: %@", html);
-                callback(NO);
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error un-following user: %@", error.localizedDescription);
+            callback(NO);
+            [self simpleErrorAlertWithMessage:error.localizedDescription];
+        }
     }];
 }
 
@@ -3729,26 +3810,31 @@ static NSArray *colors;
     [followAllUsersRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:followAllUsersRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                if ([responseDict objectForKey:@"error"]) {
-                    callback(NO, [responseDict objectForKey:@"error"]);
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        callback(NO, [responseDict objectForKey:@"error"]);
+                    }
+                    else if ([responseDict objectForKey:@"success"]) {
+                        callback(YES, [responseDict objectForKey:@"success"]);
+                    } else {
+                        callback(NO, @{@"error": @"unspecified error"});
+                    }
                 }
-                else if ([responseDict objectForKey:@"success"]) {
-                    callback(YES, [responseDict objectForKey:@"success"]);
-                } else {
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"HTML: %@", html);
                     callback(NO, @{@"error": @"unspecified error"});
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"HTML: %@", html);
-                callback(NO, @{@"error": @"unspecified error"});
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error following all users: %@", error.localizedDescription);
+            callback(NO, @{@"error": error.localizedDescription});
+        }
     }];
 }
 
@@ -3764,33 +3850,38 @@ static NSArray *colors;
     [inviteFriendsRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:inviteFriendsRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                if ([responseDict objectForKey:@"error"]) {
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self inviteFriends:friends];
-                        }];
-                    } else {
-                    	JPLog(@"Error inviting friends: %@", [responseDict objectForKey:@"error"]);
-                        [self simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self inviteFriends:friends];
+                            }];
+                        } else {
+                            JPLog(@"Error inviting friends: %@", [responseDict objectForKey:@"error"]);
+                            [self simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                        }
+                    }
+                    else if ([responseDict objectForKey:@"success"]) {
+                        JPLog(@"Successfully invited friends: %@", responseDict);
                     }
                 }
-                else if ([responseDict objectForKey:@"success"]) {
-                    JPLog(@"Successfully invited friends: %@", responseDict);
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error: %@", html);
+                    [self simpleErrorAlertWithMessage:@"Sorry, something went wrong with your request"];
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error: %@", html);
-                [self simpleErrorAlertWithMessage:@"Sorry, something went wrong with your request"];
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error inviting friends: %@", error.localizedDescription);
+            [self simpleErrorAlertWithMessage:error.localizedDescription];
+        }
     }];
 }
 

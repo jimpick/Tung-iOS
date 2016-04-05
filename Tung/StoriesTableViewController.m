@@ -23,6 +23,7 @@
 
 @property CGPoint contentOffset;
 @property BOOL contentOffsetSet;
+@property BOOL animateEndRefresh;
 
 @end
 
@@ -109,6 +110,7 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
         if (_storiesArray.count > 0) {
             // animate refresh control if table is scrolled to top
             if (self.tableView.contentOffset.y <= _contentOffset.y) {
+                _animateEndRefresh = YES;
                 [self.refreshControl beginRefreshing];
                 [self.tableView setContentOffset:CGPointMake(0, - (self.refreshControl.frame.size.height - _contentOffset.y)) animated:YES];
             }
@@ -160,6 +162,7 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     
     // id method
     NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
+    NSLog(@"story dict: %@", storyDict);
     NSDictionary *episodeMiniDict = [storyDict objectForKey:@"episode"];
     
     EpisodeViewController *episodeView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"episodeView"];
@@ -174,7 +177,8 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
 
 NSInteger requestTries = 0;
 
-// single story request
+// all stories for a single episode
+// TODO: add newerThan/olderThan params
 - (void) getStoriesForEpisodeWithId:(NSString *)episodeId fromUser:(NSString *)userId {
     
     NSLog(@"get stories for episode with id: %@, from user: %@", episodeId, userId);
@@ -216,7 +220,7 @@ NSInteger requestTries = 0;
                 else if ([responseDict objectForKey:@"success"]) {
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
-                        [self endRefreshing];
+                        [self endRefreshingWithNewPosts:YES];
                         
                         NSArray *newStories = [responseDict objectForKey:@"stories"];
                         if (newStories.count > 0) {
@@ -225,8 +229,10 @@ NSInteger requestTries = 0;
                         } else {
                             _noResults = YES;
                         }
-                        
-                        [self groupStoriesByEpisodeAndInsertInTable:self.tableView withStartingIndex:0];
+//                        [self groupStoriesByEpisodeAndInsertInTable:self.tableView withStartingIndex:0];
+                        [self groupStoriesByEpisodeAndInsertInTable:self.tableView
+                                                  withStartingIndex:0
+                                                      andTableRange:NSMakeRange(0, 0)];
                         
                     });
                 }
@@ -257,11 +263,7 @@ NSInteger requestTries = 0;
                   orOlderThan:(NSNumber *)beforeTime
                      fromUser:(NSString *)user_id
                      withCred:(BOOL)withCred {
-    
-//    if (!_tung.connectionAvailable.boolValue) {
-//        [self endRefreshing];
-//        [TungCommonObjects showNoConnectionAlert];
-//    }
+
     
     requestTries++;
     self.requestStatus = @"initiated";
@@ -270,11 +272,18 @@ NSInteger requestTries = 0;
     NSURL *feedURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/feed.php", _tung.apiRootUrl]];
     NSMutableURLRequest *feedRequest = [NSMutableURLRequest requestWithURL:feedURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [feedRequest setHTTPMethod:@"POST"];
+    
     NSMutableDictionary *params = [@{@"sessionId": _tung.sessionId,
                                      @"newerThan": afterTime,
                                      @"olderThan": beforeTime,
                                      @"profiled_user_id": user_id
                                      } mutableCopy];
+    //DEBUG:
+//    if (beforeTime.integerValue == 0) {
+//        NSNumber *testTime = [NSNumber numberWithInt:1453139732]; //
+//        [params setObject:testTime forKey:@"olderThan"];
+//    }
+    
     if (withCred) {
         NSDictionary *credParams = @{@"tung_id": _tung.tungId,
                                      @"token": _tung.tungToken
@@ -354,26 +363,35 @@ NSInteger requestTries = 0;
                             //JPLog(@"got stories in %f seconds.", fabs(requestDuration));
                         //}
                         
-                        [self endRefreshing];
-                        
                         // pull refresh
                         if ([afterTime intValue] > 0) {
                             if (newStories.count > 0) {
                                 //JPLog(@"got stories newer than: %@", afterTime);
+                                
+                                [self endRefreshingWithNewPosts:YES];
+                                
                                 [self stopClipPlayback];
                                 
                                 [self removeOlderDuplicatesOfNewStories:newStories];
                                 
                                 NSArray *newItems = [self processStories:newStories];
+                                NSInteger tableLength = _storiesArray.count;
+                                NSInteger tableStartIndex = newItems.count;
                                 NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
                                 _storiesArray = [newFeedArray mutableCopy];
                                 
-                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView withStartingIndex:0];
+                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView
+                                                          withStartingIndex:0
+                                                              andTableRange:NSMakeRange(tableStartIndex, tableLength)];
                                 
+                            } else {
+                                [self endRefreshing];
                             }
                         }
                         // auto-loaded posts as user scrolls down
                         else if ([beforeTime intValue] > 0) {
+                            
+                            [self endRefreshingWithNewPosts:YES];
                             
                             _reachedEndOfPosts = (newStories.count == 0);
                             if (_reachedEndOfPosts) {
@@ -390,12 +408,15 @@ NSInteger requestTries = 0;
                                 _storiesArray = [newFeedArray mutableCopy];
                                 newFeedArray = nil;
                                 
-                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView withStartingIndex:startingIndex];
+                                [self groupStoriesByEpisodeAndInsertInTable:self.tableView
+                                                          withStartingIndex:startingIndex
+                                                              andTableRange:NSMakeRange(0, startingIndex)];
                                 
                             }
                         }
                         // initial request
                         else {
+                            [self endRefreshingWithNewPosts:YES];
                             
                             // feed is now reFETCHED
                             if (_profiledUserId.length && [_profiledUserId isEqualToString:_tung.tungId]) {
@@ -411,9 +432,9 @@ NSInteger requestTries = 0;
                                 _storiesArray = [self processStories:newStories];
                             }
                             
-                            [self groupStoriesByEpisodeAndInsertInTable:self.tableView withStartingIndex:0];
-                            
-                            //[self.tableView setContentOffset:_contentOffset animated:NO];
+                            [self groupStoriesByEpisodeAndInsertInTable:self.tableView
+                                                      withStartingIndex:0
+                                                          andTableRange:NSMakeRange(0, 0)];
                             
                             // welcome tutorial
                             SettingsEntity *settings = [TungCommonObjects settings];
@@ -475,13 +496,20 @@ NSInteger requestTries = 0;
 }
 
 - (void) endRefreshing {
+    [self endRefreshingWithNewPosts:NO];
+}
+
+- (void) endRefreshingWithNewPosts:(BOOL)newPosts {
     _requestingMore = NO;
     self.requestStatus = @"finished";
     _loadMoreIndicator.alpha = 0;
     
     if (self.refreshControl.refreshing) {
         [self.refreshControl endRefreshing];
-        [self.tableView setContentOffset:_contentOffset animated:YES];
+        if (!newPosts && _animateEndRefresh) {
+        	[self.tableView setContentOffset:_contentOffset animated:YES];
+            _animateEndRefresh = NO;
+        }
     }
     
     if (_tung.connectionAvailable.boolValue) {
@@ -599,19 +627,18 @@ NSInteger requestTries = 0;
 /*	group stories by episode from startingIndex so that all users who listened to it appear in one story.
  	If necessary insert stories in table.
  */
-- (void) groupStoriesByEpisodeAndInsertInTable:(UITableView *)tableView withStartingIndex:(NSInteger)startingIndex {
+- (void) groupStoriesByEpisodeAndInsertInTable:(UITableView *)tableView
+                             withStartingIndex:(NSInteger)startingIndex
+                                 andTableRange:(NSRange)tableRange {
     
-    //NSLog(@"group stories with starting index: %ld, begin count: %lu", (long)startingIndex, (unsigned long)_storiesArray.count);
+    //NSLog(@"///group stories with starting index: %ld, begin count: %lu", (long)startingIndex, (unsigned long)_storiesArray.count);
     
-//    NSMutableIndexSet *indexesToDelete = [NSMutableIndexSet indexSet];
-//    NSMutableIndexSet *indexesToReload = [NSMutableIndexSet indexSet];
     NSMutableIndexSet *indexesToInsert = [NSMutableIndexSet indexSet];
     
     for (NSInteger i = startingIndex; i < _storiesArray.count; i++) {
         NSMutableArray *story = [_storiesArray objectAtIndex:i];
         NSMutableDictionary *dict = [story objectAtIndex:0];
         NSString *episodeId = [[[dict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
-        //NSLog(@"check for match against story %@ at index %ld", [[dict objectForKey:@"episode"] objectForKey:@"title"], (long)i);
         
         // check for match
         for (NSInteger j = startingIndex; j < _storiesArray.count; j++) {
@@ -624,7 +651,6 @@ NSInteger requestTries = 0;
                 // story match
                 if ([episodeId isEqualToString:comparedEpisodeId]) {
                     
-                    //NSLog(@"several users listened to %@ at index %ld", [[dict objectForKey:@"episode"] objectForKey:@"title"], (long)i);
                     NSDictionary *userDict = [comparedDict objectForKey:@"user"];
                     
                     // add user dict to story header for avatars
@@ -633,7 +659,7 @@ NSInteger requestTries = 0;
                     if ([comparedDict objectForKey:@"users"]) {
                         [users addObjectsFromArray:[comparedDict objectForKey:@"users"]];
                     }
-                 	else {
+                    else {
                         [users addObject:userDict];
                     }
                     // add newer occurences after older, so oldest appears first
@@ -658,6 +684,11 @@ NSInteger requestTries = 0;
                     
                     // remove match
                     [_storiesArray removeObjectAtIndex:j];
+                    
+                    if (j >= startingIndex && j < tableRange.location) {
+                        tableRange.location--;
+                    }
+
                     j--;
                     
                     // replace *story with grouped story.
@@ -667,25 +698,31 @@ NSInteger requestTries = 0;
         }
         
         if (startingIndex > 0 && i >= startingIndex) {
-            //NSLog(@"••• insert story at index: %ld (has %lu rows)", (long)i, (unsigned long)[[_storiesArray objectAtIndex:i] count]);
             [indexesToInsert addIndex:i];
         }
     }
     
-    //NSLog(@"group stories end: %lu", (unsigned long)_storiesArray.count);
-    
+    // for auto-loaded posts as user scrolls down
     if (indexesToInsert.count) {
         
         [UIView setAnimationsEnabled:NO];
         [tableView beginUpdates];
         
         [tableView insertSections:indexesToInsert withRowAnimation:UITableViewRowAnimationNone];
-
+        
         [tableView endUpdates];
         [UIView setAnimationsEnabled:YES];
     }
     else {
+        // initial request or pull-refresh
         [tableView reloadData];
+        // make table "hold still" for after pull-refresh
+        if (tableRange.location != 0) {
+            CGRect currentOffsetRect = [tableView rectForSection:tableRange.location];
+            currentOffsetRect.origin.y += self.refreshControl.frame.size.height;
+            currentOffsetRect.origin.y -= tableRange.location + 2;
+            [tableView scrollRectToVisible:currentOffsetRect animated:NO];
+        }
     }
     
 }
@@ -808,6 +845,8 @@ static NSString *footerCellIdentifier = @"storyFooterCell";
 //- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
 UILabel *prototypeLabel;
 CGFloat labelWidth = 0;
+
+//-(CGFloat)tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
     
@@ -1293,15 +1332,17 @@ CGFloat labelWidth = 0;
     else {
         //NSLog(@"play from timestamp, fetch episode entity");
         [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
-            NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
-            NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
-            PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
-            [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:podcastEntity save:YES];
-            
-            NSString *urlString = [episodeDict objectForKey:@"url"];
-            
-            if (urlString) {
-                [_tung playUrl:urlString fromTimestamp:timestamp];
+            if (success) {
+                NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
+                NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
+                PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
+                [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:podcastEntity save:YES];
+                
+                NSString *urlString = [episodeDict objectForKey:@"url"];
+                
+                if (urlString) {
+                    [_tung playUrl:urlString fromTimestamp:timestamp];
+                }
             }
         }];
     }
@@ -1539,6 +1580,8 @@ CGFloat labelWidth = 0;
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     if (scrollView == self.tableView) {
+        
+        //NSLog(@"table view scrolled to offset: %f", self.tableView.contentOffset.y);
         // shrink profile header
         if (_profiledUserId.length > 0 && scrollView.contentOffset.y > 0 && scrollView.contentOffset.y <= animationDistance) {
             //JPLog(@"table offset: %f", scrollView.contentOffset.y);
@@ -1549,6 +1592,7 @@ CGFloat labelWidth = 0;
             [_profileHeader layoutIfNeeded];
         }
         // detect when user hits bottom of feed
+        // TODO: remove this check when implementing newerThan/olderThan on fetch for all stories for episode
         if (!_episodeId) {
             float bottomOffset = scrollView.contentSize.height - scrollView.frame.size.height;
             if (scrollView.contentOffset.y >= bottomOffset) {

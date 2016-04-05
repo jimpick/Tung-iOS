@@ -33,12 +33,10 @@
         // unfollow
         [_tung unfollowUserWithId:userId withCallback:^(BOOL success) {
             if (!success) {// fail
-                NSLog(@"error unfollowing user");
                 btn.on = YES;
                 [btn setNeedsDisplay];
             }
             else {
-                NSLog(@"successfully unfollowed user");
                 _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
             }
         }];
@@ -47,12 +45,10 @@
         // follow
         [_tung followUserWithId:userId withCallback:^(BOOL success) {
             if (!success) {// fail
-                NSLog(@"error following user");
                 btn.on = NO;
                 [btn setNeedsDisplay];
             }
             else {
-                NSLog(@"success following user");
                 _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
             }
         }];

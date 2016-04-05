@@ -301,12 +301,14 @@ UIActivityIndicatorView *backgroundSpinner;
                 
                 [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
                     [_backgroundSpinner stopAnimating];
-                    NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
-                    NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
-                    PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
-                    _episodeEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:podcastEntity save:YES];
-                    
-                    [self setUpViewForEpisode:_episodeEntity];
+                    if (success) {
+                        NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
+                        NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
+                        PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
+                        _episodeEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:podcastEntity save:YES];
+                        
+                        [self setUpViewForEpisode:_episodeEntity];
+                    }
                 }];
             }
         }
@@ -336,12 +338,12 @@ UIActivityIndicatorView *backgroundSpinner;
         [self setupNowPlayingControls];
         _isFirstAppearance = NO;
     }
+    _tung.viewController = self;
     
     // set up views
     if (_isNowPlayingView) {
         
         _tung.ctrlBtnDelegate = self;
-        _tung.viewController = self;
         
         if (_npControlsBottomLayoutConstraint.constant < npControls_closedConstraint && _episodeEntity.isNowPlaying.boolValue) {
             [NSTimer scheduledTimerWithTimeInterval:.2 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
@@ -477,11 +479,11 @@ NSTimer *markAsSeenTimer;
         [_commentsView.tableView reloadData]; // for footer message change
         
         if (_episodeEntity.isNowPlaying.boolValue) {
-            JPLog(@"//////// nowPlayingDidChange: episode just started playing");
+            //JPLog(@"//////// nowPlayingDidChange: episode just started playing");
             [self revealNowPlayingControls];
         }
         else {
-            JPLog(@"//////// nowPlayingDidChange: episode is finished playing");
+            //JPLog(@"//////// nowPlayingDidChange: episode is finished playing");
             
             [self hideNowPlayingControls];
             _headerView.largeButton.on = NO;
@@ -492,7 +494,6 @@ NSTimer *markAsSeenTimer;
             
             dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_SEC);
             dispatch_after(delay, dispatch_get_main_queue(), ^(void){
-                JPLog(@"show banner alert");
                 [TungCommonObjects showBannerAlertForText:@"This episode ended. To see now playing, tap 🔈 in the bottom bar." andWidth:screenWidth];
             });
         }
@@ -2041,7 +2042,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
             else {
                 [self toggleNewComment];
                 NSString *errorMsg = [responseDict objectForKey:@"error"];
-                [self displayErrorAlertWithMessage:errorMsg];
+                [_tung simpleErrorAlertWithMessage:errorMsg];
             }
         }];
     }
@@ -2084,7 +2085,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
             }
             else {
                 NSString *errorMsg = [responseDict objectForKey:@"error"];
-                [self displayErrorAlertWithMessage:errorMsg];
+                [_tung simpleErrorAlertWithMessage:errorMsg];
             }
             
             [self toggleNewClipView];
@@ -2099,21 +2100,25 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
         _recommendLabel.text = (_recommendButton.recommended) ? @"Recommended" : @"Recommend";
         
         if (_recommendButton.recommended) {
-            [_tung recommendEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
+            [_tung recommendEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success) {
                 if (!success) {
                     // failed to recommend
                     _recommendButton.recommended = NO;
                     [_recommendButton setNeedsDisplay];
                     _recommendLabel.text = @"Recommend";
-                    NSString *errorMsg = [responseDict objectForKey:@"error"];
-                    [self displayErrorAlertWithMessage:errorMsg];
                 }
             }];
         }
         else {
-            [_tung unRecommendEpisode:_tung.npEpisodeEntity];
+            [_tung unRecommendEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success) {
+                if (!success) {
+                    // failed to un-recommend
+                    _recommendButton.recommended = YES;
+                    [_recommendButton setNeedsDisplay];
+                    _recommendLabel.text = @"Recommended";
+                }
+            }];
         }
-        _tung.npEpisodeEntity.isRecommended = [NSNumber numberWithBool:_recommendButton.recommended];
     }
     else {
         [_tung showNoConnectionAlert];
@@ -2143,11 +2148,6 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
     
     UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[text] applicationActivities:nil];
     [self presentViewController:shareSheet animated:YES completion:nil];
-}
-
-- (void) displayErrorAlertWithMessage:(NSString *)message {
-    UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:message delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-    [errorAlert show];
 }
 
 
