@@ -150,7 +150,7 @@
                     [TungCommonObjects saveKeychainCred:tungCred];
                     
                     // request to mutually follow all users
-                    [_tung followAllUsersFromId:tungId withCallback:^(BOOL success, NSDictionary *response) {
+                    [_tung followAllUsersWithCallback:^(BOOL success, NSDictionary *response) {
                         if (success) {
                             JPLog(@"successfully followed all users: %@", response);
                             

@@ -62,8 +62,8 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        _apiRootUrl = @"https://api.tung.fm/";
-        //_apiRootUrl = @"https://staging-api.tung.fm/";
+        //_apiRootUrl = @"https://api.tung.fm/";
+        _apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
@@ -2345,6 +2345,7 @@ static NSArray *colors;
     switch (netStatus) {
         case NotReachable: {
             JPLog(@"Network not reachable");
+            NSLog(@"%@",[NSThread callStackSymbols]);
             _connectionAvailable = [NSNumber numberWithBool:NO];
              if (callback) callback(NO);
             break;
@@ -3800,12 +3801,12 @@ static NSArray *colors;
 }
 
 // for beta period
-- (void) followAllUsersFromId:(NSString *)user_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
-    JPLog(@"follow all users with id: %@", user_id);
+- (void) followAllUsersWithCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+    JPLog(@"follow all users");
     NSURL *followAllUsersRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/follow-all.php", _apiRootUrl]];
     NSMutableURLRequest *followAllUsersRequest = [NSMutableURLRequest requestWithURL:followAllUsersRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [followAllUsersRequest setHTTPMethod:@"POST"];
-    NSDictionary *params = @{@"new_user_id": user_id};
+    NSDictionary *params = @{@"sessionId":_sessionId,};
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [followAllUsersRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];

@@ -69,7 +69,7 @@
 
 - (void) getNewestFeed {
     
-    NSLog(@"get newest feed");
+    //NSLog(@"get newest feed");
     if (_tung.connectionAvailable.boolValue) {
         
         NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:YES reachable:_tung.connectionAvailable.boolValue];
