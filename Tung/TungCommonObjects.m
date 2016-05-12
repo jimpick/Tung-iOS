@@ -62,8 +62,8 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        //_apiRootUrl = @"https://api.tung.fm/";
-        _apiRootUrl = @"https://staging-api.tung.fm/";
+        _apiRootUrl = @"https://api.tung.fm/";
+        //_apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];

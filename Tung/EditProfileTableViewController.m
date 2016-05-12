@@ -224,7 +224,7 @@ static UIImage *iconRedX;
         [errorsAlert show];
     } else {
         if (_formIsForSignup) {
-            [self performSegueWithIdentifier:@"finishSignUp" sender:self];
+            [self performSegueWithIdentifier:@"proceedToSuggestedUsers" sender:self];
         } else {
             if (_formIsPristine) {
                 [self dismissViewControllerAnimated:YES completion:nil];
@@ -872,10 +872,10 @@ static UIImage *iconRedX;
 #pragma mark - navigation
 
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    JPLog(@"prepare for segue");
+    
     UIViewController *destination = segue.destinationViewController;
     
-    if ([[segue identifier] isEqualToString:@"finishSignUp"]) {
+    if ([[segue identifier] isEqualToString:@"proceedToSuggestedUsers"]) {
         // update profileData with user inputted values
         [_profileData setValue:_field_username.text forKey:@"username"];
         [_profileData setValue:_field_name.text forKey:@"name"];

@@ -340,6 +340,8 @@ NSInteger requestTries = 0;
                             
                             JPLog(@"got stories AND session in %f seconds.", fabs(requestDuration));
                             _tung.sessionId = [responseDict objectForKey:@"sessionId"];
+                            // TODO: remove before release
+                            NSLog(@"session id: %@", _tung.sessionId);
                             _tung.connectionAvailable = [NSNumber numberWithBool:YES];
                             // check if data needs syncing
                             UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
