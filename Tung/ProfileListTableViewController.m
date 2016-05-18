@@ -42,6 +42,7 @@ CGFloat screenWidth;
     _navController = self.navigationController;
     
     // navigation title
+    
     self.navigationItem.title = _queryType;
     
     // table view

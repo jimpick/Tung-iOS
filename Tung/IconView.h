@@ -14,6 +14,7 @@ typedef enum {
     kIconTypeSave,
     kIconTypeQueue,
     kIconTypeRecommend,
+    kIconTypeTinyRecommend,
     kIconTypeSubscribe,
     kIconTypeComment,
     kIconTypeClip,

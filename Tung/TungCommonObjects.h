@@ -128,12 +128,6 @@
 // feed related
 - (void) checkFeedLastFetchedTime;
 
-// twitter
-- (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url;
-
-// facebook
-- (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity;
-
 // flags
 @property (strong, nonatomic) NSNumber *feedNeedsRefresh;
 @property (strong, nonatomic) NSNumber *feedNeedsRefetch;
@@ -178,8 +172,6 @@
 // requests
 - (void) checkReachabilityWithCallback:(void (^)(BOOL reachable))callback;
 - (void) establishCred;
-- (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
-- (void) verifyCredWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) getSessionWithCallback:(void (^)(void))callback;
 - (void) handleUnauthorizedWithCallback:(void (^)(void))callback;
 // stories post requests
@@ -204,6 +196,15 @@
 - (void) followAllUsersWithCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) inviteFriends:(NSString *)friends;
 - (void) signOut;
+
+// twitter
+- (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url;
+- (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+- (void) findFriendsForUsername:(NSString *)username withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+
+// facebook
+- (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity;
+- (void) verifyCredWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 
 // alerts
 - (void) promptForNotificationsForEpisodes;

@@ -62,8 +62,8 @@
     if (self = [super init]) {
         
         _sessionId = @"";
-        _apiRootUrl = @"https://api.tung.fm/";
-        //_apiRootUrl = @"https://staging-api.tung.fm/";
+        //_apiRootUrl = @"https://api.tung.fm/";
+        _apiRootUrl = @"https://staging-api.tung.fm/";
         _tungSiteRootUrl = @"https://tung.fm/";
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
@@ -2378,75 +2378,6 @@ static NSArray *colors;
     //JPLog(@"token: %@", _tungToken);
 }
 
-- (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
-    
-    NSURL *verifyCredRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/twitter-signin.php", _apiRootUrl]];
-    NSMutableURLRequest *verifyCredRequest = [NSMutableURLRequest requestWithURL:verifyCredRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
-    [verifyCredRequest setHTTPMethod:@"POST"];
-    
-    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:headers];
-    [verifyCredRequest setHTTPBody:serializedParams];
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    [NSURLConnection sendAsynchronousRequest:verifyCredRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                //JPLog(@"Verify cred response %@", responseDict);
-                
-                if ([responseDict objectForKey:@"error"]) {
-                    JPLog(@"Error verifying cred with Twitter: %@", [responseDict objectForKey:@"error"]);
-                    callback(NO, responseDict);
-                }
-                else if ([responseDict objectForKey:@"success"]) {
-                    callback(YES, responseDict);
-                }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error. HTML: %@", html);
-                callback(NO, @{@"error": html});
-            }
-        });
-    }];
-
-}
-
-- (void) verifyCredWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
-    
-    NSURL *verifyCredRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/facebook-signin.php", _apiRootUrl]];
-    NSMutableURLRequest *verifyCredRequest = [NSMutableURLRequest requestWithURL:verifyCredRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
-    [verifyCredRequest setHTTPMethod:@"POST"];
-    NSDictionary *params = @{ @"accessToken": token };
-    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
-    [verifyCredRequest setHTTPBody:serializedParams];
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    [NSURLConnection sendAsynchronousRequest:verifyCredRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                //JPLog(@"Verify cred response %@", responseDict);
-                if ([responseDict objectForKey:@"error"]) {
-                    JPLog(@"Error verifying cred with FB: %@", [responseDict objectForKey:@"error"]);
-                    
-                    callback(NO, responseDict);
-                }
-                else if ([responseDict objectForKey:@"success"]) {
-                    callback(YES, responseDict);
-                }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error. HTML: %@", html);
-                callback(NO, @{@"error": html});
-            }
-        });
-    }];
-}
-
 // all requests require a session ID instead of credentials
 // start here and get session with credentials
 - (void) getSessionWithCallback:(void (^)(void))callback {
@@ -3934,6 +3865,90 @@ static NSArray *colors;
 
 #pragma mark - Twitter
 
+- (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+    
+    NSURL *verifyCredRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/twitter-signin.php", _apiRootUrl]];
+    NSMutableURLRequest *verifyCredRequest = [NSMutableURLRequest requestWithURL:verifyCredRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [verifyCredRequest setHTTPMethod:@"POST"];
+    
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:headers];
+    [verifyCredRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:verifyCredRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                //JPLog(@"Verify cred response %@", responseDict);
+                
+                if ([responseDict objectForKey:@"error"]) {
+                    JPLog(@"Error verifying cred with Twitter: %@", [responseDict objectForKey:@"error"]);
+                    callback(NO, responseDict);
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    callback(YES, responseDict);
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                JPLog(@"Error. HTML: %@", html);
+                callback(NO, @{@"error": html});
+            }
+        });
+    }];
+}
+
+- (void) findFriendsForUsername:(NSString *)username withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+    
+    // get auth headers for friends/ids endpoint:
+    TWTROAuthSigning *oauthSigning = [[TWTROAuthSigning alloc] initWithAuthConfig:[Twitter sharedInstance].authConfig authSession:[Twitter sharedInstance].session];
+    NSString *endpoint = @"https://api.twitter.com/1.1/friends/ids.json";
+    NSDictionary *parameters = @{
+                                 @"cursor": @"-1",
+                                 @"screen_name": username,
+                                 @"count": @"5000",
+                                 @"stringify_ids": @"true"
+                                 };
+    NSError *error;
+    NSDictionary *authHeaders = [oauthSigning OAuthEchoHeadersForRequestMethod:@"GET" URLString:endpoint parameters:parameters error:&error];
+    
+    NSURL *findFriendsRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/find-twitter-friends.php", _apiRootUrl]];
+    NSMutableURLRequest *findFriendsRequest = [NSMutableURLRequest requestWithURL:findFriendsRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [findFriendsRequest setHTTPMethod:@"POST"];
+    
+    NSMutableDictionary *params = [NSMutableDictionary dictionaryWithDictionary:authHeaders];
+    [params setObject:username forKey:@"screen_name"];
+    
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [findFriendsRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:findFriendsRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                //JPLog(@"Verify cred response %@", responseDict);
+                
+                if ([responseDict objectForKey:@"error"]) {
+                    JPLog(@"Error verifying cred with Twitter (%@): %@", [responseDict objectForKey:@"twitterStatusCode"], [responseDict objectForKey:@"error"]);
+                    NSLog(@"responseDict: %@", responseDict);
+                    callback(NO, responseDict);
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    callback(YES, responseDict);
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                JPLog(@"Error. HTML: %@", html);
+                callback(NO, @{@"error": html});
+            }
+        });
+    }];
+}
+
 // post tweet
 - (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url {
     
@@ -3969,7 +3984,42 @@ static NSArray *colors;
     
 }
 
-#pragma mark - Facebook sharing and share delegate methods
+#pragma mark - Facebook
+
+
+- (void) verifyCredWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+    
+    NSURL *verifyCredRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/facebook-signin.php", _apiRootUrl]];
+    NSMutableURLRequest *verifyCredRequest = [NSMutableURLRequest requestWithURL:verifyCredRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [verifyCredRequest setHTTPMethod:@"POST"];
+    NSDictionary *params = @{ @"accessToken": token };
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [verifyCredRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:verifyCredRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                //JPLog(@"Verify cred response %@", responseDict);
+                if ([responseDict objectForKey:@"error"]) {
+                    JPLog(@"Error verifying cred with FB: %@", [responseDict objectForKey:@"error"]);
+                    
+                    callback(NO, responseDict);
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    callback(YES, responseDict);
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                JPLog(@"Error. HTML: %@", html);
+                callback(NO, @{@"error": html});
+            }
+        });
+    }];
+}
 
 - (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity {
     

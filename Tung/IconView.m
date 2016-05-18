@@ -43,6 +43,9 @@
             case kIconTypeRecommend:
                 [TungPodcastStyleKit drawRecommendIconWithFrame:rect color:_color];
                 break;
+            case kIconTypeTinyRecommend:
+                [TungPodcastStyleKit drawTinyRecommendIconWithFrame:rect color:_color];
+                break;
             case kIconTypeSave:
                 [TungPodcastStyleKit drawSaveIconWithFrame:rect color:_color];
                 break;

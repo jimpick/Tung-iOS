@@ -8,6 +8,9 @@
 
 #import "SuggestedUsersTableViewController.h"
 #import "SuggestedUserCell.h"
+#import "ProfileListTableViewController.h"
+
+#define NUM_REQUIRED_FOLLOWS 2
 
 @interface SuggestedUsersTableViewController ()
 
@@ -29,14 +32,14 @@
     //titleLabel.backgroundColor = [UIColor clearColor];
     titleLabel.textColor = [TungCommonObjects tungColor];
     titleLabel.font = [UIFont boldSystemFontOfSize:20];
-    titleLabel.text = @"Follow 5";
+    titleLabel.text = [NSString stringWithFormat:@"Follow %d", NUM_REQUIRED_FOLLOWS];
     [titleLabel sizeToFit];
     
     _subtitleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 22, 0, 0)];
     //subTitleLabel.backgroundColor = [UIColor clearColor];
     _subtitleLabel.textColor = [UIColor grayColor];
     _subtitleLabel.font = [UIFont systemFontOfSize:12];
-    _subtitleLabel.text = @"5 remaining";
+    _subtitleLabel.text = [NSString stringWithFormat:@"%d remaining", NUM_REQUIRED_FOLLOWS];
     [_subtitleLabel sizeToFit];
     
     UIView *twoLineTitleView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, MAX(_subtitleLabel.frame.size.width, titleLabel.frame.size.width), 30)];
@@ -58,7 +61,7 @@
     self.navigationItem.titleView = twoLineTitleView;
     
     // right bar button item
-    _proceedButton = [[UIBarButtonItem alloc] initWithTitle:@"Next" style:UIBarButtonItemStyleDone target:self action:@selector(checkForPlatformFriends)];
+    _proceedButton = [[UIBarButtonItem alloc] initWithTitle:@"Next" style:UIBarButtonItemStyleDone target:self action:@selector(proceedToNextView)];
     
     
     // table view
@@ -127,6 +130,9 @@
                         [self preloadAlbumArtForSuggestedUsers];
                         [self.tableView reloadData];
                         
+                        // see if user should proceed to platform friends or finsish
+                        [self checkForPlatformFriends];
+                        
                     });
                 }
             }
@@ -190,7 +196,7 @@
     [btn setNeedsDisplay];
     
     // update subtitle
-    NSInteger result = 5 - _usersToFollow.count;
+    NSInteger result = NUM_REQUIRED_FOLLOWS - _usersToFollow.count;
     if (result <= 0) {
         result = 0;
         self.navigationItem.rightBarButtonItem = _proceedButton;
@@ -201,11 +207,49 @@
     //NSLog(@"%@", _usersToFollow);
 }
 
-// see if user has any friends on tung from the service they signed up with. (do this in verifyCred request?)
-// then if they do, show them, else go to finish signup.
+// see if user has any friends on tung from the service they signed up with.
 - (void) checkForPlatformFriends {
     NSLog(@"check for platform friends");
     [_proceedButton setEnabled:NO];
+    
+    if ([_profileData objectForKey:@"twitter_id"]) {
+        
+        [_tung findFriendsForUsername:[_profileData objectForKey:@"twitter_username"] withCallback:^(BOOL success, NSDictionary *responseDict) {
+            if (success) {
+                NSLog(@"responseDict: %@", responseDict);
+                NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
+                if ([platformFriendsCount integerValue] > 0) {
+                    [_profileData setObject:[responseDict objectForKey:@"results"] forKey:@"twitterFriends"];
+                }
+            }
+        }];
+        
+    }
+    else if ([_profileData objectForKey:@"facebook_id"]) {
+        
+    }
+    
+}
+
+- (void) proceedToNextView {
+    
+    if ([_profileData objectForKey:@"twitterFriends"] || [_profileData objectForKey:@"facebookFriends"]) {
+        ProfileListTableViewController *profileListView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
+        profileListView.queryType = @"platformFriends";
+        if ([_profileData objectForKey:@"twitterFriends"]) {
+            profileListView.profileArray = [_profileData objectForKey:@"twitterFriends"];
+            [_profileData removeObjectForKey:@"twitterFriends"];
+        }
+        else if ([_profileData objectForKey:@"facebookFriends"]) {
+            profileListView.profileArray = [_profileData objectForKey:@"facebookFriends"];
+            [_profileData removeObjectForKey:@"facebookFriends"];
+        }
+        profileListView.profileData = _profileData;
+        [self.navigationController pushViewController:profileListView animated:YES];
+    }
+    else {
+        // finish sign-up
+    }
     
 }
 
@@ -259,7 +303,7 @@
     [cell.followBtn addTarget:self action:@selector(followOrUnfollowUser:) forControlEvents:UIControlEventTouchUpInside];
     
     // recommended podcasts
-    cell.iconView.type = kIconTypeRecommend;
+    cell.iconView.type = kIconTypeTinyRecommend;
     [cell.iconView setNeedsDisplay];
     NSString *firstNameUpper = [[[[userDict objectForKey:@"name"] componentsSeparatedByString:@" "] objectAtIndex:0] uppercaseString];
     cell.mostReccdLabel.text = [NSString stringWithFormat:@"MOST RECOMMENDED BY %@", firstNameUpper];
@@ -308,6 +352,7 @@
         [_profileData setValue:[_usersToFollow componentsJoinedByString:@", "] forKey:@"usersToFollow"];
         // set value
         [destination setValue:_profileData forKey:@"profileData"];
+        [destination setValue:@"platformFriends" forKey:@"queryType"];
     }
 }
 

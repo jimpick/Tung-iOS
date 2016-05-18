@@ -13,6 +13,7 @@
 @property (strong, nonatomic) NSString *queryType; // default is search 
 @property (strong, nonatomic) NSString *target_id;
 
+@property (strong, nonatomic) NSMutableDictionary *profileData; // used only for platform friends query
 
 @property (strong, nonatomic) NSMutableArray *profileArray;
 @property (nonatomic, assign) BOOL requestingMore;

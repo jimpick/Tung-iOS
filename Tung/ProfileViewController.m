@@ -65,7 +65,7 @@ CGFloat screenWidth;
         _isLoggedInUser = YES;
         self.navigationItem.title = @"My Profile";
         
-        // sign out button
+        // settings button
         IconButton *settingsInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
         settingsInner.type = kIconButtonTypeSettings;
         settingsInner.color = [TungCommonObjects tungColor];

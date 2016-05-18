@@ -162,7 +162,7 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     
     // id method
     NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
-    NSLog(@"story dict: %@", storyDict);
+    //NSLog(@"story dict: %@", storyDict);
     NSDictionary *episodeMiniDict = [storyDict objectForKey:@"episode"];
     
     EpisodeViewController *episodeView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"episodeView"];
