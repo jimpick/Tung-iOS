@@ -527,7 +527,7 @@
         <!--Finish Sign Up Controller-->
         <scene sceneID="4O6-mp-O2P">
             <objects>
-                <viewController id="Hcj-BH-u4k" customClass="FinishSignUpController" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="finishSignup" id="Hcj-BH-u4k" customClass="FinishSignUpController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="3nh-RU-leR"/>
                         <viewControllerLayoutGuide type="bottom" id="chs-c1-eI6"/>
@@ -601,7 +601,7 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="fvm-47-7rl" userLabel="First Responder" sceneMemberID="firstResponder"/>
                 <exit id="Cnf-Bh-DVb" userLabel="Exit" sceneMemberID="exit"/>
             </objects>
-            <point key="canvasLocation" x="1604" y="-612"/>
+            <point key="canvasLocation" x="1532" y="-612"/>
         </scene>
         <!--Browser View Controller-->
         <scene sceneID="dxw-z0-OqQ">
@@ -678,7 +678,7 @@
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="zog-rL-TSB" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="2007" y="-611"/>
+            <point key="canvasLocation" x="2086" y="-611"/>
         </scene>
         <!--Main Tab Bar Controller-->
         <scene sceneID="569-0C-RGH">
@@ -1614,6 +1614,14 @@
                                                 <constraint firstAttribute="width" secondItem="6rG-cY-dBT" secondAttribute="height" id="qhz-1p-Wxh"/>
                                             </constraints>
                                         </view>
+                                        <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="Vxp-oQ-Bzc" customClass="IconView">
+                                            <rect key="frame" x="64" y="39" width="24" height="24"/>
+                                            <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
+                                            <constraints>
+                                                <constraint firstAttribute="width" constant="24" id="WRM-mb-2UE"/>
+                                                <constraint firstAttribute="height" constant="24" id="xmD-eq-xze"/>
+                                            </constraints>
+                                        </view>
                                     </subviews>
                                     <constraints>
                                         <constraint firstItem="NHB-yv-L9E" firstAttribute="leading" secondItem="awN-d7-UhQ" secondAttribute="trailing" constant="8" id="7Wj-Uh-VKr"/>
@@ -1621,7 +1629,9 @@
                                         <constraint firstItem="6rG-cY-dBT" firstAttribute="centerY" secondItem="egE-85-oVJ" secondAttribute="centerY" id="FFi-um-afo"/>
                                         <constraint firstItem="vYB-P1-iEw" firstAttribute="top" secondItem="egE-85-oVJ" secondAttribute="top" constant="12" id="Iep-xs-hmm"/>
                                         <constraint firstItem="vYB-P1-iEw" firstAttribute="leading" secondItem="egE-85-oVJ" secondAttribute="leading" constant="13" id="KtK-Ej-12e"/>
+                                        <constraint firstItem="Vxp-oQ-Bzc" firstAttribute="top" secondItem="FiF-Ch-GR5" secondAttribute="bottom" id="Ldh-Jy-AZ2"/>
                                         <constraint firstAttribute="trailing" secondItem="NHB-yv-L9E" secondAttribute="trailing" id="NQE-QQ-teo"/>
+                                        <constraint firstItem="Vxp-oQ-Bzc" firstAttribute="leading" secondItem="6rG-cY-dBT" secondAttribute="trailing" constant="5" id="PIb-hz-fsx"/>
                                         <constraint firstAttribute="trailing" secondItem="bOY-Ik-iOH" secondAttribute="trailing" constant="29" id="SnH-PY-ITo"/>
                                         <constraint firstItem="6rG-cY-dBT" firstAttribute="leading" secondItem="egE-85-oVJ" secondAttribute="leading" constant="13" id="V6U-8X-XMp"/>
                                         <constraint firstItem="NHB-yv-L9E" firstAttribute="centerY" secondItem="egE-85-oVJ" secondAttribute="centerY" id="Xqe-JT-Bbe"/>
@@ -1641,6 +1651,7 @@
                                     <outlet property="avatarContainerView" destination="6rG-cY-dBT" id="1by-oD-V7k"/>
                                     <outlet property="followBtn" destination="NHB-yv-L9E" id="uLc-in-Sgu"/>
                                     <outlet property="iconView" destination="L6L-E9-gyT" id="wCl-HQ-10R"/>
+                                    <outlet property="smallIconView" destination="Vxp-oQ-Bzc" id="EUJ-Yw-5IW"/>
                                     <outlet property="subLabel" destination="awN-d7-UhQ" id="nqb-lL-BWM"/>
                                     <outlet property="subLabelLeadingConstraint" destination="iNE-7e-SNa" id="yvQ-s4-dIr"/>
                                     <outlet property="usernameLabel" destination="FiF-Ch-GR5" id="LeP-Jl-m1l"/>
@@ -1832,6 +1843,6 @@
         <image name="tungSignInLogo.png" width="194" height="124"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="09H-aj-Zdd"/>
+        <segue reference="pGF-82-xjV"/>
     </inferredMetricsTieBreakers>
 </document>

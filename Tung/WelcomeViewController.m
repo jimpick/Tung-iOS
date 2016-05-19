@@ -181,13 +181,15 @@
                         JPLog(@"user exists. signing in...");
                         _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                         _tung.connectionAvailable = [NSNumber numberWithBool:YES];
+                        // TODO: remove before release
+                        NSLog(@"session id: %@", _tung.sessionId);
                         UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
                         //JPLog(@"logged in user: %@", [TungCommonObjects entityToDict:loggedUser]);
                         NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
                         
-                        JPLog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
+                        //JPLog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
                         if (lastDataChange.floatValue > loggedUser.lastDataChange.floatValue) {
-                            JPLog(@"needs restore. ");
+                            //JPLog(@"needs restore. ");
                             [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
                         }
                         

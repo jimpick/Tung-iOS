@@ -200,7 +200,7 @@
 // twitter
 - (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url;
 - (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
-- (void) findFriendsForUsername:(NSString *)username withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+- (void) findTwitterFriendsForUsername:(NSString *)username page:(NSString *)page withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 
 // facebook
 - (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity;

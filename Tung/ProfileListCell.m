@@ -15,6 +15,9 @@
 - (void)awakeFromNib {
     // Initialization code
     _tung = [TungCommonObjects establishTungObjects];
+    
+    _followBtn.type = kPillTypeFollow;
+    _followBtn.backgroundColor = [UIColor clearColor];
 }
 
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated {
@@ -27,33 +30,51 @@
     
     PillButton *btn = (PillButton *)sender;
     ProfileListCell *cell = (ProfileListCell *)[[sender superview] superview];
-    NSString *userId = [cell.profileDict objectForKey:@"id"];
     
-    if (btn.on) {
-        // unfollow
-        [_tung unfollowUserWithId:userId withCallback:^(BOOL success) {
-            if (!success) {// fail
-                btn.on = YES;
-                [btn setNeedsDisplay];
+    if (_forOnboarding) {
+        
+        if (btn.on) {
+            // unfollow
+            [cell.usersToFollow removeObject:cell.userId];
+        }
+        else {
+            // follow
+            if (![_usersToFollow containsObject:cell.userId]) {
+                [_usersToFollow addObject:cell.userId];
             }
-            else {
-                _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
-            }
-        }];
+        }
     }
     else {
-        // follow
-        [_tung followUserWithId:userId withCallback:^(BOOL success) {
-            if (!success) {// fail
-                btn.on = NO;
-                [btn setNeedsDisplay];
-            }
-            else {
-                _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
-            }
-        }];
+    
+        
+        if (btn.on) {
+            // unfollow
+            [_tung unfollowUserWithId:cell.userId withCallback:^(BOOL success) {
+                if (success) {
+                    _tung.feedNeedsRefetch = [NSNumber numberWithBool:YES]; // following changed
+                    _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
+                }
+                else {
+                    btn.on = YES;
+                    [btn setNeedsDisplay];
+                }
+            }];
+        }
+        else {
+            // follow
+            [_tung followUserWithId:cell.userId withCallback:^(BOOL success) {
+                if (success) {
+                    _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
+                    _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES]; // following changed
+                }
+                else {
+                    btn.on = NO;
+                    [btn setNeedsDisplay];
+                }
+            }];
+        }
     }
-    // GUI
+    
     btn.on = !btn.on;
     [btn setNeedsDisplay];
 }

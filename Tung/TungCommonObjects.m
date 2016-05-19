@@ -3632,7 +3632,7 @@ static NSArray *colors;
 }
 
 - (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback {
-    //JPLog(@"follow user with id: %@", target_id);
+    JPLog(@"follow user with id: %@", target_id);
     NSURL *followUserRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/follow.php", _apiRootUrl]];
     NSMutableURLRequest *followUserRequest = [NSMutableURLRequest requestWithURL:followUserRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [followUserRequest setHTTPMethod:@"POST"];
@@ -3647,10 +3647,10 @@ static NSArray *colors;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
+                    //NSLog(@"follow user response: %@", responseDict);
                     if ([responseDict objectForKey:@"error"]) {
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                             // get new session and re-request
-                            JPLog(@"SESSION EXPIRED");
                             [self getSessionWithCallback:^{
                                 [self followUserWithId:target_id withCallback:^(BOOL success) {
                                     callback(success);
@@ -3667,22 +3667,23 @@ static NSArray *colors;
                     }
                 }
                 else {
+                    callback(NO);
+                    JPLog(@"Error following user: %@", error.localizedDescription);
                     NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
                     JPLog(@"HTML: %@", html);
-                    callback(NO);
                 }
             });
         }
         else {
             JPLog(@"Error following user: %@", error.localizedDescription);
             callback(NO);
-            [self simpleErrorAlertWithMessage:error.localizedDescription];
+            //[self simpleErrorAlertWithMessage:error.localizedDescription];
         }
     }];
     
 }
 - (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback {
-    //JPLog(@"UN-follow user with id: %@", target_id);
+    JPLog(@"UN-follow user with id: %@", target_id);
     NSURL *unfollowUserRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/unfollow.php", _apiRootUrl]];
     NSMutableURLRequest *unfollowUserRequest = [NSMutableURLRequest requestWithURL:unfollowUserRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [unfollowUserRequest setHTTPMethod:@"POST"];
@@ -3697,10 +3698,10 @@ static NSArray *colors;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
+                    //NSLog(@"unfollow request response: %@", responseDict);
                     if ([responseDict objectForKey:@"error"]) {
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                             // get new session and re-request
-                            JPLog(@"SESSION EXPIRED");
                             [self getSessionWithCallback:^{
                                 [self unfollowUserWithId:target_id withCallback:^(BOOL success) {
                                     callback(success);
@@ -3717,8 +3718,6 @@ static NSArray *colors;
                     }
                 }
                 else {
-                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                    JPLog(@"HTML: %@", html);
                     callback(NO);
                 }
             });
@@ -3726,7 +3725,7 @@ static NSArray *colors;
         else {
             JPLog(@"Error un-following user: %@", error.localizedDescription);
             callback(NO);
-            [self simpleErrorAlertWithMessage:error.localizedDescription];
+            //[self simpleErrorAlertWithMessage:error.localizedDescription];
         }
     }];
 }
@@ -3899,7 +3898,7 @@ static NSArray *colors;
     }];
 }
 
-- (void) findFriendsForUsername:(NSString *)username withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+- (void) findTwitterFriendsForUsername:(NSString *)username page:(NSString *)page withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
     
     // get auth headers for friends/ids endpoint:
     TWTROAuthSigning *oauthSigning = [[TWTROAuthSigning alloc] initWithAuthConfig:[Twitter sharedInstance].authConfig authSession:[Twitter sharedInstance].session];
@@ -3919,6 +3918,7 @@ static NSArray *colors;
     
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithDictionary:authHeaders];
     [params setObject:username forKey:@"screen_name"];
+    [params setObject:page forKey:@"page"];
     
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [findFriendsRequest setHTTPBody:serializedParams];
@@ -4094,6 +4094,11 @@ static NSArray *colors;
 - (void) promptForNotificationsForEpisodes {
 
     UIAlertController *notifPermissionAlert = [UIAlertController alertControllerWithTitle:@"New episodes" message:@"Tung can notify you when new episodes are released for podcasts you subscribe to, based on your preference for each podcast. Would you like to receive notifications?" preferredStyle:UIAlertControllerStyleAlert];
+    [notifPermissionAlert addAction:[UIAlertAction actionWithTitle:@"Don’t ask again" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        SettingsEntity *settings = [TungCommonObjects settings];
+        settings.hasSeenNewEpisodesPrompt = [NSNumber numberWithBool:YES];
+        [TungCommonObjects saveContextWithReason:@"settings changed"];
+    }]];
     [notifPermissionAlert addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:nil]];
     [notifPermissionAlert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         SettingsEntity *settings = [TungCommonObjects settings];
@@ -4103,13 +4108,18 @@ static NSArray *colors;
         [[UIApplication sharedApplication] registerForRemoteNotifications];
         [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
     }]];
-    notifPermissionAlert.preferredAction = [notifPermissionAlert.actions objectAtIndex:1];
+    notifPermissionAlert.preferredAction = [notifPermissionAlert.actions objectAtIndex:2];
     [_viewController presentViewController:notifPermissionAlert animated:YES completion:nil];
 }
 
 - (void) promptForNotificationsForMentions {
     
     UIAlertController *notifPermissionAlert = [UIAlertController alertControllerWithTitle:@"User mentions" message:@"Tung can notify you when someone mentions you in a comment, or when new episodes are released for podcasts you subscribe to. Would you like to receive notifications?" preferredStyle:UIAlertControllerStyleAlert];
+    [notifPermissionAlert addAction:[UIAlertAction actionWithTitle:@"Don’t ask again" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        SettingsEntity *settings = [TungCommonObjects settings];
+        settings.hasSeenMentionsPrompt = [NSNumber numberWithBool:YES];
+        [TungCommonObjects saveContextWithReason:@"settings changed"];
+    }]];
     [notifPermissionAlert addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:nil]];
     [notifPermissionAlert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         SettingsEntity *settings = [TungCommonObjects settings];
@@ -4119,7 +4129,7 @@ static NSArray *colors;
         [[UIApplication sharedApplication] registerForRemoteNotifications];
         [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
     }]];
-    notifPermissionAlert.preferredAction = [notifPermissionAlert.actions objectAtIndex:1];
+    notifPermissionAlert.preferredAction = [notifPermissionAlert.actions objectAtIndex:2];
     [_viewController presentViewController:notifPermissionAlert animated:YES completion:nil];
 }
 

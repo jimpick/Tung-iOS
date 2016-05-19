@@ -12,6 +12,7 @@
 @interface FinishSignUpController : UIViewController <UIWebViewDelegate>
 
 @property (strong, nonatomic) NSMutableDictionary *profileData;
+@property (strong, nonatomic) NSMutableArray *usersToFollow;
 @property (strong, nonatomic) IBOutlet UIWebView *termsNoticeWebView;
 @property (strong, nonatomic) IBOutlet UIActivityIndicatorView *activityIndicator;
 @property (strong, nonatomic) IBOutlet PillButton *signUpButton;

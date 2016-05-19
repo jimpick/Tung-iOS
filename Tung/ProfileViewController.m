@@ -88,6 +88,7 @@ CGFloat screenWidth;
         _profileSearchView.tableView.backgroundView = nil;
         _profileSearchView.navController = [self navigationController];
         _profileSearchView.profileArray = [NSMutableArray array];
+        //_profileSearchView.queryType = @"Search";
         
         _searchController = [[UISearchController alloc] initWithSearchResultsController:_profileSearchView];
         _searchController.delegate = self;

@@ -9,6 +9,7 @@
 #import "SuggestedUsersTableViewController.h"
 #import "SuggestedUserCell.h"
 #import "ProfileListTableViewController.h"
+#import "FinishSignUpController.h"
 
 #define NUM_REQUIRED_FOLLOWS 2
 
@@ -16,7 +17,7 @@
 
 @property NSMutableArray *usersToFollow;
 @property UILabel *subtitleLabel;
-@property UIBarButtonItem *proceedButton;
+@property BOOL okayToProceed;
 
 @end
 
@@ -61,7 +62,7 @@
     self.navigationItem.titleView = twoLineTitleView;
     
     // right bar button item
-    _proceedButton = [[UIBarButtonItem alloc] initWithTitle:@"Next" style:UIBarButtonItemStyleDone target:self action:@selector(proceedToNextView)];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Next" style:UIBarButtonItemStyleDone target:self action:@selector(proceedToNextView)];
     
     
     // table view
@@ -86,6 +87,10 @@
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
+}
+- (BOOL)prefersStatusBarHidden
+{
+    return YES;
 }
 
 // get suggested users and optionally bust cached result
@@ -199,9 +204,9 @@
     NSInteger result = NUM_REQUIRED_FOLLOWS - _usersToFollow.count;
     if (result <= 0) {
         result = 0;
-        self.navigationItem.rightBarButtonItem = _proceedButton;
+        _okayToProceed = YES;
     } else {
-        self.navigationItem.rightBarButtonItem = nil;
+        _okayToProceed = NO;
     }
     _subtitleLabel.text = [NSString stringWithFormat:@"%ld remaining", (long)result];
     //NSLog(@"%@", _usersToFollow);
@@ -210,11 +215,10 @@
 // see if user has any friends on tung from the service they signed up with.
 - (void) checkForPlatformFriends {
     NSLog(@"check for platform friends");
-    [_proceedButton setEnabled:NO];
     
     if ([_profileData objectForKey:@"twitter_id"]) {
         
-        [_tung findFriendsForUsername:[_profileData objectForKey:@"twitter_username"] withCallback:^(BOOL success, NSDictionary *responseDict) {
+        [_tung findTwitterFriendsForUsername:[_profileData objectForKey:@"twitter_username"] page:@"0" withCallback:^(BOOL success, NSDictionary *responseDict) {
             if (success) {
                 NSLog(@"responseDict: %@", responseDict);
                 NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
@@ -233,22 +237,29 @@
 
 - (void) proceedToNextView {
     
-    if ([_profileData objectForKey:@"twitterFriends"] || [_profileData objectForKey:@"facebookFriends"]) {
-        ProfileListTableViewController *profileListView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
-        profileListView.queryType = @"platformFriends";
-        if ([_profileData objectForKey:@"twitterFriends"]) {
-            profileListView.profileArray = [_profileData objectForKey:@"twitterFriends"];
-            [_profileData removeObjectForKey:@"twitterFriends"];
+    if (_okayToProceed) {
+    
+        if ([_profileData objectForKey:@"twitterFriends"] || [_profileData objectForKey:@"facebookFriends"]) {
+            // platform friends
+            ProfileListTableViewController *profileListView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
+            profileListView.profileData = _profileData;
+            profileListView.usersToFollow = _usersToFollow;
+            [self.navigationController pushViewController:profileListView animated:YES];
         }
-        else if ([_profileData objectForKey:@"facebookFriends"]) {
-            profileListView.profileArray = [_profileData objectForKey:@"facebookFriends"];
-            [_profileData removeObjectForKey:@"facebookFriends"];
+        else {
+            // finish sign-up
+            FinishSignUpController *finishView = [self.storyboard instantiateViewControllerWithIdentifier:@"finishSignup"];
+            finishView.profileData = _profileData;
+            finishView.usersToFollow = _usersToFollow;
+            [self.navigationController pushViewController:finishView animated:YES];
         }
-        profileListView.profileData = _profileData;
-        [self.navigationController pushViewController:profileListView animated:YES];
     }
     else {
-        // finish sign-up
+        // user needs to follow at least X people
+        UIAlertController *followMoreAlert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:@"Follow %d", NUM_REQUIRED_FOLLOWS] message:[NSString stringWithFormat:@"Please follow at least %d accounts by tapping the \"Follow\" buttons before proceeding.", NUM_REQUIRED_FOLLOWS] preferredStyle:UIAlertControllerStyleAlert];
+        [followMoreAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:followMoreAlert animated:YES completion:nil];
+        
     }
     
 }
@@ -345,15 +356,14 @@
 
 // In a storyboard-based application, you will often want to do a little preparation before navigation
 - (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    UIViewController *destination = segue.destinationViewController;
+//    UIViewController *destination = segue.destinationViewController;
     
-    if ([[segue identifier] isEqualToString:@"proceedToPlatformFriends"]) {
-        // update profileData
-        [_profileData setValue:[_usersToFollow componentsJoinedByString:@", "] forKey:@"usersToFollow"];
-        // set value
-        [destination setValue:_profileData forKey:@"profileData"];
-        [destination setValue:@"platformFriends" forKey:@"queryType"];
-    }
+//    if ([[segue identifier] isEqualToString:@""]) {
+//        // update profileData
+//        [_profileData setValue:[_usersToFollow componentsJoinedByString:@", "] forKey:@"usersToFollow"];
+//        // set value
+//        [destination setValue:_profileData forKey:@"profileData"];
+//    }
 }
 
 @end

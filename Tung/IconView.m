@@ -67,6 +67,12 @@
             case kIconTypeProfile:
                 [TungPodcastStyleKit drawProfileIconWithFrame:rect color:_color];
                 break;
+            case kIconTypeTwitter:
+                [TungPodcastStyleKit drawTwitterIconWithFrame:rect color:_color];
+                break;
+            case kIconTypeFacebook:
+                [TungPodcastStyleKit drawFacebookIconWithFrame:rect color:_color];
+                break;
             default:
                 break;
         }

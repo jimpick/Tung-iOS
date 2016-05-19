@@ -12,6 +12,7 @@
 #import "ProfileViewController.h"
 #import "EpisodeViewController.h"
 #import "JPLogRecorder.h"
+#import "FinishSignUpController.h"
 
 @interface ProfileListTableViewController ()
 
@@ -23,8 +24,6 @@
 
 @end
 
-CGFloat screenWidth;
-
 @implementation ProfileListTableViewController
 
 - (void)viewDidLoad {
@@ -33,17 +32,59 @@ CGFloat screenWidth;
     _tung = [TungCommonObjects establishTungObjects];
     _tung.viewController = self;
     
-    screenWidth = self.view.frame.size.width;
+    if (_tung.screenWidth == 0.0f) {
+        _tung.screenWidth = self.view.frame.size.width;
+    }
     
     // default target
     if (_target_id == NULL) _target_id = _tung.tungId;
     
-    // default nav controller (can get overwritten)
+    // default nav controller
     _navController = self.navigationController;
     
     // navigation title
+    if (_queryType) {
+    	self.navigationItem.title = _queryType;
+    }
+    // onboarding: platform friends
+    else if (_profileData && _usersToFollow) {
+        
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Next" style:UIBarButtonItemStyleDone target:self action:@selector(finishSignUp)];
+        self.tableView.allowsSelection = NO;
+        
+        if ([_profileData objectForKey:@"twitterFriends"]) {
+            _socialPlatform = @"Twitter";
+            _profileArray = [NSMutableArray arrayWithArray:[_profileData objectForKey:@"twitterFriends"]];
+            [_profileData removeObjectForKey:@"twitterFriends"];
+        }
+        else if ([_profileData objectForKey:@"facebookFriends"]) {
+            _socialPlatform = @"Facebook";
+            _profileArray = [NSMutableArray arrayWithArray:[_profileData objectForKey:@"facebookFriends"]];
+            [_profileData removeObjectForKey:@"facebookFriends"];
+        }
+        [self preloadAvatars];
+        // load up usersToFollow with profileArray ids
+        for (int i = 0; i < _profileArray.count; i++) {
+            NSString *userId = [[[_profileArray objectAtIndex:i] objectForKey:@"_id"] objectForKey:@"$id"];
+            if (![_usersToFollow containsObject:userId]) {
+            	[_usersToFollow addObject:userId];
+            }
+        }
+    }
     
-    self.navigationItem.title = _queryType;
+    // social platform friends
+    if (_socialPlatform) {
+        if ([_socialPlatform isEqualToString:@"Twitter"]) {
+            
+            self.navigationItem.title = @"Twitter Friends";
+            [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects twitterColor] }];
+        }
+        else if ([_socialPlatform isEqualToString:@"Facebook"]) {
+            self.navigationItem.title = @"Facebook Friends";
+            [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects facebookColor] }];
+            
+        }
+    }
     
     // table view
     UIActivityIndicatorView *spinnerBehindTable = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
@@ -56,7 +97,6 @@ CGFloat screenWidth;
     self.tableView.scrollsToTop = YES;
     self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 0, 0);
     self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
-    
     
     // get feed
     if (_queryType) {
@@ -72,11 +112,31 @@ CGFloat screenWidth;
         }
         [self refreshFeed];
     }
+    else if (_socialPlatform) {
+        
+        if (_profileData) {
+            // _profileArray will have been set above
+            self.tableView.backgroundView = nil;
+            [self.tableView reloadData];
+        }
+        else {
+            // fetch twitter or fb friends (for friend search)
+        }
+    }
 }
 
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.
+}
+
+- (BOOL)prefersStatusBarHidden
+{
+    if (_profileData) {
+    	return YES;
+    } else {
+        return NO;
+    }
 }
 
 // refresh feed by checking or newer items or getting all items
@@ -124,7 +184,7 @@ CGFloat screenWidth;
                              @"target_id": target_id,
                              @"newerThan": afterTime,
                              @"olderThan": beforeTime};
-    //JPLog(@"get profile list with params: %@", params);
+    JPLog(@"get profile list with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [getProfileListRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -294,6 +354,15 @@ CGFloat screenWidth;
     }
 }
 
+- (void) finishSignUp {
+    if (_profileData && _usersToFollow) {
+        FinishSignUpController *finishView = [self.storyboard instantiateViewControllerWithIdentifier:@"finishSignup"];
+        finishView.profileData = _profileData;
+        finishView.usersToFollow = _usersToFollow;
+        [self.navigationController pushViewController:finishView animated:YES];
+    }
+}
+
 - (void) tableCellButtonTapped:(id)sender {
     long tag = [sender tag];
     ProfileListCell* cell = (ProfileListCell*)[[sender superview] superview];
@@ -355,21 +424,19 @@ CGFloat screenWidth;
 }
 
 
-static NSString *profileListCellIdentifier = @"ProfileListCell";
-
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:profileListCellIdentifier];
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"ProfileListCell"];
     //JPLog(@"profile list cell for row at index path: %ld", (long)indexPath.row);
     ProfileListCell *profileCell = (ProfileListCell *)cell;
     
     // cell data
-    profileCell.profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
-    //JPLog(@"%@", profileCell.profileDict);
-    NSString *action = [profileCell.profileDict objectForKey:@"action"];
+    NSDictionary *profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
+    profileCell.userId = [[profileDict objectForKey:@"_id"] objectForKey:@"$id"];
+    //NSLog(@"%@", profileDict);
     
     // avatar
-    NSString *avatarUrlString = [profileCell.profileDict objectForKey:@"small_av_url"];
+    NSString *avatarUrlString = [profileDict objectForKey:@"small_av_url"];
     NSData *avatarImageData = [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avatarUrlString];
     profileCell.avatarContainerView.backgroundColor = [UIColor clearColor];
     profileCell.avatarContainerView.avatar = nil;
@@ -378,71 +445,109 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     [profileCell.avatarContainerView setNeedsDisplay];
     
     // username
-    profileCell.usernameLabel.text = [profileCell.profileDict objectForKey:@"username"];
-    if (screenWidth < 375) {
+    if (_tung.screenWidth < 375) {
         profileCell.usernameLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightBold];
     }
     [profileCell.avatarButton addTarget:self action:@selector(tableCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     profileCell.avatarButton.tag = 100;
     
-    // query type (sub label)
-    if ([_queryType isEqualToString:@"Notifications"]) {
+    // set username label, sub-label, icon
+    if (!_socialPlatform) {
+        
+        profileCell.usernameLabel.text = [profileDict objectForKey:@"username"];
+        NSString *action = [profileDict objectForKey:@"action"];
+        if ([_queryType isEqualToString:@"Notifications"]) {
+            
+            profileCell.subLabelLeadingConstraint.constant = 30;
+            profileCell.iconView.hidden = NO;
+            //JPLog(@"action: %@", action);
+            NSString *eventString;
+            if ([action isEqualToString:@"followed"]) {
+                profileCell.iconView.type = kIconTypeAdd;
+                eventString = @"Followed you";
+            }
+            else if ([action isEqualToString:@"mentioned"]) {
+                profileCell.iconView.type = kIconTypeComment;
+                eventString = @"Mentioned you";
+            }
+            profileCell.iconView.color = [UIColor grayColor];
+            [profileCell.iconView setNeedsDisplay];
+            profileCell.subLabel.text = eventString;
+            
+            // background color
+            NSNumber *time_secs = [profileDict objectForKey:@"time_secs"];
+            //NSLog(@"lastSeenNotification: %@, time_secs: (%ld) %@", _lastSeenNotification, (long)indexPath.row, time_secs);
+            if (time_secs.doubleValue > _lastSeenNotification.doubleValue) {
+                profileCell.backgroundColor = [TungCommonObjects lightTungColor];
+            } else {
+                profileCell.backgroundColor = [UIColor whiteColor];
+            }
+            
+        }
+        else {
+            
+            profileCell.subLabel.text = [profileDict objectForKey:@"name"];
+            profileCell.subLabelLeadingConstraint.constant = 7;
+            profileCell.iconView.hidden = YES;
+        }
+    }
+    else if (_socialPlatform) {
         
         profileCell.subLabelLeadingConstraint.constant = 30;
-        profileCell.iconView.hidden = NO;
-        //JPLog(@"action: %@", action);
-        NSString *eventString;
-        if ([action isEqualToString:@"followed"]) {
-            profileCell.iconView.type = kIconTypeAdd;
-            eventString = @"Followed you";
-        }
-        else if ([action isEqualToString:@"mentioned"]) {
-            profileCell.iconView.type = kIconTypeComment;
-            eventString = @"Mentioned you";
-        }
-        profileCell.iconView.color = [UIColor grayColor];
-        [profileCell.iconView setNeedsDisplay];
-        profileCell.subLabel.text = eventString;
+        profileCell.smallIconView.hidden = NO;
         
-        // background color
-        NSNumber *time_secs = [profileCell.profileDict objectForKey:@"time_secs"];
-        //NSLog(@"lastSeenNotification: %@, time_secs: (%ld) %@", _lastSeenNotification, (long)indexPath.row, time_secs);
-        if (time_secs.doubleValue > _lastSeenNotification.doubleValue) {
-            profileCell.backgroundColor = [TungCommonObjects lightTungColor];
-        } else {
-            profileCell.backgroundColor = [UIColor whiteColor];
+        if (_profileData) { // onboarding
+            profileCell.forOnboarding = YES;
+            profileCell.usersToFollow = _usersToFollow;
         }
         
-    }
-    else {
+        NSString *subLabel;
+        if ([_socialPlatform isEqualToString:@"Twitter"]) {
+            
+            profileCell.usernameLabel.text = [profileDict objectForKey:@"name"];
+            subLabel = [NSString stringWithFormat:@"@%@", [profileDict objectForKey:@"twitter_username"]];
+            profileCell.smallIconView.type = kIconTypeTwitter;
+            profileCell.smallIconView.color = [TungCommonObjects twitterColor];
+        }
+        else if ([_socialPlatform isEqualToString:@"Facebook"]) {
+            profileCell.usernameLabel.text = [profileDict objectForKey:@"username"];
+            subLabel = [profileDict objectForKey:@"name"];
+            profileCell.smallIconView.type = kIconTypeFacebook;
+            profileCell.smallIconView.color = [TungCommonObjects facebookColor];
+        }
+        profileCell.subLabel.text = subLabel;
         
-        profileCell.subLabel.text = [profileCell.profileDict objectForKey:@"name"];
-        profileCell.subLabelLeadingConstraint.constant = 7;
-        profileCell.iconView.hidden = YES;
     }
     
     // follow button
-    if ([_tung.tungId isEqualToString:[profileCell.profileDict objectForKey:@"id"]]) { 
-        profileCell.followBtn.hidden = YES;
-        profileCell.youLabel.hidden = NO;
-        profileCell.accessoryType = UITableViewCellAccessoryNone;
-    }
-    else {
-        // user/user relationship
-        //JPLog(@"userfollows: %@", [profileCell.profileDict objectForKey:@"userFollows"]);
-        profileCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
-        
-        profileCell.followBtn.hidden = NO;
-        profileCell.youLabel.hidden = YES;
-        NSNumber *userFollows = [profileCell.profileDict objectForKey:@"userFollows"];
-        if (userFollows.boolValue) {
+    if (_profileData) {
+        if ([_usersToFollow containsObject:profileCell.userId]) {
             profileCell.followBtn.on = YES;
         } else {
             profileCell.followBtn.on = NO;
         }
     }
-    profileCell.followBtn.type = kPillTypeFollow;
-    profileCell.followBtn.backgroundColor = [UIColor clearColor];
+    else {
+        if ([_tung.tungId isEqualToString:[profileDict objectForKey:@"id"]]) {
+            profileCell.followBtn.hidden = YES;
+            profileCell.youLabel.hidden = NO;
+            profileCell.accessoryType = UITableViewCellAccessoryNone;
+        }
+        else {
+            // user/user relationship
+            //NSLog(@"userfollows: %@", [profileDict objectForKey:@"userFollows"]);
+            profileCell.accessoryType = UITableViewCellAccessoryDisclosureIndicator;
+            NSNumber *userFollows = [profileDict objectForKey:@"userFollows"];
+            if (userFollows.boolValue) {
+                profileCell.followBtn.on = YES;
+            } else {
+                profileCell.followBtn.on = NO;
+            }
+            
+            profileCell.followBtn.hidden = NO;
+            profileCell.youLabel.hidden = YES;
+        }
+    }
     [profileCell.followBtn setNeedsDisplay];
     
     return cell;
@@ -452,7 +557,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
 #pragma mark - Table view delegate methods
 
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (screenWidth > 320) {
+    if (_tung.screenWidth > 320) {
     	return 80;
     } else {
         return 64;
@@ -478,17 +583,57 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     
 }
 
+- (UILabel *) labelWithMessageAndBottomMargin:(NSString *)message {
+    // label
+    UILabel *label = [[UILabel alloc] init];
+    label.text = [NSString stringWithFormat:@"%@\n", message];
+    label.textColor = [UIColor grayColor];
+    label.textAlignment = NSTextAlignmentCenter;
+    label.numberOfLines = 0;
+    return label;
+}
+
+// HEADER
+
+-(UIView *) tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
+    if (_profileData && _socialPlatform && section == 0) {
+        UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, _tung.screenWidth, 60)];
+        headerView.backgroundColor = [TungCommonObjects bkgdGrayColor];
+        UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(20, 0, _tung.screenWidth - 40, 60)];
+        label.text = [NSString stringWithFormat:@"We found some of your %@ friends on Tung:", _socialPlatform];
+        label.font = [UIFont systemFontOfSize:13.5];
+        label.textColor = [UIColor darkGrayColor];
+        label.textAlignment = NSTextAlignmentCenter;
+        label.numberOfLines = 0;
+        [headerView addSubview:label];
+
+        return headerView;
+    }
+    else {
+        return nil;
+    }
+    
+}
+-(CGFloat) tableView:(UITableView *)tableView heightForHeaderInSection:(NSInteger)section {
+    if (_profileData && section == 0) {
+        return 60.0;
+    }
+    else {
+        return 0;
+    }
+}
+
 // FOOTER
 
 - (UIView *) footerViewWithMessage:(NSString *)message {
     
-    UIView *footerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 60.0)];
+    UIView *footerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, _tung.screenWidth, 60.0)];
     footerView.backgroundColor = [TungCommonObjects bkgdGrayColor];
     float yPos = 15;
     if (message.length > 0) {
         yPos = 25;
         // label
-        UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(0, 10, screenWidth, 20)];
+        UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(0, 10, _tung.screenWidth, 20)];
         label.text = message;
         label.textColor = [UIColor grayColor];
         label.textAlignment = NSTextAlignmentCenter;
@@ -504,16 +649,6 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     [footerView addSubview:inviteFriendsBtn];
     
     return footerView;
-}
-
-- (UILabel *) labelWithMessageAndBottomMargin:(NSString *)message {
-    // label
-    UILabel *label = [[UILabel alloc] init];
-    label.text = [NSString stringWithFormat:@"%@\n", message];
-    label.textColor = [UIColor grayColor];
-    label.textAlignment = NSTextAlignmentCenter;
-    label.numberOfLines = 0;
-    return label;
 }
 
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
@@ -534,7 +669,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
             return [self labelWithMessageAndBottomMargin:message];
         }
     }
-    else if (!_queryType && section == 1) {
+    else if (!_queryType && !_profileData && section == 1) {
         return [self footerViewWithMessage:@""];
     }
     else {
@@ -543,7 +678,7 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
     }
 }
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
-	if (!_queryType && section == 1) {
+	if (!_queryType && !_profileData && section == 1) {
         return 60.0;
     }
     else if ((_noResults || _noMoreItemsToGet) && section == 1) {
@@ -583,16 +718,20 @@ static NSString *profileListCellIdentifier = @"ProfileListCell";
         float bottomOffset = scrollView.contentSize.height - scrollView.frame.size.height;
         if (scrollView.contentOffset.y >= bottomOffset) {
             // request more posts if they didn't reach the end
-            if (!_requestingMore && !_noMoreItemsToGet && _profileArray.count > 0) {
-                _requestingMore = YES;
-                _loadMoreIndicator.alpha = 1;
-                [_loadMoreIndicator startAnimating];
-                NSNumber *oldest = [[_profileArray objectAtIndex:_profileArray.count-1] objectForKey:@"time_secs"];
-                [self requestProfileListWithQuery:_queryType
-                                               forTarget:_target_id
-                                               newerThan:[NSNumber numberWithInt:0]
-                                             orOlderThan:oldest];
+            if (!_profileData) {
+                if (!_requestingMore && !_noMoreItemsToGet && _profileArray.count > 0) {
+                    _requestingMore = YES;
+                    _loadMoreIndicator.alpha = 1;
+                    [_loadMoreIndicator startAnimating];
+                    NSNumber *oldest = [[_profileArray objectAtIndex:_profileArray.count-1] objectForKey:@"time_secs"];
+                    [self requestProfileListWithQuery:_queryType
+                                                   forTarget:_target_id
+                                                   newerThan:[NSNumber numberWithInt:0]
+                                                 orOlderThan:oldest];
+                }
             }
+            // TODO: onboarding: auto-load more users -
+            // only happens if there are > 100 users on tung that user follows on fb/twitter
         }
     }
 }
