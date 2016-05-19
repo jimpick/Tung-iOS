@@ -205,6 +205,8 @@
 // facebook
 - (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity;
 - (void) verifyCredWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+- (void) findFacebookFriendsWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+- (void) getFacebookFriendsListPermissions;
 
 // alerts
 - (void) promptForNotificationsForEpisodes;

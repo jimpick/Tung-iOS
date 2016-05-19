@@ -1987,18 +1987,16 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
     [loginManager logInWithPublishPermissions:@[@"publish_actions"] fromViewController:self handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
         if (error) {
             NSString *alertText = [NSString stringWithFormat:@"\"%@\"", error];
-            UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Facebook error" message:alertText delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-            [errorAlert show];
+            UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Facebook error" message:alertText preferredStyle:UIAlertControllerStyleAlert];
+            [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+            [self presentViewController:errorAlert animated:YES completion:nil];
         }
         else if (result.isCancelled) {
-            NSString *alertTitle = @"Tung was denied permission";
-            NSString *alertText = @"Tung cannot currently post to Facebook because it was denied posting permission.";
-            UIAlertView *fbAlert = [[UIAlertView alloc] initWithTitle:alertTitle
-                                                              message:alertText
-                                                             delegate:self
-                                                    cancelButtonTitle:@"OK"
-                                                    otherButtonTitles:nil];
-            [fbAlert show];
+            NSString *alertTitle = @"You denied permission";
+            NSString *alertText = @"Tung cannot currently post to Facebook because it was denied permission.";
+            UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:alertTitle message:alertText preferredStyle:UIAlertControllerStyleAlert];
+            [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+            [self presentViewController:errorAlert animated:YES completion:nil];
         }
     }];
 }

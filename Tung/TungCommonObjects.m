@@ -3986,6 +3986,23 @@ static NSArray *colors;
 
 #pragma mark - Facebook
 
+- (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity {
+    
+    // status message
+    NSDictionary *params = @{@"message": text,
+                             @"link": link
+                             };
+    /* make the API call */
+    FBSDKGraphRequest *request = [[FBSDKGraphRequest alloc]
+                                  initWithGraphPath:@"/me/feed"
+                                  parameters:params
+                                  HTTPMethod:@"POST"];
+    [request startWithCompletionHandler:^(FBSDKGraphRequestConnection *connection, id result, NSError *error) {
+        // Handle the result
+        JPLog(@"facebook share result: %@", result);
+    }];
+    
+}
 
 - (void) verifyCredWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
     
@@ -4021,22 +4038,56 @@ static NSArray *colors;
     }];
 }
 
-- (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity {
+- (void) findFacebookFriendsWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
     
-    // status message
-    NSDictionary *params = @{@"message": text,
-                             @"link": link
-                             };
-    /* make the API call */
-    FBSDKGraphRequest *request = [[FBSDKGraphRequest alloc]
-                                  initWithGraphPath:@"/me/feed"
-                                  parameters:params
-                                  HTTPMethod:@"POST"];
-    [request startWithCompletionHandler:^(FBSDKGraphRequestConnection *connection, id result, NSError *error) {
-        // Handle the result
-        JPLog(@"facebook share result: %@", result);
+    NSURL *findFriendsRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/find-facebook-friends.php", _apiRootUrl]];
+    NSMutableURLRequest *findFriendsRequest = [NSMutableURLRequest requestWithURL:findFriendsRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [findFriendsRequest setHTTPMethod:@"POST"];
+    NSDictionary *params = @{ @"accessToken": token };
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [findFriendsRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:findFriendsRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        error = nil;
+        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+        dispatch_async(dispatch_get_main_queue(), ^{
+            if (jsonData != nil && error == nil) {
+                NSDictionary *responseDict = jsonData;
+                if ([responseDict objectForKey:@"error"]) {
+                    JPLog(@"Error verifying cred with FB: %@", [responseDict objectForKey:@"error"]);
+                    
+                    callback(NO, responseDict);
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    callback(YES, responseDict);
+                }
+            }
+            else {
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                JPLog(@"Error. HTML: %@", html);
+                callback(NO, @{@"error": html});
+            }
+        });
     }];
+}
 
+- (void) getFacebookFriendsListPermissions {
+    FBSDKLoginManager *loginManager = [[FBSDKLoginManager alloc] init];
+    [loginManager logInWithPublishPermissions:@[@"user_friends"] fromViewController:_viewController handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
+        if (error) {
+            NSString *alertText = [NSString stringWithFormat:@"\"%@\"", error];
+            UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Facebook error" message:alertText preferredStyle:UIAlertControllerStyleAlert];
+            [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+            [_viewController presentViewController:errorAlert animated:YES completion:nil];
+        }
+        else if (result.isCancelled) {
+            NSString *alertTitle = @"You denied permission";
+            NSString *alertText = @"Tung cannot find your Facebook friends because it was denied permission";
+            UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:alertTitle message:alertText preferredStyle:UIAlertControllerStyleAlert];
+            [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+            [_viewController presentViewController:errorAlert animated:YES completion:nil];
+        }
+    }];
 }
 
 - (void) sharer:(id<FBSDKSharing>)sharer didCompleteWithResults:(NSDictionary *)results {

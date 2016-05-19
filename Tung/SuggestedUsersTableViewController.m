@@ -230,7 +230,23 @@
         
     }
     else if ([_profileData objectForKey:@"facebook_id"]) {
+
         
+        if ([FBSDKAccessToken currentAccessToken]) {
+            
+            NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
+            [_tung findFacebookFriendsWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {
+                NSLog(@"responseDict: %@", responseDict);
+                NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
+                if ([platformFriendsCount integerValue] > 0) {
+                    [_profileData setObject:[responseDict objectForKey:@"results"] forKey:@"facebookFriends"];
+                }
+                
+            }];
+        }
+        else {
+            [_tung getFacebookFriendsListPermissions];
+        }
     }
     
 }
