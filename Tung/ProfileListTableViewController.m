@@ -184,7 +184,7 @@
                              @"target_id": target_id,
                              @"newerThan": afterTime,
                              @"olderThan": beforeTime};
-    JPLog(@"get profile list with params: %@", params);
+    //NSLog(@"get profile list with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [getProfileListRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];

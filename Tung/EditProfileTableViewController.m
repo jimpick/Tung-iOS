@@ -173,18 +173,46 @@ static UIImage *iconRedX;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
+    
+    [self validateAllFields];
 
     // registration errors from FinishSignUpController?
-    if (_registrationErrors != NULL) {
-        if ([_registrationErrors count] > 0) {
-            JPLog(@"registration errors");
-            // alert error(s)
-            NSArray *regErrors = [_registrationErrors allValues];
-            NSString *regErrorsString = [regErrors componentsJoinedByString:@"\n"];
-            UIAlertView *regErrorsAlert = [[UIAlertView alloc] initWithTitle:@"Oops!" message:regErrorsString delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-            [regErrorsAlert setTag:1];
-            [regErrorsAlert show];
+    if (_registrationErrors != NULL && [_registrationErrors count] > 0) {
+        // go to page and field with error
+        NSArray *fields = [_registrationErrors allKeys];
+        NSString *activeFieldString = [fields objectAtIndex:0];
+        //JPLog(@"Error on %@", activeFieldString);
+        BOOL fieldError = YES;
+        if ([activeFieldString isEqualToString:@"username"]) {
+            _activeFieldIndex = 0;
         }
+        else if ([activeFieldString isEqualToString:@"name"]) {
+            _activeFieldIndex = 1;
+        }
+        else if ([activeFieldString isEqualToString:@"location"]) {
+            _activeFieldIndex = 2;
+        }
+        else if ([activeFieldString isEqualToString:@"bio"]) {
+            _activeFieldIndex = 3;
+        }
+        else if ([activeFieldString isEqualToString:@"url"]) {
+            _activeFieldIndex = 4;
+        }
+        else if ([activeFieldString isEqualToString:@"phone"]) {
+            _activeFieldIndex = 5;
+        }
+        else {
+            fieldError = NO;
+        }
+        // alert error(s)
+        NSArray *regErrors = [_registrationErrors allValues];
+        NSString *regErrorsString = [regErrors componentsJoinedByString:@"\n"];
+        
+        UIAlertController *errorsAlert = [UIAlertController alertControllerWithTitle:@"Oops!" message:regErrorsString preferredStyle:UIAlertControllerStyleAlert];
+        [errorsAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:^ (UIAlertAction * _Nonnull action) {
+            if (fieldError) [self makeActiveFieldFirstResponder];
+        }]];
+        [self presentViewController:errorsAlert animated:YES completion:nil];
     }
 }
 
@@ -220,9 +248,12 @@ static UIImage *iconRedX;
         // display error alert
         NSArray *errors = [_fieldErrors allValues];
         NSString *errorsString = [errors componentsJoinedByString:@"\n"];
-        UIAlertView *errorsAlert = [[UIAlertView alloc] initWithTitle:@"Please correct the following" message:errorsString delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-        [errorsAlert show];
+        UIAlertController *errorsAlert = [UIAlertController alertControllerWithTitle:@"Please correct the following" message:errorsString preferredStyle:UIAlertControllerStyleAlert];
+        [errorsAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:errorsAlert animated:YES completion:nil];
+        
     } else {
+        [[_fields objectAtIndex:_activeFieldIndex] resignFirstResponder];
         if (_formIsForSignup) {
             [self performSegueWithIdentifier:@"proceedToSuggestedUsers" sender:self];
         } else {
@@ -234,7 +265,6 @@ static UIImage *iconRedX;
         }
     }
 }
-
 - (void) adjustRightBarButtonForFormState {
     
     if (_formIsForSignup) return;
@@ -381,9 +411,13 @@ static UIImage *iconRedX;
         account = @"Twitter";
     }
     NSString *message = [NSString stringWithFormat:@"Your avatar will be changed to the one currently being used by your %@ account. Sound good?", account];
-    UIAlertView *changeAvatarConfirm = [[UIAlertView alloc] initWithTitle:@"Update Avatar?" message:message delegate:self cancelButtonTitle:@"No" otherButtonTitles:@"Yes", nil];
-    changeAvatarConfirm.tag = 79;
-    [changeAvatarConfirm show];
+    UIAlertController *changeAvatarConfirm = [UIAlertController alertControllerWithTitle:@"Update Avatar?" message:message preferredStyle:UIAlertControllerStyleAlert];
+    [changeAvatarConfirm addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:nil]];
+    [changeAvatarConfirm addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        
+        [self establishAccountForAvatarRequest];
+    }]];
+    [self presentViewController:changeAvatarConfirm animated:YES completion:nil];
 }
 
 - (void) establishAccountForAvatarRequest {
@@ -602,77 +636,103 @@ static UIImage *iconRedX;
     [self.tableView scrollToRowAtIndexPath:activeFieldIndexPath atScrollPosition:UITableViewScrollPositionMiddle animated:YES];
 }
 
+- (void) validateAllFields {
+    // required fields
+    if (_field_username.text.length == 0) [_fieldErrors setObject:@"A username is required" forKey:@"username"];
+    if (_field_name.text.length == 0) [_fieldErrors setObject:@"Name is required" forKey:@"name"];
+    if (_field_email.text.length == 0) [_fieldErrors setObject:@"Email is required" forKey:@"email"];
+    if (_field_bio.text.length > MAX_BIO_CHARS) [_fieldErrors setObject:@"Bio can't exceed 160 characters" forKey:@"bio"];
+    
+    if ([_fieldErrors count] > 0) {
+        return;
+    } else {
+        [self validateUsernameField:_field_username];
+        [self validateTextField:_field_name optional:NO];
+        [self validateEmailField:_field_email];
+        [self validateTextField:_field_location optional:YES];
+        [self validateURLField:_field_url];
+    }
+}
 
--(void) performAppropriateValidationOnTextField:(UITextField *)textField {
+
+-(void) validateTextField:(UITextField *)textField {
     // validation
+    BOOL valid = NO;
     switch (textField.tag) {
         case 0: // username
-            [self validateUsernameField:textField];
+            valid = [self validateUsernameField:textField];
             break;
         case 1: // name
-            [self validateTextField:textField optional:NO];
+            valid = [self validateTextField:textField optional:NO];
             break;
         case 2: // email
-            [self validateEmailField:textField];
+            valid = [self validateEmailField:textField];
             break;
         case 3: // location
-            [self validateTextField:textField optional:YES];
+            valid = [self validateTextField:textField optional:YES];
             break;
-        case 4: // url
-            [self validateURLField:textField];
+        case 4: // bio
+            break;
+        case 5: // url
+            valid = [self validateURLField:textField];
             break;
     }
+    if (valid) {
+        _validationIndicator.image = iconGreenCheck;
+    } else {
+        _validationIndicator.image = iconRedX;
+    }
+    [_keyboardToolbar setItems:@[_backBarItem, _fspace, _validationIndicatorItem, _fspace, _nextBarItem] animated:YES];
     [self enableOrDisableFieldNavButtons];
 }
 -(void) enableOrDisableFieldNavButtons {
-    // if we are on the first field and this is for editing profile, disable last-field button
-    if (_activeFieldIndex == 1 && ![_purpose isEqualToString:@"signup"]) {
-        _backBarItem.enabled = NO;
-    } else {
-        _backBarItem.enabled = YES;
-    }
-    // if we are on the last field and this is for editing profile, disable next-field button
-    if (_activeFieldIndex == _fields.count - 1 && ![_purpose isEqualToString:@"signup"]) {
-        _nextBarItem.enabled = NO;
-    } else {
-        _nextBarItem.enabled = YES;
+    // if this is for editing profile
+    if (!_formIsForSignup) {
+        // if we are on the first field, disable last-field button
+        if (_activeFieldIndex == 0) {
+            _backBarItem.enabled = NO;
+        } else {
+            _backBarItem.enabled = YES;
+        }
+        // if we are on the last field, disable next-field button
+        if (_activeFieldIndex == _fields.count - 1) {
+            _nextBarItem.enabled = NO;
+        } else {
+            _nextBarItem.enabled = YES;
+        }
     }
 }
 
--(void) validateUsernameField:(UITextField *)textField {
+-(BOOL) validateUsernameField:(UITextField *)textField {
     if ([textField.text length] > 0) {
         NSRegularExpression *usernameRegex = [NSRegularExpression regularExpressionWithPattern:@"^[a-zA-Z0-9_]{1,15}$" options:0 error:nil];
         NSUInteger match = [usernameRegex numberOfMatchesInString:textField.text options:0 range:NSMakeRange(0, [textField.text length])];
         if (match > 0) {
             // valid
-            _validationIndicator.image = iconGreenCheck;
             [_fieldErrors removeObjectForKey:@"username"];
             // check availability
             [_usernameCheckTimer invalidate];
             _usernameCheckTimer = [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(checkUsernameAvailability) userInfo:nil repeats:NO];
+            return YES;
         } else {
             // invalid
-            _validationIndicator.image = iconRedX;
             [_fieldErrors setObject:@"Invalid username" forKey:@"username"];
+            return NO;
         }
     } else {
-        _validationIndicator.image = iconRedX;
         [_fieldErrors setObject:@"A username is required" forKey:@"username"];
+        return NO;
     }
-    [_keyboardToolbar setItems:@[_backBarItem, _fspace, _validationIndicatorItem, _fspace, _nextBarItem] animated:YES];
 }
 
 -(void) checkUsernameAvailability {
-    //JPLog(@"username check");
     // existing username is not invalid
-    if ([_profileData objectForKey:@"username"]) {
-        if ([[_profileData objectForKey:@"username"] isEqualToString:_field_username.text]) {
-            return;
-        }
+    if (!_formIsForSignup && [_profileData objectForKey:@"username"] && [[_profileData objectForKey:@"username"] isEqualToString:_field_username.text]) {
+        return;
     }
     NSString *urlAsString = [NSString stringWithFormat:@"%@users/username_check.php?username=%@", _tung.apiRootUrl, _field_username.text];
     NSURL *checkUsernameURL = [NSURL URLWithString:urlAsString];
-    NSMutableURLRequest *checkUsernameRequest = [NSMutableURLRequest requestWithURL:checkUsernameURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    NSMutableURLRequest *checkUsernameRequest = [NSMutableURLRequest requestWithURL:checkUsernameURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:5.0f];
     [checkUsernameRequest setHTTPMethod:@"GET"];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:checkUsernameRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
@@ -685,14 +745,14 @@ static UIImage *iconRedX;
             BOOL usernameExists = [usernameExistsId boolValue];
             if (usernameExists) {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    _validationIndicator.image = iconRedX;
-                    [_fieldErrors setObject:@"Username is taken" forKey:@"username"];
+                    if (_activeFieldIndex == 0) _validationIndicator.image = iconRedX;
+                    [_fieldErrors setObject:[NSString stringWithFormat:@"The username \"%@\" is taken", _field_username.text] forKey:@"username"];
                 });
             }
         }
     }];
 }
--(void) validateTextField:(UITextField *)textField optional:(BOOL)optional {
+-(BOOL) validateTextField:(UITextField *)textField optional:(BOOL)optional {
     // for validating either Name or Location
     NSString *name = @"";
     if (textField.tag == 1) name = @"name";
@@ -702,77 +762,74 @@ static UIImage *iconRedX;
         NSRegularExpression *textRegex = [NSRegularExpression regularExpressionWithPattern:@"^[\\w\\d \\,\\-\\.]{1,30}$" options:NSRegularExpressionCaseInsensitive error:nil];
         NSUInteger match = [textRegex numberOfMatchesInString:textField.text options:0 range:NSMakeRange(0, [textField.text length])];
         if (match > 0) {
-            _validationIndicator.image = iconGreenCheck;
             [_fieldErrors removeObjectForKey:name];
+            return YES;
         } else {
-            _validationIndicator.image = iconRedX;
             [_fieldErrors setObject:[NSString stringWithFormat:@"Invalid %@", name] forKey:name];
+            return NO;
         }
-        [_keyboardToolbar setItems:@[_backBarItem, _fspace, _validationIndicatorItem, _fspace, _nextBarItem] animated:YES];
     } else {
         if (!optional) {
-            _validationIndicator.image = iconRedX;
-            [_keyboardToolbar setItems:@[_backBarItem, _fspace, _validationIndicatorItem, _fspace, _nextBarItem] animated:YES];
             [_fieldErrors setObject:[NSString stringWithFormat:@"A %@ is required", name] forKey:name];
+            return NO;
         } else {
-            [_keyboardToolbar setItems:@[_backBarItem, _fspace, _nextBarItem] animated:YES];
             [_fieldErrors removeObjectForKey:name];
+            return YES;
         }
     }
 }
--(void) validateEmailField:(UITextField *)textField {
+-(BOOL) validateEmailField:(UITextField *)textField {
     if ([textField.text length] > 0) {
         NSString *emailRegexString = @"^[\\w\\d\\+\\.\\-]+@[a-zA-Z\\d\\.\\-]+\\.[a-zA-Z]{2,15}$";
         NSRegularExpression *emailRegex = [NSRegularExpression regularExpressionWithPattern:emailRegexString options:NSRegularExpressionCaseInsensitive error:nil];
         NSUInteger match = [emailRegex numberOfMatchesInString:textField.text options:0 range:NSMakeRange(0, [textField.text length])];
         if (match > 0) {
-            _validationIndicator.image = iconGreenCheck;
             [_fieldErrors removeObjectForKey:@"email"];
+            return YES;
         } else {
-            _validationIndicator.image = iconRedX;
             [_fieldErrors setObject:@"Invalid Email" forKey:@"email"];
+            return NO;
         }
     } else {
-        _validationIndicator.image = iconRedX;
         [_fieldErrors setObject:@"Email is required" forKey:@"email"];
+        return NO;
     }
-    [_keyboardToolbar setItems:@[_backBarItem, _fspace, _validationIndicatorItem, _fspace, _nextBarItem] animated:YES];
 }
--(void) validateURLField:(UITextField *)textField {
+-(BOOL) validateURLField:(UITextField *)textField {
     if ([textField.text length] > 0) {
         NSString *urlRegexString = @"^(https?:\\/\\/)?[a-zA-Z\\d\\.\\-]+\\.[a-zA-Z]{2,15}([\\/\\w-]*)*\\/?\\??([^#\\n\\r\\s]*)?#?([^\\n\\r\\s]*)$";
         NSRegularExpression *urlRegex = [NSRegularExpression regularExpressionWithPattern:urlRegexString options:NSRegularExpressionCaseInsensitive error:nil];
         NSUInteger match = [urlRegex numberOfMatchesInString:textField.text options:0 range:NSMakeRange(0, [textField.text length])];
         if (match > 0) {
-            _validationIndicator.image = iconGreenCheck;
             [_fieldErrors removeObjectForKey:@"URL"];
+            return YES;
         } else {
-            _validationIndicator.image = iconRedX;
+            NSLog(@"URL IS INVALID");
             [_fieldErrors setObject:@"Invalid URL" forKey:@"URL"];
+            return NO;
         }
-        [_keyboardToolbar setItems:@[_backBarItem, _fspace, _validationIndicatorItem, _fspace, _nextBarItem] animated:YES];
     } else {
-        [_keyboardToolbar setItems:@[_backBarItem, _fspace, _nextBarItem] animated:YES];
         [_fieldErrors removeObjectForKey:@"URL"];
+        return YES;
     }
 }
 
--(void) validatePhoneField:(UITextField *)textField { // not used
+// not used
+-(BOOL) validatePhoneField:(UITextField *)textField {
     // UIDataDetectorTypePhoneNumber
     if ([textField.text length] > 0) {
         NSRegularExpression *phoneRegex = [NSRegularExpression regularExpressionWithPattern:@"^[0-9]{10,19}$" options:0 error:nil];
         NSUInteger match = [phoneRegex numberOfMatchesInString:textField.text options:0 range:NSMakeRange(0, [textField.text length])];
         if (match > 0) {
-            _validationIndicator.image = iconGreenCheck;
             [_fieldErrors removeObjectForKey:@"phone"];
+            return YES;
         } else {
-            _validationIndicator.image = iconRedX;
             [_fieldErrors setObject:@"Invalid phone number" forKey:@"phone"];
+            return NO;
         }
-        [_keyboardToolbar setItems:@[_backBarItem, _fspace, _validationIndicatorItem, _fspace, _nextBarItem] animated:YES];
     } else {
-        [_keyboardToolbar setItems:@[_backBarItem, _fspace, _nextBarItem] animated:YES];
         [_fieldErrors removeObjectForKey:@"phone"];
+        return YES;
     }
 }
 #pragma mark - Table view delegate methods
@@ -792,7 +849,7 @@ static UIImage *iconRedX;
 
 - (void) textFieldDidBeginEditing:(UITextField *)textField {
     _activeFieldIndex = textField.tag;
-    [self performAppropriateValidationOnTextField:textField];
+    [self validateTextField:textField];
     // [self changeFirstResponderAndUpdateGUI];
 }
 - (void) textFieldDidEndEditing:(UITextField *)textField {
@@ -807,7 +864,7 @@ static UIImage *iconRedX;
 
 - (void)textFieldDidChange:(UITextField *)textField {
     // validate every keystroke
-    [self performAppropriateValidationOnTextField:textField];
+    [self validateTextField:textField];
     _formIsPristine = NO;
     [self adjustRightBarButtonForFormState];
 }
@@ -902,45 +959,6 @@ static UIImage *iconRedX;
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
     // Return the number of rows in the section.
     return 7;
-}
-
-#pragma mark - handle alerts
-
--(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    JPLog(@"dismissed alert view with tag %ld and button index: %ld", (long)alertView.tag, (long)buttonIndex);
-    // registration errors alert
-    if (alertView.tag == 1) {
-        // go to page and field with error
-        NSArray *fields = [_registrationErrors allKeys];
-        NSString *activeFieldString = [fields objectAtIndex:0];
-        JPLog(@"Error on %@", activeFieldString);
-        
-        if ([activeFieldString isEqualToString:@"username"]) {
-            _activeFieldIndex = 0;
-        }
-        else if ([activeFieldString isEqualToString:@"name"]) {
-            _activeFieldIndex = 1;
-        }
-        else if ([activeFieldString isEqualToString:@"location"]) {
-            _activeFieldIndex = 2;
-        }
-        else if ([activeFieldString isEqualToString:@"bio"]) {
-            _activeFieldIndex = 3;
-        }
-        else if ([activeFieldString isEqualToString:@"url"]) {
-            _activeFieldIndex = 4;
-        }
-        else if ([activeFieldString isEqualToString:@"phone"]) {
-            _activeFieldIndex = 5;
-        }
-        [self makeActiveFieldFirstResponder];
-    }
-    // change avatar
-    if (alertView.tag == 79) {
-        if (buttonIndex == 1) {
-            [self establishAccountForAvatarRequest];
-        }
-    }
 }
 
 @end

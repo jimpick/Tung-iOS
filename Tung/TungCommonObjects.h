@@ -12,7 +12,7 @@
  - manage 1 global player instance
  - manage player controls
  - manage podcast episode entities
- - manage twitter integration
+ - manage twitter/facebook integration
  */
 
 #import <Foundation/Foundation.h>

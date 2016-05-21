@@ -4509,7 +4509,7 @@ static NSArray *colors;
         NSString *tungCred = [[NSString alloc] initWithData:(__bridge_transfer NSData *)cfValue encoding:NSUTF8StringEncoding];
         return tungCred;
     } else {
-    	//JPLog(@"No cred found. Code: %ld", (long)results);
+    	JPLog(@"No cred found. Error: %@", [self keychainStatusToString:results]);
         return NULL;
     }
 }
