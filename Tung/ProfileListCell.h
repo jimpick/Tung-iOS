@@ -21,6 +21,7 @@
 @property (strong, nonatomic) IBOutlet UILabel *usernameLabel;
 @property (strong, nonatomic) IBOutlet UILabel *subLabel;
 @property (strong, nonatomic) IBOutlet NSLayoutConstraint *subLabelLeadingConstraint;
+@property (strong, nonatomic) IBOutlet NSLayoutConstraint *followBtnTrailingConstraint;
 @property (strong, nonatomic) IBOutlet IconView *iconView;
 @property (strong, nonatomic) IBOutlet IconView *smallIconView;
 @property (strong, nonatomic) IBOutlet PillButton *followBtn;
@@ -28,8 +29,8 @@
 
 @property (strong, nonatomic) NSDictionary *profileDict;
 @property (strong, nonatomic) NSString *userId;
+@property (strong, nonatomic) NSString *username;
 @property (strong, nonatomic) NSMutableArray *usersToFollow;
-@property BOOL forOnboarding;
 
 - (IBAction)followOrUnfollowUser:(id)sender;
 

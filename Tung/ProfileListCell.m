@@ -31,52 +31,27 @@
     PillButton *btn = (PillButton *)sender;
     ProfileListCell *cell = (ProfileListCell *)[[sender superview] superview];
     
-    if (_forOnboarding) {
+    NSDictionary *userInfo;
+    
+    if (btn.on) {
+        // unfollow
+        userInfo = @{ @"unfollowedUser": cell.userId,
+                      @"sender": btn,
+                      @"username": cell.username
+                      };
         
-        if (btn.on) {
-            // unfollow
-            [cell.usersToFollow removeObject:cell.userId];
-        }
-        else {
-            // follow
-            if (![_usersToFollow containsObject:cell.userId]) {
-                [_usersToFollow addObject:cell.userId];
-            }
-        }
     }
     else {
-    
-        
-        if (btn.on) {
-            // unfollow
-            [_tung unfollowUserWithId:cell.userId withCallback:^(BOOL success) {
-                if (success) {
-                    _tung.feedNeedsRefetch = [NSNumber numberWithBool:YES]; // following changed
-                    _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
-                }
-                else {
-                    btn.on = YES;
-                    [btn setNeedsDisplay];
-                }
-            }];
-        }
-        else {
-            // follow
-            [_tung followUserWithId:cell.userId withCallback:^(BOOL success) {
-                if (success) {
-                    _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
-                    _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES]; // following changed
-                }
-                else {
-                    btn.on = NO;
-                    [btn setNeedsDisplay];
-                }
-            }];
-        }
+        // follow
+        userInfo = @{ @"followedUser": cell.userId,
+                      @"sender": btn
+                      };
+        btn.on = YES;
+        [btn setNeedsDisplay];
     }
     
-    btn.on = !btn.on;
-    [btn setNeedsDisplay];
+    NSNotification *followingChangedNotif = [NSNotification notificationWithName:@"followingChanged" object:nil userInfo:userInfo];
+    [[NSNotificationCenter defaultCenter] postNotification:followingChangedNotif];
 }
 
 @end

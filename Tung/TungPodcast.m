@@ -21,6 +21,7 @@
 // search
 @property (strong, nonatomic) NSURLConnection *podcastSearchConnection;
 @property (strong, nonatomic) NSMutableData *podcastSearchResultData;
+@property CGFloat screenWidth;
 
 @end
 
@@ -32,6 +33,7 @@
     if (self) {
         
         _podcastArray = [NSMutableArray array];
+        _screenWidth = [TungCommonObjects screenSize].width;
         
         // podcasts search
         _searchTableViewController = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"searchTableViewController"];
@@ -254,7 +256,6 @@
 
 #pragma mark - Podcast Search table
 
-static double screenWidth;
 static double leftLabelMargin = 106;
 static double rightLabelMargin = 30;
 static double maxLabelWidth;
@@ -297,8 +298,7 @@ static NSString *cellIdentifier = @"PodcastResultCell";
     podcastCell.podcastArtImageView.image = artImage;
     
     // labels and positioning
-    if (!screenWidth) screenWidth = [[UIScreen mainScreen]bounds].size.width;
-    if (!maxLabelWidth) maxLabelWidth = screenWidth - (leftLabelMargin + rightLabelMargin);
+    if (!maxLabelWidth) maxLabelWidth = _screenWidth - (leftLabelMargin + rightLabelMargin);
     // title
     if (!podcastCell.podcastTitle) {
         podcastCell.podcastTitle = [[UILabel alloc] init];
@@ -381,7 +381,7 @@ static NSString *cellIdentifier = @"PodcastResultCell";
     if (!podcastCell.accessory) {
         podcastCell.accessory = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"UITableNext.png"]];
         CGRect accessoryFrame = podcastCell.accessory.frame;
-        accessoryFrame.origin.x = screenWidth - accessoryFrame.size.width - 10;
+        accessoryFrame.origin.x = _screenWidth - accessoryFrame.size.width - 10;
         accessoryFrame.origin.y = (100 - accessoryFrame.size.height)/2;
         podcastCell.accessory.frame = accessoryFrame;
         [podcastCell addSubview:podcastCell.accessory];

@@ -25,11 +25,16 @@
 @property BOOL contentOffsetSet;
 @property BOOL animateEndRefresh;
 
+@property CGFloat screenWidth;
+@property CGFloat headerViewHeight;
+@property CGFloat headerScrollViewHeight;
+@property CGFloat tableHeaderRow;
+@property CGFloat animationDistance;
+
 @end
 
 @implementation StoriesTableViewController
 
-CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, animationDistance;
 
 
 - (void)viewDidLoad {
@@ -37,6 +42,8 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     [super viewDidLoad];
         
     _tung = [TungCommonObjects establishTungObjects];
+    
+    _screenWidth = [TungCommonObjects screenSize].width;
     
     if (!_profiledUserId) _profiledUserId = @"";
     
@@ -77,12 +84,10 @@ CGFloat screenWidth, headerViewHeight, headerScrollViewHeight, tableHeaderRow, a
     
     // for animating header height
     CGFloat minHeaderHeight = 80;
-    tableHeaderRow = 61;
-    headerViewHeight = 223;
-    headerScrollViewHeight = headerViewHeight - tableHeaderRow;
-    animationDistance = headerScrollViewHeight - minHeaderHeight;
-    screenWidth = self.view.frame.size.width;
-    _tung.screenWidth = screenWidth;
+    _tableHeaderRow = 61;
+    _headerViewHeight = 223;
+    _headerScrollViewHeight = _headerViewHeight - _tableHeaderRow;
+    _animationDistance = _headerScrollViewHeight - minHeaderHeight;
     
     if (_episodeId) {
         self.navigationItem.title = @"Episode";
@@ -406,9 +411,7 @@ NSInteger requestTries = 0;
                                 //JPLog(@"got stories older than: %@", beforeTime);
                                 int startingIndex = (int)_storiesArray.count;
                                 
-                                NSArray *newFeedArray = [_storiesArray arrayByAddingObjectsFromArray:[self processStories:newStories]];
-                                _storiesArray = [newFeedArray mutableCopy];
-                                newFeedArray = nil;
+                                [_storiesArray addObjectsFromArray:[self processStories:newStories]];
                                 
                                 [self groupStoriesByEpisodeAndInsertInTable:self.tableView
                                                           withStartingIndex:startingIndex
@@ -791,11 +794,11 @@ static NSString *footerCellIdentifier = @"storyFooterCell";
 #pragma mark - Table view delegate methods
 
 - (NSIndexPath *)tableView:(UITableView *)tableView willSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-    // don't select footer cell bc if _episodeId, already on story detail view.
-    if (_episodeId && indexPath.row == [[_storiesArray objectAtIndex:indexPath.section] count] - 1) {
-        return nil;
-    } else {
+
+    if (indexPath.section == 0) {
         return indexPath;
+    } else {
+        return nil;
     }
 }
 
@@ -869,7 +872,7 @@ CGFloat labelWidth = 0;
                 prototypeLabel.numberOfLines = 0;
             }
             if (labelWidth == 0) {
-                labelWidth = screenWidth -63 - 60;
+                labelWidth = _screenWidth -63 - 60;
             }
             prototypeLabel.text = [eventDict objectForKey:@"comment"];
             CGSize labelSize = [prototypeLabel sizeThatFits:CGSizeMake(labelWidth, 400)];
@@ -966,7 +969,7 @@ CGFloat labelWidth = 0;
         int spacing = 30;
         int threshold = 4;
         int max = 6;
-        if (screenWidth > 320) {
+        if (_screenWidth > 320) {
             threshold = 5;
             max = 8;
         }
@@ -1021,7 +1024,7 @@ CGFloat labelWidth = 0;
     NSString *title = [episodeMiniDict objectForKey:@"title"];
     //NSLog(@"configure header cell for %@ (%lu)", title, (unsigned long)title.length);
     headerCell.title.text = title;
-    if (screenWidth >= 414) { // iPhone 6+/6s+
+    if (_screenWidth >= 414) { // iPhone 6+/6s+
         headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
         if (title.length > 82) {
             headerCell.title.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
@@ -1030,7 +1033,7 @@ CGFloat labelWidth = 0;
             headerCell.title.font = [UIFont systemFontOfSize:18 weight:UIFontWeightLight];
         }
     }
-    else if (screenWidth >= 375) { // iPhone 6/6s
+    else if (_screenWidth >= 375) { // iPhone 6/6s
         headerCell.title.font = [UIFont systemFontOfSize:21 weight:UIFontWeightLight];
         
         if (title.length > 54) {
@@ -1585,11 +1588,11 @@ CGFloat labelWidth = 0;
         
         //NSLog(@"table view scrolled to offset: %f", self.tableView.contentOffset.y);
         // shrink profile header
-        if (_profiledUserId.length > 0 && scrollView.contentOffset.y > 0 && scrollView.contentOffset.y <= animationDistance) {
+        if (_profiledUserId.length > 0 && scrollView.contentOffset.y > 0 && scrollView.contentOffset.y <= _animationDistance) {
             //JPLog(@"table offset: %f", scrollView.contentOffset.y);
-            _profileHeightConstraint.constant = headerViewHeight - scrollView.contentOffset.y;
-            _profileHeader.scrollSubView1Height.constant = headerScrollViewHeight - scrollView.contentOffset.y;
-            _profileHeader.scrollSubView2Height.constant = headerScrollViewHeight - scrollView.contentOffset.y;
+            _profileHeightConstraint.constant = _headerViewHeight - scrollView.contentOffset.y;
+            _profileHeader.scrollSubView1Height.constant = _headerScrollViewHeight - scrollView.contentOffset.y;
+            _profileHeader.scrollSubView2Height.constant = _headerScrollViewHeight - scrollView.contentOffset.y;
             
             [_profileHeader layoutIfNeeded];
         }
@@ -1631,10 +1634,10 @@ CGFloat labelWidth = 0;
 - (void) setScrollViewContentSizeForHeight {
     //JPLog(@"set scroll view content size for height");
     // set scroll view content size for height
-    CGFloat scrollViewHeight = _profileHeightConstraint.constant - tableHeaderRow;
+    CGFloat scrollViewHeight = _profileHeightConstraint.constant - _tableHeaderRow;
 //    JPLog(@"scroll view height: %f", scrollViewHeight);
 //    JPLog(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
-    CGSize contentSize = CGSizeMake(screenWidth * 2, scrollViewHeight);
+    CGSize contentSize = CGSizeMake(_screenWidth * 2, scrollViewHeight);
     _profileHeader.scrollView.contentSize = contentSize;
 //    JPLog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
 }

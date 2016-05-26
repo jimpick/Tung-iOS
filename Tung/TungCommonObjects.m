@@ -49,6 +49,7 @@
 
 @implementation TungCommonObjects
 
+
 + (id)establishTungObjects {
     static TungCommonObjects *tungObjects = nil;
     static dispatch_once_t onceToken;
@@ -161,6 +162,16 @@
     return self;
 }
 
+CGSize screenSize;
++ (CGSize) screenSize {
+    if (screenSize.width) {
+        return screenSize;
+    } else {
+        screenSize = [[UIScreen mainScreen] bounds].size;
+        return screenSize;
+    }
+}
+
 -(void) checkForNowPlaying {
     // find playing episode
     AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
@@ -230,7 +241,7 @@
     // • Audio streaming objects are invalidated (zombies)
     // • Handle this notification by fully reconfiguring audio
     
-    //[TungCommonObjects showBannerAlertForText:@"Media services reset" andWidth:_screenWidth];
+    //[TungCommonObjects showBannerAlertForText:@"Media services reset"];
     JPLog(@"////// handle media services reset");
     if ([[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayback error: nil]) {
         [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
@@ -735,7 +746,7 @@
         }
         return;
     }
-    //[TungCommonObjects showBannerAlertForText:[NSString stringWithFormat:@"completed playback. current secs: %f, total secs: %f", currentTimeSecs, _totalSeconds] andWidth:325.0];
+    //[TungCommonObjects showBannerAlertForText:[NSString stringWithFormat:@"completed playback. current secs: %f, total secs: %f", currentTimeSecs, _totalSeconds]];
     [self playNextEpisode]; // ejects current episode
 }
 
@@ -1142,7 +1153,7 @@ static NSString *episodeDirName = @"episodes";
             
             //JPLog(@"deleted episode with url: %@", urlString);
             if (confirm) {
-                [TungCommonObjects showBannerAlertForText:@"Your saved copy of this episode has been deleted." andWidth:_screenWidth];
+                [TungCommonObjects showBannerAlertForText:@"Your saved copy of this episode has been deleted."];
             }
             
             // safe to remove feed from saved?
@@ -3631,8 +3642,8 @@ static NSArray *colors;
     }];
 }
 
-- (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback {
-    JPLog(@"follow user with id: %@", target_id);
+- (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+    //JPLog(@"follow user with id: %@", target_id);
     NSURL *followUserRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/follow.php", _apiRootUrl]];
     NSMutableURLRequest *followUserRequest = [NSMutableURLRequest requestWithURL:followUserRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [followUserRequest setHTTPMethod:@"POST"];
@@ -3652,22 +3663,22 @@ static NSArray *colors;
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                             // get new session and re-request
                             [self getSessionWithCallback:^{
-                                [self followUserWithId:target_id withCallback:^(BOOL success) {
-                                    callback(success);
+                                [self followUserWithId:target_id withCallback:^(BOOL success, NSDictionary *response) {
+                                    callback(success, response);
                                 }];
                             }];
                         } else {
-                            callback(NO);
+                            callback(NO, responseDict);
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        callback(YES);
+                        callback(YES, responseDict);
                     } else {
-                        callback(NO);
+                        callback(NO, responseDict);
                     }
                 }
                 else {
-                    callback(NO);
+                    callback(NO, @{@"error": error.localizedDescription });
                     JPLog(@"Error following user: %@", error.localizedDescription);
                     NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
                     JPLog(@"HTML: %@", html);
@@ -3676,14 +3687,13 @@ static NSArray *colors;
         }
         else {
             JPLog(@"Error following user: %@", error.localizedDescription);
-            callback(NO);
-            //[self simpleErrorAlertWithMessage:error.localizedDescription];
+            callback(NO, @{@"error": error.localizedDescription });
         }
     }];
     
 }
-- (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback {
-    JPLog(@"UN-follow user with id: %@", target_id);
+- (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+    //JPLog(@"UN-follow user with id: %@", target_id);
     NSURL *unfollowUserRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/unfollow.php", _apiRootUrl]];
     NSMutableURLRequest *unfollowUserRequest = [NSMutableURLRequest requestWithURL:unfollowUserRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [unfollowUserRequest setHTTPMethod:@"POST"];
@@ -3703,29 +3713,31 @@ static NSArray *colors;
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
                             // get new session and re-request
                             [self getSessionWithCallback:^{
-                                [self unfollowUserWithId:target_id withCallback:^(BOOL success) {
-                                    callback(success);
+                                [self unfollowUserWithId:target_id withCallback:^(BOOL success, NSDictionary *response) {
+                                    callback(success, response);
                                 }];
                             }];
                         } else {
-                            callback(NO);
+                            callback(NO, responseDict);
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        callback(YES);
+                        callback(YES, responseDict);
                     } else {
-                        callback(NO);
+                        callback(NO, responseDict);
                     }
                 }
                 else {
-                    callback(NO);
+                    callback(NO, @{@"error": error.localizedDescription });
+                    JPLog(@"Error following user: %@", error.localizedDescription);
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"HTML: %@", html);
                 }
             });
         }
         else {
             JPLog(@"Error un-following user: %@", error.localizedDescription);
-            callback(NO);
-            //[self simpleErrorAlertWithMessage:error.localizedDescription];
+            callback(NO, @{@"error": error.localizedDescription });
         }
     }];
 }
@@ -3767,6 +3779,88 @@ static NSArray *colors;
             callback(NO, @{@"error": error.localizedDescription});
         }
     }];
+}
+
+// get suggested users and optionally bust cached result
+- (void) getSuggestedUsersWithCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+    NSURL *suggestedUsersURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/suggested-users.php", _apiRootUrl]];
+    NSMutableURLRequest *suggestedUsersRequest = [NSMutableURLRequest requestWithURL:suggestedUsersURL cachePolicy:NSURLRequestUseProtocolCachePolicy timeoutInterval:10.0f];
+    
+    if (_sessionId && _sessionId.length) {
+        [suggestedUsersRequest setHTTPMethod:@"POST"];
+        NSDictionary *params = @{@"sessionId":_sessionId};
+        NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+        [suggestedUsersRequest setHTTPBody:serializedParams];
+    }
+    
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:suggestedUsersRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            
+            if (jsonData != nil && error == nil) {
+                
+                NSDictionary *responseDict = jsonData;
+                
+                if ([responseDict objectForKey:@"error"]) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            [self getSessionWithCallback:^{
+                                [self getSuggestedUsersWithCallback:callback];
+                            }];
+                        } else {
+                            callback(NO, responseDict);
+                        }
+                    });
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        callback(YES, responseDict);
+                        
+                    });
+                }
+            }
+            // errors
+            else if (error != nil) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    JPLog(@"Error getting suggested users: %@", error);
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"HTML: %@", html);
+                    callback(NO, @{@"error": error});
+                });
+            }
+        }
+        // connection error
+        else {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                
+                callback(NO, @{@"error": error.localizedDescription});
+            });
+        }
+    }];
+}
+
+- (void) preloadAlbumArtForSuggestedUsers:(NSArray *)suggestedUsers {
+    
+    NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
+    preloadQueue.maxConcurrentOperationCount = 3;
+    
+    for (int i = 0; i < suggestedUsers.count; i++) {
+        
+        NSArray *podcasts = [[suggestedUsers objectAtIndex:i] objectForKey:@"podcasts"];
+        
+        for (int j = 0; j < podcasts.count; j++) {
+            
+            // preload avatar and album art
+            [preloadQueue addOperationWithBlock:^{
+                
+                NSString *podcastArtUrlString = [[podcasts objectAtIndex:j] objectForKey:@"artworkUrlSSL"];
+                NSNumber *podcastId = [[podcasts objectAtIndex:j] objectForKey:@"_id"];
+                [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastArtUrlString andCollectionId:podcastId];
+            }];
+        }
+    }
 }
 
 - (void) inviteFriends:(NSString *)friends {
@@ -3898,10 +3992,11 @@ static NSArray *colors;
     }];
 }
 
-- (void) findTwitterFriendsForUsername:(NSString *)username page:(NSString *)page withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
+- (void) findTwitterFriendsWithPage:(NSNumber *)page andCallback:(void (^)(BOOL success, NSDictionary *response))callback {
     
     // get auth headers for friends/ids endpoint:
     TWTROAuthSigning *oauthSigning = [[TWTROAuthSigning alloc] initWithAuthConfig:[Twitter sharedInstance].authConfig authSession:[Twitter sharedInstance].session];
+    NSString *username = [Twitter sharedInstance].session.userName;
     NSString *endpoint = @"https://api.twitter.com/1.1/friends/ids.json";
     NSDictionary *parameters = @{
                                  @"cursor": @"-1",
@@ -3911,41 +4006,48 @@ static NSArray *colors;
                                  };
     NSError *error;
     NSDictionary *authHeaders = [oauthSigning OAuthEchoHeadersForRequestMethod:@"GET" URLString:endpoint parameters:parameters error:&error];
-    
     NSURL *findFriendsRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/find-twitter-friends.php", _apiRootUrl]];
     NSMutableURLRequest *findFriendsRequest = [NSMutableURLRequest requestWithURL:findFriendsRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [findFriendsRequest setHTTPMethod:@"POST"];
     
     NSMutableDictionary *params = [NSMutableDictionary dictionaryWithDictionary:authHeaders];
-    [params setObject:username forKey:@"screen_name"];
     [params setObject:page forKey:@"page"];
+    [params setObject:username forKey:@"screen_name"];
+    if (_sessionId && _sessionId.length) {
+        [params setObject:_sessionId forKey:@"sessionId"];
+    }
     
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [findFriendsRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:findFriendsRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                //JPLog(@"Verify cred response %@", responseDict);
-                
-                if ([responseDict objectForKey:@"error"]) {
-                    JPLog(@"Error verifying cred with Twitter (%@): %@", [responseDict objectForKey:@"twitterStatusCode"], [responseDict objectForKey:@"error"]);
-                    NSLog(@"responseDict: %@", responseDict);
-                    callback(NO, responseDict);
+        if (!error) {
+            error = nil;
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    //NSLog(@"find twitter friends response %@", responseDict);
+                    
+                    if ([responseDict objectForKey:@"error"]) {
+                        JPLog(@"Error finding twitter friends (%@): %@", [responseDict objectForKey:@"twitterStatusCode"], [responseDict objectForKey:@"error"]);
+                        NSLog(@"responseDict: %@", responseDict);
+                        callback(NO, responseDict);
+                    }
+                    else if ([responseDict objectForKey:@"success"]) {
+                        callback(YES, responseDict);
+                    }
                 }
-                else if ([responseDict objectForKey:@"success"]) {
-                    callback(YES, responseDict);
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error. HTML: %@", html);
+                    callback(NO, @{@"error": html});
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error. HTML: %@", html);
-                callback(NO, @{@"error": html});
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"Error finding twitter friends: %@", error.localizedDescription);
+        }
     }];
 }
 
@@ -4043,7 +4145,10 @@ static NSArray *colors;
     NSURL *findFriendsRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/find-facebook-friends.php", _apiRootUrl]];
     NSMutableURLRequest *findFriendsRequest = [NSMutableURLRequest requestWithURL:findFriendsRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [findFriendsRequest setHTTPMethod:@"POST"];
-    NSDictionary *params = @{ @"accessToken": token };
+    NSMutableDictionary *params = [@{ @"accessToken": token } mutableCopy];
+    if (_sessionId && _sessionId.length) {
+        [params setObject:_sessionId forKey:@"sessionId"];
+    }
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [findFriendsRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -4071,9 +4176,9 @@ static NSArray *colors;
     }];
 }
 
-- (void) getFacebookFriendsListPermissions {
+- (void) getFacebookFriendsListPermissionsWithSuccessCallback:(void (^)(void))successCallback {
     FBSDKLoginManager *loginManager = [[FBSDKLoginManager alloc] init];
-    [loginManager logInWithPublishPermissions:@[@"user_friends"] fromViewController:_viewController handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
+    [loginManager logInWithReadPermissions:@[@"user_friends"] fromViewController:_viewController handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
         if (error) {
             NSString *alertText = [NSString stringWithFormat:@"\"%@\"", error];
             UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Facebook error" message:alertText preferredStyle:UIAlertControllerStyleAlert];
@@ -4087,12 +4192,15 @@ static NSArray *colors;
             [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
             [_viewController presentViewController:errorAlert animated:YES completion:nil];
         }
+        else {
+            successCallback();
+        }
     }];
 }
 
 - (void) sharer:(id<FBSDKSharing>)sharer didCompleteWithResults:(NSDictionary *)results {
     
-    JPLog(@"successfully shared story to FB. results: %@", results);
+    //NSLog(@"successfully shared story to FB. results: %@", results);
 }
 
 - (void) sharer:(id<FBSDKSharing>)sharer didFailWithError:(NSError *)error {
@@ -4102,7 +4210,7 @@ static NSArray *colors;
 
 - (void) sharerDidCancel:(id<FBSDKSharing>)sharer {
     
-    JPLog(@"FB sharing cancelled");
+    //NSLog(@"FB sharing cancelled");
     
 }
 
@@ -4206,10 +4314,10 @@ static NSArray *colors;
     [_viewController presentViewController:errorAlert animated:YES completion:nil];
 }
 
-+ (void) showBannerAlertForText:(NSString *)text andWidth:(CGFloat)screenWidth {
++ (void) showBannerAlertForText:(NSString *)text {
     
     BannerAlert *bannerAlertView = [[BannerAlert alloc] init];
-    [bannerAlertView sizeBannerAndSetText:text forWidth:screenWidth];
+    [bannerAlertView sizeBannerAndSetText:text forWidth:[self screenSize].width];
     //KLCPopupLayout layout = KLCPopupLayoutMake(KLCPopupHorizontalLayoutCenter, KLCPopupVerticalLayoutBottom);
     KLCPopup *bannerAlert = [KLCPopup popupWithContentView:bannerAlertView
                                                   showType:KLCPopupShowTypeFadeIn
@@ -4492,7 +4600,7 @@ static NSArray *colors;
 
 // get keychain credentials
 + (NSString *) getKeychainCred {
-    
+    NSLog(@"get keychain cred");
     NSString *key = @"tung credentials";
     NSString *service = [[NSBundle mainBundle] bundleIdentifier];
     NSDictionary *query = @{
@@ -4505,7 +4613,7 @@ static NSArray *colors;
     OSStatus results = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&cfValue);
     
     if (results == errSecSuccess) {
-        //JPLog(@"credentials found");
+        NSLog(@"credentials found");
         NSString *tungCred = [[NSString alloc] initWithData:(__bridge_transfer NSData *)cfValue encoding:NSUTF8StringEncoding];
         return tungCred;
     } else {

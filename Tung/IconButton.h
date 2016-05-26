@@ -16,7 +16,8 @@ typedef enum {
     kIconButtonTypeProfileSearch,
     kIconButtonTypeSkipBack15,
     kIconButtonTypeSkipAhead15,
-    kIconButtonTypeSettings
+    kIconButtonTypeSettings,
+    kIconButtonTypeFindFriends
 } IconButtonType;
 
 @interface IconButton : UIButton

@@ -21,10 +21,6 @@
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
 
-#define MAX_RECORD_TIME 29
-#define MIN_RECORD_TIME 2
-#define MAX_COMMENT_CHARS 220
-
 @interface EpisodeViewController ()
 
 @property (nonatomic, retain) TungCommonObjects *tung;
@@ -74,17 +70,16 @@
 @property BOOL isNowPlayingView;
 @property BOOL isFirstAppearance;
 
+@property CGFloat defaultHeaderHeight;
+@property CGFloat commentAndPostViewHeight;
+@property CGSize screenSize;
+
 - (void) switchViews:(id)sender;
 - (void) switchToViewAtIndex:(NSInteger)index;
 
 @end
 
 @implementation EpisodeViewController
-
-CGFloat screenWidth;
-CGFloat screenHeight;
-CGFloat defaultHeaderHeight = 164;
-CGFloat commentAndPostViewHeight = 123;
 
 static NSString *kNewClipIntention = @"New clip";
 static NSString *kNewCommentIntention = @"New comment";
@@ -100,8 +95,10 @@ UIActivityIndicatorView *backgroundSpinner;
     _tung = [TungCommonObjects establishTungObjects];
     _podcast = [TungPodcast new];
     
-    screenWidth = self.view.frame.size.width;
-    screenHeight = self.view.frame.size.height;
+    _defaultHeaderHeight = 164;
+    _commentAndPostViewHeight = 123;
+    _screenSize = [TungCommonObjects screenSize];
+
     
     // is this for now playing?
     if (_episodeMiniDict || _episodeEntity) {
@@ -123,7 +120,7 @@ UIActivityIndicatorView *backgroundSpinner;
         self.view.backgroundColor = [TungCommonObjects bkgdGrayColor];
         
         // nothing playing?
-        CGRect labelFrame = CGRectMake((screenWidth - 320)/2, (screenHeight - 64)/2, 320, 20);
+        CGRect labelFrame = CGRectMake((_screenSize.width - 320)/2, (_screenSize.height - 64)/2, 320, 20);
         _nothingPlayingLabel = [[UILabel alloc] initWithFrame:labelFrame];
         _nothingPlayingLabel.text = @"Nothing is currently playing";
         _nothingPlayingLabel.textColor = [UIColor grayColor];
@@ -188,12 +185,12 @@ UIActivityIndicatorView *backgroundSpinner;
     _npControlsView.tintColor = [UIColor lightGrayColor];
     
     // header view
-    _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 64, screenWidth, defaultHeaderHeight)];
+    _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 64, _screenSize.width, _defaultHeaderHeight)];
     [self.view insertSubview:_headerView belowSubview:_npControlsView];
     _headerView.hidden = YES;
     
     // switcher bar
-    _switcherBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 44)];
+    _switcherBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, _screenSize.width, 44)];
     _switcherBar.clipsToBounds = YES;
     _switcherBar.opaque = YES;
     _switcherBar.translucent = NO;
@@ -203,7 +200,7 @@ UIActivityIndicatorView *backgroundSpinner;
     NSArray *switcherItems = @[@"Description", @"Comments", @"Episodes"];
     _switcher = [[UISegmentedControl alloc] initWithItems:switcherItems];
     _switcher.tintColor = [UIColor lightGrayColor];
-    _switcher.frame = CGRectMake(0, 0, screenWidth - 20, 28);
+    _switcher.frame = CGRectMake(0, 0, _screenSize.width - 20, 28);
     [_switcher addTarget:self action:@selector(switchViews:) forControlEvents:UIControlEventValueChanged];
     UIBarButtonItem *switcherBarItem = [[UIBarButtonItem alloc] initWithCustomView:(UIView *)_switcher];
     UIBarButtonItem *flexSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
@@ -494,7 +491,7 @@ NSTimer *markAsSeenTimer;
             
             dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_SEC);
             dispatch_after(delay, dispatch_get_main_queue(), ^(void){
-                [TungCommonObjects showBannerAlertForText:@"This episode ended. To see now playing, tap 🔈 in the bottom bar." andWidth:screenWidth];
+                [TungCommonObjects showBannerAlertForText:@"This episode ended. To see now playing, tap 🔈 in the bottom bar."];
             });
         }
     }
@@ -787,7 +784,7 @@ static CGRect buttonsScrollViewHomeRect;
     
     // buttons scroll view
     CGRect scrollViewRect = _buttonsScrollView.frame;
-    scrollViewRect.size.width = screenWidth;
+    scrollViewRect.size.width = _screenSize.width;
     _buttonsScrollView.contentSize = CGSizeMake(scrollViewRect.size.width * 3, scrollViewRect.size.height);
     _buttonsScrollView.delegate = self;
     CGRect subViewRect = CGRectMake(0, 0, scrollViewRect.size.width, scrollViewRect.size.height);
@@ -940,7 +937,7 @@ static CGRect buttonsScrollViewHomeRect;
     [self resetRecording];
     
     // comment and post view
-    _commentAndPostView = [[CommentAndPostView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, commentAndPostViewHeight)];
+    _commentAndPostView = [[CommentAndPostView alloc] initWithFrame:CGRectMake(0, 0, _screenSize.width, _commentAndPostViewHeight)];
     [_npControlsView insertSubview:_commentAndPostView belowSubview:_progressBar];
     _commentAndPostView.hidden = YES;
     _commentAndPostView.alpha = 0;
@@ -960,7 +957,7 @@ static CGRect buttonsScrollViewHomeRect;
     [_npControlsView addConstraint:_commentViewTopLayoutConstraint];
     [_npControlsView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_npControlsView attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [_npControlsView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_npControlsView attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
-    [_commentAndPostView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:commentAndPostViewHeight]];
+    [_commentAndPostView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:_commentAndPostViewHeight]];
     
     [self refreshRecommendAndSubscribeStatus];
     
@@ -2171,7 +2168,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
 
-    float fractionalPage = (uint) scrollView.contentOffset.x / screenWidth;
+    float fractionalPage = (uint) scrollView.contentOffset.x / _screenSize.width;
     NSInteger page = lround(fractionalPage);
     _pageControl.currentPage = page;
     

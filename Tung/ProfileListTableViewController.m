@@ -21,6 +21,9 @@
 @property (nonatomic, assign) BOOL feedRefreshed;
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
 @property NSNumber *lastSeenNotification;
+@property CGFloat screenWidth;
+@property BOOL forOnboarding;
+@property NSNumber *page;
 
 @end
 
@@ -32,8 +35,10 @@
     _tung = [TungCommonObjects establishTungObjects];
     _tung.viewController = self;
     
-    if (_tung.screenWidth == 0.0f) {
-        _tung.screenWidth = self.view.frame.size.width;
+    _screenWidth = [TungCommonObjects screenSize].width;
+    
+    if (_screenWidth == 0.0f) {
+        _screenWidth = self.view.frame.size.width;
     }
     
     // default target
@@ -41,13 +46,16 @@
     
     // default nav controller
     _navController = self.navigationController;
+    self.navigationItem.backBarButtonItem.title = @"Back";
     
     // navigation title
     if (_queryType) {
-    	self.navigationItem.title = _queryType;
+        self.navigationItem.title = _queryType;
     }
     // onboarding: platform friends
     else if (_profileData && _usersToFollow) {
+        
+        _forOnboarding = YES;
         
         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Next" style:UIBarButtonItemStyleDone target:self action:@selector(finishSignUp)];
         self.tableView.allowsSelection = NO;
@@ -72,20 +80,6 @@
         }
     }
     
-    // social platform friends
-    if (_socialPlatform) {
-        if ([_socialPlatform isEqualToString:@"Twitter"]) {
-            
-            self.navigationItem.title = @"Twitter Friends";
-            [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects twitterColor] }];
-        }
-        else if ([_socialPlatform isEqualToString:@"Facebook"]) {
-            self.navigationItem.title = @"Facebook Friends";
-            [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects facebookColor] }];
-            
-        }
-    }
-    
     // table view
     UIActivityIndicatorView *spinnerBehindTable = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
     spinnerBehindTable.alpha = 1;
@@ -97,6 +91,10 @@
     self.tableView.scrollsToTop = YES;
     self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 0, 0);
     self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
+    
+    
+    // respond to follow/unfollow events
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(followingChanged:) name:@"followingChanged" object:nil];
     
     // get feed
     if (_queryType) {
@@ -112,15 +110,57 @@
         }
         [self refreshFeed];
     }
+    // social platform friends
     else if (_socialPlatform) {
         
-        if (_profileData) {
-            // _profileArray will have been set above
-            self.tableView.backgroundView = nil;
-            [self.tableView reloadData];
+        if ([_socialPlatform isEqualToString:@"Twitter"]) {
+            
+            self.navigationItem.title = @"Twitter Friends";
+            [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects twitterColor] }];
+            _page = [NSNumber numberWithInt:0];
+            
+            if (_forOnboarding) {
+                // _profileArray will have been set above
+                self.tableView.backgroundView = nil;
+                [self.tableView reloadData];
+            }
+           	else {
+                // assumes that user is already logged into twitter
+                [self getNextPageOfTwitterFriends];
+            }
         }
-        else {
-            // fetch twitter or fb friends (for friend search)
+        else if ([_socialPlatform isEqualToString:@"Facebook"]) {
+            
+            self.navigationItem.title = @"Facebook Friends";
+            [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects facebookColor] }];
+            
+            if (_forOnboarding) {
+                // _profileArray will have been set above
+                self.tableView.backgroundView = nil;
+                [self.tableView reloadData];
+            }
+            else {
+                // assumes user is already logged into FB
+                NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
+                [_tung findFacebookFriendsWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {
+                    self.tableView.backgroundView = nil;
+                    if (success) {
+                        //NSLog(@"responseDict: %@", responseDict);
+                        NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
+                        if ([platformFriendsCount integerValue] > 0) {
+                            _profileArray = [NSMutableArray arrayWithArray:[responseDict objectForKey:@"results"]];
+                        }
+                        else {
+                            _noResults = YES;
+                        }
+                    }
+                    else {
+                        [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                    }
+                    
+                    [self.tableView reloadData];
+                }];
+            }
         }
     }
 }
@@ -138,7 +178,35 @@
         return NO;
     }
 }
+- (void) getNextPageOfTwitterFriends {
+    [_tung findTwitterFriendsWithPage:_page andCallback:^(BOOL success, NSDictionary *responseDict) {
+        if (success) {
+            self.tableView.backgroundView = nil;
+            NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
+            if ([platformFriendsCount integerValue] > 0) {
+                if (_page.integerValue == 0) {
+                	_profileArray = [NSMutableArray arrayWithArray:[responseDict objectForKey:@"results"]];
+                } else {
+                    [_profileArray addObjectsFromArray:[responseDict objectForKey:@"results"]];
+                }
+            }
+            else {
+                if (_page.integerValue == 0) {
+                    _profileArray = [NSMutableArray array];
+                    _noResults = YES;
+                } else {
+                    _noMoreItemsToGet = YES;
+                }
+            }
+            [self.tableView reloadData];
+            _page = [NSNumber numberWithInteger:_page.integerValue + 1];
+        }
+        else {
+            [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+        }
+    }];
 
+}
 // refresh feed by checking or newer items or getting all items
 - (void) refreshFeed {
     
@@ -399,13 +467,77 @@
     [_navController pushViewController:episodeView animated:YES];
 }
 
-- (void) showInviteFriendsPrompt {
-    UIAlertView *inviteFriendsPrompt = [[UIAlertView alloc] initWithTitle:@"Invite Friends" message:@"Enter a comma-separated list of friends’ emails whom you would like to invite." delegate:self cancelButtonTitle:@"Cancel" otherButtonTitles:@"Send", nil];
-    inviteFriendsPrompt.alertViewStyle = UIAlertViewStylePlainTextInput;
-    inviteFriendsPrompt.tag = 59;
-    [inviteFriendsPrompt show];
-}
+- (void) followingChanged:(NSNotification*)notification {
+    
+    PillButton *btn = [[notification userInfo] objectForKey:@"sender"];
+    
+    if (_profileData) { // onboarding
+        
+        if ([[notification userInfo] objectForKey:@"unfollowedUser"]) {
+            // unfollow
+            [_usersToFollow removeObject:[[notification userInfo] objectForKey:@"unfollowedUser"]];
+            btn.on = NO;
+            [btn setNeedsDisplay];
+        }
+        if ([[notification userInfo] objectForKey:@"followedUser"]) {
+            // follow
+            NSString *userId = [[notification userInfo] objectForKey:@"followedUser"];
+            if (![_usersToFollow containsObject:userId]) {
+                [_usersToFollow addObject:userId];
+            }
+        }
+    }
+    else {
+        
+        if ([[notification userInfo] objectForKey:@"unfollowedUser"]) {
+            
+            UIAlertController *unfollowConfirmAlert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:@"Unfollow @%@?", [[notification userInfo] objectForKey:@"username"]] message:nil preferredStyle:UIAlertControllerStyleAlert];
+            [unfollowConfirmAlert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                
+                btn.on = NO;
+                [btn setNeedsDisplay];
+                NSString *userId = [[notification userInfo] objectForKey:@"unfollowedUser"];
+                // unfollow
+                [_tung unfollowUserWithId:userId withCallback:^(BOOL success, NSDictionary *response) {
+                    if (success) {
+                        if (![response objectForKey:@"userNotFollowing"]) {
+                            _tung.feedNeedsRefetch = [NSNumber numberWithBool:YES]; // following changed
+                            NSNotification *followingCountChangedNotif = [NSNotification notificationWithName:@"followingCountChanged" object:nil userInfo:response];
+                            [[NSNotificationCenter defaultCenter] postNotification:followingCountChangedNotif];
+                        }
+                    }
+                    else {
+                        btn.on = YES;
+                        [btn setNeedsDisplay];
+                    }
+                }];
 
+            }]];
+            [unfollowConfirmAlert addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:nil]];
+            unfollowConfirmAlert.preferredAction = [unfollowConfirmAlert.actions objectAtIndex:1];
+            [self presentViewController:unfollowConfirmAlert animated:YES completion:nil];
+            
+        }
+        if ([[notification userInfo] objectForKey:@"followedUser"]) {
+            NSString *userId = [[notification userInfo] objectForKey:@"followedUser"];
+            // follow
+            [_tung followUserWithId:userId withCallback:^(BOOL success, NSDictionary *response) {
+                if (success) {
+                    NSLog(@"successfully followed user from profile list");
+                    if (![response objectForKey:@"userAlreadyFollowing"]) {
+                    	_tung.feedNeedsRefresh = [NSNumber numberWithBool:YES]; // following changed
+                        NSNotification *followingCountChangedNotif = [NSNotification notificationWithName:@"followingCountChanged" object:nil userInfo:response];
+                        [[NSNotificationCenter defaultCenter] postNotification:followingCountChangedNotif];
+                    }
+                }
+                else {
+                    btn.on = NO;
+                    [btn setNeedsDisplay];
+                }
+            }];
+        }
+    }
+}
 
 #pragma mark - Table view data source
 
@@ -433,6 +565,7 @@
     // cell data
     NSDictionary *profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
     profileCell.userId = [[profileDict objectForKey:@"_id"] objectForKey:@"$id"];
+    profileCell.username = [profileDict objectForKey:@"username"];
     //NSLog(@"%@", profileDict);
     
     // avatar
@@ -445,7 +578,7 @@
     [profileCell.avatarContainerView setNeedsDisplay];
     
     // username
-    if (_tung.screenWidth < 375) {
+    if (_screenWidth < 375) {
         profileCell.usernameLabel.font = [UIFont systemFontOfSize:13 weight:UIFontWeightBold];
     }
     [profileCell.avatarButton addTarget:self action:@selector(tableCellButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
@@ -454,7 +587,7 @@
     // set username label, sub-label, icon
     if (!_socialPlatform) {
         
-        profileCell.usernameLabel.text = [profileDict objectForKey:@"username"];
+        profileCell.usernameLabel.text = profileCell.username;
         NSString *action = [profileDict objectForKey:@"action"];
         if ([_queryType isEqualToString:@"Notifications"]) {
             
@@ -495,11 +628,7 @@
         
         profileCell.subLabelLeadingConstraint.constant = 30;
         profileCell.smallIconView.hidden = NO;
-        
-        if (_profileData) { // onboarding
-            profileCell.forOnboarding = YES;
-            profileCell.usersToFollow = _usersToFollow;
-        }
+
         
         NSString *subLabel;
         if ([_socialPlatform isEqualToString:@"Twitter"]) {
@@ -520,12 +649,14 @@
     }
     
     // follow button
-    if (_profileData) {
+    if (_forOnboarding) {
         if ([_usersToFollow containsObject:profileCell.userId]) {
             profileCell.followBtn.on = YES;
         } else {
             profileCell.followBtn.on = NO;
         }
+        profileCell.accessoryType = UITableViewCellAccessoryNone;
+        profileCell.followBtnTrailingConstraint.constant = 12;
     }
     else {
         if ([_tung.tungId isEqualToString:[profileDict objectForKey:@"id"]]) {
@@ -547,6 +678,7 @@
             profileCell.followBtn.hidden = NO;
             profileCell.youLabel.hidden = YES;
         }
+        profileCell.followBtnTrailingConstraint.constant = 1;
     }
     [profileCell.followBtn setNeedsDisplay];
     
@@ -557,7 +689,7 @@
 #pragma mark - Table view delegate methods
 
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (_tung.screenWidth > 320) {
+    if (_screenWidth > 320) {
     	return 80;
     } else {
         return 64;
@@ -597,9 +729,9 @@
 
 -(UIView *) tableView:(UITableView *)tableView viewForHeaderInSection:(NSInteger)section {
     if (_profileData && _socialPlatform && section == 0) {
-        UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, _tung.screenWidth, 60)];
+        UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, _screenWidth, 60)];
         headerView.backgroundColor = [TungCommonObjects bkgdGrayColor];
-        UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(20, 0, _tung.screenWidth - 40, 60)];
+        UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(10, 0, _screenWidth - 20, 60)];
         label.text = [NSString stringWithFormat:@"We found some of your %@ friends on Tung:", _socialPlatform];
         label.font = [UIFont systemFontOfSize:13.5];
         label.textColor = [UIColor darkGrayColor];
@@ -623,54 +755,16 @@
     }
 }
 
-// FOOTER
-
-- (UIView *) footerViewWithMessage:(NSString *)message {
-    
-    UIView *footerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, _tung.screenWidth, 60.0)];
-    footerView.backgroundColor = [TungCommonObjects bkgdGrayColor];
-    float yPos = 15;
-    if (message.length > 0) {
-        yPos = 25;
-        // label
-        UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(0, 10, _tung.screenWidth, 20)];
-        label.text = message;
-        label.textColor = [UIColor grayColor];
-        label.textAlignment = NSTextAlignmentCenter;
-        [footerView addSubview:label];
-    }
-    // button
-    UIButton *inviteFriendsBtn = [UIButton buttonWithType:UIButtonTypeSystem];
-    [inviteFriendsBtn setTitle:@"Invite friends to Tung" forState:UIControlStateNormal];
-    [inviteFriendsBtn setTitleColor:[TungCommonObjects tungColor] forState:UIControlStateNormal];
-    [inviteFriendsBtn.titleLabel setFont:[UIFont boldSystemFontOfSize:15]];
-    [inviteFriendsBtn addTarget:self action:@selector(showInviteFriendsPrompt) forControlEvents:UIControlEventTouchUpInside];
-    [inviteFriendsBtn setFrame:CGRectMake(0, yPos, self.view.bounds.size.width, 30)];
-    [footerView addSubview:inviteFriendsBtn];
-    
-    return footerView;
-}
 
 -(UIView *) tableView:(UITableView *)tableView viewForFooterInSection:(NSInteger)section {
 
     if (_noMoreItemsToGet && section == 1) {
         NSString *thatsAll = ([_queryType isEqualToString:@"Notifications"]) ? @"That's everything. " : @"That's everyone.";
-        if (!_queryType) {
-        	return [self footerViewWithMessage:thatsAll];
-        } else {
-            return [self labelWithMessageAndBottomMargin:thatsAll];
-        }
+        return [self labelWithMessageAndBottomMargin:thatsAll];
     }
     else if (_noResults && section == 1) {
-        NSString *message = @"No results.";
-        if (!_queryType) {
-        	return [self footerViewWithMessage:message];
-        } else {
-            return [self labelWithMessageAndBottomMargin:message];
-        }
-    }
-    else if (!_queryType && !_profileData && section == 1) {
-        return [self footerViewWithMessage:@""];
+        NSString *message = ([_queryType isEqualToString:@"Notifications"]) ? @"Nothing yet. " : @"No results.";
+        return [self labelWithMessageAndBottomMargin:message];
     }
     else {
         _loadMoreIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
@@ -678,35 +772,12 @@
     }
 }
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
-	if (!_queryType && !_profileData && section == 1) {
+    if (!_noMoreItemsToGet && section == 0)
         return 60.0;
-    }
-    else if ((_noResults || _noMoreItemsToGet) && section == 1) {
+    else if ((_noResults || _noMoreItemsToGet) && section == 1)
         return 60.0;
-    }
-    else {
+    else
         return 0;
-    }
-}
-
-#pragma mark - handle alerts
-
--(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    JPLog(@"dismissed alert with button index: %ld", (long)buttonIndex);
-    
-    if (alertView.tag == 59 && buttonIndex) { // invite friends request
-        NSString *friends = [[alertView textFieldAtIndex:0] text];
-        if (friends.length) {
-        	[_tung inviteFriends:friends];
-        } else {
-            UIAlertView *nothingEnteredAlert = [[UIAlertView alloc] initWithTitle:@"Nothing entered" message:@"Try again?" delegate:self cancelButtonTitle:@"No" otherButtonTitles:@"Yes", nil];
-            nothingEnteredAlert.tag = 58;
-            [nothingEnteredAlert show];
-        }
-    }
-    if (alertView.tag == 58 && buttonIndex) { // invite friends: nothing entered
-        [self showInviteFriendsPrompt];
-    }
 }
 
 #pragma mark - scroll view delegate methods
@@ -718,16 +789,23 @@
         float bottomOffset = scrollView.contentSize.height - scrollView.frame.size.height;
         if (scrollView.contentOffset.y >= bottomOffset) {
             // request more posts if they didn't reach the end
-            if (!_profileData) {
+            if (!_forOnboarding) {
                 if (!_requestingMore && !_noMoreItemsToGet && _profileArray.count > 0) {
                     _requestingMore = YES;
                     _loadMoreIndicator.alpha = 1;
                     [_loadMoreIndicator startAnimating];
-                    NSNumber *oldest = [[_profileArray objectAtIndex:_profileArray.count-1] objectForKey:@"time_secs"];
-                    [self requestProfileListWithQuery:_queryType
-                                                   forTarget:_target_id
-                                                   newerThan:[NSNumber numberWithInt:0]
-                                                 orOlderThan:oldest];
+                    if (!_socialPlatform && _queryType) {
+                        NSNumber *oldest = [[_profileArray objectAtIndex:_profileArray.count-1] objectForKey:@"time_secs"];
+                        [self requestProfileListWithQuery:_queryType
+                                                       forTarget:_target_id
+                                                       newerThan:[NSNumber numberWithInt:0]
+                                                     orOlderThan:oldest];
+                    }
+                    else if (_socialPlatform) {
+                        if ([_socialPlatform isEqualToString:@"Twitter"]) {
+                            [self getNextPageOfTwitterFriends];
+                        }
+                    }
                 }
             }
             // TODO: onboarding: auto-load more users -

@@ -28,7 +28,8 @@
 		7D1E55EF1CDE93B60069492E /* SuggestedUserCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D1E55EE1CDE93B60069492E /* SuggestedUserCell.m */; };
 		7D1F0B661BD12CEF001C9A9D /* CommentCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D1F0B651BD12CEF001C9A9D /* CommentCell.m */; };
 		7D2165F31AFEBC590020356C /* ShowHideControlsButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D2165F21AFEBC590020356C /* ShowHideControlsButton.m */; };
-		7D2289351CE2E2280063444F /* SuggestedUsersTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D2289341CE2E2280063444F /* SuggestedUsersTableViewController.m */; };
+		7D2289351CE2E2280063444F /* FindFriendsTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D2289341CE2E2280063444F /* FindFriendsTableViewController.m */; };
+		7D2458A01CF6156C00C4FCF1 /* IconCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D24589F1CF6156C00C4FCF1 /* IconCell.m */; };
 		7D282C751AF022D900495E74 /* albumShawdow@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D282C731AF022D900495E74 /* albumShawdow@2x.png */; };
 		7D282C761AF022D900495E74 /* albumShawdow@3x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D282C741AF022D900495E74 /* albumShawdow@3x.png */; };
 		7D282C7C1AF29D3400495E74 /* TungPodcastStyleKit.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D282C7B1AF29D3400495E74 /* TungPodcastStyleKit.m */; };
@@ -234,8 +235,10 @@
 		7D1F0B651BD12CEF001C9A9D /* CommentCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CommentCell.m; sourceTree = "<group>"; };
 		7D2165F11AFEBC590020356C /* ShowHideControlsButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ShowHideControlsButton.h; sourceTree = "<group>"; };
 		7D2165F21AFEBC590020356C /* ShowHideControlsButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ShowHideControlsButton.m; sourceTree = "<group>"; };
-		7D2289331CE2E2280063444F /* SuggestedUsersTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SuggestedUsersTableViewController.h; sourceTree = "<group>"; };
-		7D2289341CE2E2280063444F /* SuggestedUsersTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SuggestedUsersTableViewController.m; sourceTree = "<group>"; };
+		7D2289331CE2E2280063444F /* FindFriendsTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = FindFriendsTableViewController.h; sourceTree = "<group>"; };
+		7D2289341CE2E2280063444F /* FindFriendsTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = FindFriendsTableViewController.m; sourceTree = "<group>"; };
+		7D24589E1CF6156C00C4FCF1 /* IconCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = IconCell.h; sourceTree = "<group>"; };
+		7D24589F1CF6156C00C4FCF1 /* IconCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IconCell.m; sourceTree = "<group>"; };
 		7D282C731AF022D900495E74 /* albumShawdow@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "albumShawdow@2x.png"; sourceTree = "<group>"; };
 		7D282C741AF022D900495E74 /* albumShawdow@3x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "albumShawdow@3x.png"; sourceTree = "<group>"; };
 		7D282C7A1AF29D3400495E74 /* TungPodcastStyleKit.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = TungPodcastStyleKit.h; sourceTree = "<group>"; };
@@ -579,6 +582,8 @@
 				7DA2124B1AFA8A7F00C619F9 /* EpisodeViewController.m */,
 				7D4F352B1AB797FF0090EE81 /* FeedViewController.h */,
 				7D4F352C1AB797FF0090EE81 /* FeedViewController.m */,
+				7D2289331CE2E2280063444F /* FindFriendsTableViewController.h */,
+				7D2289341CE2E2280063444F /* FindFriendsTableViewController.m */,
 				7D1341E7192530AC00B95C66 /* FinishSignUpController.h */,
 				7D1341E8192530AC00B95C66 /* FinishSignUpController.m */,
 				7DCAC60019FEF81A004B6182 /* FollowersCell.h */,
@@ -586,6 +591,8 @@
 				7D63F80E1AF6CBCC00765289 /* HeaderView.h */,
 				7D63F80F1AF6CBCC00765289 /* HeaderView.m */,
 				7D63F80C1AF6CBA100765289 /* HeaderView.xib */,
+				7D24589E1CF6156C00C4FCF1 /* IconCell.h */,
+				7D24589F1CF6156C00C4FCF1 /* IconCell.m */,
 				7D61F93218A1EB2F00710CA7 /* Images.xcassets */,
 				7DD84D351C6FEA8500D11E2E /* LogViewController.h */,
 				7DD84D361C6FEA8500D11E2E /* LogViewController.m */,
@@ -631,8 +638,6 @@
 				7DF2FAD01AF3BE3F004C66E6 /* SubscriptionViewCell.m */,
 				7D1E55ED1CDE93B60069492E /* SuggestedUserCell.h */,
 				7D1E55EE1CDE93B60069492E /* SuggestedUserCell.m */,
-				7D2289331CE2E2280063444F /* SuggestedUsersTableViewController.h */,
-				7D2289341CE2E2280063444F /* SuggestedUsersTableViewController.m */,
 				7D61F92418A1EB2F00710CA7 /* Supporting Files */,
 				7D80C77218E7727E00D1BB63 /* tung.entitlements */,
 				7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */,
@@ -1084,7 +1089,8 @@
 				7D4F352D1AB797FF0090EE81 /* FeedViewController.m in Sources */,
 				7DB6A1B01BFE0EB20057D337 /* KLCPopup.m in Sources */,
 				7D46A8961999CE7E00F83C23 /* LargeAvatarContainerView.m in Sources */,
-				7D2289351CE2E2280063444F /* SuggestedUsersTableViewController.m in Sources */,
+				7D2458A01CF6156C00C4FCF1 /* IconCell.m in Sources */,
+				7D2289351CE2E2280063444F /* FindFriendsTableViewController.m in Sources */,
 				7D61F92A18A1EB2F00710CA7 /* main.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;

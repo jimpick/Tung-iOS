@@ -1,5 +1,5 @@
 //
-//  SuggestedUsersTableViewController.h
+//  FindFriendsTableViewController.h
 //  Tung
 //
 //  Created by Jamie Perkins on 5/10/16.
@@ -9,11 +9,11 @@
 #import <UIKit/UIKit.h>
 #import "TungCommonObjects.h"
 
-@interface SuggestedUsersTableViewController : UITableViewController
+@interface FindFriendsTableViewController : UITableViewController
 
 
 @property (nonatomic, retain) TungCommonObjects *tung;
-@property (strong, nonatomic) NSArray *usersArray;
+@property (strong, nonatomic) NSArray *suggestedUsersArray;
 @property (strong, nonatomic) NSMutableDictionary *profileData;
 
 @end

@@ -31,6 +31,11 @@
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
 #import <FBSDKShareKit/FBSDKShareKit.h>
 
+// constants
+#define NUM_REQUIRED_FOLLOWS 2
+#define MAX_RECORD_TIME 29
+#define MIN_RECORD_TIME 2
+#define MAX_COMMENT_CHARS 220
 
 @protocol ControlButtonDelegate <NSObject>
 
@@ -57,7 +62,6 @@
 @property NSNumber *connectionAvailable;
 @property (nonatomic, retain) NSString *tungSiteRootUrl;
 @property (nonatomic, retain) NSString *apiRootUrl;
-@property CGFloat screenWidth;
 
 // player
 @property EpisodeEntity *npEpisodeEntity;
@@ -191,29 +195,31 @@
 // user requests
 - (void) getProfileDataForUser:(NSString *)target_id withCallback:(void (^)(NSDictionary *jsonData))callback;
 - (void) updateUserWithDictionary:(NSDictionary *)userInfo withCallback:(void (^)(NSDictionary *jsonData))callback;
-- (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback;
-- (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success))callback;
+- (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+- (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) followAllUsersWithCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+- (void) getSuggestedUsersWithCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+- (void) preloadAlbumArtForSuggestedUsers:(NSArray *)suggestedUsers;
 - (void) inviteFriends:(NSString *)friends;
 - (void) signOut;
 
 // twitter
 - (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url;
 - (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
-- (void) findTwitterFriendsForUsername:(NSString *)username page:(NSString *)page withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+- (void) findTwitterFriendsWithPage:(NSNumber *)page andCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 
 // facebook
 - (void) postToFacebookWithText:(NSString *)text Link:(NSString *)link andEpisode:(EpisodeEntity *)episodeEntity;
 - (void) verifyCredWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) findFacebookFriendsWithFacebookAccessToken:(NSString *)token withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
-- (void) getFacebookFriendsListPermissions;
+- (void) getFacebookFriendsListPermissionsWithSuccessCallback:(void (^)(void))successCallback;
 
 // alerts
 - (void) promptForNotificationsForEpisodes;
 - (void) promptForNotificationsForMentions;
 - (void) showConnectionErrorAlertForError:(NSError *)error;
 - (void) showNoConnectionAlert;
-+ (void) showBannerAlertForText:(NSString *)text andWidth:(CGFloat)screenWidth;
++ (void) showBannerAlertForText:(NSString *)text;
 - (void) simpleErrorAlertWithMessage:(NSString *)message;
 
 // caching
@@ -232,6 +238,7 @@
 
 // misc class methods
 + (id) establishTungObjects;
++ (CGSize) screenSize;
 + (void) clearTempDirectory;
 + (NSString *) generateHash;
 + (NSString *) getKeychainCred;

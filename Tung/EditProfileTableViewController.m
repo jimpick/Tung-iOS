@@ -34,6 +34,8 @@
 @property (strong, nonatomic) UserEntity *userEntity;
 @property BOOL formIsForSignup;
 @property BOOL formIsPristine;
+@property BOOL usernameCheckUnderway;
+@property NSArray *suggestedUsersArray;
 
 @end
 
@@ -60,6 +62,17 @@ static UIImage *iconRedX;
         self.navigationItem.leftBarButtonItem.title = @"Back";
         _refreshAvatarBtn.hidden = YES;
         [self createAvatarSizesAndSetAvatarWithCallback:nil];
+        
+        // preload suggested users
+        if (!_suggestedUsersArray) {
+            NSLog(@"get suggested users");
+            [_tung getSuggestedUsersWithCallback:^(BOOL success, NSDictionary *response) {
+                if (success) {
+                    _suggestedUsersArray = [response objectForKey:@"success"];
+                    [_tung preloadAlbumArtForSuggestedUsers:_suggestedUsersArray];
+                }
+            }];
+        }
         
     } else {
         // edit profile
@@ -92,7 +105,7 @@ static UIImage *iconRedX;
     // get keyboard height when keyboard is shown and inset table
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardDidAppear:) name:UIKeyboardDidShowNotification object:nil];
     
-    CGFloat screenWidth = self.view.bounds.size.width;
+    CGFloat screenWidth = [TungCommonObjects screenSize].width;
     // input view toolbar
     _keyboardToolbar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 44)];
     _keyboardToolbar.tintColor = [TungCommonObjects tungColor];
@@ -173,7 +186,7 @@ static UIImage *iconRedX;
 }
 
 - (void)viewWillAppear:(BOOL)animated {
-    
+    _usernameCheckUnderway = NO;
     [self validateAllFields];
 
     // registration errors from FinishSignUpController?
@@ -231,6 +244,7 @@ static UIImage *iconRedX;
 
 - (IBAction)leftBarItem:(id)sender {
     
+    [[_fields objectAtIndex:_activeFieldIndex] resignFirstResponder];
     if (_formIsForSignup)
         [self performSegueWithIdentifier:@"unwindToWelcome" sender:self];
     else
@@ -730,27 +744,36 @@ static UIImage *iconRedX;
     if (!_formIsForSignup && [_profileData objectForKey:@"username"] && [[_profileData objectForKey:@"username"] isEqualToString:_field_username.text]) {
         return;
     }
-    NSString *urlAsString = [NSString stringWithFormat:@"%@users/username_check.php?username=%@", _tung.apiRootUrl, _field_username.text];
-    NSURL *checkUsernameURL = [NSURL URLWithString:urlAsString];
-    NSMutableURLRequest *checkUsernameRequest = [NSMutableURLRequest requestWithURL:checkUsernameURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:5.0f];
-    [checkUsernameRequest setHTTPMethod:@"GET"];
-    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    [NSURLConnection sendAsynchronousRequest:checkUsernameRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        if (jsonData != nil && error == nil) {
-            NSDictionary *responseDict = jsonData;
-            //JPLog(@"responseDict: %@", responseDict);
-            id usernameExistsId = [responseDict objectForKey:@"username_exists"];
-            BOOL usernameExists = [usernameExistsId boolValue];
-            if (usernameExists) {
+    if (_field_username.text.length && !_usernameCheckUnderway) {
+        NSLog(@"checking username: %@", _field_username.text);
+        _usernameCheckUnderway = YES;
+        NSString *urlAsString = [NSString stringWithFormat:@"%@users/username_check.php?username=%@", _tung.apiRootUrl, _field_username.text];
+        NSURL *checkUsernameURL = [NSURL URLWithString:urlAsString];
+        NSMutableURLRequest *checkUsernameRequest = [NSMutableURLRequest requestWithURL:checkUsernameURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:5.0f];
+        [checkUsernameRequest setHTTPMethod:@"GET"];
+        NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+        [NSURLConnection sendAsynchronousRequest:checkUsernameRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+            error = nil;
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            if (jsonData != nil && error == nil) {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    if (_activeFieldIndex == 0) _validationIndicator.image = iconRedX;
-                    [_fieldErrors setObject:[NSString stringWithFormat:@"The username \"%@\" is taken", _field_username.text] forKey:@"username"];
+                    _usernameCheckUnderway = NO;
+                    NSDictionary *responseDict = jsonData;
+                    //JPLog(@"responseDict: %@", responseDict);
+                    id usernameExistsId = [responseDict objectForKey:@"username_exists"];
+                    BOOL usernameExists = [usernameExistsId boolValue];
+                    if (usernameExists) {
+                            if (_activeFieldIndex == 0) _validationIndicator.image = iconRedX;
+                            [_fieldErrors setObject:[NSString stringWithFormat:@"The username \"%@\" is taken", _field_username.text] forKey:@"username"];
+                    }
+                });
+            } else {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                	_usernameCheckUnderway = NO;
                 });
             }
-        }
-    }];
+        }];
+    }
 }
 -(BOOL) validateTextField:(UITextField *)textField optional:(BOOL)optional {
     // for validating either Name or Location
@@ -942,6 +965,7 @@ static UIImage *iconRedX;
         [_profileData setValue:_field_url.text forKey:@"url"];
         // set value
         [destination setValue:_profileData forKey:@"profileData"];
+        [destination setValue:_suggestedUsersArray forKey:@"suggestedUsersArray"];
     }
 }
 

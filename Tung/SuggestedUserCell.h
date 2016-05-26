@@ -20,7 +20,12 @@
 @property (strong, nonatomic) IBOutlet UIScrollView *scrollView;
 @property (strong, nonatomic) IBOutlet IconView *iconView;
 @property (strong, nonatomic) IBOutlet UILabel *mostReccdLabel;
+@property (strong, nonatomic) IBOutlet UILabel *youLabel;
+
 @property (strong, nonatomic) NSString *userId;
+@property (strong, nonatomic) NSString *username;
+
+- (IBAction)followOrUnfollowUser:(id)sender;
 
 @end
 

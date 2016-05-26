@@ -38,9 +38,7 @@
     
     _tung = [TungCommonObjects establishTungObjects];
     
-    CGRect screenBounds = [[UIScreen mainScreen]bounds];
-    CGFloat screenWidth = screenBounds.size.width;
-    CGFloat screenHeight = screenBounds.size.height;
+    CGSize screenSize = [TungCommonObjects screenSize];
     
     // set view controllers
     self.feedView = [self.storyboard instantiateViewControllerWithIdentifier:@"feedNavController"];
@@ -54,7 +52,7 @@
     self.tabBar.hidden = YES;
     UIToolbar *toolbar = [UIToolbar new];
     toolbar.translucent = NO;
-    toolbar.frame = CGRectMake(0, screenHeight - 44, screenWidth, 44);
+    toolbar.frame = CGRectMake(0, screenSize.height - 44, screenSize.width, 44);
     //NSLog(@"toolbar frame: %@", NSStringFromCGRect(toolbar.frame));
     toolbar.clipsToBounds = YES;
     _activeButtonImages = @[@"tabBar-feed.png", @"tabBar-nowPlaying.png", @"tabBar-subscriptions.png", @"tabBar-profile.png"];
@@ -70,7 +68,7 @@
     UIBarButtonItem *profileBarBtn = [[UIBarButtonItem alloc] initWithCustomView:_profileInnerBtn];
     _innerButtons = @[_feedInnerBtn, _nowPlayingInnerBtn, _subscribesInnerBtn, _profileInnerBtn];
     UIBarButtonItem *fixedSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFixedSpace target:self action:nil];
-    fixedSpace.width = screenWidth * .25;
+    fixedSpace.width = screenSize.width * .25;
     UIBarButtonItem *flexSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
     [toolbar setItems:@[feedBarBtn, flexSpace,
                         nowPlayingBarBtn, flexSpace,
@@ -83,15 +81,15 @@
     
     // control button shadow
     UIImageView *btn_player_shadow = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"btn-player-shadow.png"]];
-    int shadow_x = (screenWidth - 116) / 2 ;
-    int shadow_y = screenHeight - 77;
+    int shadow_x = (screenSize.width - 116) / 2 ;
+    int shadow_y = screenSize.height - 77;
     btn_player_shadow.frame = CGRectMake(shadow_x, shadow_y, 116, 77);
     [self.view insertSubview:btn_player_shadow aboveSubview:self.view];
     
     // control button
     _tung.btn_player = [UIButton buttonWithType:UIButtonTypeCustom];
-    int x = (screenWidth - 76) / 2 ;
-    int y = screenHeight - 63;
+    int x = (screenSize.width - 76) / 2 ;
+    int y = screenSize.height - 63;
     _tung.btn_player.frame = CGRectMake(x, y, 76, 63);
     [_tung.btn_player setBackgroundImage:[UIImage imageNamed:@"btn-player-bkgd.png"] forState:UIControlStateNormal];
     [_tung.btn_player setBackgroundImage:[UIImage imageNamed:@"btn-player-bkgd-down.png"] forState:UIControlStateHighlighted];
@@ -101,8 +99,8 @@
     [_tung.btn_player addTarget:_tung action:@selector(controlButtonTapped) forControlEvents:UIControlEventTouchUpInside];
     // buffering indicator
     _tung.btnActivityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
-    int indicator_x = (screenWidth - 37) / 2 ;
-    int indicator_y = screenHeight - 45;
+    int indicator_x = (screenSize.width - 37) / 2 ;
+    int indicator_y = screenSize.height - 45;
     _tung.btnActivityIndicator.frame = CGRectMake(indicator_x, indicator_y, 37, 37);
     // add views
     [self.view insertSubview:_tung.btn_player aboveSubview:self.view];
@@ -111,9 +109,9 @@
     [_tung checkForNowPlaying];
     
     // custom tab bar badges
-    CGFloat badgeY = screenHeight - 40;
-    CGPoint subscriptionsBadgeCenter = CGPointMake(screenWidth * 0.76, badgeY);
-    CGPoint profileBadgeCenter = CGPointMake(screenWidth * 0.94, badgeY);
+    CGFloat badgeY = screenSize.height - 40;
+    CGPoint subscriptionsBadgeCenter = CGPointMake(screenSize.width * 0.76, badgeY);
+    CGPoint profileBadgeCenter = CGPointMake(screenSize.width * 0.94, badgeY);
     CGRect badgeFrame = CGRectMake(0, 0, 22, 22);
     SettingsEntity *settings = [TungCommonObjects settings];
     

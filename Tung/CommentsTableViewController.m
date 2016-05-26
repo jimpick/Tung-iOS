@@ -16,11 +16,12 @@
 @property NSIndexPath *buttonPressIndexPath;
 @property EpisodeEntity *episodeEntity;
 
+@property CGFloat screenWidth;
+@property CGFloat labelWidth;
+
 @end
 
 @implementation CommentsTableViewController
-
-CGFloat screenWidth, labelWidth;
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -43,8 +44,8 @@ CGFloat screenWidth, labelWidth;
     [tableSpinner startAnimating];
     self.tableView.backgroundView = tableSpinner;
     
-    screenWidth = self.view.frame.size.width;
-    labelWidth = screenWidth - 130 - 8; // right margin, left margin
+    _screenWidth = [TungCommonObjects screenSize].width;
+    _labelWidth = _screenWidth - 130 - 8; // right margin, left margin
     
 }
 
@@ -231,7 +232,7 @@ UILabel *prototypeLabel;
     }
     
     prototypeLabel.text = [commentDict objectForKey:@"comment"];
-    CGSize labelSize = [prototypeLabel sizeThatFits:CGSizeMake(labelWidth, 400)];
+    CGSize labelSize = [prototypeLabel sizeThatFits:CGSizeMake(_labelWidth, 400)];
     //JPLog(@"label size for row %ld: %@", (long)indexPath.row, NSStringFromCGSize(labelSize));
     return labelSize;
 }
@@ -263,7 +264,7 @@ UILabel *prototypeLabel;
         return noConnectionLabel;
     }
     else {
-        UILabel *toCommentLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 25, screenWidth, 40)];
+        UILabel *toCommentLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 25, _screenWidth, 40)];
         toCommentLabel.text = @"To comment, play this episode.";
         toCommentLabel.numberOfLines = 2;
         toCommentLabel.textColor = [UIColor lightGrayColor];
@@ -271,7 +272,7 @@ UILabel *prototypeLabel;
         toCommentLabel.font = [UIFont systemFontOfSize:15];
         
         if (_commentsArray.count > 0 && section == 1) {
-            UILabel *noMoreLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 5, screenWidth, 20)];
+            UILabel *noMoreLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 5, _screenWidth, 20)];
             noMoreLabel.text = @"That's everything.\n ";
             noMoreLabel.numberOfLines = 0;
             noMoreLabel.textColor = [UIColor grayColor];
@@ -279,13 +280,13 @@ UILabel *prototypeLabel;
             if (_episodeEntity.isNowPlaying.boolValue) {
                 return noMoreLabel;
             }
-            UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 60)];
+            UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, _screenWidth, 60)];
             [commentFooterView addSubview:noMoreLabel];
             [commentFooterView addSubview:toCommentLabel];
             return commentFooterView;
         }
         else if (_noResults && section == 1) {
-            UILabel *noCommentsLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 5, screenWidth, 20)];
+            UILabel *noCommentsLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 5, _screenWidth, 20)];
             noCommentsLabel.text = @"No comments yet.";
             noCommentsLabel.textColor = [UIColor grayColor];
             noCommentsLabel.textAlignment = NSTextAlignmentCenter;
@@ -293,7 +294,7 @@ UILabel *prototypeLabel;
             if (_episodeEntity.isNowPlaying.boolValue) {
                 return noCommentsLabel;
             }
-            UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, 60)];
+            UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, _screenWidth, 60)];
             [commentFooterView addSubview:noCommentsLabel];
             [commentFooterView addSubview:toCommentLabel];
             return commentFooterView;

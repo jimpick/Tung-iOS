@@ -50,9 +50,9 @@
     self.termsNoticeWebView.delegate = self;
     [self.termsNoticeWebView loadRequest:refURLRequest];
     
-    if (_usersToFollow) {
-        NSLog(@"received users to follow: %@", _usersToFollow);
-    }
+//    if (_usersToFollow) {
+//        NSLog(@"received users to follow: %@", _usersToFollow);
+//    }
 
 }
 

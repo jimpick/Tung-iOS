@@ -13,7 +13,7 @@
 #import "ProfileListTableViewController.h"
 #import "BrowserViewController.h"
 #import "IconButton.h"
-#import "JPLogRecorder.h"
+#import "FindFriendsTableViewController.h"
 
 @class TungCommonObjects;
 
@@ -44,10 +44,10 @@
 @property UISegmentedControl *switcher;
 @property NSInteger switcherIndex;
 
+@property CGFloat screenWidth;
+
 
 @end
-
-CGFloat screenWidth;
 
 @implementation ProfileViewController
 
@@ -57,6 +57,8 @@ CGFloat screenWidth;
     
     _tung = [TungCommonObjects establishTungObjects];
     _tung.ctrlBtnDelegate = self;
+    
+    _screenWidth = [TungCommonObjects screenSize].width;
     
     // profiled user
     if (!_profiledUserId) {
@@ -76,7 +78,8 @@ CGFloat screenWidth;
         IconButton *profileSearchInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
         profileSearchInner.type = kIconButtonTypeProfileSearch;
         profileSearchInner.color = [TungCommonObjects tungColor];
-        [profileSearchInner addTarget:self action:@selector(initiateProfileSearch) forControlEvents:UIControlEventTouchUpInside];
+        //[profileSearchInner addTarget:self action:@selector(initiateProfileSearch) forControlEvents:UIControlEventTouchUpInside];
+        [profileSearchInner addTarget:self action:@selector(pushFindFriendsView) forControlEvents:UIControlEventTouchUpInside];
         _profileSearchButton = [[UIBarButtonItem alloc] initWithCustomView:profileSearchInner];
         self.navigationItem.rightBarButtonItem = _profileSearchButton;
         
@@ -111,8 +114,6 @@ CGFloat screenWidth;
             _isLoggedInUser = YES;
         }
     }
-    
-    if (!screenWidth) screenWidth = self.view.frame.size.width;
     
     self.definesPresentationContext = YES;
     self.automaticallyAdjustsScrollViewInsets = NO;
@@ -227,6 +228,7 @@ CGFloat screenWidth;
     
     // notifs
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(followingCountChanged:) name:@"followingCountChanged" object:nil];
     
 }
 
@@ -234,6 +236,8 @@ NSTimer *promptTimer;
 
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
+    _tung.viewController = self;
+    [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects tungColor] }];
     // scroll view
     if (!_profileHeader.contentSizeSet) {
         CGSize contentSize = _profileHeader.scrollView.contentSize;
@@ -343,6 +347,7 @@ NSTimer *promptTimer;
     }
     _switcherIndex = switcher.selectedSegmentIndex;
 }
+
 
 #pragma mark Profile search
 
@@ -569,7 +574,7 @@ NSTimer *sessionCheckTimer;
                             NSDictionary *responseDict = jsonData;
                             if ([responseDict objectForKey:@"user"]) {
                                 _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
-                                [self updateUserFollowingData];
+                                [self updateUserFollowingCounts];
                                 if (_tung.profileFeedNeedsRefresh.boolValue) {
                                     [_storiesView refreshFeed];
                                 }
@@ -687,14 +692,43 @@ NSTimer *sessionCheckTimer;
     _profileHeader.largeAvatarView.avatar = largeAvImage;
     [_profileHeader.largeAvatarView setNeedsDisplay];
     
-    [self updateUserFollowingData];
+    [self updateUserFollowingCounts];
     
     
     _profileHeader.scrollView.contentSize = contentSize;
     
 }
 
-- (void) updateUserFollowingData {
+// currently only used for when logged in user follows someone on their profile page (notifications)
+- (void) followingCountChanged:(NSNotification*)notification {
+    
+    NSString *userId;
+    NSNumber *increment = [NSNumber numberWithInteger:0];
+    
+    if ([[notification userInfo] objectForKey:@"unfollowTargetId"]) {
+        userId = [[notification userInfo] objectForKey:@"unfollowTargetId"];
+        increment = [NSNumber numberWithInteger:-1];
+    }
+    if ([[notification userInfo] objectForKey:@"followTargetId"]) {
+        userId = [[notification userInfo] objectForKey:@"followTargetId"];
+        increment = [NSNumber numberWithInteger:1];
+    }
+    if (_isLoggedInUser || [_profiledUserId isEqualToString:userId]) {
+        NSNumber *currentFollowingCount = [_profiledUserData objectForKey:@"followingCount"];
+        
+        NSInteger newCount = [currentFollowingCount integerValue] + [increment integerValue];
+        if (_isLoggedInUser) {
+        	[_profiledUserData setObject:[NSNumber numberWithInteger:newCount] forKey:@"followingCount"];
+        }
+        else if ([_profiledUserId isEqualToString:userId]) {
+            [_profiledUserData setObject:[NSNumber numberWithInteger:newCount] forKey:@"followerCount"];
+        }
+        [self updateUserFollowingCounts];
+        
+    }
+}
+
+- (void) updateUserFollowingCounts {
     
     // following
     NSString *followingString;
@@ -728,7 +762,7 @@ NSTimer *sessionCheckTimer;
         
     } else {
         _profileHeader.editFollowBtn.type = kPillTypeFollow;
-        [_profileHeader.editFollowBtn addTarget:self action:@selector(followOrUnfollowUser) forControlEvents:UIControlEventTouchUpInside];
+        [_profileHeader.editFollowBtn addTarget:self action:@selector(followOrUnfollowProfiledUser) forControlEvents:UIControlEventTouchUpInside];
         if ([[_profiledUserData objectForKey:@"userFollows"] boolValue]) {
             //_profileHeader.editFollowBtn.buttonText = @"Following";
             _profileHeader.editFollowBtn.on = YES;
@@ -760,21 +794,24 @@ NSTimer *sessionCheckTimer;
     [self performSegueWithIdentifier:@"presentEditProfileView" sender:self];
 }
 
-- (void) followOrUnfollowUser {
+- (void) followOrUnfollowProfiledUser {
+    
     NSNumber *userFollowsStartingValue = [_profiledUserData objectForKey:@"userFollows"];
     NSNumber *followersStartingValue = [_profiledUserData objectForKey:@"followerCount"];
     BOOL follows = [userFollowsStartingValue boolValue];
+    
     if (follows) {
         // unfollow
-        [_tung unfollowUserWithId:_profiledUserId withCallback:^(BOOL success) {
-            if (!success) {// fail
-                [_profiledUserData setValue:userFollowsStartingValue forKey:@"userFollows"];
-                [_profiledUserData setValue:followersStartingValue forKey:@"followerCount"];
-                [self updateUserFollowingData];
+        [_tung unfollowUserWithId:_profiledUserId withCallback:^(BOOL success, NSDictionary *response) {
+            if (success) {
+                if (![response objectForKey:@"userNotFollowing"]) {
+                	_tung.feedNeedsRefetch = [NSNumber numberWithBool:YES];
+                }
             }
             else {
-                _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
-                _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                [_profiledUserData setValue:userFollowsStartingValue forKey:@"userFollows"];
+                [_profiledUserData setValue:followersStartingValue forKey:@"followerCount"];
+                [self updateUserFollowingCounts];
             }
         }];
         [_profiledUserData setValue:[NSNumber numberWithInt:0] forKey:@"userFollows"];
@@ -782,22 +819,23 @@ NSTimer *sessionCheckTimer;
     }
     else {
         // follow
-        [_tung followUserWithId:_profiledUserId withCallback:^(BOOL success) {
-            if (!success) {// fail
-                [_profiledUserData setValue:userFollowsStartingValue forKey:@"userFollows"];
-                [_profiledUserData setValue:followersStartingValue forKey:@"followerCount"];
-                [self updateUserFollowingData];
+        [_tung followUserWithId:_profiledUserId withCallback:^(BOOL success, NSDictionary *response) {
+            if (success) {
+                if (![response objectForKey:@"userAlreadyFollowing"]) {
+                	_tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                }
             }
             else {
-                _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES]; // following count changed
-                _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                [_profiledUserData setValue:userFollowsStartingValue forKey:@"userFollows"];
+                [_profiledUserData setValue:followersStartingValue forKey:@"followerCount"];
+                [self updateUserFollowingCounts];
             }
         }];
         [_profiledUserData setValue:[NSNumber numberWithInt:1] forKey:@"userFollows"];
         [_profiledUserData setValue:[NSNumber numberWithInt:[followersStartingValue intValue] +1] forKey:@"followerCount"];
     }
     // GUI
-    [self updateUserFollowingData];
+    [self updateUserFollowingCounts];
 }
 
 - (void) pushProfileListForTargetId:(NSString *)target_id andQuery:(NSString *)query {
@@ -806,6 +844,11 @@ NSTimer *sessionCheckTimer;
     profileListView.target_id = target_id;
     profileListView.queryType = query;
     [self.navigationController pushViewController:profileListView animated:YES];
+}
+
+- (void) pushFindFriendsView {
+    FindFriendsTableViewController *findFriendsView = [self.storyboard instantiateViewControllerWithIdentifier:@"findFriendsView"];
+    [self.navigationController pushViewController:findFriendsView animated:YES];
 }
 
 - (void) openSettings {
@@ -841,11 +884,11 @@ NSTimer *sessionCheckTimer;
     UIAlertController *settingsSheet = [UIAlertController alertControllerWithTitle:nil message:[NSString stringWithFormat:@"You are running v %@ (%@) of tung.", version, build] preferredStyle:UIAlertControllerStyleActionSheet];
     [settingsSheet addAction:[UIAlertAction actionWithTitle:clearSavedDataOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [_tung deleteAllSavedEpisodes];
-        [TungCommonObjects showBannerAlertForText:@"All saved episodes have been deleted." andWidth:screenWidth];
+        [TungCommonObjects showBannerAlertForText:@"All saved episodes have been deleted."];
     }]];
     [settingsSheet addAction:[UIAlertAction actionWithTitle:clearTempDataOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [_tung deleteAllCachedEpisodes];
-        [TungCommonObjects showBannerAlertForText:@"All cached episodes have been deleted." andWidth:screenWidth];
+        [TungCommonObjects showBannerAlertForText:@"All cached episodes have been deleted."];
     }]];
     
     [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Application log"	 style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
@@ -863,7 +906,7 @@ NSTimer *sessionCheckTimer;
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     
     if (scrollView == _profileHeader.scrollView) {
-        float fractionalPage = (uint) scrollView.contentOffset.x / screenWidth;
+        float fractionalPage = (uint) scrollView.contentOffset.x / _screenWidth;
         NSInteger page = lround(fractionalPage);
         _profileHeader.pageControl.currentPage = page;
     }

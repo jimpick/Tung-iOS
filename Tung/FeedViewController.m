@@ -8,6 +8,8 @@
 
 #import "FeedViewController.h"
 #import "StoriesTableViewController.h"
+#import "IconButton.h"
+#import "FindFriendsTableViewController.h"
 
 @interface FeedViewController ()
 
@@ -37,6 +39,13 @@
     self.definesPresentationContext = YES;
     _podcast.navController = [self navigationController];
     _podcast.delegate = self;
+    
+    // find friends button
+    IconButton *findFriendsInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
+    findFriendsInner.type = kIconButtonTypeFindFriends;
+    findFriendsInner.color = [TungCommonObjects tungColor];
+    [findFriendsInner addTarget:self action:@selector(pushFindFriendsView) forControlEvents:UIControlEventTouchUpInside];
+    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:findFriendsInner];
     
     // FEED
     _storiesView = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
@@ -131,6 +140,11 @@
         [_podcast.searchController setActive:NO];
         [self dismissPodcastSearch];
     }*/
+}
+
+- (void) pushFindFriendsView {
+    FindFriendsTableViewController *findFriendsView = [self.storyboard instantiateViewControllerWithIdentifier:@"findFriendsView"];
+    [self.navigationController pushViewController:findFriendsView animated:YES];
 }
 
 #pragma mark - tungObjects/tungPodcasts delegate methods

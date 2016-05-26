@@ -31,7 +31,7 @@
 @implementation SubscriptionsCollectionView
 
 static NSString * const reuseIdentifier = @"artCell";
-CGFloat screenWidth;
+
 
 - (void)viewDidLoad {
     [super viewDidLoad];
@@ -49,10 +49,8 @@ CGFloat screenWidth;
     _podcast.navController = [self navigationController];
     _podcast.delegate = self;
     
-    // set up collection view size based on screen size
-    screenWidth = [[UIScreen mainScreen]bounds].size.width;
-    
-    CGFloat cellWidthAndHeight = (screenWidth - 2) / 3;
+    // set up collection view size based on screen size    
+    CGFloat cellWidthAndHeight = ([TungCommonObjects screenSize].width - 2) / 3;
     CGSize cellSize = CGSizeMake(cellWidthAndHeight, cellWidthAndHeight);
     
     // set up collection view flow layout
@@ -204,7 +202,7 @@ NSTimer *promptTimer;
 - (void) handleNotifyPrefChangedNotification:(NSNotification *)notification {
     
     if (notification.userInfo[@"message"]) {
-        [TungCommonObjects showBannerAlertForText:notification.userInfo[@"message"] andWidth:screenWidth];
+        [TungCommonObjects showBannerAlertForText:notification.userInfo[@"message"]];
     }
 }
 
