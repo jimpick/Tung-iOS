@@ -18,6 +18,9 @@
 @property UILabel *subtitleLabel;
 @property BOOL okayToProceed;
 
+// for search
+@property ProfileListTableViewController *profileSearchView;
+
 @end
 
 @implementation FindFriendsTableViewController
@@ -69,11 +72,20 @@
         self.tableView.allowsSelection = NO;
     }
     else {
-        self.navigationItem.title = @"Find friends";
-
+        //self.navigationItem.title = @"Find friends";
+        
+        _profileSearchView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
+        _profileSearchView.navController = [self navigationController];
+        _profileSearchView.profileArray = [NSMutableArray array];
+        
+        [_profileSearchView initSearchController];
+        self.navigationItem.titleView = _profileSearchView.searchController.searchBar;
+        [self.navigationItem setRightBarButtonItem:nil animated:NO];
     }
     
-    // respond to follow/unfollow events
+    self.definesPresentationContext = YES;
+    
+    // notifs
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(followingChanged:) name:@"followingSuggestedUserChanged" object:nil];
     
     // table view
@@ -117,6 +129,17 @@
         [self checkForPlatformFriends];
         
     }
+}
+
+- (void) viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    if ([_profileSearchView.searchController isActive]) {
+        [_profileSearchView.searchController.searchBar setShowsCancelButton:YES];
+    } else {
+        [_profileSearchView.searchController.searchBar setShowsCancelButton:NO];
+    }
+
 }
 
 - (void) viewDidAppear:(BOOL)animated {
@@ -267,35 +290,6 @@
     
 }
 
-- (void) proceedToNextView {
-    
-    if (_okayToProceed) {
-    
-        if ([_profileData objectForKey:@"twitterFriends"] || [_profileData objectForKey:@"facebookFriends"]) {
-            // platform friends
-            ProfileListTableViewController *profileListView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
-            profileListView.profileData = _profileData;
-            profileListView.usersToFollow = _usersToFollow;
-            [self.navigationController pushViewController:profileListView animated:YES];
-        }
-        else {
-            // finish sign-up
-            FinishSignUpController *finishView = [self.storyboard instantiateViewControllerWithIdentifier:@"finishSignup"];
-            finishView.profileData = _profileData;
-            finishView.usersToFollow = _usersToFollow;
-            [self.navigationController pushViewController:finishView animated:YES];
-        }
-    }
-    else {
-        // user needs to follow at least X people
-        UIAlertController *followMoreAlert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:@"Follow %d", NUM_REQUIRED_FOLLOWS] message:[NSString stringWithFormat:@"Please follow at least %d accounts by tapping the \"Follow\" buttons before proceeding.", NUM_REQUIRED_FOLLOWS] preferredStyle:UIAlertControllerStyleAlert];
-        [followMoreAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
-        [self presentViewController:followMoreAlert animated:YES completion:nil];
-        
-    }
-    
-}
-
 #pragma mark - Table view data source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
@@ -430,13 +424,13 @@
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     
     if (section == 0 && !_profileData) {
-        return @"FIND FRIENDS";
+        return @"Find Friends";
     }
     else if (section == 1 && !_profileData) {
-        return @"SUGGESTED USERS";
+        return @"Suggested Users";
     }
     else {
-        return [NSString stringWithFormat:@"Follow %d", NUM_REQUIRED_FOLLOWS];
+        return [NSString stringWithFormat:@"Follow %d suggested users", NUM_REQUIRED_FOLLOWS];
     }
 }
 
@@ -487,16 +481,45 @@
 
 - (void) pushTwitterFriends {
     ProfileListTableViewController *twitterFriendsView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
-    twitterFriendsView.socialPlatform = @"Twitter";
+    twitterFriendsView.queryType = @"Twitter";
     [self.navigationController pushViewController:twitterFriendsView animated:YES];
 }
 
 - (void) pushFacebookFriends {
     ProfileListTableViewController *facebookFriendsView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
-    facebookFriendsView.socialPlatform = @"Facebook";
+    facebookFriendsView.queryType = @"Facebook";
     [self.navigationController pushViewController:facebookFriendsView animated:YES];
 }
 
+
+- (void) proceedToNextView {
+    
+    if (_okayToProceed) {
+        
+        if ([_profileData objectForKey:@"twitterFriends"] || [_profileData objectForKey:@"facebookFriends"]) {
+            // platform friends
+            ProfileListTableViewController *profileListView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
+            profileListView.profileData = _profileData;
+            profileListView.usersToFollow = _usersToFollow;
+            [self.navigationController pushViewController:profileListView animated:YES];
+        }
+        else {
+            // finish sign-up
+            FinishSignUpController *finishView = [self.storyboard instantiateViewControllerWithIdentifier:@"finishSignup"];
+            finishView.profileData = _profileData;
+            finishView.usersToFollow = _usersToFollow;
+            [self.navigationController pushViewController:finishView animated:YES];
+        }
+    }
+    else {
+        // user needs to follow at least X people
+        UIAlertController *followMoreAlert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:@"Follow %d", NUM_REQUIRED_FOLLOWS] message:[NSString stringWithFormat:@"Please follow at least %d accounts by tapping the \"Follow\" buttons before proceeding.", NUM_REQUIRED_FOLLOWS] preferredStyle:UIAlertControllerStyleAlert];
+        [followMoreAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:followMoreAlert animated:YES completion:nil];
+        
+    }
+    
+}
 
 #pragma mark - Navigation
 

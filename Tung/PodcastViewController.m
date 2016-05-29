@@ -32,7 +32,6 @@
     [super viewDidLoad];
     
     _tung = [TungCommonObjects establishTungObjects];
-    _tung.ctrlBtnDelegate = self;
     
     self.edgesForExtendedLayout = UIRectEdgeBottom;
     
@@ -76,7 +75,7 @@
     
     self.navigationController.navigationBar.translucent = NO;
     
-    [_episodesView markNewEpisodesAsSeen];
+    //[_episodesView markNewEpisodesAsSeen];
 }
 
 - (void)didReceiveMemoryWarning {
@@ -88,7 +87,6 @@
     self.navigationController.navigationBar.translucent = YES;
 }
 
-// ControlButtonDelegate optional method
 -(void) nowPlayingDidChange {
     [_episodesView.tableView reloadData];
 }

@@ -12,7 +12,7 @@
 #import "CircleButton.h"
 #import "HeaderView.h"
 
-@interface PodcastViewController : UIViewController <ControlButtonDelegate>
+@interface PodcastViewController : UIViewController
 
 @property (strong, nonatomic) NSMutableDictionary *podcastDict;
 @property (strong, nonatomic) NSString *focusedGUID;

@@ -24,6 +24,12 @@
 @property CGFloat screenWidth;
 @property BOOL forOnboarding;
 @property NSNumber *page;
+@property BOOL socialPlatform;
+
+// for search
+@property NSTimer *searchTimer;
+@property (strong, nonatomic) NSURLConnection *profileSearchConnection;
+@property (strong, nonatomic) NSMutableData *profileSearchResultData;
 
 @end
 
@@ -41,32 +47,26 @@
         _screenWidth = self.view.frame.size.width;
     }
     
-    // default target
-    if (_target_id == NULL) _target_id = _tung.tungId;
-    
     // default nav controller
     _navController = self.navigationController;
     self.navigationItem.backBarButtonItem.title = @"Back";
     
-    // navigation title
-    if (_queryType) {
-        self.navigationItem.title = _queryType;
-    }
     // onboarding: platform friends
-    else if (_profileData && _usersToFollow) {
+    if (_profileData && _usersToFollow) {
         
         _forOnboarding = YES;
+        _socialPlatform = YES;
         
         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Next" style:UIBarButtonItemStyleDone target:self action:@selector(finishSignUp)];
         self.tableView.allowsSelection = NO;
         
         if ([_profileData objectForKey:@"twitterFriends"]) {
-            _socialPlatform = @"Twitter";
+            _queryType = @"Twitter";
             _profileArray = [NSMutableArray arrayWithArray:[_profileData objectForKey:@"twitterFriends"]];
             [_profileData removeObjectForKey:@"twitterFriends"];
         }
         else if ([_profileData objectForKey:@"facebookFriends"]) {
-            _socialPlatform = @"Facebook";
+            _queryType = @"Facebook";
             _profileArray = [NSMutableArray arrayWithArray:[_profileData objectForKey:@"facebookFriends"]];
             [_profileData removeObjectForKey:@"facebookFriends"];
         }
@@ -80,88 +80,100 @@
         }
     }
     
-    // table view
-    UIActivityIndicatorView *spinnerBehindTable = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-    spinnerBehindTable.alpha = 1;
-    [spinnerBehindTable startAnimating];
-    self.tableView.backgroundView = spinnerBehindTable;
-    self.tableView.backgroundColor = [TungCommonObjects bkgdGrayColor];
-    self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
-    self.tableView.separatorColor = [UIColor grayColor];
-    self.tableView.scrollsToTop = YES;
-    self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 0, 0);
-    self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
-    
-    
     // respond to follow/unfollow events
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(followingChanged:) name:@"followingChanged" object:nil];
     
-    // get feed
     if (_queryType) {
+        // table view
+        UIActivityIndicatorView *spinnerBehindTable = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+        spinnerBehindTable.alpha = 1;
+        [spinnerBehindTable startAnimating];
+        self.tableView.backgroundView = spinnerBehindTable;
+        self.tableView.backgroundColor = [TungCommonObjects bkgdGrayColor];
+        self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
+        self.tableView.separatorColor = [UIColor grayColor];
+        self.tableView.scrollsToTop = YES;
+        self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 0, 0);
+        self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
         
-        // refresh control
-        self.refreshControl = [[UIRefreshControl alloc] init];
-        [self.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
-        
-        if ([_queryType isEqualToString:@"Notifications"]) {
-            // establish last seen notification time
-            UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
-            _lastSeenNotification = loggedUser.lastSeenNotification;
+        if (!_socialPlatform) {
+            
+            self.navigationItem.title = _queryType;
+            
+            // default target
+            if (_target_id == NULL) _target_id = _tung.tungId;
+            
+        	// refresh control
+            self.refreshControl = [[UIRefreshControl alloc] init];
+            [self.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
+            
+            if ([_queryType isEqualToString:@"Notifications"]) {
+                // establish last seen notification time
+                UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
+                _lastSeenNotification = loggedUser.lastSeenNotification;
+            }
+            [self refreshFeed];
         }
-        [self refreshFeed];
-    }
-    // social platform friends
-    else if (_socialPlatform) {
-        
-        if ([_socialPlatform isEqualToString:@"Twitter"]) {
+        // social platform friends
+        else if (_socialPlatform) {
             
-            self.navigationItem.title = @"Twitter Friends";
-            [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects twitterColor] }];
-            _page = [NSNumber numberWithInt:0];
-            
-            if (_forOnboarding) {
-                // _profileArray will have been set above
-                self.tableView.backgroundView = nil;
-                [self.tableView reloadData];
-            }
-           	else {
-                // assumes that user is already logged into twitter
-                [self getNextPageOfTwitterFriends];
-            }
-        }
-        else if ([_socialPlatform isEqualToString:@"Facebook"]) {
-            
-            self.navigationItem.title = @"Facebook Friends";
-            [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects facebookColor] }];
-            
-            if (_forOnboarding) {
-                // _profileArray will have been set above
-                self.tableView.backgroundView = nil;
-                [self.tableView reloadData];
-            }
-            else {
-                // assumes user is already logged into FB
-                NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
-                [_tung findFacebookFriendsWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {
+            if ([_queryType isEqualToString:@"Twitter"]) {
+                
+                self.navigationItem.title = @"Twitter Friends";
+                [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects twitterColor] }];
+                _page = [NSNumber numberWithInt:0];
+                
+                if (_forOnboarding) {
+                    // _profileArray will have been set above
                     self.tableView.backgroundView = nil;
-                    if (success) {
-                        //NSLog(@"responseDict: %@", responseDict);
-                        NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
-                        if ([platformFriendsCount integerValue] > 0) {
-                            _profileArray = [NSMutableArray arrayWithArray:[responseDict objectForKey:@"results"]];
+                    [self.tableView reloadData];
+                }
+                else {
+                    // assumes that user is already logged into twitter
+                    [self getNextPageOfTwitterFriends];
+                }
+            }
+            else if ([_queryType isEqualToString:@"Facebook"]) {
+                
+                self.navigationItem.title = @"Facebook Friends";
+                [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects facebookColor] }];
+                
+                if (_forOnboarding) {
+                    // _profileArray will have been set above
+                    self.tableView.backgroundView = nil;
+                    [self.tableView reloadData];
+                }
+                else {
+                    // assumes user is already logged into FB
+                    NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
+                    [_tung findFacebookFriendsWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {
+                        self.tableView.backgroundView = nil;
+                        if (success) {
+                            //NSLog(@"responseDict: %@", responseDict);
+                            NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
+                            if ([platformFriendsCount integerValue] > 0) {
+                                _profileArray = [NSMutableArray arrayWithArray:[responseDict objectForKey:@"results"]];
+                            }
+                            else {
+                                _noResults = YES;
+                            }
                         }
                         else {
-                            _noResults = YES;
+                            [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                         }
-                    }
-                    else {
-                        [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
-                    }
-                    
-                    [self.tableView reloadData];
-                }];
+                        
+                        [self.tableView reloadData];
+                    }];
+                }
             }
         }
+    }
+    else {
+        // no query type: profile search
+        self.tableView.backgroundColor = [UIColor clearColor];
+        self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
+        self.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero];
+        self.tableView.backgroundView = nil;
     }
 }
 
@@ -178,6 +190,9 @@
         return NO;
     }
 }
+
+#pragma mark - Requesting
+
 - (void) getNextPageOfTwitterFriends {
     [_tung findTwitterFriendsWithPage:_page andCallback:^(BOOL success, NSDictionary *responseDict) {
         if (success) {
@@ -631,14 +646,14 @@
 
         
         NSString *subLabel;
-        if ([_socialPlatform isEqualToString:@"Twitter"]) {
+        if ([_queryType isEqualToString:@"Twitter"]) {
             
             profileCell.usernameLabel.text = [profileDict objectForKey:@"name"];
             subLabel = [NSString stringWithFormat:@"@%@", [profileDict objectForKey:@"twitter_username"]];
             profileCell.smallIconView.type = kIconTypeTwitter;
             profileCell.smallIconView.color = [TungCommonObjects twitterColor];
         }
-        else if ([_socialPlatform isEqualToString:@"Facebook"]) {
+        else if ([_queryType isEqualToString:@"Facebook"]) {
             profileCell.usernameLabel.text = [profileDict objectForKey:@"username"];
             subLabel = [profileDict objectForKey:@"name"];
             profileCell.smallIconView.type = kIconTypeFacebook;
@@ -732,7 +747,7 @@
         UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, _screenWidth, 60)];
         headerView.backgroundColor = [TungCommonObjects bkgdGrayColor];
         UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(10, 0, _screenWidth - 20, 60)];
-        label.text = [NSString stringWithFormat:@"We found some of your %@ friends on Tung:", _socialPlatform];
+        label.text = [NSString stringWithFormat:@"We found some of your %@ friends on Tung:", _queryType];
         label.font = [UIFont systemFontOfSize:13.5];
         label.textColor = [UIColor darkGrayColor];
         label.textAlignment = NSTextAlignmentCenter;
@@ -763,22 +778,237 @@
         return [self labelWithMessageAndBottomMargin:thatsAll];
     }
     else if (_noResults && section == 1) {
-        NSString *message = ([_queryType isEqualToString:@"Notifications"]) ? @"Nothing yet. " : @"No results.";
-        return [self labelWithMessageAndBottomMargin:message];
+        //NSString *message = ([_queryType isEqualToString:@"Notifications"]) ? @"Nothing yet. " : @"No results.";
+        //return [self labelWithMessageAndBottomMargin:message];
+        UILabel *noResultsLabel = [[UILabel alloc] init];
+        noResultsLabel.text = @"No results.";
+        noResultsLabel.textColor = [UIColor grayColor];
+        noResultsLabel.textAlignment = NSTextAlignmentCenter;
+        return noResultsLabel;
     }
     else {
         _loadMoreIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
         return _loadMoreIndicator;
     }
 }
+
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
-    if (!_noMoreItemsToGet && section == 0)
-        return 60.0;
+    if (!_noResults && !_noMoreItemsToGet && section == 0)
+        return 92.0;
     else if ((_noResults || _noMoreItemsToGet) && section == 1)
-        return 60.0;
+        return 92.0;
     else
         return 0;
 }
+
+- (void)tableView:(UITableView *)tableView willDisplayFooterView:(UIView *)view forSection:(NSInteger)section {
+    if (!_queryType) {
+    	view.backgroundColor = [UIColor whiteColor];
+    }
+}
+
+#pragma mark - Search misc.
+
+- (void) initSearchController {
+    _searchController = [[UISearchController alloc] initWithSearchResultsController:self];
+    _searchController.delegate = self;
+    //_searchController.searchResultsUpdater = self;
+    _searchController.hidesNavigationBarDuringPresentation = NO;
+    
+    _searchController.searchBar.delegate = self;
+    _searchController.searchBar.showsCancelButton = YES;
+    _searchController.searchBar.searchBarStyle = UISearchBarStyleMinimal;
+    _searchController.searchBar.tintColor = [TungCommonObjects tungColor];
+    _searchController.searchBar.autocapitalizationType = UITextAutocapitalizationTypeNone;
+    _searchController.searchBar.autocorrectionType = UITextAutocorrectionTypeNo;
+    _searchController.searchBar.placeholder = @"Find people on Tung";
+    _searchController.searchBar.frame = CGRectMake(self.searchController.searchBar.frame.origin.x, self.searchController.searchBar.frame.origin.y, self.searchController.searchBar.frame.size.width, 44.0);
+}
+
+#pragma mark - Search Bar delegate methods
+
+- (void)updateSearchResultsForSearchController:(UISearchController *)searchController
+{
+    // placeholder
+}
+
+-(void)searchBarSearchButtonClicked:(UISearchBar *)searchBar {
+    
+    [_searchTimer invalidate];
+    // timeout to resign keyboard
+    [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(resignKeyboard) userInfo:nil repeats:NO];
+    // search
+    [self searchProfilesWithTerm:searchBar.text];
+    
+}
+-(void) searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
+    //JPLog(@"search bar text did change: %@", searchText);
+    [_searchTimer invalidate];
+    if (searchText.length > 1) {
+        _searchTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(keyupSearch:) userInfo:searchText repeats:NO];
+    }
+    else {
+        [_profileArray removeAllObjects];
+        [self.tableView reloadData];
+    }
+}
+
+- (BOOL)searchBarShouldBeginEditing:(UISearchBar *)searchBar {
+
+    
+    //[_searchController.searchBar setShowsCancelButton:YES animated:YES];
+
+    return YES;
+}
+
+- (BOOL)searchBarShouldEndEditing:(UISearchBar *)searchBar {
+    return YES;
+}
+
+- (void)searchBarCancelButtonClicked:(UISearchBar *)searchBar {
+    //NSLog(@"cancel button clicked");
+    _searchController.searchBar.text = @""; // clear search
+    NSNotification *dismissSearchNotif = [NSNotification notificationWithName:@"shouldDismissProfileSearch" object:nil userInfo:nil];
+    [[NSNotificationCenter defaultCenter] postNotification:dismissSearchNotif];
+}
+
+#pragma mark - UISearchControllerDelegate methods
+
+- (void) didDismissSearchController:(UISearchController *)searchController {
+    _searchController.searchBar.text = @""; // clear search
+    NSNotification *dismissSearchNotif = [NSNotification notificationWithName:@"shouldDismissProfileSearch" object:nil userInfo:nil];
+    [[NSNotificationCenter defaultCenter] postNotification:dismissSearchNotif];
+}
+#pragma mark - Search general methods
+
+-(void) keyupSearch:(NSTimer *)timer {
+    [self searchProfilesWithTerm:timer.userInfo];
+}
+
+- (void) resignKeyboard {
+    [_searchController.searchBar resignFirstResponder];
+}
+
+// PODCAST SEARCH
+-(void) searchProfilesWithTerm:(NSString *)searchTerm {
+    
+    if (searchTerm.length > 0) {
+        
+        _noResults = NO;
+        
+        NSURL *profileSearchUrl = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/profile-search.php", _tung.apiRootUrl]];
+        NSMutableURLRequest *profileSearchRequest = [NSMutableURLRequest requestWithURL:profileSearchUrl cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:6.0f];
+        [profileSearchRequest setHTTPMethod:@"POST"];
+        NSDictionary *params = @{@"sessionId":_tung.sessionId,
+                                 @"searchTerm": searchTerm };
+        NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+        [profileSearchRequest setHTTPBody:serializedParams];
+        
+        // reset data and connection
+        _profileSearchResultData = nil;
+        _profileSearchResultData = [NSMutableData new];
+        
+        if (_profileSearchConnection) {
+            [_profileSearchConnection cancel];
+            _profileSearchConnection = nil;
+        }
+        _profileSearchConnection = [[NSURLConnection alloc] initWithRequest:profileSearchRequest delegate:self];
+        //JPLog(@"search profiles for: %@", searchTerm);
+    }
+}
+
+#pragma mark - UISearchController delegate methods
+
+- (void) didPresentSearchController:(UISearchController *)searchController {
+
+    if (![_searchController.searchBar isFirstResponder]) {
+        [_searchController.searchBar becomeFirstResponder];
+    }
+    
+}
+
+#pragma mark - NSURLConnection delegate methods
+
+
+- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
+    //JPLog(@"did receive data");
+    [_profileSearchResultData appendData:data];
+}
+
+- (void)connectionDidFinishLoading:(NSURLConnection *)connection {
+    
+    NSError *error;
+    id jsonData = [NSJSONSerialization JSONObjectWithData:_profileSearchResultData options:NSJSONReadingAllowFragments error:&error];
+    if (jsonData != nil && error == nil) {
+        if ([jsonData isKindOfClass:[NSDictionary class]]) {
+            NSDictionary *responseDict = jsonData;
+            if ([responseDict objectForKey:@"error"]) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                        // get new session and re-request
+                        JPLog(@"SESSION EXPIRED");
+                        [_tung getSessionWithCallback:^{
+                            [self searchProfilesWithTerm:_searchController.searchBar.text];
+                        }];
+                    } else {
+                        // other error - alert user
+                        UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
+                        [errorAlert show];
+                    }
+                });
+            }
+        }
+        else if ([jsonData isKindOfClass:[NSArray class]]) {
+            
+            _queryExecuted = YES;
+            
+            NSArray *newUsers = jsonData;
+            
+            if (newUsers.count > 0) {
+                
+                _profileArray = [newUsers mutableCopy];
+                
+                //JPLog(@"got results: %lu", (unsigned long)_profileArray.count);
+                //JPLog(@"%@", _profileArray);
+                [self preloadAvatars];
+                [self.tableView reloadData];
+                
+            }
+            else {
+                _noResults = YES;
+                _profileArray = [NSMutableArray array];
+                //JPLog(@"NO RESULTS");
+                [self.tableView reloadData];
+            }
+        }
+    }
+    else if ([_profileSearchResultData length] == 0 && error == nil) {
+        JPLog(@"no response for profile search");
+        
+    }
+    else if (error != nil) {
+        
+        JPLog(@"Error: %@", error);
+        NSString *html = [[NSString alloc] initWithData:_profileSearchResultData encoding:NSUTF8StringEncoding];
+        JPLog(@"HTML: %@", html);
+    }
+}
+
+- (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
+    JPLog(@"profile search connection failed: %@", error.localizedDescription);
+    
+    /* this error pops up occasionally, probably because of rapid requests.
+     makes user think something is wrong when it really isn't.
+     [_tung showConnectionErrorAlertForError:error];
+     */
+}
+
+/* unused NSURLConnection delegate methods
+ - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
+	JPLog(@"connection received response: %@", response);
+ }
+ 
+ */
 
 #pragma mark - scroll view delegate methods
 
@@ -802,7 +1032,7 @@
                                                      orOlderThan:oldest];
                     }
                     else if (_socialPlatform) {
-                        if ([_socialPlatform isEqualToString:@"Twitter"]) {
+                        if ([_queryType isEqualToString:@"Twitter"]) {
                             [self getNextPageOfTwitterFriends];
                         }
                     }

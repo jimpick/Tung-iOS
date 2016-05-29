@@ -10,6 +10,6 @@
 #import "TungPodcast.h"
 #import "TungCommonObjects.h"
 
-@interface SubscriptionsCollectionView : UICollectionViewController <TungPodcastsDelegate, ControlButtonDelegate>
+@interface SubscriptionsCollectionView : UICollectionViewController <TungPodcastsDelegate>
 
 @end

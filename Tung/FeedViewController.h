@@ -10,6 +10,6 @@
 #import "TungPodcast.h"
 #import "TungCommonObjects.h"
 
-@interface FeedViewController : UIViewController <TungPodcastsDelegate, ControlButtonDelegate>
+@interface FeedViewController : UIViewController <TungPodcastsDelegate>
 
 @end

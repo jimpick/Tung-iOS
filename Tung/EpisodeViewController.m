@@ -115,7 +115,7 @@ UIActivityIndicatorView *backgroundSpinner;
         //[self.navigationController.navigationBar setBackgroundColor:_episodeEntity.podcast.keyColor1];
         
         //[self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:_episodeEntity.podcast.keyColor1 }];
-        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
+        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiatePodcastSearch)];
         
         self.view.backgroundColor = [TungCommonObjects bkgdGrayColor];
         
@@ -340,8 +340,6 @@ UIActivityIndicatorView *backgroundSpinner;
     // set up views
     if (_isNowPlayingView) {
         
-        _tung.ctrlBtnDelegate = self;
-        
         if (_npControlsBottomLayoutConstraint.constant < npControls_closedConstraint && _episodeEntity.isNowPlaying.boolValue) {
             [NSTimer scheduledTimerWithTimeInterval:.2 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
         }
@@ -426,7 +424,7 @@ NSTimer *markAsSeenTimer;
 #pragma mark - tungObjects/tungPodcasts delegate methods
 
 
-- (void) initiateSearch {
+- (void) initiatePodcastSearch {
     
     // in case sharing in progress, don't animate share view
     _searchActive = YES;
@@ -455,7 +453,7 @@ NSTimer *markAsSeenTimer;
     [self.navigationController.navigationBar.layer addAnimation: animation forKey: @"hideSearch"];
     
     self.navigationItem.titleView = nil;
-    UIBarButtonItem *searchBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
+    UIBarButtonItem *searchBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiatePodcastSearch)];
     [self.navigationItem setRightBarButtonItem:searchBtn animated:YES];
     
 }

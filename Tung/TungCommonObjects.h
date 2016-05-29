@@ -37,22 +37,8 @@
 #define MIN_RECORD_TIME 2
 #define MAX_COMMENT_CHARS 220
 
-@protocol ControlButtonDelegate <NSObject>
-
-//@required
-
-
-@optional
-
--(void) initiateSearch;
--(void) dismissPodcastSearch;
--(void) nowPlayingDidChange;
-
-@end
-
 @interface TungCommonObjects : NSObject <UIAlertViewDelegate, UIActionSheetDelegate, NSURLConnectionDataDelegate, AVAssetResourceLoaderDelegate, FBSDKSharingDelegate>
 
-@property (nonatomic, assign) id <ControlButtonDelegate> ctrlBtnDelegate;
 // for presenting views, etc.
 @property (strong, nonatomic) UIViewController *viewController;
 // cred/session

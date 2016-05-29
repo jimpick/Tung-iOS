@@ -10,6 +10,7 @@
 #import "StoriesTableViewController.h"
 #import "IconButton.h"
 #import "FindFriendsTableViewController.h"
+#import "ProfileListTableViewController.h"
 
 @interface FeedViewController ()
 
@@ -29,14 +30,13 @@
     [super viewDidLoad];
     
     self.navigationItem.titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"tungNavBarLogo.png"]];
-    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
+    self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiatePodcastSearch)];
     
     _tung = [TungCommonObjects establishTungObjects];
     [_tung establishCred];
     
     // for search controller
     _podcast = [TungPodcast new];
-    self.definesPresentationContext = YES;
     _podcast.navController = [self navigationController];
     _podcast.delegate = self;
     
@@ -100,8 +100,8 @@
 -(void) viewWillAppear:(BOOL)animated {
     self.navigationController.navigationBar.translucent = NO;
     
-    _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
+    self.definesPresentationContext = YES;
 	
 }
 
@@ -110,6 +110,22 @@
     
     [self prepareView];
         
+}
+
+- (void) viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    //self.navigationController.navigationBar.translucent = YES;
+    [_podcast.feedPreloadQueue cancelAllOperations];
+    self.definesPresentationContext = NO;
+}
+
+- (void) viewDidDisappear:(BOOL)animated {
+    [super viewDidDisappear:animated];
+    /* ppl want what was there to remain
+    if (_podcast.searchController.active) {
+        [_podcast.searchController setActive:NO];
+        [self dismissPodcastSearch];
+    }*/
 }
 
 - (void) prepareView {
@@ -126,22 +142,6 @@
     }
 }
 
-- (void) viewWillDisappear:(BOOL)animated {
-    [super viewWillDisappear:animated];
-    //self.navigationController.navigationBar.translucent = YES;
-    [_podcast.feedPreloadQueue cancelAllOperations];
-
-}
-
-- (void) viewDidDisappear:(BOOL)animated {
-    [super viewDidDisappear:animated];
-    /* ppl want what was there to remain
-    if (_podcast.searchController.active) {
-        [_podcast.searchController setActive:NO];
-        [self dismissPodcastSearch];
-    }*/
-}
-
 - (void) pushFindFriendsView {
     FindFriendsTableViewController *findFriendsView = [self.storyboard instantiateViewControllerWithIdentifier:@"findFriendsView"];
     [self.navigationController pushViewController:findFriendsView animated:YES];
@@ -149,7 +149,7 @@
 
 #pragma mark - tungObjects/tungPodcasts delegate methods
 
-- (void) initiateSearch {
+- (void) initiatePodcastSearch {
     [_podcast.searchController setActive:YES];
     
     CATransition *animation = [CATransition animation];
@@ -174,7 +174,7 @@
     [self.navigationController.navigationBar.layer addAnimation: animation forKey: @"hideSearch"];
     
     self.navigationItem.titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"tungNavBarLogo.png"]];
-    UIBarButtonItem *searchBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiateSearch)];
+    UIBarButtonItem *searchBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiatePodcastSearch)];
     [self.navigationItem setRightBarButtonItem:searchBtn animated:YES];
     
 }

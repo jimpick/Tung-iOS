@@ -78,7 +78,7 @@
     self.tableView.backgroundView = tableSpinner;
     // long press recognizer
     UILongPressGestureRecognizer *longPressRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(tableCellLongPress:)];
-    longPressRecognizer.minimumPressDuration = 0.75; //seconds
+    longPressRecognizer.minimumPressDuration = 0.6; //seconds
     longPressRecognizer.delegate = self;
     [self.tableView addGestureRecognizer:longPressRecognizer];
     
@@ -769,22 +769,18 @@ NSInteger requestTries = 0;
     }
 }
 
-static NSString *feedCellIdentifier = @"storyHeaderCell";
-static NSString *eventCellIdentifier = @"storyEventCell";
-static NSString *footerCellIdentifier = @"storyFooterCell";
-
 - (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
     if (indexPath.row == 0) {
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:feedCellIdentifier];
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"storyHeaderCell"];
         [self configureHeaderCell:cell forIndexPath:indexPath];
         return cell;
     } else if (indexPath.row == [[_storiesArray objectAtIndex:indexPath.section] count] - 1) {
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:footerCellIdentifier];
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"storyFooterCell"];
         [self configureFooterCell:cell forIndexPath:indexPath];
         return cell;
     } else {
-        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:eventCellIdentifier];
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"storyEventCell"];
         [self configureEventCell:cell forIndexPath:indexPath];
         return cell;
     }
@@ -794,11 +790,11 @@ static NSString *footerCellIdentifier = @"storyFooterCell";
 #pragma mark - Table view delegate methods
 
 - (NSIndexPath *)tableView:(UITableView *)tableView willSelectRowAtIndexPath:(NSIndexPath *)indexPath {
-
-    if (indexPath.section == 0) {
-        return indexPath;
-    } else {
+    // don't select footer cell bc if _episodeId, already on story detail view.
+    if (_episodeId && indexPath.row == [[_storiesArray objectAtIndex:indexPath.section] count] - 1) {
         return nil;
+    } else {
+        return indexPath;
     }
 }
 
@@ -1202,7 +1198,7 @@ CGFloat labelWidth = 0;
 }
 
 
-#pragma mark - long press and action sheet
+#pragma mark - long press
 
 - (void) tableCellLongPress:(UILongPressGestureRecognizer *)gestureRecognizer {
     
@@ -1229,8 +1225,11 @@ CGFloat labelWidth = 0;
             NSString *type = [eventDict objectForKey:@"type"];
             NSString *shareItemOption, *copyLinkOption, *destructiveOption, *shareLink, *shareText;
             NSString *userId = [[[eventDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+            NSString *username = [[eventDict objectForKey:@"user"] objectForKey:@"username"];
+            BOOL shareable = NO;
             
             if ([type isEqualToString:@"clip"]) {
+                shareable = YES;
                 shareItemOption = @"Share this clip";
                 copyLinkOption = @"Copy link to clip";
                 NSString *clipShortlink = [eventDict objectForKey:@"shortlink"];
@@ -1252,6 +1251,7 @@ CGFloat labelWidth = 0;
                 }
             }
             else if ([type isEqualToString:@"comment"]) {
+                shareable = YES;
                 shareItemOption = @"Share this comment";
                 copyLinkOption = @"Copy link to comment";
                 shareLink = [headerDict objectForKey:@"storyLink"];
@@ -1262,30 +1262,34 @@ CGFloat labelWidth = 0;
                     destructiveOption = @"Flag this comment";
                 }
             }
-            else {
-                return;
-            }
 
             UIAlertController *storyOptionSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+            if (shareable) {
+                // share option
+                [storyOptionSheet addAction:[UIAlertAction actionWithTitle:shareItemOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                    UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[shareText] applicationActivities:nil];
+                    [self presentViewController:shareSheet animated:YES completion:nil];
+                    
+                }]];
+                // copy link option
+                [storyOptionSheet addAction:[UIAlertAction actionWithTitle:copyLinkOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                    [[UIPasteboard generalPasteboard] setString:shareLink];
+                }]];
+                // play from timestamp
+                [storyOptionSheet addAction:[UIAlertAction actionWithTitle:playFromString style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                    
+                    NSString *episodeId = [[[headerDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
+                    NSString *collectionId = [[headerDict objectForKey:@"episode"] objectForKey:@"collectionId"];
+                    [self playFromTimestamp:timestamp forEpisodeWithId:episodeId andCollectionId:collectionId];
+                    
+                }]];
+            }
+            // view profile
+            [storyOptionSheet addAction:[UIAlertAction actionWithTitle:[NSString stringWithFormat:@"View profile for @%@", username] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                
+                [self pushProfileForUserId:userId];
+            }]];
             
-            // share option
-            [storyOptionSheet addAction:[UIAlertAction actionWithTitle:shareItemOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[shareText] applicationActivities:nil];
-                [self presentViewController:shareSheet animated:YES completion:nil];
-                
-            }]];
-            // copy link option
-            [storyOptionSheet addAction:[UIAlertAction actionWithTitle:copyLinkOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                [[UIPasteboard generalPasteboard] setString:shareLink];
-            }]];
-            // play from timestamp
-            [storyOptionSheet addAction:[UIAlertAction actionWithTitle:playFromString style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                
-                NSString *episodeId = [[[headerDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
-                NSString *collectionId = [[headerDict objectForKey:@"episode"] objectForKey:@"collectionId"];
-                [self playFromTimestamp:timestamp forEpisodeWithId:episodeId andCollectionId:collectionId];
-                
-            }]];
             // delete or flag
             if (destructiveOption) {
                 [storyOptionSheet addAction:[UIAlertAction actionWithTitle:destructiveOption style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
@@ -1310,8 +1314,8 @@ CGFloat labelWidth = 0;
                             [confirmFlag addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
                             [confirmFlag addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
                                 
-                                 NSString *eventId = [[eventDict objectForKey:@"id"] objectForKey:@"$id"];
-                                 [_tung flagCommentWithId:eventId];
+                                NSString *eventId = [[eventDict objectForKey:@"id"] objectForKey:@"$id"];
+                                [_tung flagCommentWithId:eventId];
                                 
                             }]];
                             [self presentViewController:confirmFlag animated:YES completion:nil];
@@ -1319,7 +1323,6 @@ CGFloat labelWidth = 0;
                     }
                 }]];
             }
-            
             [storyOptionSheet addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
             [self presentViewController:storyOptionSheet animated:YES completion:nil];
         }
@@ -1456,11 +1459,16 @@ CGFloat labelWidth = 0;
         NSDictionary *storyDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
         NSString *userId = [[[storyDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
         // push profile
-        if (![_profiledUserId isEqualToString:userId]) {
-            ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
-            profileView.profiledUserId = userId;
-            [_navController pushViewController:profileView animated:YES];
-        }
+        [self pushProfileForUserId:userId];
+    }
+}
+
+- (void) pushProfileForUserId:(NSString *)userId {
+    // push profile
+    if (![_profiledUserId isEqualToString:userId]) {
+        ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
+        profileView.profiledUserId = userId;
+        [_navController pushViewController:profileView animated:YES];
     }
 }
 

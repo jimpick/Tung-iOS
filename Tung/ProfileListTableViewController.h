@@ -8,13 +8,12 @@
 
 #import <UIKit/UIKit.h>
 
-@interface ProfileListTableViewController : UITableViewController <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, UIAlertViewDelegate>
+@interface ProfileListTableViewController : UITableViewController <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, UIAlertViewDelegate, UISearchBarDelegate, UISearchControllerDelegate>
 
 @property (strong, nonatomic) NSString *queryType; // default is search 
 @property (strong, nonatomic) NSString *target_id;
 
 @property (strong, nonatomic) NSMutableDictionary *profileData; // used only for platform friends query
-@property (strong, nonatomic) NSString *socialPlatform;
 @property (strong, nonatomic) NSMutableArray *usersToFollow;
 
 @property (strong, nonatomic) NSMutableArray *profileArray;
@@ -24,6 +23,8 @@
 @property (nonatomic, assign) BOOL queryExecuted;
 @property (strong, nonatomic) UINavigationController *navController;
 
+@property UISearchController *searchController;
+
 - (void) requestProfileListWithQuery:(NSString *)queryType
                            forTarget:(NSString *)target_id
                            newerThan:(NSNumber *)afterTime
@@ -31,5 +32,6 @@
 - (void) preloadAvatars;
 - (void) refreshFeed;
 - (void) refetchFeed;
+- (void) initSearchController;
 
 @end

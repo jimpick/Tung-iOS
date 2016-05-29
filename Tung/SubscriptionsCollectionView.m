@@ -130,7 +130,6 @@ NSTimer *promptTimer;
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
-    _tung.ctrlBtnDelegate = self;
     _tung.viewController = self;
     
     SettingsEntity *settings = [TungCommonObjects settings];

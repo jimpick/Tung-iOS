@@ -472,13 +472,8 @@ CGSize screenSize;
         }
     }
     else {
-        UIAlertController *searchPromptAlert = [UIAlertController alertControllerWithTitle:@"Nothing is playing" message:@"Would you like to search for a podcast?" preferredStyle:UIAlertControllerStyleAlert];
-        [searchPromptAlert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            if ([_ctrlBtnDelegate respondsToSelector:@selector(initiateSearch)]) {
-            	[_ctrlBtnDelegate initiateSearch];
-            }
-        }]];
-        [searchPromptAlert addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleCancel handler:nil]];
+        UIAlertController *searchPromptAlert = [UIAlertController alertControllerWithTitle:@"Nothing is playing" message:@"Tap a podcast in the feed and then tap ▶️,\n or, search for a podcast by tapping 🔍" preferredStyle:UIAlertControllerStyleAlert];
+        [searchPromptAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
         [_viewController presentViewController:searchPromptAlert animated:YES completion:nil];
     }
 }
@@ -3801,7 +3796,7 @@ static NSArray *colors;
             if (jsonData != nil && error == nil) {
                 
                 NSDictionary *responseDict = jsonData;
-                
+                //NSLog(@"suggested users response: %@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     dispatch_async(dispatch_get_main_queue(), ^{
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {

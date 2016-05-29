@@ -21,6 +21,7 @@
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (strong, nonatomic) StoriesTableViewController *storiesView;
+@property ProfileListTableViewController *notificationsView;
 @property (strong, nonatomic) ProfileHeaderView *profileHeader;
 @property UIBarButtonItem *tableHeaderLabel;
 @property NSURL *urlToPass;
@@ -28,16 +29,6 @@
 
 @property BOOL isLoggedInUser;
 @property BOOL reachable;
-
-// search
-@property UISearchController *searchController;
-@property ProfileListTableViewController *profileSearchView;
-@property ProfileListTableViewController *notificationsView;
-@property UIBarButtonItem *profileSearchButton;
-@property NSTimer *searchTimer;
-@property (strong, nonatomic) NSURLConnection *profileSearchConnection;
-@property (strong, nonatomic) NSMutableData *profileSearchResultData;
-@property (strong, nonatomic) NSMutableArray *profileArray;
 
 // switcher
 @property UIToolbar *switcherBar;
@@ -56,7 +47,6 @@
     [super viewDidLoad];
     
     _tung = [TungCommonObjects establishTungObjects];
-    _tung.ctrlBtnDelegate = self;
     
     _screenWidth = [TungCommonObjects screenSize].width;
     
@@ -73,41 +63,17 @@
         settingsInner.color = [TungCommonObjects tungColor];
         [settingsInner addTarget:self action:@selector(openSettings) forControlEvents:UIControlEventTouchUpInside];
         UIBarButtonItem *signOutButton = [[UIBarButtonItem alloc] initWithCustomView:settingsInner];
-        self.navigationItem.leftBarButtonItem = signOutButton;
-        // profile search button
-        IconButton *profileSearchInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
-        profileSearchInner.type = kIconButtonTypeProfileSearch;
-        profileSearchInner.color = [TungCommonObjects tungColor];
-        //[profileSearchInner addTarget:self action:@selector(initiateProfileSearch) forControlEvents:UIControlEventTouchUpInside];
-        [profileSearchInner addTarget:self action:@selector(pushFindFriendsView) forControlEvents:UIControlEventTouchUpInside];
-        _profileSearchButton = [[UIBarButtonItem alloc] initWithCustomView:profileSearchInner];
-        self.navigationItem.rightBarButtonItem = _profileSearchButton;
+        self.navigationItem.rightBarButtonItem = signOutButton;
         
-        // profile search
-        _profileSearchView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
-        _profileSearchView.tableView.backgroundColor = [UIColor clearColor];
-        _profileSearchView.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
-        _profileSearchView.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero];
-        _profileSearchView.tableView.backgroundView = nil;
-        _profileSearchView.navController = [self navigationController];
-        _profileSearchView.profileArray = [NSMutableArray array];
-        //_profileSearchView.queryType = @"Search";
-        
-        _searchController = [[UISearchController alloc] initWithSearchResultsController:_profileSearchView];
-        _searchController.delegate = self;
-        _searchController.hidesNavigationBarDuringPresentation = NO;
-        
-        _searchController.searchBar.delegate = self;
-        _searchController.searchBar.searchBarStyle = UISearchBarStyleMinimal;
-        _searchController.searchBar.tintColor = [TungCommonObjects tungColor];
-        _searchController.searchBar.showsCancelButton = YES;
-        _searchController.searchBar.autocapitalizationType = UITextAutocapitalizationTypeNone;
-        _searchController.searchBar.autocorrectionType = UITextAutocorrectionTypeNo;
-        _searchController.searchBar.placeholder = @"Find people on Tung";
-        _searchController.searchBar.frame = CGRectMake(self.searchController.searchBar.frame.origin.x, self.searchController.searchBar.frame.origin.y, self.searchController.searchBar.frame.size.width, 44.0);
+        // find friends button
+        IconButton *findFriendsInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
+        findFriendsInner.type = kIconButtonTypeFindFriends;
+        findFriendsInner.color = [TungCommonObjects tungColor];
+        [findFriendsInner addTarget:self action:@selector(pushFindFriendsView) forControlEvents:UIControlEventTouchUpInside];
+        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:findFriendsInner];
         
     } else {
-        self.navigationItem.title = @"Loading...";
+        self.navigationItem.title = @"Loading…";
         // first if above determines if this is the profile page by checking if
         // profiledUserId is set, but logged in user's id may still be pushed
         if ([_profiledUserId isEqualToString:_tung.tungId]) {
@@ -228,7 +194,7 @@
     
     // notifs
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(followingCountChanged:) name:@"followingCountChanged" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(followingCountChanged:) name:@"followingCountChanged" object:nil];// respond to follow/unfollow events
     
 }
 
@@ -251,6 +217,17 @@ NSTimer *promptTimer;
     
     [self prepareView];
 
+}
+
+-(void) viewWillAppear:(BOOL)animated {
+    self.definesPresentationContext = YES;
+    
+}
+
+- (void) viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    self.definesPresentationContext = NO;
+    [promptTimer invalidate];
 }
 
 - (void) prepareView {
@@ -310,18 +287,6 @@ NSTimer *promptTimer;
     }
 }
 
-- (void) viewWillDisappear:(BOOL)animated {
-    [super viewWillDisappear:animated];
-    
-    [promptTimer invalidate];
-    /*
-    @try {
-    	[self removeObserver:self forKeyPath:@"storiesView.requestStatus"];
-    }
-    @catch (id exception) {}
-    */
-}
-
 - (void) viewDidDisappear:(BOOL)animated {
     [super viewDidDisappear:animated];
     /*
@@ -347,204 +312,6 @@ NSTimer *promptTimer;
     }
     _switcherIndex = switcher.selectedSegmentIndex;
 }
-
-
-#pragma mark Profile search
-
-- (void) initiateProfileSearch {
-    [_searchController setActive:YES];
-    
-    CATransition *animation = [CATransition animation];
-    animation.duration = .4;
-    // kCATransitionFade, kCATransitionMoveIn, kCATransitionPush, kCATransitionReveal
-    animation.type = kCATransitionFade;
-    [self.navigationController.navigationBar.layer addAnimation: animation forKey: @"revealSearch"];
-    
-    self.navigationItem.titleView = _searchController.searchBar;
-    [self.navigationItem setRightBarButtonItem:nil animated:YES];
-    
-    [_searchController.searchBar becomeFirstResponder];
-    
-    [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(reloadSearchTable) userInfo:nil repeats:NO];
-    
-}
-
-- (void) reloadSearchTable {
-    NSLog(@"reload search table");
-    [_profileSearchView.tableView reloadData];
-}
-
--(void) dismissProfileSearch {
-    
-    CATransition *animation = [CATransition animation];
-    animation.duration = .4;
-    // kCATransitionFade, kCATransitionMoveIn, kCATransitionPush, kCATransitionReveal
-    animation.type = kCATransitionFade;
-    [self.navigationController.navigationBar.layer addAnimation: animation forKey: @"hideSearch"];
-    
-    self.navigationItem.titleView = nil;
-    [self.navigationItem setRightBarButtonItem:_profileSearchButton animated:YES];
-    
-}
-
-#pragma mark - Search Bar delegate methods
-
--(void)searchBarSearchButtonClicked:(UISearchBar *)searchBar {
-    
-    [_searchTimer invalidate];
-    // timeout to resign keyboard
-    [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(resignKeyboard) userInfo:nil repeats:NO];
-    // search
-    [self searchProfilesWithTerm:searchBar.text];
-    
-}
--(void) searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
-    //JPLog(@"search bar text did change: %@", searchText);
-    [_searchTimer invalidate];
-    if (searchText.length > 1) {
-        _searchTimer = [NSTimer scheduledTimerWithTimeInterval:0.2 target:self selector:@selector(keyupSearch:) userInfo:searchText repeats:NO];
-    }
-    else {
-        [_profileSearchView.profileArray removeAllObjects];
-        [_profileSearchView.tableView reloadData];
-    }
-}
-
-- (BOOL)searchBarShouldEndEditing:(UISearchBar *)searchBar {
-    return YES;
-}
-
-- (void)searchBarCancelButtonClicked:(UISearchBar *)searchBar {
-    _searchController.searchBar.text = @""; // clear search
-    [self dismissProfileSearch];
-}
-
-#pragma mark - UISearchControllerDelegate methods
-
-- (void) didDismissSearchController:(UISearchController *)searchController {
-    _searchController.searchBar.text = @""; // clear search
-    [self dismissProfileSearch];
-}
-#pragma mark - Search general methods
-
--(void) keyupSearch:(NSTimer *)timer {
-    [self searchProfilesWithTerm:timer.userInfo];
-}
-
-- (void) resignKeyboard {
-    [_searchController.searchBar resignFirstResponder];
-}
-
-// PODCAST SEARCH
--(void) searchProfilesWithTerm:(NSString *)searchTerm {
-    
-    if (searchTerm.length > 0) {
-        
-        _profileSearchView.noResults = NO;
-        
-        NSURL *profileSearchUrl = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/profile-search.php", _tung.apiRootUrl]];
-        NSMutableURLRequest *profileSearchRequest = [NSMutableURLRequest requestWithURL:profileSearchUrl cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:6.0f];
-        [profileSearchRequest setHTTPMethod:@"POST"];
-        NSDictionary *params = @{@"sessionId":_tung.sessionId,
-                                 @"searchTerm": searchTerm };
-        NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
-        [profileSearchRequest setHTTPBody:serializedParams];
-        
-        // reset data and connection
-        _profileSearchResultData = nil;
-        _profileSearchResultData = [NSMutableData new];
-        
-        if (_profileSearchConnection) {
-            [_profileSearchConnection cancel];
-            _profileSearchConnection = nil;
-        }
-        _profileSearchConnection = [[NSURLConnection alloc] initWithRequest:profileSearchRequest delegate:self];
-        //JPLog(@"search profiles for: %@", searchTerm);
-    }
-}
-
-#pragma mark - NSURLConnection delegate methods
-
-
-- (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data {
-    //JPLog(@"did receive data");
-    [_profileSearchResultData appendData:data];
-}
-
-- (void)connectionDidFinishLoading:(NSURLConnection *)connection {
-    
-    NSError *error;
-    id jsonData = [NSJSONSerialization JSONObjectWithData:_profileSearchResultData options:NSJSONReadingAllowFragments error:&error];
-    if (jsonData != nil && error == nil) {
-        if ([jsonData isKindOfClass:[NSDictionary class]]) {
-            NSDictionary *responseDict = jsonData;
-            if ([responseDict objectForKey:@"error"]) {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [_tung getSessionWithCallback:^{
-                            [self searchProfilesWithTerm:_searchController.searchBar.text];
-                        }];
-                    } else {
-                        // other error - alert user
-                        UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                        [errorAlert show];
-                    }
-                });
-            }
-        }
-        else if ([jsonData isKindOfClass:[NSArray class]]) {
-            
-            _profileSearchView.queryExecuted = YES;
-            
-            NSArray *newUsers = jsonData;
-            
-            if (newUsers.count > 0) {
-                
-                _profileSearchView.profileArray = [newUsers mutableCopy];
-                
-                //JPLog(@"got results: %lu", (unsigned long)_profileSearchView.profileArray.count);
-                //JPLog(@"%@", _profileArray);
-                [_profileSearchView preloadAvatars];
-                [_profileSearchView.tableView reloadData];
-                
-            }
-            else {
-                _profileSearchView.noResults = YES;
-                _profileSearchView.profileArray = [NSMutableArray array];
-                //JPLog(@"NO RESULTS");
-                [_profileSearchView.tableView reloadData];
-            }
-        }
-    }
-    else if ([_profileSearchResultData length] == 0 && error == nil) {
-        JPLog(@"no response for profile search");
-        
-    }
-    else if (error != nil) {
-        
-        JPLog(@"Error: %@", error);
-        NSString *html = [[NSString alloc] initWithData:_profileSearchResultData encoding:NSUTF8StringEncoding];
-        JPLog(@"HTML: %@", html);
-    }
-}
-
-- (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
-    JPLog(@"connection failed: %@", error);
-    /* this error pops up occaisionally, probably because of rapid requests.
-     makes user think something is wrong when it really isn't.
-     
-     [_tung showConnectionErrorAlertForError:error];
-     */
-}
-
-/* unused NSURLConnection delegate methods
- - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response {
-	JPLog(@"connection received response: %@", response);
- }
- 
- */
 
 #pragma mark - specific to Profile View
 

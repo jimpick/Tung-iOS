@@ -73,7 +73,6 @@
 
     [_searchTimer invalidate];
     // timeout to resign keyboard
-    JPLog(@"SET SELECTOR resignKeyboard");
     [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(resignKeyboard) userInfo:nil repeats:NO];
     // search
     [self searchForTerm:searchBar.text];
