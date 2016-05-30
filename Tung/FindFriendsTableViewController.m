@@ -30,7 +30,8 @@
     
     _tung = [TungCommonObjects establishTungObjects];
     
-    if (_profileData) {
+    if (_profileData) { // onboarding
+        
         // title and subtitle
         UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
         //titleLabel.backgroundColor = [UIColor clearColor];
@@ -103,7 +104,6 @@
     _usersToFollow = [NSMutableArray array];
     
     if (!_suggestedUsersArray) {
-        NSLog(@"get suggested users");
         // get users
         [_tung getSuggestedUsersWithCallback:^(BOOL success, NSDictionary *response) {
             self.tableView.backgroundView = nil;

@@ -385,7 +385,8 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" title="Sign-up" id="NDV-JU-fke">
-                        <barButtonItem key="leftBarButtonItem" title="Back" id="6aE-Ln-akK">
+                        <barButtonItem key="backBarButtonItem" title="Back" id="EPU-Zk-ziZ"/>
+                        <barButtonItem key="leftBarButtonItem" title="Cancel" id="6aE-Ln-akK">
                             <connections>
                                 <action selector="leftBarItem:" destination="4Ty-V3-SZK" id="KAx-lV-XvK"/>
                             </connections>
@@ -587,7 +588,7 @@
                         </connections>
                     </tableView>
                     <navigationItem key="navigationItem" id="OlM-xb-5vK">
-                        <barButtonItem key="backBarButtonItem" title="Back" id="wN9-m9-Hn8"/>
+                        <barButtonItem key="backBarButtonItem" title="Back" id="nE2-pc-zJV"/>
                     </navigationItem>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="tOP-Ti-Q58" userLabel="First Responder" sceneMemberID="firstResponder"/>
@@ -603,11 +604,11 @@
                         <viewControllerLayoutGuide type="bottom" id="chs-c1-eI6"/>
                     </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="N6t-qi-ifx" customClass="For">
-                        <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
+                        <rect key="frame" x="0.0" y="44" width="320" height="524"/>
                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                         <subviews>
                             <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="ga5-xO-Urj" customClass="PillButton">
-                                <rect key="frame" x="67" y="245" width="186" height="79"/>
+                                <rect key="frame" x="67" y="223" width="186" height="79"/>
                                 <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="79" id="OnM-ci-fAl"/>
@@ -618,13 +619,13 @@
                                 </connections>
                             </view>
                             <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="All done." textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="4" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="6TH-cs-OOT">
-                                <rect key="frame" x="48" y="211" width="224" height="18"/>
+                                <rect key="frame" x="48" y="189" width="224" height="18"/>
                                 <fontDescription key="fontDescription" type="system" pointSize="15"/>
                                 <color key="textColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
                                 <nil key="highlightedColor"/>
                             </label>
                             <webView contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="59E-yK-J3R">
-                                <rect key="frame" x="20" y="440" width="280" height="108"/>
+                                <rect key="frame" x="20" y="396" width="280" height="108"/>
                                 <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="calibratedRGB"/>
                                 <constraints>
                                     <constraint firstAttribute="height" constant="108" id="HeU-zy-uCS"/>
@@ -632,7 +633,7 @@
                                 <dataDetectorType key="dataDetectorTypes" link="YES"/>
                             </webView>
                             <activityIndicatorView opaque="NO" alpha="0.0" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" style="gray" translatesAutoresizingMaskIntoConstraints="NO" id="lGk-Kj-YKl">
-                                <rect key="frame" x="150" y="340" width="20" height="20"/>
+                                <rect key="frame" x="150" y="318" width="20" height="20"/>
                             </activityIndicatorView>
                         </subviews>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="calibratedWhite"/>
@@ -650,14 +651,8 @@
                             <constraint firstAttribute="centerX" secondItem="ga5-xO-Urj" secondAttribute="centerX" id="zYu-vi-R1y"/>
                         </constraints>
                     </view>
-                    <navigationItem key="navigationItem" id="G8J-GZ-TJE">
-                        <barButtonItem key="leftBarButtonItem" title="Back" id="bTy-NW-Qfk">
-                            <connections>
-                                <segue destination="Cnf-Bh-DVb" kind="unwind" unwindAction="unwindToSignUp:" id="x6p-52-b0a"/>
-                            </connections>
-                        </barButtonItem>
-                    </navigationItem>
                     <nil key="simulatedStatusBarMetrics"/>
+                    <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" translucent="NO" prompted="NO"/>
                     <freeformSimulatedSizeMetrics key="simulatedDestinationMetrics"/>
                     <size key="freeformSize" width="320" height="568"/>
                     <connections>
@@ -1585,16 +1580,19 @@
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                     </view>
-                    <navigationItem key="navigationItem" id="WWs-gP-ZR9"/>
+                    <navigationItem key="navigationItem" id="WWs-gP-ZR9">
+                        <barButtonItem key="backBarButtonItem" title="Back" id="bb3-n6-xsc"/>
+                    </navigationItem>
                     <connections>
                         <segue destination="Utn-JV-HZh" kind="modal" identifier="presentEditProfileView" id="OZe-cP-Hjd"/>
                         <segue destination="wD7-6S-Iws" kind="modal" identifier="presentWebView" id="sbA-US-dCS"/>
                         <segue destination="IeW-VN-1IQ" kind="modal" identifier="presentLogView" id="HhD-Zj-Re8"/>
+                        <segue destination="axO-oZ-vhD" kind="push" identifier="willNeverGetUsed" id="NaZ-9F-H0U"/>
                     </connections>
                 </viewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="0jG-5G-kC2" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
-            <point key="canvasLocation" x="-351.19999999999999" y="761.12"/>
+            <point key="canvasLocation" x="-344" y="761"/>
         </scene>
         <!--Profile Navigation Controller-->
         <scene sceneID="mKt-ky-dkf">
@@ -1735,6 +1733,9 @@
                             <outlet property="delegate" destination="axO-oZ-vhD" id="zOh-vv-8Ix"/>
                         </connections>
                     </tableView>
+                    <navigationItem key="navigationItem" id="eW0-MW-TMf">
+                        <barButtonItem key="backBarButtonItem" title="Back" id="a79-Zg-1HQ"/>
+                    </navigationItem>
                     <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" translucent="NO" prompted="NO"/>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="HxR-Fg-ysV" userLabel="First Responder" sceneMemberID="firstResponder"/>

@@ -7,6 +7,7 @@
 //
 
 #import "ProfileHeaderView.h"
+#import "TungCommonObjects.h"
 
 @implementation ProfileHeaderView
 

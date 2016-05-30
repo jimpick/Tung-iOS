@@ -3638,7 +3638,7 @@ static NSArray *colors;
 }
 
 - (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
-    //JPLog(@"follow user with id: %@", target_id);
+    //NSLog(@"follow user with id: %@", target_id);
     NSURL *followUserRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/follow.php", _apiRootUrl]];
     NSMutableURLRequest *followUserRequest = [NSMutableURLRequest requestWithURL:followUserRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [followUserRequest setHTTPMethod:@"POST"];
@@ -3688,7 +3688,7 @@ static NSArray *colors;
     
 }
 - (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
-    //JPLog(@"UN-follow user with id: %@", target_id);
+    //NSLog(@"UN-follow user with id: %@", target_id);
     NSURL *unfollowUserRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/unfollow.php", _apiRootUrl]];
     NSMutableURLRequest *unfollowUserRequest = [NSMutableURLRequest requestWithURL:unfollowUserRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [unfollowUserRequest setHTTPMethod:@"POST"];
@@ -4022,7 +4022,7 @@ static NSArray *colors;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
-                    //NSLog(@"find twitter friends response %@", responseDict);
+                    NSLog(@"find twitter friends response %@", responseDict);
                     
                     if ([responseDict objectForKey:@"error"]) {
                         JPLog(@"Error finding twitter friends (%@): %@", [responseDict objectForKey:@"twitterStatusCode"], [responseDict objectForKey:@"error"]);

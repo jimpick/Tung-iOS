@@ -26,6 +26,7 @@
 @property UIBarButtonItem *tableHeaderLabel;
 @property NSURL *urlToPass;
 @property UserEntity *userEntity;
+@property NSLayoutConstraint *profileHeightConstraint;
 
 @property BOOL isLoggedInUser;
 @property BOOL reachable;
@@ -41,6 +42,10 @@
 @end
 
 @implementation ProfileViewController
+
+
+
+
 
 - (void) viewDidLoad {
     
@@ -86,14 +91,14 @@
     
     // profile header
     CGFloat topConstraint = 64;
-    CGFloat profileHeaderHeight = 223;
-    _profileHeader = [[ProfileHeaderView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, profileHeaderHeight)];
+    CGFloat profileHeaderViewHeight = 223;
+    _profileHeader = [[ProfileHeaderView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, profileHeaderViewHeight)];
 	[self.view addSubview:_profileHeader];
     _profileHeader.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_profileHeader attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeTop multiplier:1 constant:topConstraint]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_profileHeader attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
-    NSLayoutConstraint *profileHeightConstraint = [NSLayoutConstraint constraintWithItem:_profileHeader attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:profileHeaderHeight];
-    [_profileHeader addConstraint:profileHeightConstraint];
+    _profileHeightConstraint = [NSLayoutConstraint constraintWithItem:_profileHeader attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:profileHeaderViewHeight];
+    [_profileHeader addConstraint:_profileHeightConstraint];
     [_profileHeader addConstraint:[NSLayoutConstraint constraintWithItem:_profileHeader attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:self.view.frame.size.width]];
     
     _profileHeader.scrollView.delegate = self;
@@ -149,9 +154,6 @@
     // for activity feed
     _storiesView = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
     _storiesView.profiledUserId = _profiledUserId;
-    // for animating header
-    _storiesView.profileHeader = _profileHeader;
-    _storiesView.profileHeightConstraint = profileHeightConstraint;
     
     _storiesView.edgesForExtendedLayout = UIRectEdgeNone;
     _storiesView.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
@@ -164,6 +166,8 @@
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_storiesView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_storiesView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_storiesView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_storiesView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
+    
+    _storiesView.profileHeader = _profileHeader;
     
     // notifications view
     if (_isLoggedInUser) {
@@ -182,6 +186,8 @@
         [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
         [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_notificationsView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_notificationsView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
         
+        _notificationsView.profileHeader = _profileHeader;
+        
         _switcherIndex = 0;
         [_switcher setSelectedSegmentIndex:_switcherIndex];
         [self switchViews:_switcher];
@@ -195,6 +201,8 @@
     // notifs
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(followingCountChanged:) name:@"followingCountChanged" object:nil];// respond to follow/unfollow events
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(minimizeProfileHeaderview) name:@"shouldMinimizeHeaderView" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(maximizeProfileHeaderview) name:@"shouldMaximizeHeaderView" object:nil];
     
 }
 
@@ -204,17 +212,7 @@ NSTimer *promptTimer;
     [super viewDidAppear:animated];
     _tung.viewController = self;
     [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects tungColor] }];
-    // scroll view
-    if (!_profileHeader.contentSizeSet) {
-        CGSize contentSize = _profileHeader.scrollView.contentSize;
-        //JPLog(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
-        contentSize.width = contentSize.width * 2;
-        _profileHeader.scrollView.contentSize = contentSize;
-        _profileHeader.scrollView.contentInset = UIEdgeInsetsZero;
-        //JPLog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
-        _profileHeader.contentSizeSet = YES;
-    }
-    
+
     [self prepareView];
 
 }
@@ -422,6 +420,7 @@ NSTimer *sessionCheckTimer;
     CGSize contentSize = _profileHeader.scrollSubViewOne.frame.size;
     //JPLog(@"scroll view starting content size: %@", NSStringFromCGSize(contentSize));
     
+    _profileHeader.nameLabel.text = [_profiledUserData objectForKey:@"name"];
     // basic info web view
     NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:0; color:white; font: .9em/1.4em -apple-system, Helvetica; } a { color:rgba(255,255,255,.6); } .name { font-size:1.1em; } .location { color:rgba(0,0,0,.4) } table { width:100%%; height:100%%; border-spacing:0; border-collapse:collapse; border:none; } td { text-align:center; vertical-align:middle; }</style>\n"];
     NSString *basicInfoBody = [NSString stringWithFormat:@"<table><td><p><span class=\"name\">%@</span>", [_profiledUserData objectForKey:@"name"]];
@@ -666,6 +665,100 @@ NSTimer *sessionCheckTimer;
     }]];
     [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
     [self presentViewController:settingsSheet animated:YES completion:nil];
+}
+
+#pragma mark - Profile header view resizing
+
+static float profileHeaderScrollViewHeight = 162;
+static float profileHeaderMinScrollViewHeight = 82;
+static float profileFollowingViewHeight = 61;
+static float profileHeaderViewHeight = 223;
+static CGSize profileHeaderScrollViewSize;
+
+- (void) minimizeProfileHeaderview {
+    
+    if (!_profileHeader.isAnimating) {
+        //NSLog(@"MIN-imize profile header view");
+        _profileHeader.isMinimized = YES;
+        _profileHeader.isAnimating = YES;
+        profileHeaderScrollViewSize = _profileHeader.scrollView.contentSize;
+        
+        // make sure scroll view is showing name and avatar
+        float fractionalPage = (uint) _profileHeader.scrollView.contentOffset.x / [TungCommonObjects screenSize].width;
+        NSInteger page = lround(fractionalPage);
+        if (page == 1) {
+            
+            [_profileHeader.scrollView scrollRectToVisible:CGRectMake(0, 0, [TungCommonObjects screenSize].width, profileHeaderScrollViewHeight) animated:YES];
+        }
+        _profileHeader.nameLabel.hidden = NO;
+        _profileHeader.nameLabel.alpha = 0;
+        
+        [UIView animateWithDuration:.5
+                              delay:0
+                            options:UIViewAnimationOptionCurveEaseInOut
+                         animations:^{
+                             
+                             _profileHeightConstraint.constant = profileHeaderMinScrollViewHeight;
+                             _profileHeader.scrollSubView1Height.constant = profileHeaderMinScrollViewHeight;
+                             _profileHeader.scrollSubView2Height.constant = profileHeaderMinScrollViewHeight;
+                             _profileHeader.nameLabel.alpha = 1;
+                             _profileHeader.basicInfoWebView.alpha = 0;
+                             _profileHeader.pageControl.alpha = 0;
+                             
+                             _profileHeader.followingViewHeightConstraint.constant = 0;
+                             _profileHeader.editFollowBtn.alpha = 0;
+                             _profileHeader.followersLabel.alpha = 0;
+                             _profileHeader.followingLabel.alpha = 0;
+                             _profileHeader.followerCountBtn.alpha = 0;
+                             _profileHeader.followingCountBtn.alpha = 0;
+                             
+                             [self.view layoutIfNeeded];
+                         }
+                         completion:^(BOOL completed) {
+                             _profileHeader.isAnimating = NO;
+                             _profileHeader.basicInfoWebView.hidden = YES;
+                             [_profileHeader.scrollView setScrollEnabled:NO];
+                         }];
+    }
+}
+
+- (void) maximizeProfileHeaderview {
+    
+    if (!_profileHeader.isAnimating) {
+        //NSLog(@"MAX-imize profile header view");
+        _profileHeader.isMinimized = NO;
+        _profileHeader.isAnimating = YES;
+        _profileHeader.basicInfoWebView.hidden = NO;
+        
+        [UIView animateWithDuration:.3
+                              delay:0
+                            options:UIViewAnimationOptionCurveEaseInOut
+                         animations:^{
+                             
+                             _profileHeightConstraint.constant = profileHeaderViewHeight;
+                             _profileHeader.scrollSubView1Height.constant = profileHeaderScrollViewHeight;
+                             _profileHeader.scrollSubView2Height.constant = profileHeaderScrollViewHeight;
+                             _profileHeader.nameLabel.alpha = 0;
+                             _profileHeader.basicInfoWebView.alpha = 1;
+                             _profileHeader.pageControl.alpha = 1;
+                             
+                             _profileHeader.followingViewHeightConstraint.constant = profileFollowingViewHeight;
+                             _profileHeader.editFollowBtn.alpha = 1;
+                             _profileHeader.followersLabel.alpha = 1;
+                             _profileHeader.followingLabel.alpha = 1;
+                             _profileHeader.followerCountBtn.alpha = 1;
+                             _profileHeader.followingCountBtn.alpha = 1;
+                             
+                             [self.view layoutIfNeeded];
+                         }
+                         completion:^(BOOL completed) {
+                             _profileHeader.isAnimating = NO;
+                             _profileHeader.nameLabel.hidden = YES;
+                             _profileHeader.scrollView.contentSize = profileHeaderScrollViewSize;
+                             [_profileHeader.scrollView setScrollEnabled:YES];
+                             
+                         }];
+    }
 }
 
 #pragma mark - UIScrollView delegate

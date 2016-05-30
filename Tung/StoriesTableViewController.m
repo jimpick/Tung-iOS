@@ -31,6 +31,8 @@
 @property CGFloat tableHeaderRow;
 @property CGFloat animationDistance;
 
+@property (nonatomic, assign) CGFloat lastScrollViewOffset; // for determining scroll direction
+
 @end
 
 @implementation StoriesTableViewController
@@ -67,10 +69,9 @@
     self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
     self.tableView.separatorColor = [UIColor colorWithWhite:1 alpha:.7];
     // refresh control
-    if (!_episodeId) {
-        self.refreshControl = [[UIRefreshControl alloc] init];
-        [self.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
-    }
+    self.refreshControl = [[UIRefreshControl alloc] init];
+    [self.refreshControl addTarget:self action:@selector(refreshFeed) forControlEvents:UIControlEventValueChanged];
+
     // table bkgd
     UIActivityIndicatorView *tableSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
     tableSpinner.alpha = 1;
@@ -89,10 +90,13 @@
     _headerScrollViewHeight = _headerViewHeight - _tableHeaderRow;
     _animationDistance = _headerScrollViewHeight - minHeaderHeight;
     
+    _lastScrollViewOffset = 0;
+    
     if (_episodeId) {
         self.navigationItem.title = @"Episode";
-        self.tableView.bounces = NO;
-        [self getStoriesForEpisodeWithId:_episodeId fromUser:_profiledUserId];
+        [self getStoriesForEpisodeWithId:_episodeId
+                               newerThan:[NSNumber numberWithInt:0]
+                             orOlderThan:[NSNumber numberWithInt:0]];
     }
         
 }
@@ -127,10 +131,16 @@
             mostRecent = [NSNumber numberWithInt:0];
         }
 
-        [self requestPostsNewerThan:mostRecent
-                        orOlderThan:[NSNumber numberWithInt:0]
-                           fromUser:_profiledUserId
-                           withCred:NO];
+        if (!_episodeId) {
+        	[self requestPostsNewerThan:mostRecent
+                        	orOlderThan:[NSNumber numberWithInt:0]
+                               fromUser:_profiledUserId
+                               withCred:NO];
+        } else {
+            [self getStoriesForEpisodeWithId:_episodeId
+                                   newerThan:mostRecent
+                                 orOlderThan:[NSNumber numberWithInt:0]];
+        }
     }
     else {
         [_tung checkReachabilityWithCallback:^(BOOL reachable) {
@@ -183,19 +193,20 @@
 NSInteger requestTries = 0;
 
 // all stories for a single episode
-// TODO: add newerThan/olderThan params
-- (void) getStoriesForEpisodeWithId:(NSString *)episodeId fromUser:(NSString *)userId {
+- (void) getStoriesForEpisodeWithId:(NSString *)episodeId
+                          newerThan:(NSNumber *)afterTime
+                        orOlderThan:(NSNumber *)beforeTime {
     
-    NSLog(@"get stories for episode with id: %@, from user: %@", episodeId, userId);
     NSURL *storyURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/stories-for-episode.php", _tung.apiRootUrl]];
     NSMutableURLRequest *storyRequest = [NSMutableURLRequest requestWithURL:storyURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [storyRequest setHTTPMethod:@"POST"];
     NSDictionary *params = @{
                              @"sessionId": _tung.sessionId,
                              @"episode_id": episodeId,
-                             @"profiled_user_id": userId
+                             @"newerThan": afterTime,
+                             @"olderThan": beforeTime
                              };
-    //JPLog(@"request for stories with params: %@", params);
+    //NSLog(@"request for stories for single episode with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [storyRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -213,7 +224,7 @@ NSInteger requestTries = 0;
                             // get new session and re-request
                             //JPLog(@"SESSION EXPIRED");
                             [_tung getSessionWithCallback:^{
-                                [self getStoriesForEpisodeWithId:episodeId fromUser:userId];
+                                [self getStoriesForEpisodeWithId:episodeId newerThan:afterTime orOlderThan:beforeTime];
                             }];
                         } else {
                             [self endRefreshing];
@@ -225,19 +236,71 @@ NSInteger requestTries = 0;
                 else if ([responseDict objectForKey:@"success"]) {
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
-                        [self endRefreshingWithNewPosts:YES];
-                        
                         NSArray *newStories = [responseDict objectForKey:@"stories"];
-                        if (newStories.count > 0) {
-                            _storiesArray = [self processStories:newStories];
-                            _noResults = NO;
-                        } else {
-                            _noResults = YES;
+                        
+                        // pull-refresh
+                        if ([afterTime intValue] > 0) {
+                            if (newStories.count > 0) {
+                                //JPLog(@"got stories newer than: %@", afterTime);
+                                
+                                [self endRefreshingWithNewPosts:YES];
+                                
+                                [self stopClipPlayback];
+                                
+                                NSArray *newItems = [self processStories:newStories];
+                                NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
+                                _storiesArray = [newFeedArray mutableCopy];
+                                
+                                [UIView setAnimationsEnabled:NO];
+                                [self.tableView beginUpdates];
+                                for (NSInteger i = 0; i < newStories.count; i++) {
+                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                                }
+                                [self.tableView endUpdates];
+                                [UIView setAnimationsEnabled:YES];
+                                
+                            } else {
+                                [self endRefreshing];
+                            }
                         }
-//                        [self groupStoriesByEpisodeAndInsertInTable:self.tableView withStartingIndex:0];
-                        [self groupStoriesByEpisodeAndInsertInTable:self.tableView
-                                                  withStartingIndex:0
-                                                      andTableRange:NSMakeRange(0, 0)];
+                        // auto-loaded posts as user scrolls down
+                        else if ([beforeTime intValue] > 0) {
+                            
+                            [self endRefreshingWithNewPosts:YES];
+                            
+                            _reachedEndOfPosts = (newStories.count == 0);
+                            if (_reachedEndOfPosts) {
+                                [self.tableView reloadData];
+                                
+                            } else {
+                                //JPLog(@"got stories older than: %@", beforeTime);
+                                int startingIndex = (int)_storiesArray.count;
+                                
+                                [_storiesArray addObjectsFromArray:[self processStories:newStories]];
+                                
+                                [UIView setAnimationsEnabled:NO];
+                                [self.tableView beginUpdates];
+                                for (int i = startingIndex; i < _storiesArray.count; i++) {
+                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                                }
+                                [self.tableView endUpdates];
+                                [UIView setAnimationsEnabled:YES];
+                            }
+                        }
+                        // initial request
+                        else {
+                            
+                            [self endRefreshingWithNewPosts:YES];
+                            
+                            if (newStories.count > 0) {
+                                _storiesArray = [self processStories:newStories];
+                                _noResults = NO;
+                            } else {
+                                _noResults = YES;
+                            }
+                            [self.tableView reloadData];
+                            
+                        }
                         
                     });
                 }
@@ -295,7 +358,7 @@ NSInteger requestTries = 0;
                                      };
         [params addEntriesFromDictionary:credParams];
     }
-    //JPLog(@"request for stories with params: %@", params);
+    //NSLog(@"request for stories with params: %@", params);
     
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [feedRequest setHTTPBody:serializedParams];
@@ -466,7 +529,7 @@ NSInteger requestTries = 0;
                 }
                 // errors
                 else if ([data length] == 0 && error == nil) {
-                    JPLog(@"no response");
+                    JPLog(@"no response for stories request");
                     dispatch_async(dispatch_get_main_queue(), ^{
                         [self endRefreshing];
                     });
@@ -505,6 +568,7 @@ NSInteger requestTries = 0;
 }
 
 - (void) endRefreshingWithNewPosts:(BOOL)newPosts {
+    //NSLog(@"end refreshing. new posts: %@", newPosts ? @"yes" : @"no");
     _requestingMore = NO;
     self.requestStatus = @"finished";
     _loadMoreIndicator.alpha = 0;
@@ -814,7 +878,7 @@ NSInteger requestTries = 0;
         // view all events for episode id
         NSDictionary *headerDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
         NSString *episodeId = [[[headerDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
-        NSLog(@"episodeId: %@", episodeId);
+        //NSLog(@"episodeId: %@", episodeId);
         StoriesTableViewController *storyDetailView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"storiesTableView"];
         storyDetailView.episodeId = episodeId;
     
@@ -1593,61 +1657,49 @@ CGFloat labelWidth = 0;
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
     if (scrollView == self.tableView) {
+        //NSLog(@"table view scrolled to offset: %f", scrollView.contentOffset.y);
         
-        //NSLog(@"table view scrolled to offset: %f", self.tableView.contentOffset.y);
         // shrink profile header
-        if (_profiledUserId.length > 0 && scrollView.contentOffset.y > 0 && scrollView.contentOffset.y <= _animationDistance) {
-            //JPLog(@"table offset: %f", scrollView.contentOffset.y);
-            _profileHeightConstraint.constant = _headerViewHeight - scrollView.contentOffset.y;
-            _profileHeader.scrollSubView1Height.constant = _headerScrollViewHeight - scrollView.contentOffset.y;
-            _profileHeader.scrollSubView2Height.constant = _headerScrollViewHeight - scrollView.contentOffset.y;
+        if (_profiledUserId.length) {
+            if (!_profileHeader.isMinimized && scrollView.contentSize.height > scrollView.frame.size.height && scrollView.contentOffset.y > _lastScrollViewOffset) {
+                // scrolling down
+                NSNotification *minimizeHeaderNotif = [NSNotification notificationWithName:@"shouldMinimizeHeaderView" object:nil userInfo:nil];
+                [[NSNotificationCenter defaultCenter] postNotification:minimizeHeaderNotif];
+            }
             
-            [_profileHeader layoutIfNeeded];
+            else if (scrollView.contentOffset.y < _lastScrollViewOffset) {
+                // scrolling up
+                if (_profileHeader.isMinimized && scrollView.contentOffset.y <= 100) {
+                    NSNotification *maximizeHeaderNotif = [NSNotification notificationWithName:@"shouldMaximizeHeaderView" object:nil userInfo:nil];
+                    [[NSNotificationCenter defaultCenter] postNotification:maximizeHeaderNotif];
+                }
+            }
+            if (scrollView.contentOffset.y >= 0) _lastScrollViewOffset = scrollView.contentOffset.y;
         }
         // detect when user hits bottom of feed
-        // TODO: remove this check when implementing newerThan/olderThan on fetch for all stories for episode
-        if (!_episodeId) {
-            float bottomOffset = scrollView.contentSize.height - scrollView.frame.size.height;
-            if (scrollView.contentOffset.y >= bottomOffset) {
-                // request more posts if they didn't reach the end
-                if (!_requestingMore && !_reachedEndOfPosts && _storiesArray.count > 0) {
-                    JPLog(@"requesting more stories");
-                    _requestingMore = YES;
-                    _loadMoreIndicator.alpha = 1;
-                    [_loadMoreIndicator startAnimating];
-                    NSNumber *oldest = [[[_storiesArray objectAtIndex:_storiesArray.count-1] objectAtIndex:0] objectForKey:@"time_secs_end"];
-                    
+        float bottomOffset = scrollView.contentSize.height - scrollView.frame.size.height;
+        if (scrollView.contentOffset.y >= bottomOffset) {
+            // request more posts if they didn't reach the end
+            if (!_requestingMore && !_reachedEndOfPosts && _storiesArray.count > 0) {
+                //NSLog(@"requesting more stories");
+                _requestingMore = YES;
+                _loadMoreIndicator.alpha = 1;
+                [_loadMoreIndicator startAnimating];
+                NSNumber *oldest = [[[_storiesArray objectAtIndex:_storiesArray.count-1] objectAtIndex:0] objectForKey:@"time_secs_end"];
+                
+                if (!_episodeId) {
                     [self requestPostsNewerThan:[NSNumber numberWithInt:0]
                                     orOlderThan:oldest
                                        fromUser:_profiledUserId
                                        withCred:NO];
+                } else {
+                    [self getStoriesForEpisodeWithId:_episodeId
+                                           newerThan:[NSNumber numberWithInt:0]
+                                         orOlderThan:oldest];
                 }
             }
         }
     }
-}
-
-- (void) scrollViewDidEndDecelerating:(UIScrollView *)scrollView {
-    if (_profiledUserId.length > 0) {
-        [self setScrollViewContentSizeForHeight];
-    }
-}
-
-- (void) scrollViewDidEndDragging:(UIScrollView *)scrollView willDecelerate:(BOOL)decelerate {
-    if (_profiledUserId.length > 0 && !decelerate) {
-        [self setScrollViewContentSizeForHeight];
-    }
-}
-
-- (void) setScrollViewContentSizeForHeight {
-    //JPLog(@"set scroll view content size for height");
-    // set scroll view content size for height
-    CGFloat scrollViewHeight = _profileHeightConstraint.constant - _tableHeaderRow;
-//    JPLog(@"scroll view height: %f", scrollViewHeight);
-//    JPLog(@"scroll view content size: %@", NSStringFromCGSize(_profileHeader.scrollView.contentSize));
-    CGSize contentSize = CGSizeMake(_screenWidth * 2, scrollViewHeight);
-    _profileHeader.scrollView.contentSize = contentSize;
-//    JPLog(@"scroll view NEW content size: %@", NSStringFromCGSize(contentSize));
 }
 
 

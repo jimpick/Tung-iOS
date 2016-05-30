@@ -59,7 +59,6 @@ static UIImage *iconRedX;
         _formIsForSignup = YES;
         self.navigationItem.titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"tungNavBarLogo.png"]];
         self.navigationItem.rightBarButtonItem.title = @"Next";
-        self.navigationItem.leftBarButtonItem.title = @"Back";
         _refreshAvatarBtn.hidden = YES;
         [self createAvatarSizesAndSetAvatarWithCallback:nil];
         
@@ -77,7 +76,6 @@ static UIImage *iconRedX;
     } else {
         // edit profile
         self.navigationItem.title = @"Edit Profile";
-        self.navigationItem.leftBarButtonItem.title = @"Cancel";
         _refreshAvatarBtn.hidden = NO;
         _profileData = [[_tung getLoggedInUserData] mutableCopy];
         _userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
@@ -239,7 +237,11 @@ static UIImage *iconRedX;
 
 - (BOOL)prefersStatusBarHidden
 {
-    return YES;
+    if ([_purpose isEqualToString:@"signup"]) {
+    	return YES;
+    } else {
+        return NO;
+    }
 }
 
 - (IBAction)leftBarItem:(id)sender {

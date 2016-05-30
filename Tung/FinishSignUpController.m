@@ -33,7 +33,6 @@
     
     // navigation bar
     self.navigationItem.titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"tungNavBarLogo.png"]];
-    
     self.navigationController.navigationBar.barTintColor = [UIColor whiteColor];
     self.navigationController.navigationBar.translucent = NO;
 
@@ -50,15 +49,16 @@
     self.termsNoticeWebView.delegate = self;
     [self.termsNoticeWebView loadRequest:refURLRequest];
     
-//    if (_usersToFollow) {
-//        NSLog(@"received users to follow: %@", _usersToFollow);
-//    }
+    if (_usersToFollow) {
+        NSLog(@"received users to follow: %@", _usersToFollow);
+    }
 
 }
 
--(void)viewWillAppear:(BOOL)animated {
+- (void) viewWillAppear:(BOOL)animated {
     
     self.activityIndicator.alpha = 0;
+    self.navigationController.navigationBar.topItem.title = @"Back";
 }
 
 - (void)didReceiveMemoryWarning

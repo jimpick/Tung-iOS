@@ -37,8 +37,7 @@
 
 // references to host viewcontroller's properties
 @property (strong, nonatomic) UINavigationController *navController;
-@property ProfileHeaderView *profileHeader;
-@property NSLayoutConstraint *profileHeightConstraint;
+@property (strong, nonatomic) ProfileHeaderView *profileHeader;
 
 // playing clips
 @property (strong, nonatomic) CADisplayLink *onEnterFrame;

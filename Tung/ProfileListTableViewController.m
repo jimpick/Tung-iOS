@@ -11,8 +11,8 @@
 #import "ProfileListCell.h"
 #import "ProfileViewController.h"
 #import "EpisodeViewController.h"
-#import "JPLogRecorder.h"
 #import "FinishSignUpController.h"
+#import "IconCell.h"
 
 @interface ProfileListTableViewController ()
 
@@ -25,6 +25,8 @@
 @property BOOL forOnboarding;
 @property NSNumber *page;
 @property BOOL socialPlatform;
+@property (nonatomic, assign) CGFloat lastScrollViewOffset; // for determining scroll direction
+@property NSString *navTitle;
 
 // for search
 @property NSTimer *searchTimer;
@@ -96,9 +98,59 @@
         self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 0, 0);
         self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
         
+        if ([_queryType isEqualToString:@"Twitter"]) {
+            _socialPlatform = YES;
+            _navTitle = @"Twitter Friends";
+            [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects twitterColor] }];
+            _page = [NSNumber numberWithInt:0];
+            
+            if (_forOnboarding) {
+                // _profileArray will have been set above
+                self.tableView.backgroundView = nil;
+                [self.tableView reloadData];
+            }
+            else {
+                // assumes that user is already logged into twitter
+                [self getNextPageOfTwitterFriends];
+            }
+        }
+        else if ([_queryType isEqualToString:@"Facebook"]) {
+            _socialPlatform = YES;
+            _navTitle = @"Facebook Friends";
+            [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects facebookColor] }];
+            
+            if (_forOnboarding) {
+                // _profileArray will have been set above
+                self.tableView.backgroundView = nil;
+                [self.tableView reloadData];
+            }
+            else {
+                // assumes user is already logged into FB
+                NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
+                [_tung findFacebookFriendsWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {
+                    self.tableView.backgroundView = nil;
+                    if (success) {
+                        //NSLog(@"responseDict: %@", responseDict);
+                        NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
+                        if ([platformFriendsCount integerValue] > 0) {
+                            _profileArray = [NSMutableArray arrayWithArray:[responseDict objectForKey:@"results"]];
+                        }
+                        else {
+                            _noResults = YES;
+                        }
+                    }
+                    else {
+                        [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                    }
+                    
+                    [self.tableView reloadData];
+                }];
+            }
+        }
+
         if (!_socialPlatform) {
             
-            self.navigationItem.title = _queryType;
+            _navTitle = _queryType;
             
             // default target
             if (_target_id == NULL) _target_id = _tung.tungId;
@@ -114,59 +166,6 @@
             }
             [self refreshFeed];
         }
-        // social platform friends
-        else if (_socialPlatform) {
-            
-            if ([_queryType isEqualToString:@"Twitter"]) {
-                
-                self.navigationItem.title = @"Twitter Friends";
-                [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects twitterColor] }];
-                _page = [NSNumber numberWithInt:0];
-                
-                if (_forOnboarding) {
-                    // _profileArray will have been set above
-                    self.tableView.backgroundView = nil;
-                    [self.tableView reloadData];
-                }
-                else {
-                    // assumes that user is already logged into twitter
-                    [self getNextPageOfTwitterFriends];
-                }
-            }
-            else if ([_queryType isEqualToString:@"Facebook"]) {
-                
-                self.navigationItem.title = @"Facebook Friends";
-                [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects facebookColor] }];
-                
-                if (_forOnboarding) {
-                    // _profileArray will have been set above
-                    self.tableView.backgroundView = nil;
-                    [self.tableView reloadData];
-                }
-                else {
-                    // assumes user is already logged into FB
-                    NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
-                    [_tung findFacebookFriendsWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {
-                        self.tableView.backgroundView = nil;
-                        if (success) {
-                            //NSLog(@"responseDict: %@", responseDict);
-                            NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
-                            if ([platformFriendsCount integerValue] > 0) {
-                                _profileArray = [NSMutableArray arrayWithArray:[responseDict objectForKey:@"results"]];
-                            }
-                            else {
-                                _noResults = YES;
-                            }
-                        }
-                        else {
-                            [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
-                        }
-                        
-                        [self.tableView reloadData];
-                    }];
-                }
-            }
-        }
     }
     else {
         // no query type: profile search
@@ -175,6 +174,10 @@
         self.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero];
         self.tableView.backgroundView = nil;
     }
+}
+
+- (void) viewWillAppear:(BOOL)animated {
+    self.navigationItem.title = _navTitle;
 }
 
 - (void)didReceiveMemoryWarning {
@@ -194,33 +197,47 @@
 #pragma mark - Requesting
 
 - (void) getNextPageOfTwitterFriends {
-    [_tung findTwitterFriendsWithPage:_page andCallback:^(BOOL success, NSDictionary *responseDict) {
-        if (success) {
-            self.tableView.backgroundView = nil;
-            NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
-            if ([platformFriendsCount integerValue] > 0) {
-                if (_page.integerValue == 0) {
-                	_profileArray = [NSMutableArray arrayWithArray:[responseDict objectForKey:@"results"]];
-                } else {
-                    [_profileArray addObjectsFromArray:[responseDict objectForKey:@"results"]];
+    NSLog(@"get next page of twitter friends on page %@", _page);
+    // each request returns up to 100 profiles... make sure we need to
+    if (_profileArray.count == 0 || _profileArray.count == _page.integerValue * 100) {
+        [_tung findTwitterFriendsWithPage:_page andCallback:^(BOOL success, NSDictionary *responseDict) {
+            if (success) {
+                self.tableView.backgroundView = nil;
+                NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
+                NSArray *twitterFriends = [responseDict objectForKey:@"results"];
+                if ([platformFriendsCount integerValue] > 0) {
+                    if (_page.integerValue == 0) {
+                        _profileArray = [NSMutableArray arrayWithArray:twitterFriends];
+                    } else {
+                        [_profileArray addObjectsFromArray:twitterFriends];
+                        // TODO: load 
+                        if (_forOnboarding) {
+                            // load up usersToFollow with profileArray ids
+                            for (int i = 0; i < twitterFriends.count; i++) {
+                                NSString *userId = [[[twitterFriends objectAtIndex:i] objectForKey:@"_id"] objectForKey:@"$id"];
+                                if (![_usersToFollow containsObject:userId]) {
+                                    [_usersToFollow addObject:userId];
+                                }
+                            }
+                        }
+                    }
                 }
+                else {
+                    if (_page.integerValue == 0) {
+                        _profileArray = [NSMutableArray array];
+                        _noResults = YES;
+                    } else {
+                        _noMoreItemsToGet = YES;
+                    }
+                }
+                [self.tableView reloadData];
+                _page = [NSNumber numberWithInteger:_page.integerValue + 1];
             }
             else {
-                if (_page.integerValue == 0) {
-                    _profileArray = [NSMutableArray array];
-                    _noResults = YES;
-                } else {
-                    _noMoreItemsToGet = YES;
-                }
+                [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
             }
-            [self.tableView reloadData];
-            _page = [NSNumber numberWithInteger:_page.integerValue + 1];
-        }
-        else {
-            [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
-        }
-    }];
-
+        }];
+    }
 }
 // refresh feed by checking or newer items or getting all items
 - (void) refreshFeed {
@@ -299,6 +316,8 @@
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
                         NSArray *newItems = jsonData;
+                        
+                        //NSLog(@"profile list items: %@", newItems);
                         
                         if (newItems.count == 0) _noResults = YES;
                         else _noResults = NO;
@@ -486,7 +505,7 @@
     
     PillButton *btn = [[notification userInfo] objectForKey:@"sender"];
     
-    if (_profileData) { // onboarding
+    if (_forOnboarding) {
         
         if ([[notification userInfo] objectForKey:@"unfollowedUser"]) {
             // unfollow
@@ -520,11 +539,13 @@
                             NSNotification *followingCountChangedNotif = [NSNotification notificationWithName:@"followingCountChanged" object:nil userInfo:response];
                             [[NSNotificationCenter defaultCenter] postNotification:followingCountChangedNotif];
                         }
+                        [self makeTableConsistentForFollowing:[NSNumber numberWithBool:NO] userId:userId];
                     }
                     else {
                         btn.on = YES;
                         [btn setNeedsDisplay];
                     }
+                    [self.tableView reloadData];
                 }];
 
             }]];
@@ -538,12 +559,12 @@
             // follow
             [_tung followUserWithId:userId withCallback:^(BOOL success, NSDictionary *response) {
                 if (success) {
-                    NSLog(@"successfully followed user from profile list");
                     if (![response objectForKey:@"userAlreadyFollowing"]) {
                     	_tung.feedNeedsRefresh = [NSNumber numberWithBool:YES]; // following changed
                         NSNotification *followingCountChangedNotif = [NSNotification notificationWithName:@"followingCountChanged" object:nil userInfo:response];
                         [[NSNotificationCenter defaultCenter] postNotification:followingCountChangedNotif];
                     }
+                    [self makeTableConsistentForFollowing:[NSNumber numberWithBool:YES] userId:userId];
                 }
                 else {
                     btn.on = NO;
@@ -552,6 +573,19 @@
             }];
         }
     }
+}
+
+- (void) makeTableConsistentForFollowing:(NSNumber *)following userId:(NSString *)userId {
+	
+    for (int i = 0; i < _profileArray.count; i++) {
+        NSString *idToCompare = [[_profileArray objectAtIndex:i] objectForKey:@"id"];
+        if ([idToCompare isEqualToString:userId]) {
+            NSMutableDictionary *replacementDict = [NSMutableDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:i]];
+            [replacementDict setObject:following forKey:@"userFollows"];
+            [_profileArray replaceObjectAtIndex:i withObject:replacementDict];
+        }
+    }
+    [self.tableView reloadData];
 }
 
 #pragma mark - Table view data source
@@ -579,7 +613,7 @@
     
     // cell data
     NSDictionary *profileDict = [NSDictionary dictionaryWithDictionary:[_profileArray objectAtIndex:indexPath.row]];
-    profileCell.userId = [[profileDict objectForKey:@"_id"] objectForKey:@"$id"];
+    profileCell.userId = [profileDict objectForKey:@"id"];
     profileCell.username = [profileDict objectForKey:@"username"];
     //NSLog(@"%@", profileDict);
     
@@ -1013,33 +1047,47 @@
 #pragma mark - scroll view delegate methods
 
 - (void)scrollViewDidScroll:(UIScrollView *)scrollView {
-    
+    //NSLog(@"profile list scroll view did scroll");
     if (scrollView == self.tableView) {
+        // shrink profile header
+        if ([_queryType isEqualToString:@"Notifications"]) {
+            if (!_profileHeader.isMinimized && scrollView.contentSize.height > scrollView.frame.size.height && scrollView.contentOffset.y > _lastScrollViewOffset) {
+                // scrolling down
+                NSNotification *minimizeHeaderNotif = [NSNotification notificationWithName:@"shouldMinimizeHeaderView" object:nil userInfo:nil];
+                [[NSNotificationCenter defaultCenter] postNotification:minimizeHeaderNotif];
+            }
+            
+            else if (scrollView.contentOffset.y < _lastScrollViewOffset) {
+                // scrolling up
+                if (_profileHeader.isMinimized && scrollView.contentOffset.y <= 100) {
+                    NSNotification *maximizeHeaderNotif = [NSNotification notificationWithName:@"shouldMaximizeHeaderView" object:nil userInfo:nil];
+                    [[NSNotificationCenter defaultCenter] postNotification:maximizeHeaderNotif];
+                }
+            }
+            if (scrollView.contentOffset.y >= 0) _lastScrollViewOffset = scrollView.contentOffset.y;
+        }
         // detect when user hits bottom of feed
         float bottomOffset = scrollView.contentSize.height - scrollView.frame.size.height;
         if (scrollView.contentOffset.y >= bottomOffset) {
             // request more posts if they didn't reach the end
-            if (!_forOnboarding) {
-                if (!_requestingMore && !_noMoreItemsToGet && _profileArray.count > 0) {
-                    _requestingMore = YES;
-                    _loadMoreIndicator.alpha = 1;
-                    [_loadMoreIndicator startAnimating];
-                    if (!_socialPlatform && _queryType) {
-                        NSNumber *oldest = [[_profileArray objectAtIndex:_profileArray.count-1] objectForKey:@"time_secs"];
-                        [self requestProfileListWithQuery:_queryType
-                                                       forTarget:_target_id
-                                                       newerThan:[NSNumber numberWithInt:0]
-                                                     orOlderThan:oldest];
-                    }
-                    else if (_socialPlatform) {
-                        if ([_queryType isEqualToString:@"Twitter"]) {
-                            [self getNextPageOfTwitterFriends];
-                        }
+            if (!_requestingMore && !_noMoreItemsToGet && _profileArray.count > 0) {
+                _requestingMore = YES;
+                _loadMoreIndicator.alpha = 1;
+                [_loadMoreIndicator startAnimating];
+                if (!_socialPlatform && _queryType) {
+                    NSNumber *oldest = [[_profileArray objectAtIndex:_profileArray.count-1] objectForKey:@"time_secs"];
+                    [self requestProfileListWithQuery:_queryType
+                                                   forTarget:_target_id
+                                                   newerThan:[NSNumber numberWithInt:0]
+                                                 orOlderThan:oldest];
+                }
+                else if (_socialPlatform) {
+                    // only happens if there are > 100 users on tung that user follows on fb/twitter
+                    if ([_queryType isEqualToString:@"Twitter"]) {
+                        [self getNextPageOfTwitterFriends];
                     }
                 }
             }
-            // TODO: onboarding: auto-load more users -
-            // only happens if there are > 100 users on tung that user follows on fb/twitter
         }
     }
 }

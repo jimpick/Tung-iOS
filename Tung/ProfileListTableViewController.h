@@ -7,6 +7,7 @@
 //
 
 #import <UIKit/UIKit.h>
+#import "ProfileHeaderView.h"
 
 @interface ProfileListTableViewController : UITableViewController <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, UIAlertViewDelegate, UISearchBarDelegate, UISearchControllerDelegate>
 
@@ -22,6 +23,7 @@
 @property (nonatomic, assign) BOOL noResults;
 @property (nonatomic, assign) BOOL queryExecuted;
 @property (strong, nonatomic) UINavigationController *navController;
+@property (strong, nonatomic) ProfileHeaderView *profileHeader;
 
 @property UISearchController *searchController;
 
