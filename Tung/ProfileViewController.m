@@ -621,40 +621,74 @@ NSTimer *sessionCheckTimer;
     NSString *version = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"];
     NSString *build = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleVersion"];
     
-    // saved files size
-    NSString *savedEpisodesDir = [_tung getSavedEpisodesDirectoryPath];
+    // saved episodes size
+    NSString *savedEpisodesDir = [TungCommonObjects getSavedEpisodesDirectoryPath];
     NSError *error;
     NSNumber *savedFilesBytes = [TungCommonObjects getAllocatedSizeOfDirectoryAtURL:[NSURL URLWithString:savedEpisodesDir] error:&error];
-    NSString *clearSavedDataOption;
+    NSString *clearSavedEpisodesOption;
     if (!error) {
         NSString *savedFilesMB = [TungCommonObjects formatBytes:savedFilesBytes];
-        clearSavedDataOption = [NSString stringWithFormat:@"Delete saved episodes (%@)", savedFilesMB];
+        clearSavedEpisodesOption = [NSString stringWithFormat:@"Delete saved episodes (%@)", savedFilesMB];
     } else {
-        JPLog(@"error calculating saved data size: %@", error);
-        clearSavedDataOption = @"Delete saved episodes";
+        JPLog(@"error calculating saved data size: %@", error.localizedDescription);
+        clearSavedEpisodesOption = @"Delete saved episodes";
         error = nil;
     }
-    // temp files size
-    NSString *tempEpisodeDir = [_tung getCachedEpisodesDirectoryPath];
-    NSNumber *tempFilesBytes = [TungCommonObjects getAllocatedSizeOfDirectoryAtURL:[NSURL URLWithString:tempEpisodeDir] error:&error];
-    NSString *clearTempDataOption;
+    // cached episodes size
+    NSString *tempEpisodeDir = [TungCommonObjects getCachedEpisodesDirectoryPath];
+    NSNumber *tempEpisodesBytes = [TungCommonObjects getAllocatedSizeOfDirectoryAtURL:[NSURL URLWithString:tempEpisodeDir] error:&error];
+    NSString *clearCachedEpisodesOption;
     if (!error) {
-        NSString *tempFilesMB = [TungCommonObjects formatBytes:tempFilesBytes];
-        clearTempDataOption = [NSString stringWithFormat:@"Delete cached episodes (%@)", tempFilesMB];
+        NSString *tempEpisodeFilesMB = [TungCommonObjects formatBytes:tempEpisodesBytes];
+        clearCachedEpisodesOption = [NSString stringWithFormat:@"Delete cached episodes (%@)", tempEpisodeFilesMB];
     } else {
-        JPLog(@"error calculating temp data size: %@", error);
-        clearTempDataOption = @"Delete cached episodes";
+        JPLog(@"error calculating temp data size: %@", error.localizedDescription);
+        clearCachedEpisodesOption = @"Delete cached episodes";
+        error = nil;
+    }
+    
+    // other cached data (audio clips, feeds, avatars, podcast art)
+    NSString *clearCachedDataOption;
+    NSNumber *totalTempFilesBytes = [NSNumber numberWithInteger:0];
+    NSArray *tmpFolderContents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:NSTemporaryDirectory() error:&error];
+    if ([tmpFolderContents count] > 0 && error == nil) {
+        for (NSString *item in tmpFolderContents) {
+            if (![item isEqualToString:@"MediaCache"] && ![item isEqualToString:@"episodes"]) {
+                NSString *path = [NSTemporaryDirectory() stringByAppendingPathComponent:item];
+                NSNumber *size = [TungCommonObjects getAllocatedSizeOfDirectoryAtURL:[NSURL URLWithString:path] error:&error];
+                if (!error) {
+                	totalTempFilesBytes = [NSNumber numberWithDouble:totalTempFilesBytes.doubleValue + size.doubleValue];
+                } else {
+                    JPLog(@"error getting size of contents at path: %@ - %@", path, error.localizedDescription);
+                    error = nil;
+                }
+            }
+        }
+        if (totalTempFilesBytes.doubleValue > 0) {
+            NSString *tempFilesMB = [TungCommonObjects formatBytes:totalTempFilesBytes];
+            clearCachedDataOption = [NSString stringWithFormat:@"Delete cached data: (%@)", tempFilesMB];
+        }
+        else {
+            clearCachedDataOption = @"Delete cached data (0 MB)";
+        }
+    } else {
+        JPLog(@"error getting temp folder contents: %@", error.localizedDescription);
+        clearCachedDataOption = @"Clear cached data";
         error = nil;
     }
     
     UIAlertController *settingsSheet = [UIAlertController alertControllerWithTitle:nil message:[NSString stringWithFormat:@"You are running v %@ (%@) of tung.", version, build] preferredStyle:UIAlertControllerStyleActionSheet];
-    [settingsSheet addAction:[UIAlertAction actionWithTitle:clearSavedDataOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    [settingsSheet addAction:[UIAlertAction actionWithTitle:clearSavedEpisodesOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [_tung deleteAllSavedEpisodes];
         [TungCommonObjects showBannerAlertForText:@"All saved episodes have been deleted."];
     }]];
-    [settingsSheet addAction:[UIAlertAction actionWithTitle:clearTempDataOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        [_tung deleteAllCachedEpisodes];
+    [settingsSheet addAction:[UIAlertAction actionWithTitle:clearCachedEpisodesOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [TungCommonObjects deleteAllCachedEpisodes];
         [TungCommonObjects showBannerAlertForText:@"All cached episodes have been deleted."];
+    }]];
+    [settingsSheet addAction:[UIAlertAction actionWithTitle:clearCachedDataOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [TungCommonObjects deleteCachedData];
+        [TungCommonObjects showBannerAlertForText:@"All cached data has been deleted."];
     }]];
     
     [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Application log"	 style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {

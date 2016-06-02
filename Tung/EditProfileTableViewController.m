@@ -517,7 +517,7 @@ static UIImage *iconRedX;
 - (void) updateAvatar {
     //JPLog(@"update avatar request");
     // create request object
-    NSURL *updateAvatarRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/update-avatar.php", _tung.apiRootUrl]];
+    NSURL *updateAvatarRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/update-avatar.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *updateAvatarRequest = [NSMutableURLRequest requestWithURL:updateAvatarRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [updateAvatarRequest setHTTPMethod:@"POST"];
     // add content type
@@ -747,9 +747,9 @@ static UIImage *iconRedX;
         return;
     }
     if (_field_username.text.length && !_usernameCheckUnderway) {
-        NSLog(@"checking username: %@", _field_username.text);
+        //NSLog(@"checking username: %@", _field_username.text);
         _usernameCheckUnderway = YES;
-        NSString *urlAsString = [NSString stringWithFormat:@"%@users/username_check.php?username=%@", _tung.apiRootUrl, _field_username.text];
+        NSString *urlAsString = [NSString stringWithFormat:@"%@users/username_check.php?username=%@", [TungCommonObjects apiRootUrl], _field_username.text];
         NSURL *checkUsernameURL = [NSURL URLWithString:urlAsString];
         NSMutableURLRequest *checkUsernameRequest = [NSMutableURLRequest requestWithURL:checkUsernameURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:5.0f];
         [checkUsernameRequest setHTTPMethod:@"GET"];

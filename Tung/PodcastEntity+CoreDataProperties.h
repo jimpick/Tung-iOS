@@ -2,7 +2,7 @@
 //  PodcastEntity+CoreDataProperties.h
 //  Tung
 //
-//  Created by Jamie Perkins on 1/10/16.
+//  Created by Jamie Perkins on 6/1/16.
 //  Copyright © 2016 Jamie Perkins. All rights reserved.
 //
 //  Choose "Create NSManagedObject Subclass…" from the Core Data editor menu
@@ -16,7 +16,7 @@ NS_ASSUME_NONNULL_BEGIN
 @interface PodcastEntity (CoreDataProperties)
 
 @property (nullable, nonatomic, retain) NSString *artistName;
-@property (nullable, nonatomic, retain) NSString *artworkUrl600;
+@property (nullable, nonatomic, retain) NSString *artworkUrl;
 @property (nullable, nonatomic, retain) NSString *artworkUrlSSL;
 @property (nullable, nonatomic, retain) NSNumber *collectionId;
 @property (nullable, nonatomic, retain) NSString *collectionName;

@@ -348,7 +348,7 @@ UILabel *prototypeLabel;
     self.requestStatus = @"initiated";
     _episodeEntity = episodeEntity;
     
-    NSURL *commentsURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/comments.php", _tung.apiRootUrl]];
+    NSURL *commentsURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/comments.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *feedRequest = [NSMutableURLRequest requestWithURL:commentsURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [feedRequest setHTTPMethod:@"POST"];
     NSString *episodeId = (episodeEntity.id) ? episodeEntity.id : @"";

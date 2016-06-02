@@ -121,6 +121,7 @@
     [_episodesView.refreshControl endRefreshing];
     
     // update dict and entity with website and email
+    /* moved to retrieveAndCacheFeed
     if ([[dict objectForKey:@"channel"] objectForKey:@"link"]) {
         id website = [[dict objectForKey:@"channel"] objectForKey:@"link"];
         if ([website isKindOfClass:[NSString class]]) {
@@ -135,7 +136,8 @@
             [_podcastDict setObject:email forKey:@"email"];
             _podcastEntity.email = email;
         }
-    }
+    } */
+    
     // description
     NSString *descText = [TungCommonObjects findPodcastDescriptionWithDict:dict];
     _headerView.descriptionLabel.text = descText;
@@ -158,7 +160,7 @@
     // support button
     if (_tung.connectionAvailable.boolValue) {
         // url unique to this podcast
-        NSString *fundraiseUrlString = [NSString stringWithFormat:@"%@fundraising?id=%@", _tung.tungSiteRootUrl, _podcastEntity.collectionId];
+        NSString *fundraiseUrlString = [NSString stringWithFormat:@"%@fundraising?id=%@", [TungCommonObjects tungSiteRootUrl], _podcastEntity.collectionId];
         BrowserViewController *webView = [self.storyboard instantiateViewControllerWithIdentifier:@"webView"];
         webView.urlToNavigateTo = [NSURL URLWithString:fundraiseUrlString];
         [self presentViewController:webView animated:YES completion:nil];

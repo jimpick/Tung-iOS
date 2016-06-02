@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<model userDefinedModelVersionIdentifier="2.0" type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="10174" systemVersion="15E65" minimumToolsVersion="Xcode 4.3">
+    <entity name="EpisodeEntity" representedClassName="EpisodeEntity" syncable="YES">
+        <attribute name="collectionId" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="dataLength" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="desc" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="duration" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="episodeImageUrl" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="guid" attributeType="String" syncable="YES"/>
+        <attribute name="id" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="isDownloadingForSave" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+        <attribute name="isNowPlaying" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+        <attribute name="isQueuedForSave" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+        <attribute name="isRecommended" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+        <attribute name="isSaved" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+        <attribute name="pubDate" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="savedUntilDate" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="shortlink" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="title" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="trackPosition" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="trackProgress" attributeType="Float" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="url" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="podcast" maxCount="1" deletionRule="Nullify" destinationEntity="PodcastEntity" inverseName="episodes" inverseEntity="PodcastEntity" syncable="YES"/>
+    </entity>
+    <entity name="PodcastEntity" representedClassName="PodcastEntity" syncable="YES">
+        <attribute name="artistName" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="artworkUrl" optional="YES" attributeType="String" elementID="artworkUrl600" syncable="YES"/>
+        <attribute name="artworkUrlSSL" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="collectionId" attributeType="Double" defaultValueString="0.0" indexed="YES" syncable="YES"/>
+        <attribute name="collectionName" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="desc" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="email" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="feedLastCached" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="feedUrl" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="isSubscribed" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+        <attribute name="keyColor1" optional="YES" attributeType="Transformable" syncable="YES"/>
+        <attribute name="keyColor1Hex" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="keyColor2" optional="YES" attributeType="Transformable" syncable="YES"/>
+        <attribute name="keyColor2Hex" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="mostRecentEpisodeDate" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="mostRecentSeenEpisodeDate" optional="YES" attributeType="Date" syncable="YES"/>
+        <attribute name="notifyOfNewEpisodes" attributeType="Boolean" defaultValueString="YES" syncable="YES"/>
+        <attribute name="numNewEpisodes" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
+        <attribute name="timeSubscribed" optional="YES" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="website" optional="YES" attributeType="String" syncable="YES"/>
+        <relationship name="episodes" optional="YES" toMany="YES" deletionRule="Nullify" destinationEntity="EpisodeEntity" inverseName="podcast" inverseEntity="EpisodeEntity" syncable="YES"/>
+    </entity>
+    <entity name="SettingsEntity" representedClassName="SettingsEntity" syncable="YES">
+        <attribute name="feedLastFetched" attributeType="Double" defaultValueString="0" syncable="YES"/>
+        <attribute name="hasSeenEpisodeExpirationAlert" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+        <attribute name="hasSeenMentionsPrompt" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+        <attribute name="hasSeenNewEpisodesPrompt" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+        <attribute name="hasSeenWelcomePopup" attributeType="Boolean" defaultValueString="NO" elementID="hasSeenFeedDemo" syncable="YES"/>
+        <attribute name="numPodcastNotifications" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
+        <attribute name="numProfileNotifications" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
+    </entity>
+    <entity name="UserEntity" representedClassName="UserEntity" syncable="YES">
+        <attribute name="bio" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="email" attributeType="String" syncable="YES"/>
+        <attribute name="facebook_id" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="large_av_url" attributeType="String" syncable="YES"/>
+        <attribute name="lastDataChange" attributeType="Double" defaultValueString="0" syncable="YES"/>
+        <attribute name="lastSeenNotification" attributeType="Double" defaultValueString="0.0" syncable="YES"/>
+        <attribute name="location" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="name" attributeType="String" syncable="YES"/>
+        <attribute name="small_av_url" attributeType="String" syncable="YES"/>
+        <attribute name="tung_id" attributeType="String" indexed="YES" syncable="YES"/>
+        <attribute name="twitter_id" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="twitter_username" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="url" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="username" attributeType="String" syncable="YES"/>
+    </entity>
+    <elements>
+        <element name="EpisodeEntity" positionX="-18" positionY="27" width="128" height="345"/>
+        <element name="PodcastEntity" positionX="-45" positionY="0" width="128" height="360"/>
+        <element name="SettingsEntity" positionX="-27" positionY="153" width="128" height="150"/>
+        <element name="UserEntity" positionX="-27" positionY="126" width="128" height="255"/>
+    </elements>
+</model>

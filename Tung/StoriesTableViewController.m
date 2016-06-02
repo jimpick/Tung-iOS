@@ -197,7 +197,7 @@ NSInteger requestTries = 0;
                           newerThan:(NSNumber *)afterTime
                         orOlderThan:(NSNumber *)beforeTime {
     
-    NSURL *storyURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/stories-for-episode.php", _tung.apiRootUrl]];
+    NSURL *storyURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/stories-for-episode.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *storyRequest = [NSMutableURLRequest requestWithURL:storyURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [storyRequest setHTTPMethod:@"POST"];
     NSDictionary *params = @{
@@ -337,7 +337,7 @@ NSInteger requestTries = 0;
     self.requestStatus = @"initiated";
     NSDate *requestStarted = [NSDate date];
     
-    NSURL *feedURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/feed.php", _tung.apiRootUrl]];
+    NSURL *feedURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/feed.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *feedRequest = [NSMutableURLRequest requestWithURL:feedURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [feedRequest setHTTPMethod:@"POST"];
     
@@ -612,9 +612,9 @@ NSInteger requestTries = 0;
         NSArray *events = [headerDict objectForKey:@"events"];
         NSString *username = [[headerDict objectForKey:@"user"] objectForKey:@"username"];
         NSString *episodeShortlink = [[headerDict objectForKey:@"episode"] objectForKey:@"shortlink"];
-        NSString *episodeLink = [NSString stringWithFormat:@"%@e/%@", _tung.tungSiteRootUrl, episodeShortlink];
+        NSString *episodeLink = [NSString stringWithFormat:@"%@e/%@", [TungCommonObjects tungSiteRootUrl], episodeShortlink];
         [headerDict setObject:episodeLink forKey:@"episodeLink"];
-        NSString *storyLink = [NSString stringWithFormat:@"%@e/%@/%@", _tung.tungSiteRootUrl, episodeShortlink, username];
+        NSString *storyLink = [NSString stringWithFormat:@"%@e/%@/%@", [TungCommonObjects tungSiteRootUrl], episodeShortlink, username];
         [headerDict setObject:storyLink forKey:@"storyLink"];
         [headerDict setObject:[headerDict objectForKey:@"time_secs"] forKey:@"time_secs_end"];
         
@@ -1297,7 +1297,7 @@ CGFloat labelWidth = 0;
                 shareItemOption = @"Share this clip";
                 copyLinkOption = @"Copy link to clip";
                 NSString *clipShortlink = [eventDict objectForKey:@"shortlink"];
-                shareLink = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, clipShortlink];
+                shareLink = [NSString stringWithFormat:@"%@c/%@", [TungCommonObjects tungSiteRootUrl], clipShortlink];
                 shareText = [NSString stringWithFormat:@"Here's a clip from %@: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
                 NSString *comment = [eventDict objectForKey:@"comment"];
                 if ([userId isEqualToString:_tung.tungId]) {

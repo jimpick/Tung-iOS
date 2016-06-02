@@ -306,6 +306,9 @@ UIActivityIndicatorView *backgroundSpinner;
                         
                         [self setUpViewForEpisode:_episodeEntity];
                     }
+                    else {
+                        [_tung simpleErrorAlertWithMessage:responseDict[@"error"]];
+                    }
                 }];
             }
         }
@@ -562,6 +565,18 @@ NSTimer *markAsSeenTimer;
 
 - (void) setUpViewForEpisode:(EpisodeEntity *)episodeEntity {
     
+    // COMMENTS
+    [_tung checkReachabilityWithCallback:^(BOOL reachable) {
+        if (reachable) {
+            [self refreshComments:YES];
+        } else {
+            [_commentsView.tableView reloadData];
+        }
+    }];
+    
+    // episodes and description
+    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:episodeEntity.podcast forceNewest:NO reachable:_tung.connectionAvailable.boolValue];
+    
     //NSLog(@"set up view for episode: %@", [TungCommonObjects entityToDict:episodeEntity]);
     //NSLog(@"podcast: %@", [TungCommonObjects entityToDict:episodeEntity.podcast]);
     // set up header view
@@ -583,18 +598,6 @@ NSTimer *markAsSeenTimer;
     _switcherBar.hidden = NO;
     [self switchToViewAtIndex:_switcherIndex];
     _switcher.tintColor = episodeEntity.podcast.keyColor2;
-    
-    // COMMENTS
-    [_tung checkReachabilityWithCallback:^(BOOL reachable) {
-        if (reachable) {
-            [self refreshComments:YES];
-        } else {
-            [_commentsView.tableView reloadData];
-        }
-    }];
-    
-    // episodes and description
-    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:episodeEntity.podcast forceNewest:NO reachable:_tung.connectionAvailable.boolValue];
     
     _episodesView.tableView.backgroundView = nil;
     _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
@@ -649,7 +652,7 @@ NSTimer *markAsSeenTimer;
         // support button
         if (_tung.connectionAvailable.boolValue) {
             // url unique to this podcast
-            NSString *fundraiseUrlString = [NSString stringWithFormat:@"%@fundraising?id=%@", _tung.tungSiteRootUrl, _episodeEntity.collectionId];
+            NSString *fundraiseUrlString = [NSString stringWithFormat:@"%@fundraising?id=%@", [TungCommonObjects tungSiteRootUrl], _episodeEntity.collectionId];
             JPLog(@"open url: %@", fundraiseUrlString);
             _urlToPass = [NSURL URLWithString:fundraiseUrlString];
             [self performSegueWithIdentifier:@"presentWebView" sender:self];
@@ -2022,7 +2025,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
                 [self toggleNewComment];
                 
                 NSString *username = [[_tung getLoggedInUserData] objectForKey:@"username"];
-                NSString *link = [NSString stringWithFormat:@"%@e/%@/%@", _tung.tungSiteRootUrl, _tung.npEpisodeEntity.shortlink, username];
+                NSString *link = [NSString stringWithFormat:@"%@e/%@/%@", [TungCommonObjects tungSiteRootUrl], _tung.npEpisodeEntity.shortlink, username];
                 // tweet?
                 if (_commentAndPostView.twitterButton.on) {
                     [_tung postTweetWithText:text andUrl:link];
@@ -2058,7 +2061,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
                 
 	
                 NSString *eventShortlink = [responseDict objectForKey:@"eventShortlink"];
-                NSString *link = [NSString stringWithFormat:@"%@c/%@", _tung.tungSiteRootUrl, eventShortlink];
+                NSString *link = [NSString stringWithFormat:@"%@c/%@", [TungCommonObjects tungSiteRootUrl], eventShortlink];
                 // caption
                 NSString *caption;
                 if (text && text.length > 0) {
@@ -2085,6 +2088,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
         }];
     }
 }
+
 - (void) recommendEpisode {
     
     if (_tung.connectionAvailable.boolValue) {
@@ -2137,7 +2141,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
     
     NSDictionary *userDict = [_tung getLoggedInUserData];
     NSString *username = [userDict objectForKey:@"username"];
-    NSString *text = [NSString stringWithFormat:@"Listening to %@ on #tung: %@e/%@/%@", episodeEntity.title, _tung.tungSiteRootUrl, episodeEntity.shortlink, username];
+    NSString *text = [NSString stringWithFormat:@"Listening to %@ on #tung: %@e/%@/%@", episodeEntity.title, [TungCommonObjects tungSiteRootUrl], episodeEntity.shortlink, username];
     
     UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[text] applicationActivities:nil];
     [self presentViewController:shareSheet animated:YES completion:nil];

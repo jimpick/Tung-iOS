@@ -260,7 +260,7 @@
 }
 
 - (void) postDeviceToken:(NSString *)token {
-    NSURL *postDeviceTokenRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/post-device-token.php", _tung.apiRootUrl]];
+    NSURL *postDeviceTokenRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/post-device-token.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *postDeviceTokenRequest = [NSMutableURLRequest requestWithURL:postDeviceTokenRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [postDeviceTokenRequest setHTTPMethod:@"POST"];
     NSDictionary *params = @{@"sessionId":_tung.sessionId,

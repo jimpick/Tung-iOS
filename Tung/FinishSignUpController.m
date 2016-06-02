@@ -49,9 +49,9 @@
     self.termsNoticeWebView.delegate = self;
     [self.termsNoticeWebView loadRequest:refURLRequest];
     
-    if (_usersToFollow) {
-        NSLog(@"received users to follow: %@", _usersToFollow);
-    }
+//    if (_usersToFollow) {
+//        NSLog(@"received users to follow: %@", _usersToFollow);
+//    }
 
 }
 
@@ -78,7 +78,7 @@
     [self.activityIndicator startAnimating];
     
     // create request object
-    NSURL *registerURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/register.php", _tung.apiRootUrl]];
+    NSURL *registerURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/register.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *registerRequest = [NSMutableURLRequest requestWithURL:registerURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [registerRequest setHTTPMethod:@"POST"];
     // add content type

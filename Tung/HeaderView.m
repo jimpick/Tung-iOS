@@ -95,7 +95,7 @@ static NSDateFormatter *airDateFormatter = nil;
             self.titleLabel.font = [UIFont systemFontOfSize:19 weight:UIFontWeightLight];
         }
         
-        artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600 andCollectionId:podcastEntity.collectionId];
+        artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl andCollectionId:podcastEntity.collectionId];
         
         isSubscribed = podcastEntity.isSubscribed.boolValue;
         
@@ -115,7 +115,7 @@ static NSDateFormatter *airDateFormatter = nil;
             self.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightLight];
         }
         
-        artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:episodeEntity.podcast.artworkUrl600 andCollectionId:episodeEntity.collectionId];
+        artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:episodeEntity.podcast.artworkUrl andCollectionId:episodeEntity.collectionId];
         
         isSubscribed = episodeEntity.podcast.isSubscribed.boolValue;
         
@@ -133,8 +133,8 @@ static NSDateFormatter *airDateFormatter = nil;
     NSString *keyColor1Hex = [TungCommonObjects UIColorToHexString:keyColor1];
     NSString *keyColor2Hex = [TungCommonObjects UIColorToHexString:keyColor2];
     
-    //NSLog(@"key color 1: %@", [TungCommonObjects UIColorToHexString:keyColor1]);
-    //NSLog(@"key color 2: %@", [TungCommonObjects UIColorToHexString:keyColor2]);
+//    NSLog(@"key color 1: %@", [TungCommonObjects UIColorToHexString:keyColor1]);
+//    NSLog(@"key color 2: %@", [TungCommonObjects UIColorToHexString:keyColor2]);
     
     // play button
     if (podcastEntity) {

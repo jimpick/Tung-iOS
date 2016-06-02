@@ -276,7 +276,7 @@
                            newerThan:(NSNumber *)afterTime
                          orOlderThan:(NSNumber *)beforeTime {
     
-    NSURL *getProfileListRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/profile-list.php", _tung.apiRootUrl]];
+    NSURL *getProfileListRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/profile-list.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *getProfileListRequest = [NSMutableURLRequest requestWithURL:getProfileListRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [getProfileListRequest setHTTPMethod:@"POST"];
     NSDictionary *params = @{@"sessionId":_tung.sessionId,
@@ -781,7 +781,14 @@
         UIView *headerView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, _screenWidth, 60)];
         headerView.backgroundColor = [TungCommonObjects bkgdGrayColor];
         UILabel *label = [[UILabel alloc] initWithFrame:CGRectMake(10, 0, _screenWidth - 20, 60)];
-        label.text = [NSString stringWithFormat:@"We found some of your %@ friends on Tung:", _queryType];
+        NSString *message;
+        if (_profileArray.count == 1) {
+            message = [NSString stringWithFormat:@"We found 1 %@ friend on Tung:", _queryType];
+        }
+        else {
+            message = [NSString stringWithFormat:@"We found some of your %@ friends on Tung:", _queryType];
+        }
+        label.text = message;
         label.font = [UIFont systemFontOfSize:13.5];
         label.textColor = [UIColor darkGrayColor];
         label.textAlignment = NSTextAlignmentCenter;
@@ -812,10 +819,9 @@
         return [self labelWithMessageAndBottomMargin:thatsAll];
     }
     else if (_noResults && section == 1) {
-        //NSString *message = ([_queryType isEqualToString:@"Notifications"]) ? @"Nothing yet. " : @"No results.";
-        //return [self labelWithMessageAndBottomMargin:message];
+        NSString *message = ([_queryType isEqualToString:@"Notifications"]) ? @"Nothing yet. " : @"No results.";
         UILabel *noResultsLabel = [[UILabel alloc] init];
-        noResultsLabel.text = @"No results.";
+        noResultsLabel.text = message;
         noResultsLabel.textColor = [UIColor grayColor];
         noResultsLabel.textAlignment = NSTextAlignmentCenter;
         return noResultsLabel;
@@ -828,9 +834,9 @@
 
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
     if (!_noResults && !_noMoreItemsToGet && section == 0)
-        return 92.0;
+        return 66.0;
     else if ((_noResults || _noMoreItemsToGet) && section == 1)
-        return 92.0;
+        return 66.0;
     else
         return 0;
 }
@@ -930,7 +936,7 @@
         
         _noResults = NO;
         
-        NSURL *profileSearchUrl = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/profile-search.php", _tung.apiRootUrl]];
+        NSURL *profileSearchUrl = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/profile-search.php", [TungCommonObjects apiRootUrl]]];
         NSMutableURLRequest *profileSearchRequest = [NSMutableURLRequest requestWithURL:profileSearchUrl cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:6.0f];
         [profileSearchRequest setHTTPMethod:@"POST"];
         NSDictionary *params = @{@"sessionId":_tung.sessionId,

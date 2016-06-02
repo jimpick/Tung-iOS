@@ -119,7 +119,7 @@ static NSString * const reuseIdentifier = @"artCell";
         for (int i = 0; i < result.count; i++) {
             PodcastEntity *podEntity = [result objectAtIndex:i];
             [preloadQueue addOperationWithBlock:^{
-                [TungCommonObjects retrievePodcastArtDataWithUrlString:podEntity.artworkUrl600 andCollectionId:podEntity.collectionId];
+                [TungCommonObjects retrievePodcastArtDataWithUrlString:podEntity.artworkUrl andCollectionId:podEntity.collectionId];
             }];
         }
     }
@@ -133,11 +133,6 @@ NSTimer *promptTimer;
     _tung.viewController = self;
     
     SettingsEntity *settings = [TungCommonObjects settings];
-    
-    // prompt for notifications delay
-    if (!settings.hasSeenNewEpisodesPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
-    	promptTimer = [NSTimer scheduledTimerWithTimeInterval:2 target:_tung selector:@selector(promptForNotificationsForEpisodes) userInfo:nil repeats:NO];
-    }
     
     // clear subscriptions badge and adjust app badge
     if (settings.numPodcastNotifications.integerValue > 0) {
@@ -158,6 +153,12 @@ NSTimer *promptTimer;
     [_resultsController performFetch:&fetchingError];
     _fetched = YES;
     [self.collectionView reloadData];
+    
+    id <NSFetchedResultsSectionInfo> sectionInfo = _resultsController.sections[0];
+    // prompt for notifications delay
+    if (sectionInfo.numberOfObjects > 0 && !settings.hasSeenNewEpisodesPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
+        promptTimer = [NSTimer scheduledTimerWithTimeInterval:2 target:_tung selector:@selector(promptForNotificationsForEpisodes) userInfo:nil repeats:NO];
+    }
     
 }
 
@@ -385,7 +386,7 @@ UILabel static *prototypeBadge;
     PodcastEntity *podcastEntity = [_resultsController objectAtIndexPath:indexPath];
     
     cell.collectionId = podcastEntity.collectionId;
-    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl600 andCollectionId:podcastEntity.collectionId];
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl andCollectionId:podcastEntity.collectionId];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     
     // podcast art

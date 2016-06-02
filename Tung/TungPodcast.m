@@ -465,6 +465,7 @@ static NSString *cellIdentifier = @"PodcastResultCell";
             NSString *artURLString = [[itemArrayCopy objectAtIndex:i] objectForKey:@"artworkUrl600"];
             NSNumber *collectionId = [[itemArrayCopy objectAtIndex:i] objectForKey:@"collectionId"];
             [TungCommonObjects retrievePodcastArtDataWithUrlString:artURLString andCollectionId:collectionId];
+            //NSLog(@"preload art for %@: %@", [[itemArrayCopy objectAtIndex:i] objectForKey:@"collectionName"], artURLString);
         }];
     }
 }
@@ -482,7 +483,7 @@ static NSString *cellIdentifier = @"PodcastResultCell";
     NSURL *scriptUrl = [NSURL fileURLWithPath:scriptPath];
     NSString *script = [NSString stringWithFormat:@"<script type=\"text/javascript\" src=\"%@\"></script>\n", scriptUrl.path];
     // album art
-    NSString *podcastArtPath = [TungCommonObjects getPodcastArtPathWithUrlString:podcastEntity.artworkUrl600 andCollectionId:podcastEntity.collectionId];
+    NSString *podcastArtPath = [TungCommonObjects getPodcastArtPathWithUrlString:podcastEntity.artworkUrl andCollectionId:podcastEntity.collectionId];
     NSURL *podcastArtUrl = [NSURL fileURLWithPath:podcastArtPath];
     NSString *podcastArtImg = [NSString stringWithFormat:@"<img class=\"podcastArt\" src=\"%@\">", podcastArtUrl];
     // description
@@ -557,7 +558,7 @@ static NSString *feedDictsDirName = @"feedDicts";
         if ([fileManager moveItemAtPath:cachedFeedPath toPath:savedFeedPath error:&error]) {
             return YES;
         } else {
-            JPLog(@"Error saving feed dict: %@", error);
+            JPLog(@"Error saving feed dict: %@", error.localizedDescription);
             return NO;
         }
 
@@ -587,7 +588,7 @@ static NSString *feedDictsDirName = @"feedDicts";
 
 // Will retrieve a cached feed no older than a day, if reachable, else refetches. Caches feed.
 + (NSDictionary*) retrieveAndCacheFeedForPodcastEntity:(PodcastEntity *)entity forceNewest:(BOOL)forceNewest reachable:(BOOL)reachable {
-    
+    //NSLog(@"retrieve and cache feed for podcast entity: %@", entity.collectionName);
     NSDictionary *feedDict;
     
     if (forceNewest && reachable) {
@@ -644,10 +645,51 @@ static NSString *feedDictsDirName = @"feedDicts";
         feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
     }
     
-    if (feedDict) {
-    	[self cacheFeed:feedDict forEntity:entity];
+    if (feedDict && feedDict[@"channel"]) {
+        
+        // update entity properties / check for new art
+        NSString *artworkUrlString;
+        if (feedDict[@"channel"][@"itunes:image"] && feedDict[@"channel"][@"itunes:image"][@"el:attributes"]) {
+            id artworkUrl = feedDict[@"channel"][@"itunes:image"][@"el:attributes"][@"href"];
+            if ([artworkUrl isKindOfClass:[NSString class]]) artworkUrlString = artworkUrl;
+        }
+        if (!artworkUrlString && feedDict[@"channel"][@"image"] && feedDict[@"channel"][@"image"][@"url"]) {
+            id artworkUrl = feedDict[@"channel"][@"image"][@"url"];
+            if ([artworkUrl isKindOfClass:[NSString class]]) artworkUrlString = artworkUrl;
+        }
+        if (!artworkUrlString && feedDict[@"channel"][@"media:thumbnail"] && feedDict[@"channel"][@"media:thumbnail"][@"el:attributes"]) {
+            id artworkUrl = feedDict[@"channel"][@"media:thumbnail"][@"el:attributes"][@"url"];
+            if ([artworkUrl isKindOfClass:[NSString class]]) artworkUrlString = artworkUrl;
+        }
+        if (artworkUrlString) {
+            // if art has changed
+            if (entity.artworkUrl && ![entity.artworkUrl isEqualToString:artworkUrlString]) {
+                // replaces cached art, saves entity and checks if podcast art needs to be updated on server
+                [TungCommonObjects replaceCachedPodcastArtForEntity:entity withNewArt:artworkUrlString];
+            }
+            else if (!entity.artworkUrl) {
+                entity.artworkUrl = artworkUrlString;
+            }
+        } else {
+            JPLog(@"Error: bad feed - no artwork url");
+        }
+        if (feedDict[@"channel"][@"link"]) {
+            id website = feedDict[@"channel"][@"link"];
+            if ([website isKindOfClass:[NSString class]]) {
+                entity.website = website;
+            }
+        }
+        if (feedDict[@"channel"][@"itunes:owner"] && feedDict[@"channel"][@"itunes:owner"][@"itunes:email"]) {
+            id email = feedDict[@"channel"][@"itunes:owner"][@"itunes:email"];
+            if ([email isKindOfClass:[NSString class]]) {
+                entity.email = email;
+            }
+        }
+        
+        [self cacheFeed:feedDict forEntity:entity];
     	return feedDict;
     } else {
+        JPLog(@"Error: bad feed - missing channel node");
         return nil;
     }
     
@@ -678,8 +720,7 @@ static NSString *feedDictsDirName = @"feedDicts";
         [_feedPreloadQueue addOperationWithBlock:^{
             //JPLog(@"** preload feed at index: %d", i);
             PodcastEntity *podEntity = [TungCommonObjects getEntityForPodcast:[podcastArrayCopy objectAtIndex:i] save:NO];
-            NSDictionary *feedDict = [TungPodcast requestAndConvertPodcastFeedDataWithFeedUrl:podEntity.feedUrl];
-            [TungPodcast cacheFeed:feedDict forEntity:podEntity];
+            [TungPodcast retrieveAndCacheFeedForPodcastEntity:podEntity forceNewest:YES reachable:YES];
         }];
     }
 }

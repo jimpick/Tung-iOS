@@ -46,8 +46,6 @@
 @property (strong, nonatomic) NSString *tungToken;
 @property (strong, nonatomic) NSString *sessionId;
 @property NSNumber *connectionAvailable;
-@property (nonatomic, retain) NSString *tungSiteRootUrl;
-@property (nonatomic, retain) NSString *apiRootUrl;
 
 // player
 @property EpisodeEntity *npEpisodeEntity;
@@ -71,6 +69,13 @@
 @property BOOL shouldStayPaused;
 @property BOOL saveOnDownloadComplete;
 
+
++ (id) establishTungObjects;
++ (CGSize) screenSize;
++ (NSString *) apiRootUrl;
++ (NSString *) tungSiteRootUrl;
++ (NSString *) apiKey;
+
 - (void) checkForNowPlaying;
 - (void) controlButtonTapped;
 - (void) seekToTime:(CMTime)time;
@@ -93,15 +98,16 @@
 
 // caching/saving episodes
 @property EpisodeEntity *episodeToSaveEntity;
-- (NSString *) getSavedEpisodesDirectoryPath;
-- (NSString *) getCachedEpisodesDirectoryPath;
++ (NSString *) getSavedEpisodesDirectoryPath;
++ (NSString *) getCachedEpisodesDirectoryPath;
 - (void) cacheNowPlayingEpisodeAndMoveToSaved:(BOOL)moveToSaved;
 - (void) queueEpisodeForDownload:(EpisodeEntity *)episodeEntity;
 - (void) cancelDownloadForEpisode:(EpisodeEntity *)episodeEntity;
 - (void) downloadEpisode:(EpisodeEntity *)episodeEntity;
 - (void) deleteSavedEpisodeWithUrl:(NSString *)urlString confirm:(BOOL)confirm;
 - (void) deleteAllSavedEpisodes;
-- (void) deleteAllCachedEpisodes;
++ (void) deleteAllCachedEpisodes;
++ (void) deleteCachedData;
 - (void) showSavedInfoAlertForEpisode:(EpisodeEntity *)episodeEntity;
 - (BOOL) moveToSavedOrQueueDownloadForEpisode:(EpisodeEntity *)episodeEntity;
 + (NSString *) getEpisodeFilenameFromUrl:(NSURL *)url;
@@ -165,7 +171,7 @@
 - (void) getSessionWithCallback:(void (^)(void))callback;
 - (void) handleUnauthorizedWithCallback:(void (^)(void))callback;
 // stories post requests
-- (void) addPodcast:(PodcastEntity *)podcastEntity orEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
++ (void) addOrUpdatePodcast:(PodcastEntity *)podcastEntity orEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
 - (void) restorePodcastDataSinceTime:(NSNumber *)time;
 - (void) addEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback;
 - (void) subscribeToPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button;
@@ -183,7 +189,6 @@
 - (void) updateUserWithDictionary:(NSDictionary *)userInfo withCallback:(void (^)(NSDictionary *jsonData))callback;
 - (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
-- (void) followAllUsersWithCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) getSuggestedUsersWithCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) preloadAlbumArtForSuggestedUsers:(NSArray *)suggestedUsers;
 - (void) inviteFriends:(NSString *)friends;
@@ -217,14 +222,13 @@
 + (NSString *) getCachedPodcastArtDirectoryPath;
 + (NSString *) getSavedPodcastArtDirectoryPath;
 + (BOOL) savePodcastArtForEntity:(PodcastEntity *)podcastEntity;
-+ (void) unsavePodcastArtForEntity:(PodcastEntity *)podcastEntity;
++ (BOOL) unsavePodcastArtForEntity:(PodcastEntity *)podcastEntity;
 + (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
++ (void) replaceCachedPodcastArtForEntity:(PodcastEntity *)entity withNewArt:(NSString *)newArtUrlString;
 + (NSString *) getPodcastArtPathWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (NSURL *) getClipFileURL;
 
 // misc class methods
-+ (id) establishTungObjects;
-+ (CGSize) screenSize;
 + (void) clearTempDirectory;
 + (NSString *) generateHash;
 + (NSString *) getKeychainCred;
