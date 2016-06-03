@@ -75,6 +75,7 @@
 + (NSString *) apiRootUrl;
 + (NSString *) tungSiteRootUrl;
 + (NSString *) apiKey;
++ (UIViewController *) activeViewController;
 
 - (void) checkForNowPlaying;
 - (void) controlButtonTapped;
@@ -138,7 +139,6 @@
 + (EpisodeEntity *) getEntityForEpisode:(NSDictionary *)episodeDict withPodcastEntity:(PodcastEntity *)podcastEntity save:(BOOL)save;
 + (NSDictionary *) getEnclosureDictForEpisode:(NSDictionary *)episodeDict;
 + (NSString *) findEpisodeDescriptionWithDict:(NSDictionary *)episodeDict;
-+ (NSString *) findPodcastDescriptionWithDict:(NSDictionary *)dict;
 + (NSDictionary *) entityToDict:(NSManagedObject *)entity;
 + (NSDate *) ISODateToNSDate: (NSString *)pubDate;
 + (EpisodeEntity *) getEpisodeEntityFromEpisodeId:(NSString *)episodeId;
@@ -208,10 +208,10 @@
 // alerts
 - (void) promptForNotificationsForEpisodes;
 - (void) promptForNotificationsForMentions;
-- (void) showConnectionErrorAlertForError:(NSError *)error;
-- (void) showNoConnectionAlert;
++ (void) showConnectionErrorAlertForError:(NSError *)error;
++ (void) showNoConnectionAlert;
 + (void) showBannerAlertForText:(NSString *)text;
-- (void) simpleErrorAlertWithMessage:(NSString *)message;
++ (void) simpleErrorAlertWithMessage:(NSString *)message;
 
 // caching
 + (NSData*) retrieveLargeAvatarDataWithUrlString:(NSString *)urlString;
@@ -220,10 +220,13 @@
 + (void) replaceCachedSmallAvatarWithDataAtUrlString:(NSString *)urlString;
 + (NSData*) retrieveAudioClipDataWithUrlString:(NSString *)urlString;
 + (NSString *) getCachedPodcastArtDirectoryPath;
++ (NSString *) getCachedEpisodeArtDirectoryPath;
 + (NSString *) getSavedPodcastArtDirectoryPath;
 + (BOOL) savePodcastArtForEntity:(PodcastEntity *)podcastEntity;
 + (BOOL) unsavePodcastArtForEntity:(PodcastEntity *)podcastEntity;
-+ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
++ (NSData *) retrievePodcastArtDataForEntity:(PodcastEntity *)entity;
++ (NSData *) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
++ (NSData *) downloadAndCachePodcastArtForUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (void) replaceCachedPodcastArtForEntity:(PodcastEntity *)entity withNewArt:(NSString *)newArtUrlString;
 + (NSString *) getPodcastArtPathWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (NSURL *) getClipFileURL;

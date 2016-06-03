@@ -24,7 +24,8 @@
     </entity>
     <entity name="PodcastEntity" representedClassName="PodcastEntity" syncable="YES">
         <attribute name="artistName" optional="YES" attributeType="String" syncable="YES"/>
-        <attribute name="artworkUrl" optional="YES" attributeType="String" elementID="artworkUrl600" syncable="YES"/>
+        <attribute name="artworkUrl" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="artworkUrl600" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="artworkUrlSSL" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="collectionId" attributeType="Double" defaultValueString="0.0" indexed="YES" syncable="YES"/>
         <attribute name="collectionName" optional="YES" attributeType="String" syncable="YES"/>
@@ -72,7 +73,7 @@
     </entity>
     <elements>
         <element name="EpisodeEntity" positionX="-18" positionY="27" width="128" height="345"/>
-        <element name="PodcastEntity" positionX="-45" positionY="0" width="128" height="360"/>
+        <element name="PodcastEntity" positionX="-45" positionY="0" width="128" height="375"/>
         <element name="SettingsEntity" positionX="-27" positionY="153" width="128" height="150"/>
         <element name="UserEntity" positionX="-27" positionY="126" width="128" height="255"/>
     </elements>

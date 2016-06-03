@@ -54,7 +54,7 @@
     // check reachability
     [_tung checkReachabilityWithCallback:^(BOOL reachable) {
         if (!reachable) {
-            [_tung showNoConnectionAlert];
+            [TungCommonObjects showNoConnectionAlert];
         }
     }];
     

@@ -20,13 +20,16 @@
 @property (strong, nonatomic) IBOutlet UILabel *descriptionLabel;
 @property (strong, nonatomic) IBOutlet CircleButton *largeButton;
 @property (strong, nonatomic) IBOutlet UIButton *podcastButton;
+
 @property NSLayoutConstraint *heightConstraint;
 @property NSArray *keyColors;
 @property BOOL isConstrained;
 
+-(void) setUpHeaderViewWithBasicInfoForPodcast:(PodcastEntity *)podcastEntity;
 -(void) setUpHeaderViewForEpisodeMiniDict:(NSDictionary *)miniDict;
 -(void) setUpHeaderViewForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity;
 -(void) sizeAndConstrainHeaderViewInViewController:(UIViewController *)vc;
--(NSString *) getSubtitleLabelTextForEntity:(EpisodeEntity *)episodeEntity; 
+-(NSString *) getSubtitleLabelTextForEntity:(EpisodeEntity *)episodeEntity;
+- (void) refreshHeaderViewForEntity:(PodcastEntity *)podcastEntity;
 
 @end

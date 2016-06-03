@@ -32,6 +32,19 @@
     return self;
 }
 
+-(void) sizeAndSetTitleForText:(NSString *)titleText {
+    if (titleText.length > 60) {
+        self.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
+    }
+    else if (titleText.length > 30) {
+        self.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightLight];
+    }
+    else if (titleText.length > 17) {
+        self.titleLabel.font = [UIFont systemFontOfSize:19 weight:UIFontWeightLight];
+    }
+    self.titleLabel.text = titleText;
+}
+
 // for quicker display of episode view header,
 // stop gap while waiting for episode info to establish episode entity
 -(void) setUpHeaderViewForEpisodeMiniDict:(NSDictionary *)miniDict {
@@ -41,13 +54,7 @@
     
     // title
     NSString *title = [miniDict objectForKey:@"title"];
-    if (title.length > 60) {
-        self.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
-    }
-    else {
-        self.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightLight];
-    }
-    self.titleLabel.text = title;
+    [self sizeAndSetTitleForText:title];
     self.subTitleLabel.text = @"";
     self.descriptionLabel.text = @"";
     
@@ -68,6 +75,29 @@
     
 }
 
+// for info that is guaranteed, before feed is loaded
+-(void) setUpHeaderViewWithBasicInfoForPodcast:(PodcastEntity *)podcastEntity {
+    self.hidden = NO;
+    self.clipsToBounds = YES;
+    // text
+    [self sizeAndSetTitleForText:podcastEntity.collectionName];
+    self.subTitleLabel.text = [podcastEntity.artistName stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
+    self.descriptionLabel.text = @"Loading...";
+    
+    // art
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity];
+    UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
+    self.albumArt.image = artImage;
+    
+    // hide buttons for now
+    self.largeButton.hidden = YES;
+    self.subscribeButton.hidden = YES;
+    
+    // colors
+    UIColor *lighterKeyColor = [TungCommonObjects lightenKeyColor:podcastEntity.keyColor1];
+    self.view.backgroundColor = lighterKeyColor;
+    
+}
 
 static NSDateFormatter *airDateFormatter = nil;
 
@@ -79,25 +109,23 @@ static NSDateFormatter *airDateFormatter = nil;
     NSString *title, *subTitle, *desc;
     BOOL isSubscribed;
     NSData *artImageData;
+    UIColor *keyColor1, *keyColor2;
     
     if (podcastEntity) {
         title = podcastEntity.collectionName;
         NSString *artist = [podcastEntity.artistName stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
         subTitle = artist;
-        desc = @"Loading feed...";
-        if (title.length > 60) {
-            self.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
-        }
-        else if (title.length > 30) {
-            self.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightLight];
-        }
-        else if (title.length > 17) {
-            self.titleLabel.font = [UIFont systemFontOfSize:19 weight:UIFontWeightLight];
+        if (podcastEntity.desc) {
+        	desc = podcastEntity.desc;
+        } else {
+            desc = @"Loading...";
         }
         
-        artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl andCollectionId:podcastEntity.collectionId];
+        artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity];
         
         isSubscribed = podcastEntity.isSubscribed.boolValue;
+        keyColor1 = podcastEntity.keyColor1;
+        keyColor2 = podcastEntity.keyColor2;
         
     }
     else {
@@ -108,16 +136,21 @@ static NSDateFormatter *airDateFormatter = nil;
         }
         subTitle = [self getSubtitleLabelTextForEntity:episodeEntity];
         desc = @"";
-        if (title.length > 60) {
-            self.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
-        }
-        else {
-            self.titleLabel.font = [UIFont systemFontOfSize:17 weight:UIFontWeightLight];
-        }
         
-        artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:episodeEntity.podcast.artworkUrl andCollectionId:episodeEntity.collectionId];
+        artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:episodeEntity.podcast];
+        
+        if (episodeEntity.episodeImageUrl) {
+            //NSLog(@"episode image available! %@", episodeEntity.episodeImageUrl);
+            // different than podcast art?
+            if (episodeEntity.podcast.artworkUrl && ![episodeEntity.podcast.artworkUrl isEqualToString:episodeEntity.episodeImageUrl]) {
+                
+            }
+        }
         
         isSubscribed = episodeEntity.podcast.isSubscribed.boolValue;
+        
+        keyColor1 = episodeEntity.podcast.keyColor1;
+        keyColor2 = episodeEntity.podcast.keyColor2;
         
     }
     //NSLog(@"set up header view for %@", title);
@@ -126,10 +159,6 @@ static NSDateFormatter *airDateFormatter = nil;
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     self.albumArt.image = artImage;
     
-    // find key color, overwrite previous (in case album art changes
-    _keyColors = [TungCommonObjects determineKeyColorsFromImage:artImage];
-    UIColor *keyColor1 = [_keyColors objectAtIndex:0];
-    UIColor *keyColor2 = [_keyColors objectAtIndex:1];
     NSString *keyColor1Hex = [TungCommonObjects UIColorToHexString:keyColor1];
     NSString *keyColor2Hex = [TungCommonObjects UIColorToHexString:keyColor2];
     
@@ -139,8 +168,6 @@ static NSDateFormatter *airDateFormatter = nil;
     // play button
     if (podcastEntity) {
         self.largeButton.type = kCircleTypeSupport;
-        podcastEntity.keyColor1 = keyColor1;
-        podcastEntity.keyColor2 = keyColor2;
         podcastEntity.keyColor1Hex = keyColor1Hex;
         podcastEntity.keyColor2Hex = keyColor2Hex;
     }
@@ -151,8 +178,6 @@ static NSDateFormatter *airDateFormatter = nil;
         } else {
             self.largeButton.on = NO;
         }
-        episodeEntity.podcast.keyColor1 = keyColor1;
-        episodeEntity.podcast.keyColor2 = keyColor2;
         episodeEntity.podcast.keyColor1Hex = keyColor1Hex;
         episodeEntity.podcast.keyColor2Hex = keyColor2Hex;
     }
@@ -161,7 +186,7 @@ static NSDateFormatter *airDateFormatter = nil;
     self.largeButton.color = keyColor2;
     [self.largeButton setNeedsDisplay];
     
-    self.titleLabel.text = title;
+    [self sizeAndSetTitleForText:title];
     self.subTitleLabel.text = subTitle;
     self.descriptionLabel.text = desc;
     
@@ -234,6 +259,21 @@ static NSDateFormatter *airDateFormatter = nil;
     
     self.heightConstraint.constant = height;
     [vc.view layoutIfNeeded];
+}
+
+- (void) refreshHeaderViewForEntity:(PodcastEntity *)podcastEntity {
+    // update image
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity];
+    UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
+    _albumArt.image = artImage;
+    // update key colors
+    _largeButton.color = podcastEntity.keyColor2;
+    [_largeButton setNeedsDisplay];
+    _subscribeButton.color = podcastEntity.keyColor2;
+    [_subscribeButton setNeedsDisplay];
+    UIColor *lighterKeyColor = [TungCommonObjects lightenKeyColor:podcastEntity.keyColor1];
+    _view.backgroundColor = lighterKeyColor;
+    [self setNeedsDisplay];
 }
 
 @end

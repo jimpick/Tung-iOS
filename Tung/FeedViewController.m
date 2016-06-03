@@ -33,7 +33,7 @@
     self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiatePodcastSearch)];
     
     _tung = [TungCommonObjects establishTungObjects];
-    [_tung establishCred];
+    if (!_tung.tungId || !_tung.tungToken) [_tung establishCred];
     
     // for search controller
     _podcast = [TungPodcast new];
@@ -196,7 +196,7 @@
         }
         // unreachable
         else {
-            [_tung showNoConnectionAlert];
+            [TungCommonObjects showNoConnectionAlert];
             [_storiesView endRefreshing];
         }
     }];

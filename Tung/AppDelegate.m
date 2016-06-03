@@ -23,10 +23,10 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     _tung = [TungCommonObjects establishTungObjects];
-    
+    [_tung establishCred];
     // look for tung cred in keychain
     BOOL isLoggedIn = NO;
-    if ([TungCommonObjects getKeychainCred]) isLoggedIn = YES;
+    if (_tung.tungId && _tung.tungToken) isLoggedIn = YES;
     
     // delete keychain value for cred
     //[TungCommonObjects deleteCredentials];
@@ -186,7 +186,7 @@
     }
     else if ([[notification userInfo] objectForKey:@"deleteEpisodeWithUrl"]) {
         NSString *urlString = [[notification userInfo] objectForKey:@"deleteEpisodeWithUrl"];
-        JPLog(@"received notification to delete episode with url: %@", urlString);
+        //JPLog(@"received notification to delete episode with url: %@", urlString);
         [_tung deleteSavedEpisodeWithUrl:urlString confirm:NO];
     }
 }
@@ -318,19 +318,19 @@
 {
     // Use this method to release shared resources, save user data, invalidate timers, and store enough application state information to restore your application to its current state in case it is terminated later. 
     // If your application supports background execution, this method is called instead of applicationWillTerminate: when the user quits.
-    JPLog(@"application did enter background");
+    //JPLog(@"application did enter background");
 }
 
 - (void)applicationWillEnterForeground:(UIApplication *)application
 {
     // Called as part of the transition from the background to the inactive state; here you can undo many of the changes made on entering the background.
-    JPLog(@"application will enter foreground");
+    //JPLog(@"application will enter foreground");
     
 }
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-    JPLog(@"Application did become active");
+    //JPLog(@"Application did become active");
     [_tung checkForNowPlaying];
     // check reachability
     [_tung checkReachabilityWithCallback:nil];
@@ -362,7 +362,7 @@
 #pragma mark - Url scheme handling method
 
 - (BOOL)application:(UIApplication *)application handleOpenURL:(NSURL *)url {
-    JPLog(@"url recieved: %@", url);
+    //JPLog(@"url recieved: %@", url);
     //NSLog(@"- query string: %@", [url query]);
     //NSLog(@"- host: %@", [url host]);
     //NSLog(@"- url path: %@", [url path]);

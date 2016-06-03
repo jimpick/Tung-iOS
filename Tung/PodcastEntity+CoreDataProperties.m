@@ -2,7 +2,7 @@
 //  PodcastEntity+CoreDataProperties.m
 //  Tung
 //
-//  Created by Jamie Perkins on 6/1/16.
+//  Created by Jamie Perkins on 6/3/16.
 //  Copyright © 2016 Jamie Perkins. All rights reserved.
 //
 //  Choose "Create NSManagedObject Subclass…" from the Core Data editor menu
@@ -33,6 +33,7 @@
 @dynamic numNewEpisodes;
 @dynamic timeSubscribed;
 @dynamic website;
+@dynamic artworkUrl600;
 @dynamic episodes;
 
 @end

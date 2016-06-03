@@ -70,6 +70,10 @@
 @property BOOL isNowPlayingView;
 @property BOOL isFirstAppearance;
 
+@property NSLayoutConstraint *descriptionViewBottomConstraint;
+@property NSLayoutConstraint *commentsViewBottomConstraint;
+@property NSLayoutConstraint *episodesViewBottomConstraint;
+
 @property CGFloat defaultHeaderHeight;
 @property CGFloat commentAndPostViewHeight;
 @property CGSize screenSize;
@@ -188,6 +192,8 @@ UIActivityIndicatorView *backgroundSpinner;
     _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 64, _screenSize.width, _defaultHeaderHeight)];
     [self.view insertSubview:_headerView belowSubview:_npControlsView];
     _headerView.hidden = YES;
+    // respond when podcast art is updated
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refreshViewForArtChange:) name:@"podcastArtUpdated" object:nil];
     
     // switcher bar
     _switcherBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, _screenSize.width, 44)];
@@ -214,7 +220,7 @@ UIActivityIndicatorView *backgroundSpinner;
     _switcherIndex = 0;
 
     
-    CGFloat bottomConstraint = -44;
+    CGFloat bottomConstraintConstant = -44;
     
     // description
     _descriptionView = [self.storyboard instantiateViewControllerWithIdentifier:@"descWebView"];
@@ -224,7 +230,8 @@ UIActivityIndicatorView *backgroundSpinner;
     _descriptionView.webView.delegate = self;
     _descriptionView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
+    _descriptionViewBottomConstraint = [NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraintConstant];
+    [self.view addConstraint:_descriptionViewBottomConstraint];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     
@@ -238,7 +245,8 @@ UIActivityIndicatorView *backgroundSpinner;
     [_commentsView.refreshControl addTarget:self action:@selector(refreshComments:) forControlEvents:UIControlEventValueChanged];
     _commentsView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
+    _commentsViewBottomConstraint = [NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraintConstant];
+    [self.view addConstraint:_commentsViewBottomConstraint];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     // episode view starts out hidden
@@ -258,7 +266,8 @@ UIActivityIndicatorView *backgroundSpinner;
     _episodesView.navController = self.navigationController;
     _episodesView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
+    _episodesViewBottomConstraint = [NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraintConstant];
+    [self.view addConstraint:_episodesViewBottomConstraint];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     // episode view starts out hidden
@@ -307,7 +316,7 @@ UIActivityIndicatorView *backgroundSpinner;
                         [self setUpViewForEpisode:_episodeEntity];
                     }
                     else {
-                        [_tung simpleErrorAlertWithMessage:responseDict[@"error"]];
+                        [TungCommonObjects simpleErrorAlertWithMessage:responseDict[@"error"]];
                     }
                 }];
             }
@@ -343,12 +352,12 @@ UIActivityIndicatorView *backgroundSpinner;
     // set up views
     if (_isNowPlayingView) {
         
-        if (_npControlsBottomLayoutConstraint.constant < npControls_closedConstraint && _episodeEntity.isNowPlaying.boolValue) {
+        if (_episodeEntity.isNowPlaying.boolValue && _npControlsBottomLayoutConstraint.constant < npControls_closedConstraint) {
             [NSTimer scheduledTimerWithTimeInterval:.2 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
         }
         
     }
-    else if (_episodeEntity.isNowPlaying.boolValue) {
+    else if (_episodeEntity.isNowPlaying.boolValue && _npControlsBottomLayoutConstraint.constant < npControls_closedConstraint) {
         [NSTimer scheduledTimerWithTimeInterval:.2 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
     }
     
@@ -601,9 +610,14 @@ NSTimer *markAsSeenTimer;
     
     _episodesView.tableView.backgroundView = nil;
     _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
-    [_episodesView assignSavedPropertiesToEpisodeArray];
-    _episodesView.podcastEntity = episodeEntity.podcast;
-    [_episodesView.tableView reloadData];
+    if ([[_episodesView.episodeArray objectAtIndex:0] objectForKey:@"error"]) {
+        [_episodesView.refreshControl endRefreshing];
+        [TungCommonObjects simpleErrorAlertWithMessage:[[_episodesView.episodeArray objectAtIndex:0] objectForKey:@"error"]];
+    } else {
+        [_episodesView assignSavedPropertiesToEpisodeArray];
+        _episodesView.podcastEntity = episodeEntity.podcast;
+        [_episodesView.tableView reloadData];
+    }
     
     // refresh description web view with description from feed
     NSInteger feedIndex = [TungCommonObjects getIndexOfEpisodeWithGUID:episodeEntity.guid inFeed:_episodesView.episodeArray];
@@ -628,11 +642,7 @@ NSTimer *markAsSeenTimer;
         }
     }
     [self loadDescriptionWebViewStringForEntity:episodeEntity];
-    
-    // podcast description
-    if (!episodeEntity.podcast.desc || episodeEntity.podcast.desc.length == 0) {
-        episodeEntity.podcast.desc = [TungCommonObjects findPodcastDescriptionWithDict:feedDict];
-    }
+
     
     // scroll to episode row if it's playing
     if (_isNowPlayingView) {
@@ -646,6 +656,18 @@ NSTimer *markAsSeenTimer;
 
 }
 
+- (void) refreshViewForArtChange:(NSNotification*)notification {
+    
+    NSNumber *collectionId = [[notification userInfo] objectForKey:@"collectionId"];
+    
+    if (_episodeEntity && _episodeEntity.podcast.collectionId.doubleValue == collectionId.doubleValue) {
+        
+        [_headerView refreshHeaderViewForEntity:_episodeEntity.podcast];
+        
+        [_episodesView.tableView reloadData];
+    }
+}
+
 - (void) largeButtonInHeaderTapped {
     
     if (_isNowPlayingView) {
@@ -657,7 +679,7 @@ NSTimer *markAsSeenTimer;
             _urlToPass = [NSURL URLWithString:fundraiseUrlString];
             [self performSegueWithIdentifier:@"presentWebView" sender:self];
         } else {
-            [_tung showNoConnectionAlert];
+            [TungCommonObjects showNoConnectionAlert];
         }
     }
     else {
@@ -756,7 +778,7 @@ NSTimer *markAsSeenTimer;
         }
     }
     else {
-        [_tung showNoConnectionAlert];
+        [TungCommonObjects showNoConnectionAlert];
     }
 }
 
@@ -970,6 +992,8 @@ static CGRect buttonsScrollViewHomeRect;
     _skipAheadBtn.hidden = NO;
     _skipBackBtn.hidden = NO;
     
+    episodeSubviews_bottomConstraint = -80;
+    
     [self beginOnEnterFrame];
     
     [UIView animateWithDuration:.5
@@ -977,6 +1001,9 @@ static CGRect buttonsScrollViewHomeRect;
                         options:npControls_easing
                      animations:^{
                          _npControlsBottomLayoutConstraint.constant = npControls_openConstraint;
+                         _descriptionViewBottomConstraint.constant = episodeSubviews_bottomConstraint;
+                         _commentsViewBottomConstraint.constant = episodeSubviews_bottomConstraint;
+                         _episodesViewBottomConstraint.constant = episodeSubviews_bottomConstraint;
                          _timeElapsedLabel.alpha = 1;
                          _skipAheadBtn.alpha = 1;
                          _skipBackBtn.alpha = 1;
@@ -998,11 +1025,16 @@ static CGRect buttonsScrollViewHomeRect;
 
 - (void) hideNowPlayingControls {
     
+    episodeSubviews_bottomConstraint = -44;
+    
     [UIView animateWithDuration:.5
                           delay:0
                         options:npControls_easing
                      animations:^{
                          _npControlsBottomLayoutConstraint.constant = npControls_hiddenConstraint;
+                         _descriptionViewBottomConstraint.constant = episodeSubviews_bottomConstraint;
+                         _commentsViewBottomConstraint.constant = episodeSubviews_bottomConstraint;
+                         _episodesViewBottomConstraint.constant = episodeSubviews_bottomConstraint;
                          _buttonsScrollView.alpha = 0;
                          _posbar.alpha = 0;
                          _progressBar.alpha = 0;
@@ -1061,7 +1093,7 @@ static CGRect buttonsScrollViewHomeRect;
     _speedButton.buttonText = [NSString stringWithFormat:@"%@", [playbackRateStrings objectAtIndex:_tung.playbackRateIndex]];
     [_speedButton setNeedsDisplay];
     
-    JPLog(@"set playback rate to %@", rate);
+    //JPLog(@"set playback rate to %@", rate);
     [_tung.player setRate:rate.floatValue];
     [_tung.trackInfo setObject:[NSNumber numberWithFloat:rate.floatValue] forKey:MPNowPlayingInfoPropertyPlaybackRate];
     [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_tung.trackInfo];
@@ -1132,7 +1164,7 @@ static CGRect buttonsScrollViewHomeRect;
         if (_tung.connectionAvailable.boolValue) {
         	[self performSegueWithIdentifier:@"presentWebView" sender:self];
         } else {
-            [_tung showNoConnectionAlert];
+            [TungCommonObjects showNoConnectionAlert];
         }
         
         return NO;
@@ -1146,7 +1178,7 @@ static CGRect buttonsScrollViewHomeRect;
             _urlToPass = [NSURL URLWithString:_episodeEntity.podcast.website];            
             [self performSegueWithIdentifier:@"presentWebView" sender:self];
         } else {
-            [_tung showNoConnectionAlert];
+            [TungCommonObjects showNoConnectionAlert];
         }
     } else {
         JPLog(@"no website");
@@ -1160,7 +1192,7 @@ static CGRect buttonsScrollViewHomeRect;
 
 - (BOOL) trimAudioFrom:(CGFloat)startMarker to:(CGFloat)endMarker {
 
-    JPLog(@"//// trim audio from %f to %f", startMarker, endMarker);
+    //JPLog(@"//// trim audio from %f to %f", startMarker, endMarker);
     // input    
     NSURL *audioFileUrl = [_tung getEpisodeUrl:[_tung.playQueue objectAtIndex:0]];
     // test if input file has any bytes
@@ -1171,7 +1203,7 @@ static CGRect buttonsScrollViewHomeRect;
     NSURL *outputFileUrl = [TungCommonObjects getClipFileURL];
 
     if (!audioFileUrl || !outputFileUrl) {
-        JPLog(@"//// ERROR no input or output file url");
+        JPLog(@"Error trimming audio: no input or output file url");
     	return NO;
     }
     // delete recording file if exists.
@@ -1183,7 +1215,7 @@ static CGRect buttonsScrollViewHomeRect;
 
     AVAssetExportSession *exportSession = [AVAssetExportSession exportSessionWithAsset:asset presetName:AVAssetExportPresetAppleM4A];
     if (exportSession == nil) {
-        JPLog(@"//// ERROR no export session");
+        JPLog(@"Error trimming audio no export session");
     	return NO;
     }
 
@@ -1198,7 +1230,7 @@ static CGRect buttonsScrollViewHomeRect;
     [exportSession exportAsynchronouslyWithCompletionHandler:^ {
         if (AVAssetExportSessionStatusCompleted == exportSession.status) {
             // It worked!
-            JPLog(@"//// audio export successful");
+            //NSLog(@"//// audio export successful");
             dispatch_async(dispatch_get_main_queue(), ^{
             	[_playClipButton setEnabled:YES];
                 [_clipOkayButton setEnabled:YES];
@@ -1206,7 +1238,7 @@ static CGRect buttonsScrollViewHomeRect;
         }
         else if (AVAssetExportSessionStatusFailed == exportSession.status) {
             // It failed...
-            JPLog(@"//// audio export failed with status: %ld", (long)exportSession.status);
+            JPLog(@"Error trimming audio: audio export failed with status: %ld", (long)exportSession.status);
         }
     }];
 
@@ -1223,7 +1255,7 @@ static CGRect buttonsScrollViewHomeRect;
             // if rate not 1, set to 1
             if (_tung.player.rate != 1) [self setPlaybackRateToOne];
             
-            JPLog(@"start recording *****");
+            //JPLog(@"start recording *****");
             _isRecording = YES;
             
             [_playClipButton setEnabled:NO];
@@ -1238,7 +1270,7 @@ static CGRect buttonsScrollViewHomeRect;
         else {
             long recordTime = fabs([_recordStartTime timeIntervalSinceNow]);
             if (recordTime >= MIN_RECORD_TIME) {
-                JPLog(@"STOP recording *****");
+                //JPLog(@"STOP recording *****");
                 _recordEndMarker = CMTimeGetSeconds(_tung.player.currentTime);
                 _isRecording = NO;
                 _recordButton.isRecording = NO;
@@ -1307,7 +1339,7 @@ static CGRect buttonsScrollViewHomeRect;
     // create audio player
     NSURL *clipFileUrl = [TungCommonObjects getClipFileURL];
     NSData *clipData = [NSData dataWithContentsOfURL:clipFileUrl];
-    JPLog(@"play clip file with data length: %lu", (unsigned long)clipData.length);
+    //JPLog(@"play clip file with data length: %lu", (unsigned long)clipData.length);
     
     NSError *playbackError;
     _audioPlayer = [[AVAudioPlayer alloc] initWithContentsOfURL:clipFileUrl error:&playbackError];
@@ -1316,15 +1348,14 @@ static CGRect buttonsScrollViewHomeRect;
         _audioPlayer.delegate = self;
         // PLAY
         if ([_audioPlayer prepareToPlay] && [_audioPlayer play]) {
-            JPLog(@"audio play started playing. duration: %f", _audioPlayer.duration);
+            //JPLog(@"audio play started playing. duration: %f", _audioPlayer.duration);
             
         } else {
-            JPLog(@"could not play recording");
+            JPLog(@"Error: could not play recording");
             [self stopPlayback];
         }
     } else {
-        JPLog(@"failed to create audio player");
-        JPLog(@"%@", playbackError);
+        JPLog(@"Error: failed to create audio player: %@", playbackError);
         [self stopPlayback];
     }
 }
@@ -1352,7 +1383,7 @@ static CGRect buttonsScrollViewHomeRect;
 }
 - (void) audioPlayerEndInterruption:(AVAudioPlayer *)player withOptions:(NSUInteger)flags {
     if (flags == AVAudioSessionInterruptionOptionShouldResume) {
-        JPLog(@"audio player end interruption");
+        //JPLog(@"audio player end interruption");
     }
 }
 
@@ -1549,6 +1580,7 @@ static float npControls_closedConstraint = -211;
 static float npControls_hiddenConstraint = -293;
 static float npControls_openConstraint = -99;
 static float npControls_clipConfirmConstraint;
+float episodeSubviews_bottomConstraint = -44;
 float npControls_totalnpControls_animDuration = .3;
 float npControls_animDuration = .3;
 BOOL touchedInsideShowHideButton;
@@ -1557,7 +1589,6 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
 
 
 - (void) toggleConfirmClip {
-    
     
     if (!npControls_clipConfirmConstraint) npControls_clipConfirmConstraint = npControls_openConstraint + 70;
     
@@ -1788,7 +1819,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
     if ([_commentAndPostView.commentTextView.text isEqualToString:@""]) {
         [TungCommonObjects fadeInView:_commentAndPostView.tapToCommentLabel];
     } else {
-        JPLog(@"*** reached comment character limit ***");
+        //JPLog(@"*** reached comment character limit ***");
     }
 
 }
@@ -1803,6 +1834,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
 }
 
 - (void) keyboardWillAppear:(NSNotification*)notification {
+    
     if (_shareIntention && !_searchActive) {
         
         NSDictionary *keyboardInfo = [notification userInfo];
@@ -2038,7 +2070,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
             else {
                 [self toggleNewComment];
                 NSString *errorMsg = [responseDict objectForKey:@"error"];
-                [_tung simpleErrorAlertWithMessage:errorMsg];
+                [TungCommonObjects simpleErrorAlertWithMessage:errorMsg];
             }
         }];
     }
@@ -2081,7 +2113,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
             }
             else {
                 NSString *errorMsg = [responseDict objectForKey:@"error"];
-                [_tung simpleErrorAlertWithMessage:errorMsg];
+                [TungCommonObjects simpleErrorAlertWithMessage:errorMsg];
             }
             
             [self toggleNewClipView];
@@ -2118,7 +2150,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
         }
     }
     else {
-        [_tung showNoConnectionAlert];
+        [TungCommonObjects showNoConnectionAlert];
     }
 }
 

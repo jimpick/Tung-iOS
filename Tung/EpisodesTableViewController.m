@@ -27,17 +27,16 @@
     _tung = [TungCommonObjects establishTungObjects];
     
     // set up table
-    self.tableView.backgroundColor = [TungCommonObjects bkgdGrayColor];
-    self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
-    self.tableView.scrollsToTop = YES;
-    self.tableView.separatorInset = UIEdgeInsetsMake(0, 9, 0, 9);
-    self.tableView.contentInset = UIEdgeInsetsZero;// UIEdgeInsetsMake(0, 0, 0, 0);
-    self.tableView.separatorColor = [UIColor lightGrayColor];
-    
     UIActivityIndicatorView *tableSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
     tableSpinner.alpha = 1;
     [tableSpinner startAnimating];
     self.tableView.backgroundView = tableSpinner;
+    self.tableView.backgroundColor = [TungCommonObjects bkgdGrayColor];
+    self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
+    self.tableView.separatorColor = [UIColor lightGrayColor];
+    self.tableView.scrollsToTop = YES;
+    self.tableView.separatorInset = UIEdgeInsetsMake(0, 9, 0, 9);
+    self.tableView.contentInset = UIEdgeInsetsZero;// UIEdgeInsetsMake(0, 0, 0, 0);    
     
     self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
@@ -82,7 +81,7 @@
     }
     else {
         [self.refreshControl endRefreshing];
-        [_tung showNoConnectionAlert];
+        [TungCommonObjects showNoConnectionAlert];
     }
     
 }
@@ -364,7 +363,7 @@ static NSString *cellIdentifier = @"EpisodeCell";
 }
 
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
-    if (section == 1) {
+    if (section == 1 && _episodeArray.count) {
         return 60.0;
     }
     else {

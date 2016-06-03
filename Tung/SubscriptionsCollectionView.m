@@ -103,7 +103,7 @@ static NSString * const reuseIdentifier = @"artCell";
 - (void) viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
     
-    [self prepareView];
+    //[self prepareView];
 }
 
 - (void) prepareView {
@@ -119,7 +119,7 @@ static NSString * const reuseIdentifier = @"artCell";
         for (int i = 0; i < result.count; i++) {
             PodcastEntity *podEntity = [result objectAtIndex:i];
             [preloadQueue addOperationWithBlock:^{
-                [TungCommonObjects retrievePodcastArtDataWithUrlString:podEntity.artworkUrl andCollectionId:podEntity.collectionId];
+                [TungCommonObjects retrievePodcastArtDataForEntity:podEntity];
             }];
         }
     }
@@ -187,9 +187,9 @@ NSTimer *promptTimer;
     
     if (_editingNotifications) {
     	_editAlertsBarButtonItem.title = @"Done";
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleNotifyPrefChangedNotification:) name:@"notifyPrefChanged" object:nil];
+        //[[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleNotifyPrefChangedNotification:) name:@"notifyPrefChanged" object:nil];
     } else {
-        [[NSNotificationCenter defaultCenter] removeObserver:self];
+        //[[NSNotificationCenter defaultCenter] removeObserver:self];
     	_editAlertsBarButtonItem.title = @"Alerts";
     }
     
@@ -378,15 +378,14 @@ NSTimer *promptTimer;
 UILabel static *prototypeBadge;
 
 - (UICollectionViewCell *)collectionView:(UICollectionView *)collectionView cellForItemAtIndexPath:(NSIndexPath *)indexPath {
-    //JPLog(@"collection view cell for item at index path %ld", (long)indexPath.row);
     
-    //JPLog(@"cell for row at index: %ld", (long)indexPath.row);
     SubscriptionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:reuseIdentifier forIndexPath:indexPath];
     
     PodcastEntity *podcastEntity = [_resultsController objectAtIndexPath:indexPath];
+    //JPLog(@"collection view cell for item at index path %ld - %@", (long)indexPath.row, podcastEntity.collectionName);
     
     cell.collectionId = podcastEntity.collectionId;
-    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastEntity.artworkUrl andCollectionId:podcastEntity.collectionId];
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     
     // podcast art

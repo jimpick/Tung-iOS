@@ -24,10 +24,20 @@
         podEntity.notifyOfNewEpisodes = [NSNumber numberWithBool:YES];
         
         if (![TungCommonObjects hasGrantedNotificationPermissions]) {
-            TungCommonObjects *tung = [TungCommonObjects establishTungObjects];
-            UIAlertView *notifsAreDisabled = [[UIAlertView alloc] initWithTitle:@"Turn notifications on?" message:@"Notifications are currently disabled. Would you like to enable them?" delegate:tung cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
-            notifsAreDisabled.tag = 20;
-            [notifsAreDisabled show];
+            
+            UIAlertController *notifsAreDisabledAlert = [UIAlertController alertControllerWithTitle:@"Turn notifications on?" message:@"Notifications are currently disabled. Would you like to enable them?" preferredStyle:UIAlertControllerStyleAlert];
+            [notifsAreDisabledAlert addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:nil]];
+            [notifsAreDisabledAlert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                SettingsEntity *settings = [TungCommonObjects settings];
+                settings.hasSeenNewEpisodesPrompt = [NSNumber numberWithBool:YES];
+                [TungCommonObjects saveContextWithReason:@"settings changed"];
+                
+                [[UIApplication sharedApplication] registerForRemoteNotifications];
+                [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
+
+            }]];
+            [[TungCommonObjects activeViewController] presentViewController:notifsAreDisabledAlert animated:YES completion:nil];
+            
         } else {
             // post notification so banner alert can be shown
             NSString *message = [NSString stringWithFormat:@"You will now receive alerts when new episodes of %@ are available.", podEntity.collectionName];

@@ -177,6 +177,7 @@
 		7DE99BD61ACE3F02007A154F /* EpisodeCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DE99BD51ACE3F02007A154F /* EpisodeCell.m */; };
 		7DF2FACE1AF3ACCD004C66E6 /* SubscriptionsCollectionView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DF2FACD1AF3ACCD004C66E6 /* SubscriptionsCollectionView.m */; };
 		7DF2FAD11AF3BE3F004C66E6 /* SubscriptionViewCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DF2FAD01AF3BE3F004C66E6 /* SubscriptionViewCell.m */; };
+		7DF3B42B1D0224BB00662C16 /* default-podcast-art.jpg in Resources */ = {isa = PBXBuildFile; fileRef = 7DF3B42A1D0224BB00662C16 /* default-podcast-art.jpg */; };
 		7DF56650199D4B56003176C1 /* BrowserViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DF5664F199D4B56003176C1 /* BrowserViewController.m */; };
 		7DF8A8B318A29A52002332A1 /* CoreAudio.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DF8A8B218A29A52002332A1 /* CoreAudio.framework */; };
 		7DF8A8B518A2A277002332A1 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DF8A8B418A2A277002332A1 /* AVFoundation.framework */; };
@@ -441,6 +442,7 @@
 		7DF2FACD1AF3ACCD004C66E6 /* SubscriptionsCollectionView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SubscriptionsCollectionView.m; sourceTree = "<group>"; };
 		7DF2FACF1AF3BE3F004C66E6 /* SubscriptionViewCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SubscriptionViewCell.h; sourceTree = "<group>"; };
 		7DF2FAD01AF3BE3F004C66E6 /* SubscriptionViewCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SubscriptionViewCell.m; sourceTree = "<group>"; };
+		7DF3B42A1D0224BB00662C16 /* default-podcast-art.jpg */ = {isa = PBXFileReference; lastKnownFileType = image.jpeg; path = "default-podcast-art.jpg"; sourceTree = "<group>"; };
 		7DF5664E199D4B56003176C1 /* BrowserViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = BrowserViewController.h; sourceTree = "<group>"; };
 		7DF5664F199D4B56003176C1 /* BrowserViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = BrowserViewController.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
 		7DF8A8B218A29A52002332A1 /* CoreAudio.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreAudio.framework; path = System/Library/Frameworks/CoreAudio.framework; sourceTree = SDKROOT; };
@@ -738,6 +740,7 @@
 		7DF8A8BC18A2A5FC002332A1 /* images */ = {
 			isa = PBXGroup;
 			children = (
+				7DF3B42A1D0224BB00662C16 /* default-podcast-art.jpg */,
 				7D282C731AF022D900495E74 /* albumShawdow@2x.png */,
 				7D282C741AF022D900495E74 /* albumShawdow@3x.png */,
 				7DE094931BC0A48C005B596D /* albumShawdowCellSection@2x.png */,
@@ -941,6 +944,7 @@
 				7DBD62211AE3675E00233005 /* btn-player-add-down@2x.png in Resources */,
 				7D5BC1BD1A547E5D008C008D /* tabBar-search-inactive@2x.png in Resources */,
 				7DBD622C1AE3675E00233005 /* btn-player-pause@3x.png in Resources */,
+				7DF3B42B1D0224BB00662C16 /* default-podcast-art.jpg in Resources */,
 				7D5A595019D3D177005DCF01 /* icon-twitter-on@3x.png in Resources */,
 				7D768C96192D3373000C8E3E /* UIButtonBarArrowLeft@2x.png in Resources */,
 				7D5A594F19D3D177005DCF01 /* icon-twitter-off@3x.png in Resources */,

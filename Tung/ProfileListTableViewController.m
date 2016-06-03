@@ -140,7 +140,7 @@
                         }
                     }
                     else {
-                        [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                        [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                     }
                     
                     [self.tableView reloadData];
@@ -234,7 +234,7 @@
                 _page = [NSNumber numberWithInteger:_page.integerValue + 1];
             }
             else {
-                [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
             }
         }];
     }

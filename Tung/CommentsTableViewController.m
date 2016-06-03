@@ -382,7 +382,7 @@ UILabel *prototypeLabel;
                             } else {
                                 [self endRefreshing];
                                 // other error - alert user
-                                [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                                [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                             }
                         });
                     }
@@ -469,6 +469,7 @@ UILabel *prototypeLabel;
                             _noResults = NO;
                             _commentsArray = [newComments mutableCopy];
                             //JPLog(@"%@", _commentsArray);
+                            
                         } else {
                             _noResults = YES;
                         }

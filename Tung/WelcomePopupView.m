@@ -73,7 +73,7 @@
     
     _header4.text = @"Your Profile";
     _iconView4.type = kIconTypeProfile;
-    _body4.text = @"Has your notifications, all of your activity that’s published in the feed, and friend search.";
+    _body4.text = @"Has your notifications, and all of your activity that’s published in the feed.";
     [_button4 setTitle:@"Got it!" forState:UIControlStateNormal];
     [_button4 addTarget:self action:@selector(dismiss:) forControlEvents:UIControlEventTouchUpInside];
     _reverseIconView4.type = kIconTypeProfile;

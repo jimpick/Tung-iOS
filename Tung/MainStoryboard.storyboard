@@ -425,7 +425,7 @@
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="grouped" separatorStyle="default" rowHeight="176" sectionHeaderHeight="18" sectionFooterHeight="18" id="oQA-qf-q1X">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" cocoaTouchSystemColor="groupTableViewBackgroundColor"/>
+                        <color key="backgroundColor" red="0.93725490199999995" green="0.93725490199999995" blue="0.95686274510000002" alpha="1" colorSpace="calibratedRGB"/>
                         <prototypes>
                             <tableViewCell contentMode="scaleToFill" restorationIdentifier="SuggestedUserCell" selectionStyle="default" indentationWidth="10" reuseIdentifier="SuggestedUserCell" rowHeight="176" id="6FV-fm-KKC" customClass="SuggestedUserCell">
                                 <rect key="frame" x="0.0" y="94" width="320" height="176"/>
@@ -556,7 +556,7 @@
                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Cell Label" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Ag9-L1-htw">
                                             <rect key="frame" x="62" y="19" width="225" height="21"/>
                                             <fontDescription key="fontDescription" type="system" pointSize="17"/>
-                                            <color key="textColor" cocoaTouchSystemColor="darkTextColor"/>
+                                            <color key="textColor" red="0.0" green="0.0" blue="0.0" alpha="1" colorSpace="calibratedRGB"/>
                                             <nil key="highlightedColor"/>
                                         </label>
                                         <view contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="4N4-6X-gAw" customClass="IconView">
@@ -1043,7 +1043,7 @@
             <objects>
                 <tableViewController storyboardIdentifier="episodesView" id="FNJ-8P-4Xr" customClass="EpisodesTableViewController" sceneMemberID="viewController">
                     <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="44" sectionHeaderHeight="22" sectionFooterHeight="22" id="G40-ZZ-jom">
-                        <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
+                        <rect key="frame" x="0.0" y="64" width="320" height="504"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                         <prototypes>
@@ -1120,7 +1120,7 @@
                             <outlet property="delegate" destination="FNJ-8P-4Xr" id="zgg-6u-uVS"/>
                         </connections>
                     </tableView>
-                    <nil key="simulatedTopBarMetrics"/>
+                    <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" translucent="NO" prompted="NO"/>
                 </tableViewController>
                 <placeholder placeholderIdentifier="IBFirstResponder" id="zZl-0C-GPj" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
@@ -1129,7 +1129,7 @@
         <!--Description Web View Controller-->
         <scene sceneID="jJ3-K5-Q8J">
             <objects>
-                <viewController storyboardIdentifier="descWebView" autoresizesArchivedViewToFullSize="NO" automaticallyAdjustsScrollViewInsets="NO" id="Ed5-1A-CAv" customClass="DescriptionWebViewController" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="descWebView" id="Ed5-1A-CAv" customClass="DescriptionWebViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="HrI-j0-DDt"/>
                         <viewControllerLayoutGuide type="bottom" id="UlX-T5-4hQ"/>
@@ -1151,7 +1151,6 @@
                             <constraint firstItem="4vv-VJ-ozp" firstAttribute="leading" secondItem="rxC-xa-NQh" secondAttribute="leading" id="wbU-YY-kzN"/>
                         </constraints>
                     </view>
-                    <extendedEdge key="edgesForExtendedLayout"/>
                     <nil key="simulatedTopBarMetrics"/>
                     <nil key="simulatedBottomBarMetrics"/>
                     <connections>
@@ -1915,6 +1914,6 @@
         <image name="tungSignInLogo.png" width="194" height="124"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="sbA-US-dCS"/>
+        <segue reference="dk8-9Y-zcj"/>
     </inferredMetricsTieBreakers>
 </document>

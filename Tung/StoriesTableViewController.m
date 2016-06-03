@@ -229,7 +229,7 @@ NSInteger requestTries = 0;
                         } else {
                             [self endRefreshing];
                             // other error - alert user
-                            [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                            [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                         }
                     });
                 }
@@ -387,7 +387,7 @@ NSInteger requestTries = 0;
                             [self endRefreshing];
                             self.requestStatus = @"finished";
                             // other error - alert user
-                            [_tung simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                            [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
@@ -556,7 +556,7 @@ NSInteger requestTries = 0;
                 else {
                     [self endRefreshing];
                     
-                    [_tung showConnectionErrorAlertForError:error];
+                    [TungCommonObjects showConnectionErrorAlertForError:error];
                 }
             });
         }

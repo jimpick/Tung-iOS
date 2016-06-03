@@ -165,7 +165,7 @@
         else {
             // errors
             dispatch_async(dispatch_get_main_queue(), ^{
-                [_tung simpleErrorAlertWithMessage:@"Error registering. Please try again later."];
+                [TungCommonObjects simpleErrorAlertWithMessage:@"Error registering. Please try again later."];
             });
         }
         

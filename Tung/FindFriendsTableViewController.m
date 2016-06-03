@@ -119,7 +119,7 @@
             }
             else {
                 // other error - alert user
-                [_tung simpleErrorAlertWithMessage:[response objectForKey:@"error"]];
+                [TungCommonObjects simpleErrorAlertWithMessage:[response objectForKey:@"error"]];
             }
         }];
     }

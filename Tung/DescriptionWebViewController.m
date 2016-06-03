@@ -8,6 +8,7 @@
 
 #import "DescriptionWebViewController.h"
 #import "BrowserViewController.h"
+#import "JPLogRecorder.h"
 
 @interface DescriptionWebViewController ()
 @property NSURL *urlToPass;
@@ -55,7 +56,7 @@
 
 - (void)webView:(UIWebView *)webView didFailLoadWithError:(NSError *)error
 {
-    NSLog(@"web view did fail with error: %@", error);
+    JPLog(@"description web view did fail with error: %@", error.localizedDescription);
     
 }
 

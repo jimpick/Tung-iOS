@@ -588,8 +588,12 @@ static NSString *feedDictsDirName = @"feedDicts";
 
 // Will retrieve a cached feed no older than a day, if reachable, else refetches. Caches feed.
 + (NSDictionary*) retrieveAndCacheFeedForPodcastEntity:(PodcastEntity *)entity forceNewest:(BOOL)forceNewest reachable:(BOOL)reachable {
-    //NSLog(@"retrieve and cache feed for podcast entity: %@", entity.collectionName);
     NSDictionary *feedDict;
+    //NSLog(@"retrieve feed dict for url: %@", entity.feedUrl);
+    if (!entity.feedUrl) {
+        JPLog(@"Error: Cannot retrieve feed - no feed url");
+        return nil;
+    }
     
     if (forceNewest && reachable) {
         //JPLog(@"- - - retrieve cached feed for entity :: force newest");
@@ -647,7 +651,9 @@ static NSString *feedDictsDirName = @"feedDicts";
     
     if (feedDict && feedDict[@"channel"]) {
         
-        // update entity properties / check for new art
+        // update entity with properties from the feed
+        
+        // check for new art
         NSString *artworkUrlString;
         if (feedDict[@"channel"][@"itunes:image"] && feedDict[@"channel"][@"itunes:image"][@"el:attributes"]) {
             id artworkUrl = feedDict[@"channel"][@"itunes:image"][@"el:attributes"][@"href"];
@@ -661,18 +667,22 @@ static NSString *feedDictsDirName = @"feedDicts";
             id artworkUrl = feedDict[@"channel"][@"media:thumbnail"][@"el:attributes"][@"url"];
             if ([artworkUrl isKindOfClass:[NSString class]]) artworkUrlString = artworkUrl;
         }
+        // DEV: test new artwork
+        //artworkUrlString = @"http://static.libsyn.com/p/assets/d/7/5/5/d755c607c07e7ec9/songexploder-logo.png?";
         if (artworkUrlString) {
             // if art has changed
             if (entity.artworkUrl && ![entity.artworkUrl isEqualToString:artworkUrlString]) {
                 // replaces cached art, saves entity and checks if podcast art needs to be updated on server
+                NSLog(@"ART HAS CHANGED");
                 [TungCommonObjects replaceCachedPodcastArtForEntity:entity withNewArt:artworkUrlString];
             }
             else if (!entity.artworkUrl) {
                 entity.artworkUrl = artworkUrlString;
             }
         } else {
-            JPLog(@"Error: bad feed - no artwork url");
+            JPLog(@"Feed error - no artwork url");
         }
+        // link and email
         if (feedDict[@"channel"][@"link"]) {
             id website = feedDict[@"channel"][@"link"];
             if ([website isKindOfClass:[NSString class]]) {
@@ -685,12 +695,36 @@ static NSString *feedDictsDirName = @"feedDicts";
                 entity.email = email;
             }
         }
+        // description
+        NSString *descrip;
+        if ([[feedDict objectForKey:@"channel"] objectForKey:@"itunes:summary"]) {
+            id desc = [[feedDict objectForKey:@"channel"] objectForKey:@"itunes:summary"];
+            if ([desc isKindOfClass:[NSString class]]) {
+                descrip = (NSString *)desc;
+            }
+        }
+        if (!descrip && [[feedDict objectForKey:@"channel"] objectForKey:@"description"]) {
+            id descr = [[feedDict objectForKey:@"channel"] objectForKey:@"description"];
+            if ([descr isKindOfClass:[NSString class]]) {
+                descrip = (NSString *)descr;
+            }
+        }
+        if (!descrip && [[feedDict objectForKey:@"channel"] objectForKey:@"itunes:subtitle"]) {
+            id descr = [[feedDict objectForKey:@"channel"] objectForKey:@"itunes:subtitle"];
+            if ([descr isKindOfClass:[NSString class]]) {
+                descrip = (NSString *)descr;
+            }
+        }
+        if (!descrip) {
+            descrip = @"This podcast has no description.";
+        }
+        entity.desc = descrip;
         
         [self cacheFeed:feedDict forEntity:entity];
     	return feedDict;
-    } else {
-        JPLog(@"Error: bad feed - missing channel node");
-        return nil;
+    }
+    else {
+        return feedDict;
     }
     
 }
@@ -733,15 +767,27 @@ static NSString *feedDictsDirName = @"feedDicts";
     return [xmlToDict xmlDataToDictionary:feedData];
 }
 
-// get an episode array from a feed dict.
+// get an episode array from a feed dict. First line of defense against bad feeds
 + (NSArray *) extractFeedArrayFromFeedDict:(NSDictionary *)feedDict {
     
-    id item = [[feedDict objectForKey:@"channel"] objectForKey:@"item"];
-    if ([item isKindOfClass:[NSArray class]]) {
-        NSArray *array = item;
-        return array;
+    if (feedDict) {
+        if ([feedDict objectForKey:@"channel"]) {
+            if ([[feedDict objectForKey:@"channel"] objectForKey:@"item"]) {
+                id item = [[feedDict objectForKey:@"channel"] objectForKey:@"item"];
+                if ([item isKindOfClass:[NSArray class]]) {
+                    NSArray *array = item;
+                    return array;
+                } else {
+                    return @[item];
+                }
+            } else {
+                return @[@{@"error": @"Bad feed: No items"}];
+            }
+        } else {
+            return @[@{@"error": @"Bad feed: No channel node"}];
+        }
     } else {
-        return @[item];
+        return @[@{@"error": @"Empty feed"}];
     }
 }
 
