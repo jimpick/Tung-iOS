@@ -355,17 +355,15 @@ static UIImage *iconRedX;
 - (void) createAvatarSizesAndSetAvatarWithCallback:(void (^)(BOOL success))callback {
     //JPLog(@"create avatar sizes and set avatar with callback");
     // Avatar
-    NSData *dataToResize = [[NSData alloc] initWithContentsOfURL: [NSURL URLWithString: [_profileData objectForKey:@"avatarURL"]]];
+    NSData *dataToResize = [[NSData alloc] initWithContentsOfURL:[NSURL URLWithString: [_profileData objectForKey:@"avatarURL"]]];
     UIImage *imageToResize = [[UIImage alloc] initWithData:dataToResize];
     //JPLog(@"file size before resizing: %lu b", (unsigned long)[dataToResize length]);
     // resize to "large" size
-    CGSize largeSize = CGSizeMake(640, 640);
-    UIImage* largeImage = [self image:imageToResize scaledToFitSize:largeSize];
-    NSData *largeAvatarImageData = UIImageJPEGRepresentation(largeImage, 0.5);
+    UIImage *largeImage = [TungCommonObjects image:imageToResize croppedAndScaledToSquareSizeWithDimension:640];
+    NSData *largeAvatarImageData = UIImageJPEGRepresentation(largeImage, 0.7);
     //JPLog(@"file size AFTER resizing large image: %lu b", (unsigned long)[largeAvatarImageData length]);
     // resize to small size
-    CGSize smallSize = CGSizeMake(120, 120);
-    UIImage* smallImage = [self image:imageToResize scaledToFitSize:smallSize];
+    UIImage *smallImage = [TungCommonObjects image:imageToResize croppedAndScaledToSquareSizeWithDimension:120];
     NSData *smallAvatarImageData = UIImageJPEGRepresentation(smallImage, 0.9);
     //JPLog(@"file size AFTER resizing small image: %lu b", (unsigned long)[smallAvatarImageData length]);
     
@@ -392,29 +390,6 @@ static UIImage *iconRedX;
     _largeAvatar.borderColor = [TungCommonObjects tungColor];
     _largeAvatar.backgroundColor = [UIColor clearColor];
     [_largeAvatar setNeedsDisplay];
-}
-
-- (UIImage *) image:(UIImage *)img scaledToSize:(CGSize)size {
-    //create drawing context
-    UIGraphicsBeginImageContextWithOptions(size, NO, 0.0f);
-    //draw
-    [img drawInRect:CGRectMake(0.0f, 0.0f, size.width, size.height)];
-    //capture resultant image
-    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
-    UIGraphicsEndImageContext();
-    //return image
-    return image;
-}
-
-- (UIImage *) image:(UIImage *)img scaledToFitSize:(CGSize)size {
-    //calculate rect
-    CGFloat aspect = img.size.width / img.size.height;
-    if (size.width / aspect <= size.height) {
-        return [self image:img scaledToSize:CGSizeMake(size.width, size.width / aspect)];
-    }
-    else {
-        return [self image:img scaledToSize:CGSizeMake(size.height * aspect, size.height)];
-    }
 }
 
 - (IBAction)updateAvatarPrompt:(id)sender {

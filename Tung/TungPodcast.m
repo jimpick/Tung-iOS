@@ -405,7 +405,7 @@ static NSString *cellIdentifier = @"PodcastResultCell";
     
     // push "show" view
     NSDictionary *podcastDict = [NSDictionary dictionaryWithDictionary:[_podcastArray objectAtIndex:indexPath.row]];
-    //JPLog(@"selected %@", [podcastDict objectForKey:@"collectionName"]);
+    JPLog(@"selected %@", podcastDict);
     
     [self resignKeyboard];
     PodcastViewController *podcastView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"podcastView"];
@@ -668,12 +668,17 @@ static NSString *feedDictsDirName = @"feedDicts";
             if ([artworkUrl isKindOfClass:[NSString class]]) artworkUrlString = artworkUrl;
         }
         // DEV: test new artwork
-        //artworkUrlString = @"http://static.libsyn.com/p/assets/d/7/5/5/d755c607c07e7ec9/songexploder-logo.png?";
+        
+        // startup
+        //artworkUrlString = @"http://is1.mzstatic.com/image/thumb/Music18/v4/df/29/18/df291805-e376-a9b3-64e1-7b120f517a8e/source/600x600bb.jpg";
+        // song exploder
+        //artworkUrlString = @"http://is4.mzstatic.com/image/thumb/Music7/v4/d6/d5/c9/d6d5c9d9-c0ed-c486-11f8-a2abc917630b/source/600x600bb.jpg";
+        
         if (artworkUrlString) {
             // if art has changed
             if (entity.artworkUrl && ![entity.artworkUrl isEqualToString:artworkUrlString]) {
                 // replaces cached art, saves entity and checks if podcast art needs to be updated on server
-                NSLog(@"ART HAS CHANGED");
+                //NSLog(@"ART HAS CHANGED");
                 [TungCommonObjects replaceCachedPodcastArtForEntity:entity withNewArt:artworkUrlString];
             }
             else if (!entity.artworkUrl) {
@@ -720,6 +725,7 @@ static NSString *feedDictsDirName = @"feedDicts";
         }
         entity.desc = descrip;
         
+        //NSLog(@"entity after additions from feed: %@", [TungCommonObjects entityToDict:entity]);
         [self cacheFeed:feedDict forEntity:entity];
     	return feedDict;
     }

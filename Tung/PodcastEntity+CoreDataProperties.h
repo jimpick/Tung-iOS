@@ -35,7 +35,6 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nullable, nonatomic, retain) NSNumber *numNewEpisodes;
 @property (nullable, nonatomic, retain) NSNumber *timeSubscribed;
 @property (nullable, nonatomic, retain) NSString *website;
-@property (nullable, nonatomic, retain) NSString *artworkUrl600;
 @property (nullable, nonatomic, retain) NSSet<EpisodeEntity *> *episodes;
 
 @end

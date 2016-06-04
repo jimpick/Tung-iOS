@@ -1349,7 +1349,7 @@ CGFloat labelWidth = 0;
                 }]];
             }
             // view profile
-            [storyOptionSheet addAction:[UIAlertAction actionWithTitle:[NSString stringWithFormat:@"View profile for @%@", username] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            [storyOptionSheet addAction:[UIAlertAction actionWithTitle:[NSString stringWithFormat:@"View @%@", username] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                 
                 [self pushProfileForUserId:userId];
             }]];

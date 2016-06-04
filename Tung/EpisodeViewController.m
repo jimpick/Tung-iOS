@@ -1338,7 +1338,7 @@ static CGRect buttonsScrollViewHomeRect;
     
     // create audio player
     NSURL *clipFileUrl = [TungCommonObjects getClipFileURL];
-    NSData *clipData = [NSData dataWithContentsOfURL:clipFileUrl];
+    //NSData *clipData = [NSData dataWithContentsOfURL:clipFileUrl];
     //JPLog(@"play clip file with data length: %lu", (unsigned long)clipData.length);
     
     NSError *playbackError;

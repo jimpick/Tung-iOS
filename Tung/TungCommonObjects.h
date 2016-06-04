@@ -32,7 +32,7 @@
 #import <FBSDKShareKit/FBSDKShareKit.h>
 
 // constants
-#define NUM_REQUIRED_FOLLOWS 2
+#define NUM_REQUIRED_FOLLOWS 5
 #define MAX_RECORD_TIME 29
 #define MIN_RECORD_TIME 2
 #define MAX_COMMENT_CHARS 220
@@ -227,6 +227,7 @@
 + (NSData *) retrievePodcastArtDataForEntity:(PodcastEntity *)entity;
 + (NSData *) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (NSData *) downloadAndCachePodcastArtForUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
++ (NSData *) processPodcastArtForEntity:(PodcastEntity *)entity;
 + (void) replaceCachedPodcastArtForEntity:(PodcastEntity *)entity withNewArt:(NSString *)newArtUrlString;
 + (NSString *) getPodcastArtPathWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (NSURL *) getClipFileURL;
@@ -255,5 +256,6 @@
 + (BOOL) hasGrantedNotificationPermissions;
 + (NSNumber *) getAllocatedSizeOfDirectoryAtURL:(NSURL *)directoryURL error:(NSError * __autoreleasing *)error;
 + (NSString *) formatBytes:(NSNumber *)bytes;
++ (UIImage *) image:(UIImage *)img croppedAndScaledToSquareSizeWithDimension:(CGFloat)dimension;
 
 @end

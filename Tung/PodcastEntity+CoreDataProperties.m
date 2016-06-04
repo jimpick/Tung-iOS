@@ -33,7 +33,6 @@
 @dynamic numNewEpisodes;
 @dynamic timeSubscribed;
 @dynamic website;
-@dynamic artworkUrl600;
 @dynamic episodes;
 
 @end

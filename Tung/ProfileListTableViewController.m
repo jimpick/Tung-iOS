@@ -197,7 +197,7 @@
 #pragma mark - Requesting
 
 - (void) getNextPageOfTwitterFriends {
-    NSLog(@"get next page of twitter friends on page %@", _page);
+    //NSLog(@"get next page of twitter friends on page %@", _page);
     // each request returns up to 100 profiles... make sure we need to
     if (_profileArray.count == 0 || _profileArray.count == _page.integerValue * 100) {
         [_tung findTwitterFriendsWithPage:_page andCallback:^(BOOL success, NSDictionary *responseDict) {

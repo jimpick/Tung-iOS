@@ -902,12 +902,12 @@ CGSize screenSize;
     // first look for file in episode temp dir
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrl:url];
-    JPLog(@"get episode url for file: %@", episodeFilename);
+    //JPLog(@"get episode url for file: %@", episodeFilename);
     NSString *cachedEpisodesDir = [TungCommonObjects getCachedEpisodesDirectoryPath];
     NSString *cachedEpisodeFilepath = [cachedEpisodesDir stringByAppendingPathComponent:episodeFilename];
 
     if ([fileManager fileExistsAtPath:cachedEpisodeFilepath]) {
-        JPLog(@"^^^ will use local file in TEMP dir");
+        //JPLog(@"^^^ will use local file in TEMP dir");
         _fileIsLocal = YES;
         _fileIsStreaming = NO;
         _fileWillBeCached = YES;
@@ -919,7 +919,7 @@ CGSize screenSize;
         NSString *savedEpisodeFilepath = [savedEpisodesDir stringByAppendingPathComponent:episodeFilename];
         
         if ([fileManager fileExistsAtPath:savedEpisodeFilepath]) {
-            JPLog(@"^^^ will use local file in SAVED dir");
+            //JPLog(@"^^^ will use local file in SAVED dir");
             _fileIsLocal = YES;
             _fileIsStreaming = NO;
             _fileWillBeCached = YES;
@@ -1743,11 +1743,13 @@ UILabel *prototypeBadge;
     if (podcastDict[@"artworkUrl"] && [podcastDict[@"artworkUrl"] isKindOfClass:[NSString class]]) {
         podcastEntity.artworkUrl = podcastDict[@"artworkUrl"];
     }
+    // artworkUrlSSL temporarily stores artworkUrl600 for display before feed is loaded,
+    // if no artworkUrlSSL already exists. then it is overridden by actual SSL art
     if (podcastDict[@"artworkUrlSSL"] && [podcastDict[@"artworkUrlSSL"] isKindOfClass:[NSString class]]) {
         podcastEntity.artworkUrlSSL = podcastDict[@"artworkUrlSSL"];
     }
-    if (podcastDict[@"artworkUrl600"] && [podcastDict[@"artworkUrl600"] isKindOfClass:[NSString class]]) {
-        podcastEntity.artworkUrl600 = podcastDict[@"artworkUrl600"];
+    else if (!podcastEntity.artworkUrlSSL && podcastDict[@"artworkUrl600"] && [podcastDict[@"artworkUrl600"] isKindOfClass:[NSString class]]) {
+        podcastEntity.artworkUrlSSL = podcastDict[@"artworkUrl600"];
     }
     // subscribed?
     if ([podcastDict objectForKey:@"isSubscribed"]) {
@@ -2196,7 +2198,7 @@ static NSArray *colors;
     UIColor *keyColor1 = [UIColor colorWithRed:0.45 green:0.45 blue:0.45 alpha:1];// default
     UIColor *keyColor2 = [self tungColor];// default
     if (keyColors.count > 0) {
-        JPLog(@"determine key colors ---------");
+        //JPLog(@"determine key colors ---------");
         
         int keyColor1Index = -1;
         int keyColor2Index = -1;
@@ -2230,7 +2232,7 @@ static NSArray *colors;
             
             NSString *dominantColor = [self determineDominantColorFromRGB:@[[NSNumber numberWithFloat:R], [NSNumber numberWithFloat:G], [NSNumber numberWithFloat:B]]];
             
-            NSLog(@"- color %d - dominant: %@, saturation: %f, luminance: %f, RGB: %f - %f - %f", i, dominantColor, saturation, luminance, R, G, B);
+            //NSLog(@"- color %d - dominant: %@, saturation: %f, luminance: %f, RGB: %f - %f - %f", i, dominantColor, saturation, luminance, R, G, B);
             
             // requirements only for 1st key color
             if (keyColor1Index < 0) {
@@ -2252,7 +2254,7 @@ static NSArray *colors;
 
 
             if (keyColor1Index < 0) {
-                NSLog(@"* set key color 1");
+                //NSLog(@"* set key color 1");
                 keyColor1Index = i;
                 keyColor1DominantColor = dominantColor;
             }
@@ -2261,7 +2263,7 @@ static NSArray *colors;
                 if ([keyColor1DominantColor isEqualToString:keyColor2DominantColor]) {
                     continue;
                 } else {
-                    NSLog(@"* set key color 2");
+                    //NSLog(@"* set key color 2");
                     keyColor2Index = i;
                     break;
                 }
@@ -2563,12 +2565,12 @@ static NSArray *colors;
 
 + (void) addOrUpdatePodcast:(PodcastEntity *)podcastEntity orEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(void))callback  {
     
-    if (!podcastEntity.collectionId) {
-        JPLog(@"Error: add podcast: entity missing collectionId. %@", [TungCommonObjects entityToDict:podcastEntity]);
+    if (!podcastEntity.collectionId || !podcastEntity.artworkUrl) {
+        JPLog(@"Error adding/updating podcast: entity missing required info. %@", [TungCommonObjects entityToDict:podcastEntity]);
         return;
     }
     
-    NSLog(@"add podcast/episode request");
+    //NSLog(@"add podcast/episode request");
     NSURL *addEpisodeRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/add-or-update-podcast.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *addEpisodeRequest = [NSMutableURLRequest requestWithURL:addEpisodeRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [addEpisodeRequest setHTTPMethod:@"POST"];
@@ -2578,7 +2580,6 @@ static NSArray *colors;
     
     //NSLog(@"Add or Update Podcast for entity: %@", podcastEntity);
     //NSLog(@"episode entity: %@", episodeEntity);
-	
     NSMutableDictionary *params = [@{@"apiKey": [TungCommonObjects apiKey],
                                     @"collectionId": podcastEntity.collectionId,
                                     @"collectionName": podcastEntity.collectionName,
@@ -2600,9 +2601,30 @@ static NSArray *colors;
         [params addEntriesFromDictionary:episodeParams];
     }
     
+    // add content type
+    NSString *boundary = [TungCommonObjects generateHash];
+    NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
+    [addEpisodeRequest addValue:contentType forHTTPHeaderField:@"Content-Type"];
+    // add post body
+    NSMutableData *body = [NSMutableData data];
+    [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    // key value pairs
+    [body appendData:[TungCommonObjects generateBodyFromDictionary:params withBoundary:boundary]];
     
-    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
-    [addEpisodeRequest setHTTPBody:serializedParams];
+    // podcast art
+    [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"podcastArt\"; filename=\"%@\"\r\n", @"art.jpg"] dataUsingEncoding:NSUTF8StringEncoding]];
+    [body appendData:[@"Content-Type: image/jpeg\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
+    NSData *podcastArtData = [self processPodcastArtForEntity:podcastEntity];
+    [body appendData:podcastArtData];
+    [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    
+    // end of body
+    [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
+    
+    [addEpisodeRequest setHTTPBody:body];
+    // set the content-length
+    NSString *postLength = [NSString stringWithFormat:@"%lu", (unsigned long)[body length]];
+    [addEpisodeRequest setValue:postLength forHTTPHeaderField:@"Content-Length"];
     
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:addEpisodeRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
@@ -2616,14 +2638,9 @@ static NSArray *colors;
                     JPLog(@"Error adding or updating podcast: %@", [responseDict objectForKey:@"error"]);
                 }
                 else if ([responseDict objectForKey:@"success"]) {
-                    NSLog(@"successfully added or updated podcast/episode. %@", responseDict);
+                    //NSLog(@"successfully added or updated podcast/episode. %@", responseDict);
                     NSString *artworkUrlSSL = [responseDict objectForKey:@"artworkUrlSSL"];
                     podcastEntity.artworkUrlSSL = artworkUrlSSL;
-                    
-                    // notification
-                    NSDictionary *userInfo = @{ @"collectionId": podcastEntity.collectionId };
-                    NSNotification *newPodcastArtNotif = [NSNotification notificationWithName:@"podcastArtUpdated" object:nil userInfo:userInfo];
-                    [[NSNotificationCenter defaultCenter] postNotification:newPodcastArtNotif];
                     
                     if (episodeEntity) {
                         // save episode id and shortlink
@@ -2633,6 +2650,7 @@ static NSArray *colors;
                         episodeEntity.shortlink = shortlink;
                     }
                     [TungCommonObjects saveContextWithReason:@"got podcast artwork SSL url and/or episode shortlink and id"];
+                    
                     if (callback) callback();
                 }
             }
@@ -4503,12 +4521,8 @@ static NSArray *colors;
         //JPLog(@"retrieve art with art url: %@", entity.artworkUrl);
         return [self retrievePodcastArtDataWithUrlString:entity.artworkUrl andCollectionId:entity.collectionId];
     }
-    else if (entity.artworkUrl600) {
-        //JPLog(@"retrieve art with iTunes url: %@", entity.artworkUrl600);
-        return [self retrievePodcastArtDataWithUrlString:entity.artworkUrl600 andCollectionId:entity.collectionId];
-    }
     else {
-        JPLog(@"Error retrieving podcast art: no urls available for entity");
+        //JPLog(@"Error retrieving podcast art: no urls available for entity");
         return [self defaultPodcastArtImageData];
     }
 }
@@ -4548,6 +4562,7 @@ static NSArray *colors;
     return artImageData;
 }
 
+// "missing" or default podcast art image
 + (NSData *) defaultPodcastArtImageData {
     NSString *defaultPodcastImagePath = [[NSBundle mainBundle] pathForResource:@"default-podcast-art" ofType:@"jpg"];
     NSData *defaultPodcastImageData = [NSData dataWithContentsOfFile:defaultPodcastImagePath];
@@ -4570,13 +4585,40 @@ static NSArray *colors;
     return artImageData;
 }
 
+// scales, sizes, and saves podcast art in jpg format for upload to CDN
++ (NSData *) processPodcastArtForEntity:(PodcastEntity *)entity {
+    // size image
+    NSData *dataToResize = [[NSData alloc] initWithContentsOfURL:[NSURL URLWithString:entity.artworkUrl]];
+    UIImage *imageToResize = [[UIImage alloc] initWithData:dataToResize];
+    UIImage *resizedImage = [TungCommonObjects image:imageToResize croppedAndScaledToSquareSizeWithDimension:600];
+    // always use jpg, bc key colors are different for different file types,
+    // even if image is same
+    NSData *processedImageData = UIImageJPEGRepresentation(resizedImage, 0.9);
+    UIImage *artImage = [[UIImage alloc] initWithData:processedImageData];
+    NSArray *keyColors = [self determineKeyColorsFromImage:artImage];
+    UIColor *keyColor1 = [keyColors objectAtIndex:0];
+    UIColor *keyColor2 = [keyColors objectAtIndex:1];
+    entity.keyColor1 = keyColor1;
+    entity.keyColor2 = keyColor2;
+    entity.keyColor1Hex = [self UIColorToHexString:keyColor1];
+    entity.keyColor2Hex = [self UIColorToHexString:keyColor2];
+    
+    [self saveContextWithReason:@"updated podcast art"];
+    
+    // replace locally
+    NSString *artFilename = [NSString stringWithFormat:@"%@.jpg", entity.collectionId];
+    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    [processedImageData writeToFile:artFilepath atomically:YES];
+    
+    return processedImageData;
+}
+
 // replace cached podcast art and update entity's key color properties
 + (void) replaceCachedPodcastArtForEntity:(PodcastEntity *)entity withNewArt:(NSString *)newArtUrlString {
     
     //NSLog(@"replace cached podcast art for entity with new url: %@, and old url: %@", newArtUrlString, entity.artworkUrl);
     // remove old
-   BOOL artWasSaved = [self unsavePodcastArtForEntity:entity];
-    
+	BOOL artWasSaved = [self unsavePodcastArtForEntity:entity];
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSString *oldExtension = [[entity.artworkUrl lastPathComponent] pathExtension];
     if (!oldExtension) oldExtension = @"jpg";
@@ -4585,32 +4627,20 @@ static NSArray *colors;
     if ([fileManager fileExistsAtPath:oldArtFilepath]) {
         [fileManager removeItemAtPath:oldArtFilepath error:nil];
     }
-    // new art and key colors
     entity.artworkUrl = newArtUrlString;
-    NSData *artImageData = [self downloadAndCachePodcastArtForUrlString:newArtUrlString andCollectionId:entity.collectionId];
+    
+    [self processPodcastArtForEntity:entity];
+    
     if (artWasSaved) {
         [self savePodcastArtForEntity:entity];
     }
-    UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     
-    // check if not jpg, bc key colors are different for different file types, even if image is same
-    NSString *extension = [[newArtUrlString lastPathComponent] pathExtension];
-    if (![extension isEqualToString:@"jpg"]) {
-        NSData *jpgArtImageData = UIImageJPEGRepresentation(artImage, 1.0);
-        artImage = [[UIImage alloc] initWithData:jpgArtImageData];
-    }
-    NSArray *keyColors = [self determineKeyColorsFromImage:artImage];
-    UIColor *keyColor1 = [keyColors objectAtIndex:0];
-    UIColor *keyColor2 = [keyColors objectAtIndex:1];
-    entity.keyColor1 = keyColor1;
-    entity.keyColor2 = keyColor2;
-    entity.keyColor1Hex = [self UIColorToHexString:keyColor1];
-    entity.keyColor2Hex = [self UIColorToHexString:keyColor2];
-    [self saveContextWithReason:@"updated podcast art"];
-    
-    // notif to update header view is sent after return of addOrUpdatePodcast request,
-    // since header requests SSL art.
+    // notification
+    NSDictionary *userInfo = @{ @"collectionId": entity.collectionId };
+    NSNotification *newPodcastArtNotif = [NSNotification notificationWithName:@"podcastArtUpdated" object:nil userInfo:userInfo];
+    [[NSNotificationCenter defaultCenter] postNotification:newPodcastArtNotif];
 
+    // replace on server
     [self addOrUpdatePodcast:entity orEpisode:nil withCallback:nil];
 }
 
@@ -5191,5 +5221,38 @@ static NSDateFormatter *dayDateFormatter = nil;
         return [NSString stringWithFormat:@"%.f bytes", bytes.doubleValue];
     }
 }
+
+// image scaling
+
++ (UIImage *) image:(UIImage *)img scaledToSize:(CGSize)size {
+    //create drawing context
+    UIGraphicsBeginImageContextWithOptions(size, NO, 0.0f);
+    //draw
+    [img drawInRect:CGRectMake(0.0f, 0.0f, size.width, size.height)];
+    
+    //capture resultant image
+    UIImage *image = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    //return image
+    return image;
+}
+
++ (UIImage *) image:(UIImage *)img croppedAndScaledToSquareSizeWithDimension:(CGFloat)dimension {
+    
+    CGSize targetSize = CGSizeMake(dimension, dimension);
+    CGFloat widthRatio = targetSize.width  / img.size.width;
+    CGFloat heightRatio = targetSize.height / img.size.height;
+    CGFloat scaleFactor = MAX(widthRatio, heightRatio);
+    CGSize newSize = CGSizeMake(img.size.width  * scaleFactor, img.size.height * scaleFactor);
+    UIGraphicsBeginImageContext(targetSize);
+    CGPoint origin = CGPointMake((targetSize.width  - newSize.width)  / 2, (targetSize.height - newSize.height) / 2);
+    CGRect newRect = {origin, newSize};
+    [img drawInRect:newRect];
+    UIImage *scaledImage = UIGraphicsGetImageFromCurrentImageContext();
+    UIGraphicsEndImageContext();
+    
+    return scaledImage;
+}
+
 
 @end
