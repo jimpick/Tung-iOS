@@ -254,7 +254,8 @@
     [self loginRequestBegan];
     
     FBSDKLoginManager *login = [[FBSDKLoginManager alloc] init];
-    [login logInWithReadPermissions: @[@"public_profile", @"email", @"user_location", @"user_website", @"user_about_me",]
+    // @"user_location" excluded
+    [login logInWithReadPermissions: @[@"public_profile", @"email", @"user_website", @"user_about_me", @"user_friends"]
                  fromViewController:self
                             handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
                                  if (error) {

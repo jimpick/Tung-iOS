@@ -35,8 +35,15 @@
     NSString *storyboardId = isLoggedIn ? @"authenticated" : @"welcome";
     self.window.rootViewController = [self.window.rootViewController.storyboard instantiateViewControllerWithIdentifier:storyboardId];
     
+    // twitter
     [[Twitter sharedInstance] startWithConsumerKey:@"JwOEqvjaWbdEgMRXLJ86rPUf5" consumerSecret:@"XRoROyD7pM1PZ3Xt6CAg4yN4tVgQG8kavx6dmvQZsqJ9DI1cGt"];
+    
+    // fabric
     [Fabric with:@[CrashlyticsKit, [Twitter sharedInstance]]];
+    
+    // facebook
+    [[FBSDKApplicationDelegate sharedInstance] application:application
+                             didFinishLaunchingWithOptions:launchOptions];
     
     // background fetch
     [application setMinimumBackgroundFetchInterval:UIApplicationBackgroundFetchIntervalMinimum];
@@ -52,9 +59,7 @@
         [self application:application didReceiveRemoteNotification:userInfo];
     }
 
-    //return YES;
-    return [[FBSDKApplicationDelegate sharedInstance] application:application
-                                    didFinishLaunchingWithOptions:launchOptions];
+    return YES;
 }
 
 #pragma mark - Background fetch

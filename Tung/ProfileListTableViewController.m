@@ -130,7 +130,7 @@
                 [_tung findFacebookFriendsWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {
                     self.tableView.backgroundView = nil;
                     if (success) {
-                        //NSLog(@"responseDict: %@", responseDict);
+                        NSLog(@"responseDict: %@", responseDict);
                         NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
                         if ([platformFriendsCount integerValue] > 0) {
                             _profileArray = [NSMutableArray arrayWithArray:[responseDict objectForKey:@"results"]];

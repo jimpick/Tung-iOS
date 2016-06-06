@@ -4772,6 +4772,10 @@ static NSArray *colors;
         }
     }
     
+    
+    NSArray *credArray = [cred componentsSeparatedByString:@":"];
+    [CrashlyticsKit setUserIdentifier:[credArray objectAtIndex:0]];
+    
     NSData *valueData = [cred dataUsingEncoding:NSUTF8StringEncoding];
     NSDictionary *id_security_item = @{
                                        (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
