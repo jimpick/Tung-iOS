@@ -184,8 +184,8 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    return @"https://api.tung.fm/";
-    //return @"https://staging-api.tung.fm/";
+    //return @"https://api.tung.fm/";
+    return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
@@ -4171,10 +4171,10 @@ static NSArray *colors;
                 NSDictionary *responseDict = jsonData;
                 if ([responseDict objectForKey:@"error"]) {
                     JPLog(@"Error verifying cred with FB: %@", [responseDict objectForKey:@"error"]);
-                    
                     callback(NO, responseDict);
                 }
                 else if ([responseDict objectForKey:@"success"]) {
+                    //NSLog(@"find facebook friends response: %@", responseDict);
                     callback(YES, responseDict);
                 }
             }
@@ -4614,6 +4614,8 @@ static NSArray *colors;
 }
 
 // replace cached podcast art and update entity's key color properties
+// we do not use iTunes art because it may not be available.
+// artwork from feed link is processed and uploaded in addOrUpdatePodcast: method called in this method
 + (void) replaceCachedPodcastArtForEntity:(PodcastEntity *)entity withNewArt:(NSString *)newArtUrlString {
     
     //NSLog(@"replace cached podcast art for entity with new url: %@, and old url: %@", newArtUrlString, entity.artworkUrl);

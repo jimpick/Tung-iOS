@@ -648,7 +648,7 @@ NSTimer *sessionCheckTimer;
     }
     
     // other cached data (audio clips, feeds, avatars, podcast art)
-    /*
+    
     NSString *clearCachedDataOption;
     NSNumber *totalTempFilesBytes = [NSNumber numberWithInteger:0];
     NSArray *tmpFolderContents = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:NSTemporaryDirectory() error:&error];
@@ -676,7 +676,7 @@ NSTimer *sessionCheckTimer;
         JPLog(@"error getting temp folder contents: %@", error.localizedDescription);
         clearCachedDataOption = @"Clear cached data";
         error = nil;
-    } */
+    }
     
     UIAlertController *settingsSheet = [UIAlertController alertControllerWithTitle:nil message:[NSString stringWithFormat:@"You are running v %@ (%@) of tung.", version, build] preferredStyle:UIAlertControllerStyleActionSheet];
     [settingsSheet addAction:[UIAlertAction actionWithTitle:clearSavedEpisodesOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
@@ -687,11 +687,11 @@ NSTimer *sessionCheckTimer;
         [TungCommonObjects deleteAllCachedEpisodes];
         [TungCommonObjects showBannerAlertForText:@"All cached episodes have been deleted."];
     }]];
-    /*
+    
     [settingsSheet addAction:[UIAlertAction actionWithTitle:clearCachedDataOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [TungCommonObjects deleteCachedData];
         [TungCommonObjects showBannerAlertForText:@"All cached data has been deleted."];
-    }]]; */
+    }]]; 
     
     [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Application log"	 style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [self performSegueWithIdentifier:@"presentLogView" sender:self];

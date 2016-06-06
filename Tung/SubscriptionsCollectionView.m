@@ -465,6 +465,7 @@ UILabel static *prototypeBadge;
     PodcastEntity *podcastEntity = [_resultsController objectAtIndexPath:indexPath];
     // entity -> dict
     NSDictionary *podcastDict = [TungCommonObjects entityToDict:podcastEntity];
+    //NSLog(@"selected %@", podcastDict);
     
     [self resignFirstResponder];
     PodcastViewController *podcastView = [self.storyboard instantiateViewControllerWithIdentifier:@"podcastView"];

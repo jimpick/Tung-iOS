@@ -400,12 +400,12 @@ static NSString *cellIdentifier = @"PodcastResultCell";
 
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    //JPLog(@"selected cell at row %ld", (long)[indexPath row]);
+    //NSLog(@"selected cell at row %ld", (long)[indexPath row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     // push "show" view
     NSDictionary *podcastDict = [NSDictionary dictionaryWithDictionary:[_podcastArray objectAtIndex:indexPath.row]];
-    JPLog(@"selected %@", podcastDict);
+    //NSLog(@"selected %@", podcastDict);
     
     [self resignKeyboard];
     PodcastViewController *podcastView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"podcastView"];
@@ -673,12 +673,13 @@ static NSString *feedDictsDirName = @"feedDicts";
         //artworkUrlString = @"http://is1.mzstatic.com/image/thumb/Music18/v4/df/29/18/df291805-e376-a9b3-64e1-7b120f517a8e/source/600x600bb.jpg";
         // song exploder
         //artworkUrlString = @"http://is4.mzstatic.com/image/thumb/Music7/v4/d6/d5/c9/d6d5c9d9-c0ed-c486-11f8-a2abc917630b/source/600x600bb.jpg";
+        // john b podcast
+        //artworkUrlString = @"http://is2.mzstatic.com/image/thumb/Music/v4/8b/f7/3d/8bf73de6-6bc1-0734-9500-7526ba3524b0/source/600x600bb.jpg";
         
         if (artworkUrlString) {
             // if art has changed
             if (entity.artworkUrl && ![entity.artworkUrl isEqualToString:artworkUrlString]) {
                 // replaces cached art, saves entity and checks if podcast art needs to be updated on server
-                //NSLog(@"ART HAS CHANGED");
                 [TungCommonObjects replaceCachedPodcastArtForEntity:entity withNewArt:artworkUrlString];
             }
             else if (!entity.artworkUrl) {
