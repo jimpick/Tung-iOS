@@ -134,7 +134,7 @@
                     // successful registration
                     else if ([responseDict objectForKey:@"success"]) {
                         
-                        NSLog(@"successful registration %@", responseDict);
+                        //NSLog(@"successful registration %@", responseDict);
                         _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                         _tung.connectionAvailable = [NSNumber numberWithBool:YES];
                         [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
@@ -144,7 +144,7 @@
                         // construct token of id and token together
                         NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
                         // save cred to keychain
-                        [TungCommonObjects saveKeychainCred:tungCred];
+                        [_tung saveKeychainCred:tungCred];
                         
                         // show feed
                         UIViewController *feed = [self.navigationController.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];
@@ -165,6 +165,7 @@
         else {
             // errors
             dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error registering... told user to try again later.");
                 [TungCommonObjects simpleErrorAlertWithMessage:@"Error registering. Please try again later."];
             });
         }

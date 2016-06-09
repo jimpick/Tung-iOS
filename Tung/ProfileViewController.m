@@ -349,18 +349,21 @@ NSTimer *sessionCheckTimer;
                 }
                 else {
                     // restore logged in user data
-                    JPLog(@"Is logged in user: Was missing logged-in user data - fetching");
+                    JPLog(@"Is logged in user: Was missing logged-in user data - fetching for id: %@", _tung.tungId);
                     [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
                         if (jsonData != nil) {
                             NSDictionary *responseDict = jsonData;
                             if ([responseDict objectForKey:@"user"]) {
-                                //JPLog(@"got user: %@", [responseDict objectForKey:@"user"]);
+                                JPLog(@"got user: %@", [responseDict objectForKey:@"user"]);
                                 [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
                                 _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
                                 [self setUpProfileHeaderViewForData];
                                 if (_tung.profileFeedNeedsRefresh.boolValue) {
                                     [_storiesView refreshFeed];
                                 }
+                            }
+                            else if ([responseDict objectForKey:@"error"]) {
+                                [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                             }
                         }
                     }];
@@ -380,8 +383,7 @@ NSTimer *sessionCheckTimer;
                             }
                         }
                         else if ([responseDict objectForKey:@"error"]) {
-                            UIAlertView *profileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-                            [profileErrorAlert show];
+                            [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                             // TODO: user not found, if user was deleted
                         }
                     }

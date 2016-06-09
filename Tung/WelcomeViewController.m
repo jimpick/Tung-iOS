@@ -196,7 +196,7 @@
                         // construct token of id and token together and save to keychain
                         NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
                         NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
-                        [TungCommonObjects saveKeychainCred:tungCred];
+                        [_tung saveKeychainCred:tungCred];
                         
                         // show feed
                         UIViewController *feed = [self.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];
@@ -299,7 +299,7 @@
                                                      // construct token of id and token together
                                                      NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
                                                      // save cred to keychain
-                                                     [TungCommonObjects saveKeychainCred:tungCred];
+                                                     [_tung saveKeychainCred:tungCred];
                                                      
                                                      // show feed
                                                      UIViewController *feed = [self.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];

@@ -50,7 +50,9 @@
     }
     
     // default nav controller
-    _navController = self.navigationController;
+    if (!_navController) {
+    	_navController = self.navigationController;
+    }
     self.navigationItem.backBarButtonItem.title = @"Back";
     
     // onboarding: platform friends
@@ -72,7 +74,7 @@
             _profileArray = [NSMutableArray arrayWithArray:[_profileData objectForKey:@"facebookFriends"]];
             [_profileData removeObjectForKey:@"facebookFriends"];
         }
-        [self preloadAvatars];
+        [self preloadAvatarsForArray:_profileArray];
         // load up usersToFollow with profileArray ids
         for (int i = 0; i < _profileArray.count; i++) {
             NSString *userId = [[[_profileArray objectAtIndex:i] objectForKey:@"_id"] objectForKey:@"$id"];
@@ -130,10 +132,11 @@
                 [_tung findFacebookFriendsWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {
                     self.tableView.backgroundView = nil;
                     if (success) {
-                        NSLog(@"responseDict: %@", responseDict);
+                        //NSLog(@"responseDict: %@", responseDict);
                         NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
                         if ([platformFriendsCount integerValue] > 0) {
                             _profileArray = [NSMutableArray arrayWithArray:[responseDict objectForKey:@"results"]];
+                            [self preloadAvatarsForArray:_profileArray];
                         }
                         else {
                             _noResults = YES;
@@ -194,6 +197,7 @@
     }
 }
 
+
 #pragma mark - Requesting
 
 - (void) getNextPageOfTwitterFriends {
@@ -205,6 +209,7 @@
                 self.tableView.backgroundView = nil;
                 NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
                 NSArray *twitterFriends = [responseDict objectForKey:@"results"];
+                [self preloadAvatarsForArray:twitterFriends];
                 if ([platformFriendsCount integerValue] > 0) {
                     if (_page.integerValue == 0) {
                         _profileArray = [NSMutableArray arrayWithArray:twitterFriends];
@@ -316,6 +321,7 @@
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
                         NSArray *newItems = jsonData;
+                        [self preloadAvatarsForArray:newItems];
                         
                         //NSLog(@"profile list items: %@", newItems);
                         
@@ -382,7 +388,6 @@
                         }
                         
                         //JPLog(@"got items. profileArray count: %lu", (unsigned long)[_profileArray count]);
-                        [self preloadAvatars];
                         
                         // 1 second delay to set new lastSeenNotification
                         if ([queryType isEqualToString:@"Notifications"]) {
@@ -426,18 +431,25 @@
 }
 
 
--(void) preloadAvatars {
-
+-(void) preloadAvatarsForArray:(NSArray *)profiles {
     
+    // de-dupe urls
+    NSMutableArray *profileAvatarUrls = [NSMutableArray array];
+    for (int i = 0; i < profiles.count; i++) {
+        NSString *avatarURLString = [[profiles objectAtIndex:i] objectForKey:@"small_av_url"];
+        [profileAvatarUrls addObject:avatarURLString];
+    }
+    NSOrderedSet *orderedSet = [NSOrderedSet orderedSetWithArray:profileAvatarUrls];
+    NSArray *dedupedAvatarUrls = [orderedSet array];
+
     NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
     preloadQueue.maxConcurrentOperationCount = 3;
-    // download and save avatars to temp directory if they don't exist
     
-    for (int i = 0; i < _profileArray.count; i++) {
+    for (int i = 0; i < dedupedAvatarUrls.count; i++) {
         
         [preloadQueue addOperationWithBlock:^{
-            // avatar
-            NSString *avatarURLString = [[[_profileArray objectAtIndex:i] objectForKey:@"user"] objectForKey:@"small_av_url"];
+            NSString *avatarURLString = [dedupedAvatarUrls objectAtIndex:i];
+            //NSLog(@"preload %@", avatarURLString);
             [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avatarURLString];
         }];
     }
@@ -1010,7 +1022,7 @@
                 
                 //JPLog(@"got results: %lu", (unsigned long)_profileArray.count);
                 //JPLog(@"%@", _profileArray);
-                [self preloadAvatars];
+                [self preloadAvatarsForArray:newUsers];
                 [self.tableView reloadData];
                 
             }

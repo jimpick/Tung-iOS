@@ -32,7 +32,7 @@
 #import <FBSDKShareKit/FBSDKShareKit.h>
 
 // constants
-#define NUM_REQUIRED_FOLLOWS 5
+#define NUM_REQUIRED_FOLLOWS 2
 #define MAX_RECORD_TIME 29
 #define MIN_RECORD_TIME 2
 #define MAX_COMMENT_CHARS 220
@@ -168,6 +168,7 @@
 // requests
 - (void) checkReachabilityWithCallback:(void (^)(BOOL reachable))callback;
 - (void) establishCred;
+- (void) saveKeychainCred: (NSString *)cred;
 - (void) getSessionWithCallback:(void (^)(void))callback;
 - (void) handleUnauthorizedWithCallback:(void (^)(void))callback;
 // stories post requests
@@ -225,6 +226,7 @@
 + (BOOL) savePodcastArtForEntity:(PodcastEntity *)podcastEntity;
 + (BOOL) unsavePodcastArtForEntity:(PodcastEntity *)podcastEntity;
 + (NSData *) retrievePodcastArtDataForEntity:(PodcastEntity *)entity;
++ (NSData *) retrievePodcastArtDataWithSSLUrlString:(NSString *)urlString;
 + (NSData *) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (NSData *) downloadAndCachePodcastArtForUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (NSData *) processPodcastArtForEntity:(PodcastEntity *)entity;
@@ -236,7 +238,6 @@
 + (void) clearTempDirectory;
 + (NSString *) generateHash;
 + (NSString *) getKeychainCred;
-+ (void) saveKeychainCred: (NSString *)cred;
 + (void) deleteCredentials;
 + (NSData *) generateBodyFromDictionary:(NSDictionary *)dict withBoundary:(NSString *)boundary;
 + (NSData *) serializeParamsForPostRequest:(NSDictionary *)params;

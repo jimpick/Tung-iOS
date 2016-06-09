@@ -109,6 +109,7 @@
             self.tableView.backgroundView = nil;
             if (success) {
                 _suggestedUsersArray = [response objectForKey:@"success"];
+                [self preloadImages];
                 [_tung preloadAlbumArtForSuggestedUsers:_suggestedUsersArray];
                 [self.tableView reloadData];
                 
@@ -122,6 +123,9 @@
                 [TungCommonObjects simpleErrorAlertWithMessage:[response objectForKey:@"error"]];
             }
         }];
+    }
+    else {
+        [self preloadImages];
     }
     // if onboarding
     if (_profileData) {
@@ -158,6 +162,42 @@
     	return YES;
     } else {
         return NO;
+    }
+}
+
+- (void) preloadImages {
+    
+    NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
+    preloadQueue.maxConcurrentOperationCount = 3;
+    
+    NSMutableArray *artworkUrls = [NSMutableArray array];
+    
+    for (int i = 0; i < _suggestedUsersArray.count; i++) {
+        
+        NSDictionary *dict = [_suggestedUsersArray objectAtIndex:i];
+        NSString *avatarURLString = [[dict objectForKey:@"user"] objectForKey:@"small_av_url"];
+        [preloadQueue addOperationWithBlock:^{
+            //NSLog(@"preload avatar: %@", avatarURLString);
+            [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avatarURLString];
+        }];
+        NSArray *podcasts = [dict objectForKey:@"podcasts"];
+        for (int j = 0; j < podcasts.count; j++) {
+            NSString *podcastArtUrlString = [[podcasts objectAtIndex:j] objectForKey:@"artworkUrlSSL"];
+            [artworkUrls addObject:podcastArtUrlString];
+        }
+    }
+
+    NSOrderedSet *orderedArtSet = [NSOrderedSet orderedSetWithArray:artworkUrls];
+    NSArray *dedupedArtUrls = [orderedArtSet array];
+    
+    for (int j = 0; j < dedupedArtUrls.count; j++) {
+        
+        [preloadQueue addOperationWithBlock:^{
+            
+            NSString *podcastArtUrlString = [dedupedArtUrls objectAtIndex:j];
+            //NSLog(@"preload artwork: %@", podcastArtUrlString);
+            [TungCommonObjects retrievePodcastArtDataWithSSLUrlString:podcastArtUrlString];
+        }];
     }
 }
 

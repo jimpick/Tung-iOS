@@ -28,9 +28,6 @@
     BOOL isLoggedIn = NO;
     if (_tung.tungId && _tung.tungToken) isLoggedIn = YES;
     
-    // delete keychain value for cred
-    //[TungCommonObjects deleteCredentials];
-    
     // depending on if they have cred or not, show appropriate screen
     NSString *storyboardId = isLoggedIn ? @"authenticated" : @"welcome";
     self.window.rootViewController = [self.window.rootViewController.storyboard instantiateViewControllerWithIdentifier:storyboardId];

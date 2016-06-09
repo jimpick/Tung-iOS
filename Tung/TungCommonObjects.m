@@ -2401,6 +2401,36 @@ static NSArray *colors;
     //JPLog(@"token: %@", _tungToken);
 }
 
+// save cred to keychain, set _tungId and _tungToken
+- (void) saveKeychainCred: (NSString *)cred {
+    
+    [TungCommonObjects deleteCredentials];
+    
+    NSString *account = @"tung credentials";
+    NSString *service = [[NSBundle mainBundle] bundleIdentifier];
+    
+    NSArray *credArray = [cred componentsSeparatedByString:@":"];
+    _tungId = [credArray objectAtIndex:0];
+    _tungToken = [credArray objectAtIndex:1];
+    [CrashlyticsKit setUserIdentifier:_tungId];
+    
+    NSData *valueData = [cred dataUsingEncoding:NSUTF8StringEncoding];
+    NSDictionary *id_security_item = @{
+                                       (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
+                                       (__bridge id)kSecAttrService : service,
+                                       (__bridge id)kSecAttrAccount : account,
+                                       (__bridge id)kSecValueData : valueData
+                                       };
+    CFTypeRef result = NULL;
+    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)id_security_item, &result);
+    
+    if (status == errSecSuccess) {
+        JPLog(@"save cred: successfully stored credentials");
+    } else {
+        JPLog(@"save cred: failed to store cred with error: %@", [TungCommonObjects keychainStatusToString:status]);
+    }
+}
+
 // all requests require a session ID instead of credentials
 // start here and get session with credentials
 - (void) getSessionWithCallback:(void (^)(void))callback {
@@ -2514,7 +2544,7 @@ static NSArray *colors;
                     // construct token of id and token together and save to keychain
                     NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
                     NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
-                    [TungCommonObjects saveKeychainCred:tungCred];
+                    [self saveKeychainCred:tungCred];
                     
                     callback();
                 }
@@ -2541,7 +2571,7 @@ static NSArray *colors;
                     // construct token of id and token together and save to keychain
                     NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
                     NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
-                    [TungCommonObjects saveKeychainCred:tungCred];
+                    [self saveKeychainCred:tungCred];
                     
                     callback();
                 }
@@ -4527,6 +4557,34 @@ static NSArray *colors;
     }
 }
 
+// convenience method, since id is known for SSL art.
+// MUST be SSL art. DO NOT USE for PodcastViewCtrl header where artworkUrl600 may be
+// temporarily stored under entity's artworkUrlSSL property
++ (NSData *) retrievePodcastArtDataWithSSLUrlString:(NSString *)urlString {
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *artFilename = [urlString lastPathComponent];
+    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    // check for cached art data
+    NSData *artImageData;
+    if ([fileManager fileExistsAtPath:artFilepath]) {
+        artImageData = [NSData dataWithContentsOfFile:artFilepath];
+    }
+    else {
+        // look for saved art data
+        NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+        if ([fileManager fileExistsAtPath:savedArtPath]) {
+            artImageData = [NSData dataWithContentsOfFile:savedArtPath];
+        }
+        else {
+            // download and cache
+            artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:urlString]];
+            [artImageData writeToFile:artFilepath atomically:YES];
+        }
+    }
+    return artImageData;
+}
+
 // for podcast art url from feed, stores SSL (tung CDN) art and feed url art agnostically
 + (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId {
     
@@ -4746,50 +4804,6 @@ static NSArray *colors;
     } else {
     	JPLog(@"No cred found. Error: %@", [self keychainStatusToString:results]);
         return NULL;
-    }
-}
-
-// save cred to keychain
-+ (void) saveKeychainCred: (NSString *)cred {
-    
-    NSString *account = @"tung credentials";
-    NSString *service = [[NSBundle mainBundle] bundleIdentifier];
-    
-    // delete any existing keychain cred first
-    NSDictionary *findExistingQuery = @{
-                                  (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
-                                  (__bridge id)kSecAttrService : service,
-                                  (__bridge id)kSecAttrAccount : account
-                                  };
-    
-    OSStatus foundExisting = SecItemCopyMatching((__bridge CFDictionaryRef)findExistingQuery, NULL);
-    if (foundExisting == errSecSuccess) {
-        OSStatus status = SecItemDelete((__bridge CFDictionaryRef)findExistingQuery);
-        if (status == errSecSuccess) {
-            JPLog(@"save cred: deleted existing keychain cred");
-        } else {
-            JPLog(@"save cred: failed to delete existing keychain cred: %@", [self keychainStatusToString:status]);
-        }
-    }
-    
-    
-    NSArray *credArray = [cred componentsSeparatedByString:@":"];
-    [CrashlyticsKit setUserIdentifier:[credArray objectAtIndex:0]];
-    
-    NSData *valueData = [cred dataUsingEncoding:NSUTF8StringEncoding];
-    NSDictionary *id_security_item = @{
-                                       (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
-                                       (__bridge id)kSecAttrService : service,
-                                       (__bridge id)kSecAttrAccount : account,
-                                       (__bridge id)kSecValueData : valueData
-                                       };
-    CFTypeRef result = NULL;
-    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)id_security_item, &result);
-    
-    if (status == errSecSuccess) {
-        JPLog(@"save cred: successfully stored credentials");
-    } else {
-        JPLog(@"save cred: failed to store cred with error: %@", [self keychainStatusToString:status]);
     }
 }
 
