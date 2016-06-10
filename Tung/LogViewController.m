@@ -26,6 +26,11 @@
     _toolbar.tintColor = [TungCommonObjects tungColor];
 }
 
+- (void) viewWillAppear:(BOOL)animated {
+    
+    [_textView scrollRectToVisible:CGRectMake(0, 0, [TungCommonObjects screenSize].width, [TungCommonObjects screenSize].height) animated:NO];
+}
+
 - (void)didReceiveMemoryWarning {
     [super didReceiveMemoryWarning];
     // Dispose of any resources that can be recreated.

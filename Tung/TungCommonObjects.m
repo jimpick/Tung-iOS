@@ -184,8 +184,8 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    //return @"https://api.tung.fm/";
-    return @"https://staging-api.tung.fm/";
+    return @"https://api.tung.fm/";
+    //return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
@@ -216,7 +216,7 @@ CGSize screenSize;
     if (npResult.count > 0) {
         EpisodeEntity *epEntity = [npResult lastObject];
         
-        if (epEntity.title && epEntity.url) {
+        if ([epEntity.title isKindOfClass:[NSString class]] && [epEntity.url isKindOfClass:[NSString class]]) {
             _npEpisodeEntity = epEntity;
             NSURL *url = [NSURL URLWithString:_npEpisodeEntity.url];
             _playQueue = [@[url] mutableCopy];
@@ -1416,7 +1416,7 @@ static NSString *episodeDirName = @"episodes";
         NSString *episodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
         NSError *error;
         if ([_trackData writeToFile:episodeFilepath options:0 error:&error]) {
-            JPLog(@"-- saved podcast track in temp episode dir: %@", episodeFilepath);
+            //JPLog(@"-- saved podcast track in temp episode dir: %@", episodeFilepath);
             
             // exchange downloaded data for cached data so resource loader can access it
             NSURL *audioFileUrl = [self getEpisodeUrl:[self.playQueue objectAtIndex:0]];
