@@ -332,6 +332,7 @@
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
+    [_tung establishCred];
     //JPLog(@"Application did become active");
     [_tung checkForNowPlaying];
     // check reachability

@@ -2397,8 +2397,8 @@ static NSArray *colors;
     NSArray *components = [tungCred componentsSeparatedByString:@":"];
     _tungId = [components objectAtIndex:0];
     _tungToken = [components objectAtIndex:1];
-    //JPLog(@"id: %@", _tungId);
-    //JPLog(@"token: %@", _tungToken);
+    //NSLog(@"id: %@", _tungId);
+    //NSLog(@"token: %@", _tungToken);
 }
 
 // save cred to keychain, set _tungId and _tungToken
