@@ -2,7 +2,7 @@
 //  SettingsEntity+CoreDataProperties.m
 //  Tung
 //
-//  Created by Jamie Perkins on 5/31/16.
+//  Created by Jamie Perkins on 6/14/16.
 //  Copyright © 2016 Jamie Perkins. All rights reserved.
 //
 //  Choose "Create NSManagedObject Subclass…" from the Core Data editor menu
@@ -20,5 +20,6 @@
 @dynamic hasSeenWelcomePopup;
 @dynamic numPodcastNotifications;
 @dynamic numProfileNotifications;
+@dynamic trendingFeedLastFetched;
 
 @end

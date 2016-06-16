@@ -22,7 +22,8 @@ typedef enum {
     kIconTypeFeed,
     kIconTypeProfile,
     kIconTypeTwitter,
-    kIconTypeFacebook
+    kIconTypeFacebook,
+    kIconTypePlayCount
 } IconType;
 
 @interface IconView : UIView

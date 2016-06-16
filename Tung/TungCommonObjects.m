@@ -184,8 +184,8 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    return @"https://api.tung.fm/";
-    //return @"https://staging-api.tung.fm/";
+    //return @"https://api.tung.fm/";
+    return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
@@ -360,8 +360,8 @@ CGSize screenSize;
     if (_clipPlayer && [_clipPlayer isPlaying]) {
         
         [_clipPlayer stop];
-        [_clipPlayer setCurrentTime:0];
     }
+    _clipPlayer = nil;
 }
 
 - (void) determineTotalSeconds {
@@ -1640,12 +1640,16 @@ UILabel *prototypeBadge;
 
 #pragma mark - feed related
 
-- (void) checkFeedLastFetchedTime {
-    // if feed hasn't been fetched in the last 5 minutes
+- (void) checkFeedsLastFetchedTime {
     SettingsEntity *settings = [TungCommonObjects settings];
     NSTimeInterval now_secs = [[NSDate date] timeIntervalSince1970];
+    // if feed hasn't been fetched in the last 5 minutes
     if ((settings.feedLastFetched.doubleValue + 300) < now_secs) {
         _feedNeedsRefresh = [NSNumber numberWithBool:YES];
+    }
+    // if trending feed hasn't been fetched in the last hour
+    if ((settings.trendingFeedLastFetched.doubleValue + 3600) < now_secs) {
+        _trendingFeedNeedsRefresh = [NSNumber numberWithBool:YES];
     }
 }
 
@@ -1662,7 +1666,7 @@ UILabel *prototypeBadge;
         if (saved) {
             //JPLog(@"SAVE CONTEXT: %@ :: Successfully saved", reason);
         } else {
-            JPLog(@"SAVE CONTEXT: %@ :: ERROR: %@", reason, savingError);
+            JPLog(@"SAVE CONTEXT ERROR: %@ :: REASON: %@", savingError, reason);
         }
     } else {
         JPLog(@"SAVE CONTEXT: %@ :: Did not save, no changes", reason);

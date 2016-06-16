@@ -56,6 +56,7 @@
         [self application:application didReceiveRemoteNotification:userInfo];
     }
 
+    NSLog(@"application did finish launching with options");
     return YES;
 }
 
@@ -332,13 +333,15 @@
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-    [_tung establishCred];
+    if (!_tung.tungId || _tung.tungId.length == 0) {
+    	[_tung establishCred];
+    }
     //JPLog(@"Application did become active");
     [_tung checkForNowPlaying];
     // check reachability
     [_tung checkReachabilityWithCallback:nil];
     // if feed hasn't been fetched in the last 5 minutes
-    [_tung checkFeedLastFetchedTime];
+    [_tung checkFeedsLastFetchedTime];
     
 }
 

@@ -5,11 +5,17 @@
 //  Created by Jamie Perkins on 6/22/15.
 //  Copyright (c) 2015 Jamie Perkins. All rights reserved.
 //
+// 3 types of stories views:
+//
+// - feed (following)
+// - feed (trending)
+// - stories for episode
 
 #import "StoriesTableViewController.h"
 #import "TungCommonObjects.h"
 #import "TungPodcast.h"
 #import "StoryHeaderCell.h"
+#import "StoryCountCell.h"
 #import "StoryEventCell.h"
 #import "StoryFooterCell.h"
 #import "EpisodeViewController.h"
@@ -24,12 +30,8 @@
 @property CGPoint contentOffset;
 @property BOOL contentOffsetSet;
 @property BOOL animateEndRefresh;
-
 @property CGFloat screenWidth;
-@property CGFloat headerViewHeight;
-@property CGFloat headerScrollViewHeight;
-@property CGFloat tableHeaderRow;
-@property CGFloat animationDistance;
+@property NSNumber *page;
 
 @property (nonatomic, assign) CGFloat lastScrollViewOffset; // for determining scroll direction
 
@@ -58,6 +60,8 @@
     
     self.requestStatus = @"";
     
+    _page = [NSNumber numberWithInteger:0];
+    
     // default vc and nav controller (can get overwritten)
     _navController = self.navigationController;
     
@@ -84,12 +88,6 @@
     [self.tableView addGestureRecognizer:longPressRecognizer];
     
     // for animating header height
-    CGFloat minHeaderHeight = 80;
-    _tableHeaderRow = 61;
-    _headerViewHeight = 223;
-    _headerScrollViewHeight = _headerViewHeight - _tableHeaderRow;
-    _animationDistance = _headerScrollViewHeight - minHeaderHeight;
-    
     _lastScrollViewOffset = 0;
     
     if (_episodeId) {
@@ -131,20 +129,30 @@
             mostRecent = [NSNumber numberWithInt:0];
         }
 
-        if (!_episodeId) {
-        	[self requestPostsNewerThan:mostRecent
-                        	orOlderThan:[NSNumber numberWithInt:0]
-                               fromUser:_profiledUserId
-                               withCred:NO];
-        } else {
+        if (_isForTrending) {
+            [self getTrendingEpisodesNewerThan:mostRecent
+                                   orOlderThan:[NSNumber numberWithInt:0]];
+        }
+        else if (_episodeId) {
             [self getStoriesForEpisodeWithId:_episodeId
                                    newerThan:mostRecent
                                  orOlderThan:[NSNumber numberWithInt:0]];
         }
+        else {
+            BOOL withCred = (_tung.sessionId.length) ? NO : YES;
+            [self requestPostsNewerThan:mostRecent
+                            orOlderThan:[NSNumber numberWithInt:0]
+                               fromUser:_profiledUserId
+                               withCred:withCred];
+        }
     }
     else {
         [_tung checkReachabilityWithCallback:^(BOOL reachable) {
-            if (reachable) [self refreshFeed];
+            if (reachable) {
+                [self refreshFeed];
+            } else {
+                [self endRefreshing];
+            }
         }];
     }
 }
@@ -156,21 +164,6 @@
                        fromUser:_profiledUserId
                        withCred:NO];
 
-}
-
--(void) getSessionAndFeed {
-    
-    if (_tung.connectionAvailable.boolValue) {
-        [self requestPostsNewerThan:[NSNumber numberWithInt:0]
-                        orOlderThan:[NSNumber numberWithInt:0]
-                           fromUser:_profiledUserId
-                           withCred:YES];
-    }
-    else {
-        [_tung checkReachabilityWithCallback:^(BOOL reachable) {
-            if (reachable) [self getSessionAndFeed];
-        }];
-    }
 }
 
 - (void) pushEpisodeViewForIndexPath:(NSIndexPath *)indexPath withFocusedEventId:(NSString *)eventId {
@@ -201,7 +194,6 @@ NSInteger requestTries = 0;
     NSMutableURLRequest *storyRequest = [NSMutableURLRequest requestWithURL:storyURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [storyRequest setHTTPMethod:@"POST"];
     NSDictionary *params = @{
-                             @"sessionId": _tung.sessionId,
                              @"episode_id": episodeId,
                              @"newerThan": afterTime,
                              @"olderThan": beforeTime
@@ -220,17 +212,9 @@ NSInteger requestTries = 0;
                 
                 if ([responseDict objectForKey:@"error"]) {
                     dispatch_async(dispatch_get_main_queue(), ^{
-                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                            // get new session and re-request
-                            //JPLog(@"SESSION EXPIRED");
-                            [_tung getSessionWithCallback:^{
-                                [self getStoriesForEpisodeWithId:episodeId newerThan:afterTime orOlderThan:beforeTime];
-                            }];
-                        } else {
-                            [self endRefreshing];
-                            // other error - alert user
-                            [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
-                        }
+                        [self endRefreshing];
+                        // other error - alert user
+                        [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                     });
                 }
                 else if ([responseDict objectForKey:@"success"]) {
@@ -294,6 +278,7 @@ NSInteger requestTries = 0;
                             
                             if (newStories.count > 0) {
                                 _storiesArray = [self processStories:newStories];
+                                NSLog(@"processed episode stories: %@", _storiesArray);
                                 _noResults = NO;
                             } else {
                                 _noResults = YES;
@@ -310,7 +295,7 @@ NSInteger requestTries = 0;
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self endRefreshing];
                 });
-                JPLog(@"Error: %@", error);
+                JPLog(@"Error: %@", error.localizedDescription);
                 NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
                 JPLog(@"HTML: %@", html);
             }
@@ -521,7 +506,7 @@ NSInteger requestTries = 0;
                             // profile feed has been refreshed
                             _tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:NO];
                         }
-                        else if (!_profiledUserId.length && !_episodeId) {
+                        else if (!_profiledUserId.length && !_episodeId && !_isForTrending) {
                             // main feed page has been refreshed
                             _tung.feedNeedsRefresh = [NSNumber numberWithBool:NO];
                         }
@@ -562,6 +547,132 @@ NSInteger requestTries = 0;
         }
     }];
 }
+
+// all stories for a single episode
+- (void) getTrendingEpisodesNewerThan:(NSNumber *)afterTime
+                          orOlderThan:(NSNumber *)beforeTime {
+    
+    NSLog(@"get trending episodes after time: %@ or before time: %@", afterTime, beforeTime);
+    
+    NSString *trendingUrlString = [NSString stringWithFormat:@"%@stories/trending.php", [TungCommonObjects apiRootUrl]];
+    NSDictionary *params = @{@"newerThan": afterTime,
+                             @"olderThan": beforeTime};
+    NSURL *trendingURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@%@", trendingUrlString, [TungCommonObjects serializeParamsForGetRequest:params]]];
+    NSMutableURLRequest *trendingRequest = [NSMutableURLRequest requestWithURL:trendingURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [trendingRequest setHTTPMethod:@"GET"];
+    
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:trendingRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            
+            if (jsonData != nil && error == nil) {
+                
+                NSDictionary *responseDict = jsonData;
+                
+                if ([responseDict objectForKey:@"error"]) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        [self endRefreshing];
+                        // other error - alert user
+                        [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                    });
+                }
+                else if ([responseDict objectForKey:@"success"]) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        
+                        NSArray *newStories = [responseDict objectForKey:@"stories"];
+                        
+                        // set trendingFeedLastFetched
+                        SettingsEntity *settings = [TungCommonObjects settings];
+                        settings.trendingFeedLastFetched = [NSNumber numberWithDouble:[[NSDate date] timeIntervalSince1970]];
+                        _tung.trendingFeedNeedsRefresh = [NSNumber numberWithBool:NO];
+                        [TungCommonObjects saveContextWithReason:@"set trendingFeedLastFetched"];
+                        
+                        if (afterTime.intValue > 0) {
+                            
+                             // pull-refresh
+                            if (newStories.count > 0) {
+                                
+                                [self endRefreshingWithNewPosts:YES];
+                                [self stopClipPlayback];
+                                [self removeOlderDuplicatesOfNewStories:newStories];
+                                
+                                NSArray *newItems = [self processStories:newStories];
+                                NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
+                                _storiesArray = [newFeedArray mutableCopy];
+                                
+                                [UIView setAnimationsEnabled:NO];
+                                [self.tableView beginUpdates];
+                                for (NSInteger i = 0; i < newStories.count; i++) {
+                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                                }
+                                [self.tableView endUpdates];
+                                [UIView setAnimationsEnabled:YES];
+                                
+                            } else {
+                                [self endRefreshing];
+                            }
+                        }
+                        // auto-loaded posts as user scrolls down
+                        else if (beforeTime.intValue > 0) {
+                            
+                            _reachedEndOfPosts = (newStories.count == 0);
+                            
+                            if (_reachedEndOfPosts) {
+                                [self endRefreshing];
+                                [self.tableView reloadData];
+                                
+                            } else {
+                                [self endRefreshingWithNewPosts:YES];
+                                int startingIndex = (int)_storiesArray.count;
+                                
+                                [_storiesArray addObjectsFromArray:[self processStories:newStories]];
+                                
+                                [UIView setAnimationsEnabled:NO];
+                                [self.tableView beginUpdates];
+                                for (int i = startingIndex; i < _storiesArray.count; i++) {
+                                    [self.tableView insertSections:[NSIndexSet indexSetWithIndex:i] withRowAnimation:UITableViewRowAnimationNone];
+                                }
+                                [self.tableView endUpdates];
+                                [UIView setAnimationsEnabled:YES];
+                            }
+                        }
+                        // initial request
+                        else {
+                            if (newStories.count > 0) {
+                                [self endRefreshingWithNewPosts:YES];
+                                _storiesArray = [self processStories:newStories];
+                                _noResults = NO;
+                            } else {
+                                [self endRefreshing];
+                                _noResults = YES;
+                            }
+                            [self.tableView reloadData];
+                        }
+                        
+                    });
+                }
+            }
+            // errors
+            else if (error != nil) {
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    [self endRefreshing];
+                });
+                JPLog(@"Error: %@", error);
+                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                JPLog(@"HTML: %@", html);
+            }
+        }
+        // connection error
+        else {
+            dispatch_async(dispatch_get_main_queue(), ^{
+                
+                [self endRefreshing];
+            });
+        }
+    }];
+}
+
 
 - (void) endRefreshing {
     [self endRefreshingWithNewPosts:NO];
@@ -605,18 +716,26 @@ NSInteger requestTries = 0;
     NSMutableArray *results = [NSMutableArray new];
     for (int i = 0; i < stories.count; i++) {
         
+        BOOL isGrouped = NO;
+        
         NSMutableArray *storyArray = [NSMutableArray new];
         NSMutableDictionary *headerDict = [[stories objectAtIndex:i] mutableCopy];
         UIColor *keyColor = [TungCommonObjects colorFromHexString:[[headerDict objectForKey:@"episode"] objectForKey:@"keyColor1Hex"]];
         [headerDict setObject:keyColor forKey:@"keyColor"];
+        if ([headerDict objectForKey:@"users"]) {
+            isGrouped = YES;
+        }
         NSArray *events = [headerDict objectForKey:@"events"];
-        NSString *username = [[headerDict objectForKey:@"user"] objectForKey:@"username"];
+        [headerDict removeObjectForKey:@"events"];
         NSString *episodeShortlink = [[headerDict objectForKey:@"episode"] objectForKey:@"shortlink"];
         NSString *episodeLink = [NSString stringWithFormat:@"%@e/%@", [TungCommonObjects tungSiteRootUrl], episodeShortlink];
         [headerDict setObject:episodeLink forKey:@"episodeLink"];
-        NSString *storyLink = [NSString stringWithFormat:@"%@e/%@/%@", [TungCommonObjects tungSiteRootUrl], episodeShortlink, username];
-        [headerDict setObject:storyLink forKey:@"storyLink"];
-        [headerDict setObject:[headerDict objectForKey:@"time_secs"] forKey:@"time_secs_end"];
+        if (!isGrouped) {
+            NSString *username = [[headerDict objectForKey:@"user"] objectForKey:@"username"];
+            NSString *storyLink = [NSString stringWithFormat:@"%@e/%@/%@", [TungCommonObjects tungSiteRootUrl], episodeShortlink, username];
+            [headerDict setObject:storyLink forKey:@"storyLink"];
+            [headerDict setObject:[headerDict objectForKey:@"time_secs"] forKey:@"time_secs_end"];
+        }
         
         [storyArray addObject:headerDict];
         
@@ -634,29 +753,48 @@ NSInteger requestTries = 0;
         int eventLimit = 5;
         if (_episodeId) eventLimit = 50; // per story event limit
         
+        // events
         for (int e = 0; e < events.count; e++) {
-            
-            NSMutableDictionary *eventDict = [[events objectAtIndex:e] mutableCopy];
-            [eventDict setObject:keyColor forKey:@"keyColor"];
-            [eventDict setObject:[headerDict objectForKey:@"user"] forKey:@"user"];
-            NSString *type = [eventDict objectForKey:@"type"];
-            // preload clip
-            if ([type isEqualToString:@"clip"]) {
-                [preloadQueue addOperationWithBlock:^{
-                    NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
-                    [TungCommonObjects retrieveAudioClipDataWithUrlString:clipURLString];
-                }];
+            // data structure for grouped stories is slightly different
+            if (isGrouped) {
+                NSDictionary *eventGroupDict = [events objectAtIndex:e];
+                NSArray *eventGroupEvents = [eventGroupDict objectForKey:@"events"];
+                NSDictionary *eventUserDict = [eventGroupDict objectForKey:@"user"];
+                for (int f = 0; f < eventGroupEvents.count; f++) {
+                    NSMutableDictionary *eventDict = [[eventGroupEvents objectAtIndex:f] mutableCopy];
+                    [eventDict setObject:keyColor forKey:@"keyColor"];
+                    [eventDict setObject:eventUserDict forKey:@"user"];
+                    NSString *type = [eventDict objectForKey:@"type"];
+                    // preload clip
+                    if ([type isEqualToString:@"clip"]) {
+                        [preloadQueue addOperationWithBlock:^{
+                            NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
+                            [TungCommonObjects retrieveAudioClipDataWithUrlString:clipURLString];
+                        }];
+                    }
+                    [storyArray addObject:eventDict];
+                }
             }
-            if (e < eventLimit) {
-                [storyArray addObject:eventDict];
-            } else {
-                break;
+            else {
+                NSMutableDictionary *eventDict = [[events objectAtIndex:e] mutableCopy];
+                [eventDict setObject:keyColor forKey:@"keyColor"];
+                [eventDict setObject:[headerDict objectForKey:@"user"] forKey:@"user"];
+                NSString *type = [eventDict objectForKey:@"type"];
+                // preload clip
+                if ([type isEqualToString:@"clip"]) {
+                    [preloadQueue addOperationWithBlock:^{
+                        NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
+                        [TungCommonObjects retrieveAudioClipDataWithUrlString:clipURLString];
+                    }];
+                }
+                if (e < eventLimit) {
+                    [storyArray addObject:eventDict];
+                } else {
+                    break;
+                }
             }
         }
-        [headerDict removeObjectForKey:@"events"];
-        NSDictionary *footerDict = [NSDictionary dictionaryWithObjects:@[keyColor]
-                                                               forKeys:@[@"keyColor"]];
-        [storyArray addObject:footerDict];
+        
         [results addObject:storyArray];
         
     }
@@ -666,6 +804,7 @@ NSInteger requestTries = 0;
 
 /* 	new stories fetched after feed has already been fetched may be part of those already fetched.
 	if the same story id comes down again, this method removes the older duplicate.
+ 	works for trending too because story id will be episode id.
  */
 - (void) removeOlderDuplicatesOfNewStories:(NSArray *)newStories {
     
@@ -720,7 +859,7 @@ NSInteger requestTries = 0;
                 // story match
                 if ([episodeId isEqualToString:comparedEpisodeId]) {
                     
-                    NSDictionary *userDict = [comparedDict objectForKey:@"user"];
+                    NSString *userAvatarUrlString = [[comparedDict objectForKey:@"user"] objectForKey:@"small_av_url"];
                     
                     // add user dict to story header for avatars
                     NSMutableArray *users = [NSMutableArray array];
@@ -729,7 +868,7 @@ NSInteger requestTries = 0;
                         [users addObjectsFromArray:[comparedDict objectForKey:@"users"]];
                     }
                     else {
-                        [users addObject:userDict];
+                        [users addObject:userAvatarUrlString];
                     }
                     // add newer occurences after older, so oldest appears first
                     if ([dict objectForKey:@"users"]) {
@@ -737,7 +876,7 @@ NSInteger requestTries = 0;
                     }
                     else {
                         // this is the first match found
-                        [users addObject:[dict objectForKey:@"user"]];
+                        [users addObject:[[dict objectForKey:@"user"] objectForKey:@"small_av_url"]];
                     }
                     
                     [dict setObject:users forKey:@"users"];
@@ -824,7 +963,11 @@ NSInteger requestTries = 0;
 {
     if (_storiesArray.count) {
         if (section < _storiesArray.count) {
-            return [[_storiesArray objectAtIndex:section] count];
+            if (_isForTrending) {
+            	return [[_storiesArray objectAtIndex:section] count] + 2; // adding footer and counts
+            } else {
+                return [[_storiesArray objectAtIndex:section] count] + 1; // adding footer
+            }
         } else {
             return 0;
         }
@@ -835,15 +978,25 @@ NSInteger requestTries = 0;
 
 - (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
+    NSInteger footerIndex = [[_storiesArray objectAtIndex:indexPath.section] count];
+    if (_isForTrending) footerIndex = [[_storiesArray objectAtIndex:indexPath.section] count] + 1;
+    
     if (indexPath.row == 0) {
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"storyHeaderCell"];
         [self configureHeaderCell:cell forIndexPath:indexPath];
         return cell;
-    } else if (indexPath.row == [[_storiesArray objectAtIndex:indexPath.section] count] - 1) {
+    }
+    else if (_isForTrending && indexPath.row == 1) {
+        UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"storyCountCell"];
+        [self configureCountCell:cell forIndexPath:indexPath];
+        return cell;
+    }
+    else if (indexPath.row == footerIndex) {
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"storyFooterCell"];
         [self configureFooterCell:cell forIndexPath:indexPath];
         return cell;
-    } else {
+    }
+    else {
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"storyEventCell"];
         [self configureEventCell:cell forIndexPath:indexPath];
         return cell;
@@ -857,7 +1010,8 @@ NSInteger requestTries = 0;
     // don't select footer cell bc if _episodeId, already on story detail view.
     if (_episodeId && indexPath.row == [[_storiesArray objectAtIndex:indexPath.section] count] - 1) {
         return nil;
-    } else {
+    }
+    else {
         return indexPath;
     }
 }
@@ -866,19 +1020,20 @@ NSInteger requestTries = 0;
     
     //JPLog(@"selected cell at row %ld", (long)[indexPath row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
-    NSInteger footerIndex = [[_storiesArray objectAtIndex:indexPath.section] count] - 1;
+    NSInteger footerIndex = [[_storiesArray objectAtIndex:indexPath.section] count];
+    if (_isForTrending) footerIndex = [[_storiesArray objectAtIndex:indexPath.section] count] + 1;
     
     if (indexPath.row == 0) {
         // header
         [self pushEpisodeViewForIndexPath:indexPath withFocusedEventId:nil];
         
     }
-    else if (indexPath.row == footerIndex) {
-        // footer
+    else if ((_isForTrending && indexPath.row == 1) || (indexPath.row == footerIndex)) {
+        // footer or counts
         // view all events for episode id
         NSDictionary *headerDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
         NSString *episodeId = [[[headerDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
-        //NSLog(@"episodeId: %@", episodeId);
+        NSLog(@"episodeId: %@", episodeId);
         StoriesTableViewController *storyDetailView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"storiesTableView"];
         storyDetailView.episodeId = episodeId;
     
@@ -887,7 +1042,10 @@ NSInteger requestTries = 0;
     else {
         // event
         // if clip, play
-        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
+        
+        NSInteger eventDictIndex = indexPath.row;
+        if (_isForTrending) eventDictIndex--;
+        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:eventDictIndex]];
         NSString *type = [eventDict objectForKey:@"type"];
         if ([eventDict objectForKey:@"clip_url"]) {
             _selectedSectionIndex = indexPath.section;
@@ -907,7 +1065,6 @@ NSInteger requestTries = 0;
 // Buhbie's comment:
 // ABCD
 
-//- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
 UILabel *prototypeLabel;
 CGFloat labelWidth = 0;
 
@@ -915,17 +1072,25 @@ CGFloat labelWidth = 0;
 
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
     
+    NSInteger footerIndex = [[_storiesArray objectAtIndex:indexPath.section] count];
+    if (_isForTrending) footerIndex = [[_storiesArray objectAtIndex:indexPath.section] count] + 1;
+    
     if (indexPath.row == 0) {
         // header cell
         return 127;
-    } else if (indexPath.row == [[_storiesArray objectAtIndex:indexPath.section] count] - 1) {
+    } else if (indexPath.row == footerIndex) {
         // footer cell
         return 35;
+    } else if (_isForTrending && indexPath.row == 1) {
+        // count cell
+        return 47;
     } else {
         // event cell
         CGFloat defaultEventCellHeight = 57;
-        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
-        if ([[eventDict objectForKey:@"comment"] length] > 0) {
+        NSInteger eventDictIndex = indexPath.row;
+        if (_isForTrending) eventDictIndex--;
+        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:eventDictIndex]];
+        if ([eventDict objectForKey:@"comment"] && [[eventDict objectForKey:@"comment"] length] > 0) {
             if (!prototypeLabel) {
                 prototypeLabel = [[UILabel alloc] init];
                 prototypeLabel.font = [UIFont systemFontOfSize:15];
@@ -1002,7 +1167,6 @@ CGFloat labelWidth = 0;
     // cell data
     NSDictionary *storyDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
     NSDictionary *episodeMiniDict = [storyDict objectForKey:@"episode"];
-    NSDictionary *userDict = [storyDict objectForKey:@"user"];
     
     // color
     UIColor *keyColor = (UIColor *)[storyDict objectForKey:@"keyColor"];
@@ -1038,13 +1202,13 @@ CGFloat labelWidth = 0;
         }
         
         headerCell.usernameButton.hidden = YES;
-        avatarUrlString = [[users objectAtIndex:0] objectForKey:@"small_av_url"];
+        avatarUrlString = [users objectAtIndex:0];
         
         AvatarContainerView *lastAvatar = headerCell.avatarContainerView;
         NSUInteger limit = MIN(users.count, max);
         
-        for (int i = 1; i < limit; i++) {
-            NSString *avUrlString = [[users objectAtIndex:i] objectForKey:@"small_av_url"];
+        for (int i = 1; i < limit; i++) { // skip the first
+            NSString *avUrlString = [users objectAtIndex:i];
             NSData *avImageData = [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avUrlString];
             avatarRect.origin.x += spacing;
             AvatarContainerView *avContainerView = [[AvatarContainerView alloc] initWithFrame:avatarRect];
@@ -1055,6 +1219,7 @@ CGFloat labelWidth = 0;
         }
     }
     else {
+        NSDictionary *userDict = [storyDict objectForKey:@"user"];
         // user
         headerCell.usernameButton.hidden = NO;
         headerCell.usernameButton.tag = 101;
@@ -1114,18 +1279,50 @@ CGFloat labelWidth = 0;
     }
     
     // post date
-    headerCell.postedDateLabel.text = [TungCommonObjects timeElapsed:[storyDict objectForKey:@"time_secs"]];
+    if (_isForTrending) {
+        headerCell.postedDateLabel.text = @"";
+    } else {
+        headerCell.postedDateLabel.text = [TungCommonObjects timeElapsed:[storyDict objectForKey:@"time_secs"]];
+    }
 
     // separator
     headerCell.preservesSuperviewLayoutMargins = NO;
     [headerCell setLayoutMargins:UIEdgeInsetsZero];
 }
 
+- (void) configureCountCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
+    
+    StoryCountCell *countCell = (StoryCountCell *)cell;
+    
+    NSDictionary *storyDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0]];
+    
+    NSNumber *recommendCount = [storyDict objectForKey:@"recommendCount"];
+    countCell.recommendCountLabel.text = [NSString stringWithFormat:@"%@", recommendCount];
+    NSNumber *clipCount = [storyDict objectForKey:@"clipCount"];
+    countCell.clipCountLabel.text = [NSString stringWithFormat:@"%@", clipCount];
+    NSNumber *commentCount = [storyDict objectForKey:@"commentCount"];
+    countCell.commentCountLabel.text = [NSString stringWithFormat:@"%@", commentCount];
+    NSNumber *listenCount = [storyDict objectForKey:@"listenCount"];
+    countCell.playCountLabel.text = [NSString stringWithFormat:@"%@", listenCount];
+    
+    // color
+    UIColor *keyColor = (UIColor *)[storyDict objectForKey:@"keyColor"];
+    countCell.backgroundColor = keyColor;
+    UIView *bgColorView = [[UIView alloc] init];
+    bgColorView.backgroundColor = [TungCommonObjects darkenKeyColor:keyColor];
+    [countCell setSelectedBackgroundView:bgColorView];
+    
+}
+
 - (void) configureEventCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath {
     
     StoryEventCell *eventCell = (StoryEventCell *)cell;
     
-    NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
+    NSInteger eventDictIndex = indexPath.row;
+    if (_isForTrending) eventDictIndex--;
+    
+    NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:eventDictIndex]];
+    //NSLog(@"cell %ld event dict: %@", (long)indexPath.row, eventDict);
     NSDictionary *headerDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0]];
     BOOL isGroup = NO;
     if ([headerDict objectForKey:@"users"]) {
@@ -1210,7 +1407,7 @@ CGFloat labelWidth = 0;
     
     StoryFooterCell *footerCell = (StoryFooterCell *)cell;
     
-    NSDictionary *footerDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
+    NSDictionary *storyDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0]];
     
     // hide view all if we are alreadying viewing all
     if (_episodeId) {
@@ -1225,7 +1422,7 @@ CGFloat labelWidth = 0;
     [footerCell.optionsButton addTarget:self action:@selector(optionsButtonTapped:) forControlEvents:UIControlEventTouchUpInside];
     
     // color
-    UIColor *keyColor = (UIColor *)[footerDict objectForKey:@"keyColor"];
+    UIColor *keyColor = (UIColor *)[storyDict objectForKey:@"keyColor"];
     footerCell.backgroundColor = keyColor;
     UIView *bgColorView = [[UIView alloc] init];
     bgColorView.backgroundColor = [TungCommonObjects darkenKeyColor:keyColor];
@@ -1237,27 +1434,12 @@ CGFloat labelWidth = 0;
 }
 
 
-- (void) tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
-    if ([_tung.clipPlayer isPlaying]) {
-        // stop animating if cell goes out of view, somehow causes other cells to animate
-        NSIndexPath *activeIndexPath = [NSIndexPath indexPathForRow:_activeRowIndex inSection:_activeSectionIndex];
-        if ([indexPath isEqual:activeIndexPath]) {
-            [_onEnterFrame invalidate];
-        }
-    }
-}
 
-- (void) tableView:(UITableView *)tableView willDisplayCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
+- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    if ([_tung.clipPlayer isPlaying]) {
-        // resume animation
-        NSIndexPath *activeIndexPath = [NSIndexPath indexPathForRow:_activeRowIndex inSection:_activeSectionIndex];
-        if ([indexPath isEqual:activeIndexPath]) {
-            
-            // begin "onEnterFrame"
-            _onEnterFrame = [CADisplayLink displayLinkWithTarget:self selector:@selector(updateView)];
-            [_onEnterFrame addToRunLoop:[NSRunLoop currentRunLoop] forMode:NSRunLoopCommonModes];
-        }
+    // stop clip playback as cell scrolls out of view
+    if (indexPath.section == _activeSectionIndex && indexPath.row == _activeRowIndex) {
+        [self stopClipPlayback];
     }
 }
 
@@ -1274,7 +1456,9 @@ CGFloat labelWidth = 0;
         
         if (indexPath) {
             
-            NSUInteger footerIndex = [[_storiesArray objectAtIndex:indexPath.section] count] - 1;
+            NSUInteger footerIndex = [[_storiesArray objectAtIndex:indexPath.section] count];
+            if (_isForTrending) footerIndex = [[_storiesArray objectAtIndex:indexPath.section] count] + 1;
+            
             if (indexPath.row == 0 || indexPath.row == footerIndex) {
                 // story header/footer
                 return;
@@ -1283,7 +1467,9 @@ CGFloat labelWidth = 0;
             //JPLog(@"header dict: %@", headerDict);
             
             // story event
-            NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
+            NSInteger eventDictIndex = indexPath.row;
+            if (_isForTrending) eventDictIndex--;
+            NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:eventDictIndex]];
             NSString *timestamp = [eventDict objectForKey:@"timestamp"];
             NSString *playFromString = [NSString stringWithFormat:@"Play from %@", timestamp];
             NSString *type = [eventDict objectForKey:@"type"];
@@ -1423,7 +1609,9 @@ CGFloat labelWidth = 0;
 
 - (void) deleteEventAtIndexPath:(NSIndexPath *)indexPath {
     
-	NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:indexPath.row]];
+    NSInteger eventDictIndex = indexPath.row;
+    if (_isForTrending) eventDictIndex--;
+	NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:eventDictIndex]];
     NSString *eventId = [[eventDict objectForKey:@"id"] objectForKey:@"$id"];
     
     [_tung deleteStoryEventWithId:eventId withCallback:^(BOOL success) {
@@ -1550,12 +1738,12 @@ CGFloat labelWidth = 0;
     // different clip selected than the one playing
     else {
         
-        if ([_tung.clipPlayer isPlaying]) [self stopClipPlayback];
+        [self stopClipPlayback];
     
-        // start playing new clip
-        _tung.clipPlayer = nil;
         // check for cached audio data and init player
-        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_selectedSectionIndex] objectAtIndex:_selectedRowIndex]];
+        NSInteger eventDictIndex = _selectedRowIndex;
+        if (_isForTrending) eventDictIndex--;
+        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_selectedSectionIndex] objectAtIndex:eventDictIndex]];
         NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
         NSData *clipData = [TungCommonObjects retrieveAudioClipDataWithUrlString:clipURLString];
         NSError *playbackError;
@@ -1593,18 +1781,25 @@ CGFloat labelWidth = 0;
 - (void) stopClipPlayback {
     //JPLog(@"stop");
     
+    [_tung stopClipPlayback];
+    
     if (_activeSectionIndex >= 0 && _activeRowIndex >= 0) {
         // stop "onEnterFrame"
         [_onEnterFrame invalidate];
         //JPLog(@"%@",[NSThread callStackSymbols]);
-        [_tung stopClipPlayback];
         
         // reset GUI
-        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_activeSectionIndex] objectAtIndex:_activeRowIndex]];
+        NSInteger eventDictIndex = _activeRowIndex;
+        if (_isForTrending) eventDictIndex--;
+        NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:_activeSectionIndex] objectAtIndex:eventDictIndex]];
         
         _activeClipProgressView.seconds = [NSString stringWithFormat:@":%@", [eventDict objectForKey:@"duration"]];
         _activeClipProgressView.arc = 0.0f;
         [_activeClipProgressView setNeedsDisplay];
+        
+        // reset active indexes
+        _activeRowIndex = -1;
+        _activeSectionIndex = -1;
     }
 
 }
@@ -1687,15 +1882,20 @@ CGFloat labelWidth = 0;
                 [_loadMoreIndicator startAnimating];
                 NSNumber *oldest = [[[_storiesArray objectAtIndex:_storiesArray.count-1] objectAtIndex:0] objectForKey:@"time_secs_end"];
                 
-                if (!_episodeId) {
+                if (_isForTrending) {
+                    [self getTrendingEpisodesNewerThan:[NSNumber numberWithInt:0]
+                                           orOlderThan:oldest];
+                }
+                else if (_episodeId) {
+                    [self getStoriesForEpisodeWithId:_episodeId
+                                           newerThan:[NSNumber numberWithInt:0]
+                                         orOlderThan:oldest];
+                }
+                else {
                     [self requestPostsNewerThan:[NSNumber numberWithInt:0]
                                     orOlderThan:oldest
                                        fromUser:_profiledUserId
                                        withCred:NO];
-                } else {
-                    [self getStoriesForEpisodeWithId:_episodeId
-                                           newerThan:[NSNumber numberWithInt:0]
-                                         orOlderThan:oldest];
                 }
             }
         }

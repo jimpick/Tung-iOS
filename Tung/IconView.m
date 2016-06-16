@@ -73,6 +73,9 @@
             case kIconTypeFacebook:
                 [TungPodcastStyleKit drawFacebookIconWithFrame:rect color:_color];
                 break;
+            case kIconTypePlayCount:
+                [TungPodcastStyleKit drawPlayCountIconWithFrame:rect color:_color];
+                break;
             default:
                 break;
         }

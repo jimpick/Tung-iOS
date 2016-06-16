@@ -19,9 +19,9 @@
 
 @property (strong, nonatomic) NSMutableArray *storiesArray;
 @property (strong, nonatomic) UIActivityIndicatorView *loadMoreIndicator;
-
 @property (strong, nonatomic) NSString *profiledUserId;
 @property (strong, nonatomic) NSString *episodeId;
+@property (nonatomic, assign) BOOL isForTrending;
 
 // request flags
 @property (nonatomic, assign) BOOL requestingMore;

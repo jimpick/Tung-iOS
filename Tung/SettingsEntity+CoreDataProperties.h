@@ -2,7 +2,7 @@
 //  SettingsEntity+CoreDataProperties.h
 //  Tung
 //
-//  Created by Jamie Perkins on 5/31/16.
+//  Created by Jamie Perkins on 6/14/16.
 //  Copyright © 2016 Jamie Perkins. All rights reserved.
 //
 //  Choose "Create NSManagedObject Subclass…" from the Core Data editor menu
@@ -22,6 +22,7 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nullable, nonatomic, retain) NSNumber *hasSeenWelcomePopup;
 @property (nullable, nonatomic, retain) NSNumber *numPodcastNotifications;
 @property (nullable, nonatomic, retain) NSNumber *numProfileNotifications;
+@property (nullable, nonatomic, retain) NSNumber *trendingFeedLastFetched;
 
 @end
 

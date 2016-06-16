@@ -99,6 +99,7 @@
 		7D63F8101AF6CBCC00765289 /* HeaderView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D63F80F1AF6CBCC00765289 /* HeaderView.m */; };
 		7D64376A1BAB58B800766BB4 /* IconView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6437691BAB58B800766BB4 /* IconView.m */; };
 		7D6459931A083DBA00BAC445 /* ProfileListTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6459921A083DBA00BAC445 /* ProfileListTableViewController.m */; };
+		7D64D0521D106ECF00560D4D /* StoryCountCell.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D64D0511D106ECF00560D4D /* StoryCountCell.m */; };
 		7D670F301934EE7600239673 /* Reachability.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D670F2F1934EE7600239673 /* Reachability.m */; };
 		7D6D55EB1B66A06000DFF759 /* EpisodesTableViewController.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6D55EA1B66A06000DFF759 /* EpisodesTableViewController.m */; };
 		7D6F631B1BB338D600D7EB88 /* .gitignore in Resources */ = {isa = PBXBuildFile; fileRef = 7D6F631A1BB338D600D7EB88 /* .gitignore */; };
@@ -300,7 +301,7 @@
 		7D5BC1B91A547E5D008C008D /* tabBar-search-inactive@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tabBar-search-inactive@2x.png"; sourceTree = "<group>"; };
 		7D61889419F18FC600F414C2 /* EditProfileTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EditProfileTableViewController.h; sourceTree = "<group>"; };
 		7D61889519F18FC600F414C2 /* EditProfileTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = EditProfileTableViewController.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
-		7D61F91818A1EB2F00710CA7 /* tung.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tung.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7D61F91818A1EB2F00710CA7 /* tung beta.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "tung beta.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7D61F91B18A1EB2F00710CA7 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		7D61F91D18A1EB2F00710CA7 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		7D61F91F18A1EB2F00710CA7 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -333,6 +334,9 @@
 		7D6437691BAB58B800766BB4 /* IconView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = IconView.m; sourceTree = "<group>"; };
 		7D6459911A083DBA00BAC445 /* ProfileListTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = ProfileListTableViewController.h; sourceTree = "<group>"; };
 		7D6459921A083DBA00BAC445 /* ProfileListTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = ProfileListTableViewController.m; sourceTree = "<group>"; };
+		7D64D04F1D106CF100560D4D /* TungDataModel 6.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TungDataModel 6.xcdatamodel"; sourceTree = "<group>"; };
+		7D64D0501D106ECF00560D4D /* StoryCountCell.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = StoryCountCell.h; sourceTree = "<group>"; };
+		7D64D0511D106ECF00560D4D /* StoryCountCell.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = StoryCountCell.m; sourceTree = "<group>"; };
 		7D670F2E1934EE7600239673 /* Reachability.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = Reachability.h; sourceTree = "<group>"; };
 		7D670F2F1934EE7600239673 /* Reachability.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = Reachability.m; sourceTree = "<group>"; };
 		7D6D55E91B66A06000DFF759 /* EpisodesTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodesTableViewController.h; sourceTree = "<group>"; };
@@ -517,7 +521,7 @@
 		7D61F91918A1EB2F00710CA7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				7D61F91818A1EB2F00710CA7 /* tung.app */,
+				7D61F91818A1EB2F00710CA7 /* tung beta.app */,
 				7D61F93818A1EB2F00710CA7 /* TungTests.xctest */,
 			);
 			name = Products;
@@ -629,6 +633,8 @@
 				7D1341E219251EB900B95C66 /* SignUpNavController.m */,
 				7D4C79EE1BE0FC8A0061816B /* StoriesTableViewController.h */,
 				7D4C79EC1BE0FC5A0061816B /* StoriesTableViewController.m */,
+				7D64D0501D106ECF00560D4D /* StoryCountCell.h */,
+				7D64D0511D106ECF00560D4D /* StoryCountCell.m */,
 				7D1407741BBE3D5D00BD4F89 /* StoryEventCell.h */,
 				7D1407751BBE3D5D00BD4F89 /* StoryEventCell.m */,
 				7D1407771BBEB83500BD4F89 /* StoryFooterCell.h */,
@@ -837,7 +843,7 @@
 			);
 			name = Tung;
 			productName = Tung;
-			productReference = 7D61F91818A1EB2F00710CA7 /* tung.app */;
+			productReference = 7D61F91818A1EB2F00710CA7 /* tung beta.app */;
 			productType = "com.apple.product-type.application";
 		};
 		7D61F93718A1EB2F00710CA7 /* TungTests */ = {
@@ -1095,6 +1101,7 @@
 				7DB6A1B01BFE0EB20057D337 /* KLCPopup.m in Sources */,
 				7D46A8961999CE7E00F83C23 /* LargeAvatarContainerView.m in Sources */,
 				7D2458A01CF6156C00C4FCF1 /* IconCell.m in Sources */,
+				7D64D0521D106ECF00560D4D /* StoryCountCell.m in Sources */,
 				7D2289351CE2E2280063444F /* FindFriendsTableViewController.m in Sources */,
 				7D61F92A18A1EB2F00710CA7 /* main.m in Sources */,
 			);
@@ -1217,7 +1224,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1229,8 +1236,8 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
-				PRODUCT_NAME = tung;
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
+				PRODUCT_NAME = "tung beta";
 				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
@@ -1241,7 +1248,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1253,8 +1260,8 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
-				PRODUCT_NAME = tung;
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
+				PRODUCT_NAME = "tung beta";
 				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
@@ -1338,13 +1345,14 @@
 		7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				7D64D04F1D106CF100560D4D /* TungDataModel 6.xcdatamodel */,
 				7DC90CD81CFE363A005E3185 /* TungDataModel 5.xcdatamodel */,
 				7D6E02D81C63B75F000DE54E /* TungDataModel 4.xcdatamodel */,
 				7D2CF0611C4C1A9F0008D112 /* TungDataModel 3.xcdatamodel */,
 				7DDD164E1C2DEDEE004D5193 /* TungDataModel 2.xcdatamodel */,
 				7D282C871AF2C89F00495E74 /* TungDataModel.xcdatamodel */,
 			);
-			currentVersion = 7DC90CD81CFE363A005E3185 /* TungDataModel 5.xcdatamodel */;
+			currentVersion = 7D64D04F1D106CF100560D4D /* TungDataModel 6.xcdatamodel */;
 			path = TungDataModel.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

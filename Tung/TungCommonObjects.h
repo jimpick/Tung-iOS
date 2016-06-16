@@ -123,7 +123,7 @@
 - (void) stopClipPlayback;
 
 // feed related
-- (void) checkFeedLastFetchedTime;
+- (void) checkFeedsLastFetchedTime;
 
 // flags
 @property (strong, nonatomic) NSNumber *feedNeedsRefresh;
@@ -132,6 +132,7 @@
 @property (strong, nonatomic) NSNumber *profileFeedNeedsRefetch;
 @property (strong, nonatomic) NSNumber *profileNeedsRefresh;
 @property (strong, nonatomic) NSNumber *notificationsNeedRefresh;
+@property (strong, nonatomic) NSNumber *trendingFeedNeedsRefresh;
 
 // core data
 + (BOOL) saveContextWithReason:(NSString*)reason;
