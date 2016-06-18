@@ -255,7 +255,6 @@
 + (double) convertTimestampToSeconds:(NSString *)timestamp;
 + (NSString *) formatDurationFromString:(NSString *)duration;
 + (NSInteger) getIndexOfEpisodeWithGUID:(NSString *)guid inFeed:(NSArray *)feed;
-+ (BOOL) hasGrantedNotificationPermissions;
 + (NSNumber *) getAllocatedSizeOfDirectoryAtURL:(NSURL *)directoryURL error:(NSError * __autoreleasing *)error;
 + (NSString *) formatBytes:(NSNumber *)bytes;
 + (UIImage *) image:(UIImage *)img croppedAndScaledToSquareSizeWithDimension:(CGFloat)dimension;

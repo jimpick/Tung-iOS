@@ -280,7 +280,7 @@ NSTimer *promptTimer;
         [self requestPageData];
     }
     
-    if (!settings.hasSeenMentionsPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
+    if (!settings.hasSeenMentionsPrompt.boolValue && ![[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
         promptTimer = [NSTimer scheduledTimerWithTimeInterval:2 target:_tung selector:@selector(promptForNotificationsForMentions) userInfo:nil repeats:NO];
     }
 }

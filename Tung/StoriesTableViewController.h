@@ -27,7 +27,6 @@
 @property (nonatomic, assign) BOOL requestingMore;
 @property (nonatomic, assign) BOOL reachedEndOfPosts;
 @property (nonatomic, assign) BOOL noResults;
-@property (strong, nonatomic) NSString *requestStatus;
 
 // indexes
 @property (nonatomic, assign) NSInteger activeRowIndex;
@@ -51,14 +50,6 @@
 // feed related methods
 - (void) refreshFeed;
 - (void) refetchFeed;
-- (void) getSessionAndFeed;
 - (void) endRefreshing;
-- (void) configureHeaderCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
-- (void) configureEventCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
-- (void) configureFooterCell:(UITableViewCell *)cell forIndexPath:(NSIndexPath *)indexPath;
--(void) requestPostsNewerThan:(NSNumber *)afterTime
-                  orOlderThan:(NSNumber *)beforeTime
-                     fromUser:(NSString *)user_id
-                     withCred:(BOOL)withCred;
 
 @end

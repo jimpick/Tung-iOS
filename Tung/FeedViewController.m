@@ -29,7 +29,7 @@
     
     [super viewDidLoad];
     
-    _switcher = [[UISegmentedControl alloc] initWithItems:@[@"Following", @"Trending"]];
+    _switcher = [[UISegmentedControl alloc] initWithItems:@[@"Trending", @"Following"]];
     _switcher.tintColor = [TungCommonObjects tungColor];
     _switcher.frame = CGRectMake(0, 0, 200, 28);
     _switcher.selectedSegmentIndex = 0;
@@ -62,24 +62,29 @@
     _followingFeed.profiledUserId = @"";
     [self.view addSubview:_followingFeed.view];
     
-    CGFloat topConstraint = 0;
-    CGFloat bottomConstraint = -44;
     /* There's some kind of bug in 9.0 that causes edgesForExtendedLayout to not behave properly.
      ONLY in 9.0 (not 8.4 or 9.1+) the top constraint needs to be 64 so stories feed isn't positioned behind nav bar.
      I tried every combination imaginable for edgesForExtendedLayout, automaticallyAdjustsScrollViewInsets, 
      and extendedLayoutIncludesOpaqueBars. Without the top constraint the status bar will be transparent or 
-     feed will positioned wrong. The translucence of the nav bar also affects the layout. */
+     feed will positioned wrong. The translucence of the nav bar also affects the layout.
+     
+     doesn't seem to be an issue with 2 child view controllers (instead of 1)
+     
+    CGFloat topConstraint = 0;
     NSInteger majorVersion = [[NSProcessInfo processInfo] operatingSystemVersion].majorVersion;
     NSInteger minorVersion = [[NSProcessInfo processInfo] operatingSystemVersion].minorVersion;
     NSString *version = [NSString stringWithFormat:@"%ld.%ld", (long)majorVersion, (long)minorVersion];
     if ([version isEqualToString:@"9.0"]) topConstraint = 64;
+     */
     
-    _followingFeed.view.hidden = NO;
+    CGFloat bottomConstraint = -44;
+    
     _followingFeed.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_followingFeed.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeTop multiplier:1 constant:64]]; // top constraint
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_followingFeed.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_followingFeed.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_followingFeed.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_followingFeed.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_followingFeed.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_followingFeed.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
+    _followingFeed.view.hidden = NO;
     
     // trending feed
     _trendingFeed = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
@@ -91,11 +96,13 @@
     [self.view insertSubview:_trendingFeed.view atIndex:1];
     
     _trendingFeed.view.translatesAutoresizingMaskIntoConstraints = NO;
-    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_trendingFeed.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeTop multiplier:1 constant:topConstraint]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_trendingFeed.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeTop multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_trendingFeed.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_trendingFeed.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_trendingFeed.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_trendingFeed.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_trendingFeed.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_trendingFeed.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
-    _trendingFeed.view.hidden = YES;
+    _trendingFeed.view.hidden = NO;
+    
+    [self switchFeeds:_switcher];
     
     //[TungCommonObjects clearTempDirectory]; // DEV only
     
@@ -161,20 +168,22 @@
 }
 
 - (void) refreshActiveFeedAsNeeded {
-    // following feed
+    // trending feed
     if (_switcher.selectedSegmentIndex == 0) {
+        [_trendingFeed.tableView reloadData];
+        if (_tung.trendingFeedNeedsRefresh.boolValue) {
+            [_trendingFeed refreshFeed];
+        }
+    }
+    // following feed
+    else {
+        [_followingFeed.tableView reloadData];
         if (_tung.feedNeedsRefetch.boolValue) {
             [_followingFeed refetchFeed];
         }
         else if (_tung.feedNeedsRefresh.boolValue) {
             // let's get retarded in here
             [_followingFeed refreshFeed];
-        }
-    }
-    // trending feed
-    else {
-        if (_tung.trendingFeedNeedsRefresh.boolValue) {
-            [_trendingFeed refreshFeed];
         }
     }
 }
@@ -189,13 +198,13 @@
     UISegmentedControl *switcher = (UISegmentedControl *)sender;
     NSLog(@"switcher selected index: %ld", (long)switcher.selectedSegmentIndex);
     if (switcher.selectedSegmentIndex == 0) {
-        _followingFeed.view.hidden = NO;
-        _trendingFeed.view.hidden = YES;
-        [_trendingFeed stopClipPlayback];
-    } else {
         _followingFeed.view.hidden = YES;
         _trendingFeed.view.hidden = NO;
         [_followingFeed stopClipPlayback];
+    } else {
+        _followingFeed.view.hidden = NO;
+        _trendingFeed.view.hidden = YES;
+        [_trendingFeed stopClipPlayback];
     }
     [self refreshActiveFeedAsNeeded];
     

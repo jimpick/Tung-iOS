@@ -2550,6 +2550,12 @@ static NSArray *colors;
                     NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
                     [self saveKeychainCred:tungCred];
                     
+                    // post device token if user is registered for remote notifs
+                    if ([[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
+                        [[UIApplication sharedApplication] registerForRemoteNotifications];
+                        [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
+                    }
+                    
                     callback();
                 }
             }];
@@ -2832,7 +2838,7 @@ static NSArray *colors;
     [button setEnabled:NO];
     
     SettingsEntity *settings = [TungCommonObjects settings];
-    if (!settings.hasSeenNewEpisodesPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
+    if (!settings.hasSeenNewEpisodesPrompt.boolValue && ![[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
         [self promptForNotificationsForEpisodes];
     }
     
@@ -5161,10 +5167,6 @@ static NSDateFormatter *dayDateFormatter = nil;
         }
     }
     return feedIndex;
-}
-
-+ (BOOL) hasGrantedNotificationPermissions {
-    return [[UIApplication sharedApplication] currentUserNotificationSettings].types;
 }
 
 + (NSNumber *) getAllocatedSizeOfDirectoryAtURL:(NSURL *)directoryURL error:(NSError * __autoreleasing *)error {

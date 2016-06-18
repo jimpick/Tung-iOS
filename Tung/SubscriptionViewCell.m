@@ -23,7 +23,7 @@
     if (notifySwitch.on) {
         podEntity.notifyOfNewEpisodes = [NSNumber numberWithBool:YES];
         
-        if (![TungCommonObjects hasGrantedNotificationPermissions]) {
+        if (![[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
             
             UIAlertController *notifsAreDisabledAlert = [UIAlertController alertControllerWithTitle:@"Turn notifications on?" message:@"Notifications are currently disabled. Would you like to enable them?" preferredStyle:UIAlertControllerStyleAlert];
             [notifsAreDisabledAlert addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:nil]];

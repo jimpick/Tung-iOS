@@ -26,7 +26,15 @@
     [_tung establishCred];
     // look for tung cred in keychain
     BOOL isLoggedIn = NO;
-    if (_tung.tungId && _tung.tungToken) isLoggedIn = YES;
+    if (_tung.tungId && _tung.tungToken) {
+        isLoggedIn = YES;
+        // if user is registered for remote notifs, call below methods
+        // bc "device token changes frequently" according to docs
+        if ([[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
+            [[UIApplication sharedApplication] registerForRemoteNotifications];
+            [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
+        }
+    }
     
     // depending on if they have cred or not, show appropriate screen
     NSString *storyboardId = isLoggedIn ? @"authenticated" : @"welcome";
@@ -220,9 +228,7 @@
     }
     free(bytes);
     
-    //NSLog(@"remote notification token: %@", tokenAsString);
-    //UIAlertView *tokenAlert = [[UIAlertView alloc] initWithTitle:@"Device token" message:tokenAsString delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-    //[tokenAlert show];
+    NSLog(@"successfully registered for remote notifications. token: %@", tokenAsString);
     
     [self postDeviceToken:tokenAsString];
     
@@ -266,9 +272,11 @@
     NSURL *postDeviceTokenRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/post-device-token.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *postDeviceTokenRequest = [NSMutableURLRequest requestWithURL:postDeviceTokenRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [postDeviceTokenRequest setHTTPMethod:@"POST"];
-    NSDictionary *params = @{@"sessionId":_tung.sessionId,
+    NSDictionary *params = @{@"tungId":_tung.tungId,
+                             @"tungToken": _tung.tungToken,
                              @"deviceToken": token
                              };
+    NSLog(@"post device token with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [postDeviceTokenRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -281,15 +289,10 @@
                 //JPLog(@"%@", responseDict);
                 if ([responseDict objectForKey:@"error"]) {
                     // session expired
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        [_tung getSessionWithCallback:^{
-                            [self postDeviceToken:token];
-                        }];
-                    }
-                    else {
-                        JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
-                    }
+                    JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                }
+                if ([responseDict objectForKey:@"success"]) {
+                    JPLog(@"Successfully posted device token");
                 }
             }
             else {

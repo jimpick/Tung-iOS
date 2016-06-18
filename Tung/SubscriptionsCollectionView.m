@@ -108,21 +108,7 @@ static NSString * const reuseIdentifier = @"artCell";
 
 - (void) prepareView {
     
-    // preload podcast art
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
-    NSError *fetchingError;
-    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:_subscribedQuery error:&fetchingError];
-    if (result.count > 0) {
-        NSOperationQueue *preloadQueue = [[NSOperationQueue alloc] init];
-        preloadQueue.maxConcurrentOperationCount = 3;
-        
-        for (int i = 0; i < result.count; i++) {
-            PodcastEntity *podEntity = [result objectAtIndex:i];
-            [preloadQueue addOperationWithBlock:^{
-                [TungCommonObjects retrievePodcastArtDataForEntity:podEntity];
-            }];
-        }
-    }
+    [self.collectionView reloadData];
 }
 
 NSTimer *promptTimer;
@@ -156,7 +142,7 @@ NSTimer *promptTimer;
     
     id <NSFetchedResultsSectionInfo> sectionInfo = _resultsController.sections[0];
     // prompt for notifications delay
-    if (sectionInfo.numberOfObjects > 0 && !settings.hasSeenNewEpisodesPrompt.boolValue && ![TungCommonObjects hasGrantedNotificationPermissions]) {
+    if (sectionInfo.numberOfObjects > 0 && !settings.hasSeenNewEpisodesPrompt.boolValue && ![[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
         promptTimer = [NSTimer scheduledTimerWithTimeInterval:2 target:_tung selector:@selector(promptForNotificationsForEpisodes) userInfo:nil repeats:NO];
     }
     
