@@ -121,6 +121,13 @@ UIActivityIndicatorView *backgroundSpinner;
         //[self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:_episodeEntity.podcast.keyColor1 }];
         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiatePodcastSearch)];
         
+        // tung button
+        IconButton *tungButtonInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 44, 44)];
+        tungButtonInner.type = kIconButtonTypeTungLogoType;
+        tungButtonInner.color = [UIColor colorWithRed:0.8 green:0.8 blue:0.8 alpha:1];
+        [tungButtonInner addTarget:self action:@selector(tungButtonTapped) forControlEvents:UIControlEventTouchUpInside];
+        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:tungButtonInner];
+        
         self.view.backgroundColor = [TungCommonObjects bkgdGrayColor];
         
         // nothing playing?
@@ -473,6 +480,8 @@ NSTimer *markAsSeenTimer;
 #pragma mark - Handle notifications
 
 -(void) nowPlayingDidChange {
+    
+    _commentAndPostView.commentTextView.text = @"";
     
     if (_isNowPlayingView) {
         _episodeEntity = _tung.npEpisodeEntity;
@@ -1190,6 +1199,12 @@ static CGRect buttonsScrollViewHomeRect;
     }
 }
 
+- (void) tungButtonTapped {
+    UIAlertController *thanksAlert = [UIAlertController alertControllerWithTitle:@"Thanks for using Tung!" message:@"Hope you're enjoying it 😎" preferredStyle:UIAlertControllerStyleAlert];
+    [thanksAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:thanksAlert animated:YES completion:nil];
+}
+
 #pragma mark - UIWebView delegate methods
 
 -(BOOL) webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
@@ -1334,9 +1349,15 @@ static CGRect buttonsScrollViewHomeRect;
         [waitAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
         [self presentViewController:waitAlert animated:YES completion:nil];
         
-        if (!_tung.fileWillBeCached) {
-            [_tung cacheNowPlayingEpisodeAndMoveToSaved:NO];
+        if ([_tung isPlaying]) {
+            if (!_tung.fileWillBeCached) {
+                [_tung cacheNowPlayingEpisodeAndMoveToSaved:NO];
+            }
         }
+        else {
+            [_tung playerPlay];
+        }
+        
     }
 }
 
@@ -1412,7 +1433,7 @@ static CGRect buttonsScrollViewHomeRect;
 }
 - (void) audioPlayerDidFinishPlaying:(AVAudioPlayer *)player successfully:(BOOL)flag {
     
-    if (flag) {
+    if (flag && !_keyboardActive) {
         //JPLog(@"audio player stopped successfully");
         [_clipOkayButton setEnabled:YES];
     }

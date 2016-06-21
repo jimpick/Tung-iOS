@@ -40,7 +40,7 @@
     
     _podcast = [TungPodcast new];
     _podcast.navController = [self navigationController];
-    NSLog(@"podcast dict: %@", _podcastDict);
+    //NSLog(@"podcast dict: %@", _podcastDict);
     
     // get podcast entity
     _podcastEntity = [TungCommonObjects getEntityForPodcast:_podcastDict save:NO];

@@ -42,6 +42,9 @@
             case kIconButtonTypeFindFriends:
                 [TungPodcastStyleKit drawFindFriendsIconWithFrame:rect color:_color];
                 break;
+            case kIconButtonTypeTungLogoType:
+                [TungPodcastStyleKit drawTungLogotypeWithFrame:rect color:_color];
+                break;
             default:
                 break;
         }

@@ -76,6 +76,9 @@
             case kIconTypePlayCount:
                 [TungPodcastStyleKit drawPlayCountIconWithFrame:rect color:_color];
                 break;
+            case kIconTypeTungLogoType:
+                [TungPodcastStyleKit drawTungLogotypeWithFrame:rect color:_color];
+                break;
             default:
                 break;
         }

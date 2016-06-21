@@ -184,14 +184,14 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    //return @"https://api.tung.fm/";
-    return @"https://staging-api.tung.fm/";
+    return @"https://api.tung.fm/";
+    //return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
     
-    //return @"https://tung.fm/";
-    return @"https://staging.tung.fm/";
+    return @"https://tung.fm/";
+    //return @"https://staging.tung.fm/";
 }
 
 + (NSString *) apiKey {
@@ -311,6 +311,8 @@ CGSize screenSize;
             [_player play];
             [self setControlButtonStateToPause];
         }
+    } else {
+        [self playQueuedPodcast];
     }
 }
 - (void) playerPause {
@@ -3724,13 +3726,13 @@ static NSArray *colors;
                         }
                     }
                     else {
-                        JPLog(@"user updated successfully: %@", responseDict);
+                        //JPLog(@"user updated successfully: %@", responseDict);
                         callback(responseDict);
                     }
                 }
                 else {
                     NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                    JPLog(@"HTML: %@", html);
+                    JPLog(@"Error updating user: HTML: %@", html);
                 }
             });
         }
@@ -4274,6 +4276,8 @@ static NSArray *colors;
     //NSLog(@"FB sharing cancelled");
     
 }
+
+#pragma mark - Alerts
 
 - (void) promptForNotificationsForEpisodes {
 

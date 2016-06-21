@@ -100,12 +100,6 @@ static NSString * const reuseIdentifier = @"artCell";
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
 }
 
-- (void) viewWillAppear:(BOOL)animated {
-    [super viewWillAppear:animated];
-    
-    //[self prepareView];
-}
-
 - (void) prepareView {
     
     [self.collectionView reloadData];
