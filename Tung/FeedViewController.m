@@ -236,7 +236,7 @@
     animation.type = kCATransitionFade;
     [self.navigationController.navigationBar.layer addAnimation: animation forKey: @"hideSearch"];
     
-    self.navigationItem.titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"tungNavBarLogo.png"]];
+    self.navigationItem.titleView = _switcher;
     UIBarButtonItem *searchBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiatePodcastSearch)];
     [self.navigationItem setRightBarButtonItem:searchBtn animated:YES];
     

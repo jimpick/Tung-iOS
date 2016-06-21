@@ -161,30 +161,20 @@ static NSDateFormatter *airDateFormatter = nil;
     
     NSString *keyColor1Hex = [TungCommonObjects UIColorToHexString:keyColor1];
     NSString *keyColor2Hex = [TungCommonObjects UIColorToHexString:keyColor2];
-    
 //    NSLog(@"key color 1: %@", [TungCommonObjects UIColorToHexString:keyColor1]);
 //    NSLog(@"key color 2: %@", [TungCommonObjects UIColorToHexString:keyColor2]);
-    
-    // play button
     if (podcastEntity) {
-        self.largeButton.type = kCircleTypeSupport;
         podcastEntity.keyColor1Hex = keyColor1Hex;
         podcastEntity.keyColor2Hex = keyColor2Hex;
     }
     else {
-        self.largeButton.type = kCircleTypePlay;
-        if (episodeEntity.isNowPlaying.boolValue) {
-            self.largeButton.on = YES;
-        } else {
-            self.largeButton.on = NO;
-        }
         episodeEntity.podcast.keyColor1Hex = keyColor1Hex;
         episodeEntity.podcast.keyColor2Hex = keyColor2Hex;
     }
     
-    self.largeButton.hidden = NO;
-    self.largeButton.color = keyColor2;
-    [self.largeButton setNeedsDisplay];
+    // large button
+    self.largeButton.color = keyColor1;
+    [self setUpLargeButtonForEpisode:episodeEntity orPodcast:podcastEntity];
     
     [self sizeAndSetTitleForText:title];
     self.subTitleLabel.text = subTitle;
@@ -201,6 +191,55 @@ static NSDateFormatter *airDateFormatter = nil;
     self.subscribeButton.hidden = NO;
     [self.subscribeButton setNeedsDisplay]; // re-display for color change or sub. status
 }
+
+- (void) setUpLargeButtonForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity {
+    
+    NSString *defaultText = @"🎩✨";
+    NSString *defaultSubtitle = @"Magic";
+    //NSLog(@"set up large button for episode or podcast");
+    if (podcastEntity) {
+        self.largeButton.type = kCircleTypeMagic;
+        if (podcastEntity.buttonText) {
+            self.largeButton.buttonText = podcastEntity.buttonText;
+            self.largeButton.buttonSubtitle = podcastEntity.buttonSubtitle;
+            self.largeButton.hidden = NO;
+        } else {
+            if (podcastEntity.hideMagicButton.boolValue) {
+                self.largeButton.hidden = YES;
+            } else {
+                self.largeButton.buttonText = defaultText;
+                self.largeButton.buttonSubtitle = defaultSubtitle;
+                self.largeButton.hidden = NO;
+            }
+        }
+    }
+    else {
+        self.largeButton.hidden = NO;
+        if (episodeEntity.isNowPlaying.boolValue) {
+            self.largeButton.type = kCircleTypeMagic;
+            if (episodeEntity.podcast.buttonText) {
+                self.largeButton.buttonText = podcastEntity.buttonText;
+                self.largeButton.buttonSubtitle = podcastEntity.buttonSubtitle;
+                self.largeButton.on = NO;
+            } else {
+                if (episodeEntity.podcast.hideMagicButton.boolValue) {
+                    self.largeButton.hidden = YES;
+                } else {
+                    self.largeButton.buttonText = defaultText;
+                    self.largeButton.buttonSubtitle = defaultSubtitle;
+                    self.largeButton.hidden = NO;
+                }
+            }
+        } else {
+            self.largeButton.type = kCircleTypePlay;
+            self.largeButton.on = NO;
+        }
+    }
+    
+    [self.largeButton setNeedsDisplay];
+}
+
+
 
 - (NSString *) getSubtitleLabelTextForEntity:(EpisodeEntity *)episodeEntity {
     if (episodeEntity.duration && episodeEntity.duration.length) {

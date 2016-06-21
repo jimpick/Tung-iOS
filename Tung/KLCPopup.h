@@ -132,7 +132,7 @@ extern const KLCPopupLayout KLCPopupLayoutCenter;
 // Block gets called after dismiss animation finishes. Be sure to use weak reference for popup within the block to avoid retain cycle.
 @property (nonatomic, copy) void (^didFinishDismissingCompletion)();
 
-// Convenience method for creating popup with default values (mimics UIAlertView).
+// Convenience method for creating popup with default values (mimics UI Alert View).
 + (KLCPopup*)popupWithContentView:(UIView*)contentView;
 
 // Convenience method for creating popup with custom values.

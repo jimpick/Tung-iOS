@@ -47,6 +47,7 @@
         NSString *urlString = [NSString stringWithFormat:@"http://%@", _urlToNavigateTo];
         _urlToNavigateTo = [NSURL URLWithString:urlString];
     }
+    
     // instantiate webview
     NSURLRequest *urlRequest = [NSURLRequest requestWithURL:_urlToNavigateTo];
     self.webView.delegate = self;

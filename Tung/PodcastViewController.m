@@ -40,7 +40,7 @@
     
     _podcast = [TungPodcast new];
     _podcast.navController = [self navigationController];
-    //NSLog(@"podcast dict: %@", _podcastDict);
+    NSLog(@"podcast dict: %@", _podcastDict);
     
     // get podcast entity
     _podcastEntity = [TungCommonObjects getEntityForPodcast:_podcastDict save:NO];
@@ -159,11 +159,55 @@
     
     // support button
     if (_tung.connectionAvailable.boolValue) {
-        // url unique to this podcast
-        NSString *fundraiseUrlString = [NSString stringWithFormat:@"%@fundraising?id=%@", [TungCommonObjects tungSiteRootUrl], _podcastEntity.collectionId];
-        BrowserViewController *webView = [self.storyboard instantiateViewControllerWithIdentifier:@"webView"];
-        webView.urlToNavigateTo = [NSURL URLWithString:fundraiseUrlString];
-        [self presentViewController:webView animated:YES completion:nil];
+        
+        // Magic button - customized?
+        if (_podcastEntity.buttonLink && _podcastEntity.buttonLink.length) {
+            if (_tung.connectionAvailable.boolValue) {
+                BrowserViewController *webView = [self.storyboard instantiateViewControllerWithIdentifier:@"webView"];
+                webView.urlToNavigateTo = [NSURL URLWithString:_podcastEntity.buttonLink];
+                [self presentViewController:webView animated:YES completion:nil];
+            } else {
+                [TungCommonObjects showNoConnectionAlert];
+            }
+        }
+        else {
+            
+            UIAlertController *magicButtonAlert = [UIAlertController alertControllerWithTitle:@"Yes, this button is magic!" message:@"If this is your podcast, you can customize this button - where it links, its emoji, and the text below it. 😎" preferredStyle:UIAlertControllerStyleAlert];
+            [magicButtonAlert addAction:[UIAlertAction actionWithTitle:@"Meh" style:UIAlertActionStyleDefault handler:nil]];
+            [magicButtonAlert addAction:[UIAlertAction actionWithTitle:@"Make it vanish" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                // show poof alert?
+                SettingsEntity *settings = [TungCommonObjects settings];
+                if (settings.hasSeenPoofAlert.boolValue) {
+                    _podcastEntity.hideMagicButton = [NSNumber numberWithBool:YES];
+                    [TungCommonObjects saveContextWithReason:@"user hid magic button"];
+                    [_headerView setUpLargeButtonForEpisode:nil orPodcast:_podcastEntity];
+                    
+                } else {
+                    UIAlertController *poofAlert = [UIAlertController alertControllerWithTitle:@"Poof! 💭" message:@"The magic button will vanish for this podcast until the podcaster customizes it, or until you sign-out and sign-in again." preferredStyle:UIAlertControllerStyleAlert];
+                    [poofAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                        _podcastEntity.hideMagicButton = [NSNumber numberWithBool:YES];
+                        settings.hasSeenPoofAlert = [NSNumber numberWithBool:YES];
+                        [TungCommonObjects saveContextWithReason:@"user hid magic button"];
+                        [_headerView setUpLargeButtonForEpisode:nil orPodcast:_podcastEntity];
+                    }]];
+                    [self presentViewController:poofAlert animated:YES completion:nil];
+                }
+            }]];
+            [magicButtonAlert addAction:[UIAlertAction actionWithTitle:@"Customize!" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                if (_tung.connectionAvailable.boolValue) {
+                    // url unique to this podcast
+                    NSString *magicButtonUrlString = [NSString stringWithFormat:@"%@magic-button?id=%@", [TungCommonObjects tungSiteRootUrl], _podcastEntity.collectionId];
+                    BrowserViewController *webView = [self.storyboard instantiateViewControllerWithIdentifier:@"webView"];
+                    webView.urlToNavigateTo = [NSURL URLWithString:magicButtonUrlString];
+                    [self presentViewController:webView animated:YES completion:nil];
+                    
+                } else {
+                    [TungCommonObjects showNoConnectionAlert];
+                }
+                
+            }]];
+            [self presentViewController:magicButtonAlert animated:YES completion:nil];
+        }
     } else {
         [TungCommonObjects showNoConnectionAlert];
     }

@@ -25,11 +25,12 @@
 @property NSArray *keyColors;
 @property BOOL isConstrained;
 
--(void) setUpHeaderViewWithBasicInfoForPodcast:(PodcastEntity *)podcastEntity;
--(void) setUpHeaderViewForEpisodeMiniDict:(NSDictionary *)miniDict;
--(void) setUpHeaderViewForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity;
--(void) sizeAndConstrainHeaderViewInViewController:(UIViewController *)vc;
--(NSString *) getSubtitleLabelTextForEntity:(EpisodeEntity *)episodeEntity;
+- (void) setUpHeaderViewWithBasicInfoForPodcast:(PodcastEntity *)podcastEntity;
+- (void) setUpHeaderViewForEpisodeMiniDict:(NSDictionary *)miniDict;
+- (void) setUpHeaderViewForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity;
+- (void) setUpLargeButtonForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity;
+- (void) sizeAndConstrainHeaderViewInViewController:(UIViewController *)vc;
+- (NSString *) getSubtitleLabelTextForEntity:(EpisodeEntity *)episodeEntity;
 - (void) refreshHeaderViewForEntity:(PodcastEntity *)podcastEntity;
 
 @end

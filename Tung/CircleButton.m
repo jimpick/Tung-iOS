@@ -88,6 +88,10 @@
                 [TungPodcastStyleKit drawSupportButtonWithFrame:rect down:self.highlighted];
                 break;
                 
+            case kCircleTypeMagic:
+                [TungPodcastStyleKit drawMagicButtonWithFrame:rect down:self.highlighted buttonText:_buttonText subtitle:_buttonSubtitle];
+                break;
+                
             default:
                 [TungPodcastStyleKit drawClipButtonWithFrame:rect down:self.highlighted];
                 break;

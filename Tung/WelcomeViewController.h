@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "SignUpButton.h"
 
-@interface WelcomeViewController : UIViewController <UIAlertViewDelegate, UIActionSheetDelegate>
+@interface WelcomeViewController : UIViewController
 
 @property (strong, nonatomic) IBOutlet UIImageView *logo;
 @property (strong, nonatomic) IBOutlet SignUpButton *btn_signUpWithTwitter;

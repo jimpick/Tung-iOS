@@ -16,7 +16,7 @@
 #import <MediaPlayer/MediaPlayer.h>
 #import "IconButton.h"
 
-@interface EpisodeViewController : UIViewController <TungPodcastsDelegate, UIActionSheetDelegate, AVAudioPlayerDelegate, UIWebViewDelegate, UITextViewDelegate, UIScrollViewDelegate>
+@interface EpisodeViewController : UIViewController <TungPodcastsDelegate, AVAudioPlayerDelegate, UIWebViewDelegate, UITextViewDelegate, UIScrollViewDelegate>
 
 @property (strong, nonatomic) IBOutlet FXBlurView *npControlsView;
 @property (strong, nonatomic) IBOutlet UISlider *posbar;

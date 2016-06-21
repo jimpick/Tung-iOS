@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "ProfileHeaderView.h"
 
-@interface ProfileListTableViewController : UITableViewController <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, UIAlertViewDelegate, UISearchBarDelegate, UISearchControllerDelegate>
+@interface ProfileListTableViewController : UITableViewController <UITableViewDataSource, UITableViewDelegate, UIScrollViewDelegate, UISearchBarDelegate, UISearchControllerDelegate>
 
 @property (strong, nonatomic) NSString *queryType; // default is search 
 @property (strong, nonatomic) NSString *target_id;

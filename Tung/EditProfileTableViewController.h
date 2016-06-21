@@ -9,7 +9,7 @@
 #import <UIKit/UIKit.h>
 #import "AvatarContainerView.h"
 
-@interface EditProfileTableViewController : UITableViewController <UITextViewDelegate, UITextFieldDelegate, UIAlertViewDelegate>
+@interface EditProfileTableViewController : UITableViewController <UITextViewDelegate, UITextFieldDelegate>
 
 @property (strong, nonatomic) NSMutableDictionary *profileData;
 @property (strong, nonatomic) NSDictionary *registrationErrors;

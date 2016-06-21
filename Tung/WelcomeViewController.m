@@ -235,8 +235,7 @@
                 }
                 else {
                     [self loginRequestEnded];
-                    UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                    [errorAlert show];
+                    [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                 }
             }];
             
@@ -261,8 +260,10 @@
                                  if (error) {
                                      JPLog(@"fb - Process error: %@", error);
                                      NSString *alertText = [NSString stringWithFormat:@"\"%@\"", error];
-                                     UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Facebook error" message:alertText delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                                     [errorAlert show];
+                                     UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Facebook error" message:alertText preferredStyle:UIAlertControllerStyleAlert];
+                                     [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+                                     [self presentViewController:errorAlert animated:YES completion:nil];
+                                     
                                      [self loginRequestEnded];
                                  }
                                  else if (result.isCancelled) {
@@ -331,8 +332,7 @@
                                              else {
                                                  
                                                  [self loginRequestEnded];
-                                                 UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                                                 [errorAlert show];
+                                                 [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                                              }
                                          }];
                                      }

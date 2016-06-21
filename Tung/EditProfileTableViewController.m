@@ -329,13 +329,11 @@ static UIImage *iconRedX;
         else if ([responseDict objectForKey:@"error"]) {
             JPLog(@"error updating user: %@", [responseDict objectForKey:@"error"]);
             self.navigationItem.title = @"Edit Profile";
-            UIAlertView *updateProfileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-            [updateProfileErrorAlert show];
+            [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
         } else {
             JPLog(@"unknown error updating user: %@", responseDict);
             self.navigationItem.title = @"Edit Profile";
-            UIAlertView *updateProfileErrorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:@"An unknown error occurred." delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-            [updateProfileErrorAlert show];
+            [TungCommonObjects simpleErrorAlertWithMessage:@"An unknown error occurred"];
         }
     }];
 }

@@ -190,7 +190,8 @@ CGSize screenSize;
 
 + (NSString *) tungSiteRootUrl {
     
-    return @"https://tung.fm/";
+    //return @"https://tung.fm/";
+    return @"https://staging.tung.fm/";
 }
 
 + (NSString *) apiKey {
@@ -530,6 +531,7 @@ CGSize screenSize;
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
 }
 - (void) setControlButtonStateToBuffering {
+    NSLog(@"set control button state to buffering");
     [_btnActivityIndicator startAnimating];
     [_btn_player setImage:nil forState:UIControlStateNormal];
     [_btn_player setImage:nil forState:UIControlStateHighlighted];
@@ -1763,6 +1765,13 @@ UILabel *prototypeBadge;
             NSNumber *timeSubscribed = [podcastDict objectForKey:@"timeSubscribed"];
             podcastEntity.timeSubscribed = timeSubscribed;
         }
+    }
+    
+    // magic button
+    if (podcastDict[@"buttonText"] && [podcastDict[@"buttonText"] isKindOfClass:[NSString class]]) {
+        podcastEntity.buttonText = podcastDict[@"buttonText"];
+        podcastEntity.buttonSubtitle = podcastDict[@"buttonSubtitle"];
+        podcastEntity.buttonLink = podcastDict[@"buttonLink"];
     }
 	// NOTE: many properties set AFTER an entity is retrieved
     
@@ -4263,42 +4272,6 @@ static NSArray *colors;
     
     //NSLog(@"FB sharing cancelled");
     
-}
-
-
-#pragma mark - alerts
-
--(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    JPLog(@"dismissed alert with button index: %ld", (long)buttonIndex);
-
-    // notification permissions - new episodes
-    if (alertView.tag == 20) {
-        
-        SettingsEntity *settings = [TungCommonObjects settings];
-        settings.hasSeenNewEpisodesPrompt = [NSNumber numberWithBool:YES];
-        [TungCommonObjects saveContextWithReason:@"settings changed"];
-        
-        if (buttonIndex == 1) {
-            [[UIApplication sharedApplication] registerForRemoteNotifications];
-            [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
-        }
-    }
-    // notification permissions - mentions
-    if (alertView.tag == 21) {
-        
-        SettingsEntity *settings = [TungCommonObjects settings];
-        settings.hasSeenMentionsPrompt = [NSNumber numberWithBool:YES];
-        [TungCommonObjects saveContextWithReason:@"settings changed"];
-        
-        if (buttonIndex == 1) {
-            [[UIApplication sharedApplication] registerForRemoteNotifications];
-            [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
-        }
-    }
-    // unauthorized alert
-    if (alertView.tag == 99) {
-        [self signOut];
-    }
 }
 
 - (void) promptForNotificationsForEpisodes {

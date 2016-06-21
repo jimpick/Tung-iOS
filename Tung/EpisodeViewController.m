@@ -594,9 +594,9 @@ NSTimer *markAsSeenTimer;
     [_headerView.subscribeButton addTarget:self action:@selector(subscribeToPodcastViaSender:) forControlEvents:UIControlEventTouchUpInside];
     
     if (_isNowPlayingView) {
-        _headerView.largeButton.type = kCircleTypeSupport;
-        [_headerView.largeButton setNeedsDisplay];
+        [_headerView setUpLargeButtonForEpisode:nil orPodcast:episodeEntity.podcast];
     }
+    
     [_headerView.largeButton addTarget:self action:@selector(largeButtonInHeaderTapped) forControlEvents:UIControlEventTouchUpInside];
     
     [_headerView.podcastButton addTarget:self action:@selector(pushPodcastDescription) forControlEvents:UIControlEventTouchUpInside];
@@ -670,38 +670,69 @@ NSTimer *markAsSeenTimer;
 
 - (void) largeButtonInHeaderTapped {
     
-    if (_isNowPlayingView) {
-        // support button
-        if (_tung.connectionAvailable.boolValue) {
-            // url unique to this podcast
-            NSString *fundraiseUrlString = [NSString stringWithFormat:@"%@fundraising?id=%@", [TungCommonObjects tungSiteRootUrl], _episodeEntity.collectionId];
-            JPLog(@"open url: %@", fundraiseUrlString);
-            _urlToPass = [NSURL URLWithString:fundraiseUrlString];
-            [self performSegueWithIdentifier:@"presentWebView" sender:self];
-        } else {
-            [TungCommonObjects showNoConnectionAlert];
+    if (_episodeEntity.isNowPlaying.boolValue) {
+        // Magic button - customized?
+        if (_episodeEntity.podcast.buttonLink && _episodeEntity.podcast.buttonLink.length) {
+            if (_tung.connectionAvailable.boolValue) {
+                _urlToPass = [NSURL URLWithString:_episodeEntity.podcast.buttonLink];
+                [self performSegueWithIdentifier:@"presentWebView" sender:self];
+            } else {
+                [TungCommonObjects showNoConnectionAlert];
+            }
         }
+        else {
+
+            UIAlertController *magicButtonAlert = [UIAlertController alertControllerWithTitle:@"Yes, this button is magic!" message:@"If this is your podcast, you can customize this button - where it links, its emoji, and the text below it.\n 😎" preferredStyle:UIAlertControllerStyleAlert];
+            [magicButtonAlert addAction:[UIAlertAction actionWithTitle:@"Meh" style:UIAlertActionStyleDefault handler:nil]];
+            [magicButtonAlert addAction:[UIAlertAction actionWithTitle:@"Make it vanish" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                // show poof alert?
+                SettingsEntity *settings = [TungCommonObjects settings];
+                if (settings.hasSeenPoofAlert.boolValue) {
+                    _episodeEntity.podcast.hideMagicButton = [NSNumber numberWithBool:YES];
+                    [TungCommonObjects saveContextWithReason:@"user hid magic button"];
+                    [_headerView setUpLargeButtonForEpisode:nil orPodcast:_episodeEntity.podcast];
+                    
+                } else {
+                    UIAlertController *poofAlert = [UIAlertController alertControllerWithTitle:@"Poof! 💭" message:@"The magic button will vanish for this podcast until the podcaster customizes it, or until you sign-out and sign-in again." preferredStyle:UIAlertControllerStyleAlert];
+                    [poofAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                        _episodeEntity.podcast.hideMagicButton = [NSNumber numberWithBool:YES];
+                        settings.hasSeenPoofAlert = [NSNumber numberWithBool:YES];
+                        [TungCommonObjects saveContextWithReason:@"user hid magic button"];
+                        [_headerView setUpLargeButtonForEpisode:nil orPodcast:_episodeEntity.podcast];
+                    }]];
+                    [self presentViewController:poofAlert animated:YES completion:nil];
+                }
+            }]];
+            [magicButtonAlert addAction:[UIAlertAction actionWithTitle:@"Customize!" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                if (_tung.connectionAvailable.boolValue) {
+                        // url unique to this podcast
+                    NSString *magicButtonUrlString = [NSString stringWithFormat:@"%@magic-button?id=%@", [TungCommonObjects tungSiteRootUrl], _episodeEntity.collectionId];
+                    _urlToPass = [NSURL URLWithString:magicButtonUrlString];
+                    [self performSegueWithIdentifier:@"presentWebView" sender:self];
+                    
+                } else {
+                    [TungCommonObjects showNoConnectionAlert];
+                }
+
+            }]];
+            [self presentViewController:magicButtonAlert animated:YES completion:nil];
+        }
+        
     }
     else {
         // play button
         if (_episodeEntity.url.length > 0) {
-            if (_headerView.largeButton.on) {
-                // select Now Playing tab
-                MainTabBarController *tabVC = (MainTabBarController *)self.parentViewController.parentViewController;
-                tabVC.selectedIndex = 1;
-                UIButton *btn = [[UIButton alloc] init];
-                btn.tag = 1;
-                [tabVC selectTab:btn];
-                
-            } else {
-                [_tung queueAndPlaySelectedEpisode:_episodeEntity.url fromTimestamp:nil];
-                _headerView.largeButton.on = YES;
-                [_headerView.largeButton setNeedsDisplay];
-                [_episodesView.tableView reloadData];
-            }
+
+            [_tung queueAndPlaySelectedEpisode:_episodeEntity.url fromTimestamp:nil];
+            [_headerView setUpLargeButtonForEpisode:_episodeEntity orPodcast:nil];
+            [_episodesView.tableView reloadData];
+
         } else {
-            UIAlertView *badXmlAlert = [[UIAlertView alloc] initWithTitle:@"Can't Play - No URL" message:@"Unfortunately, this feed is missing links to its content." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-            [badXmlAlert show];
+            
+            UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Can't Play - No URL" message:@"Unfortunately, this feed is missing links to its content." preferredStyle:UIAlertControllerStyleAlert];
+            [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+            [self presentViewController:errorAlert animated:YES completion:nil];
+            
         }
     }
 }
@@ -1014,9 +1045,7 @@ static CGRect buttonsScrollViewHomeRect;
                              // prompt for notifications
                              SettingsEntity *settings = [TungCommonObjects settings];
                              if (!settings.hasSeenMentionsPrompt.boolValue && ![[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
-                                 UIAlertView *notifPermissionAlert = [[UIAlertView alloc] initWithTitle:@"User Mentions" message:@"Tung can notify you when someone mentions you in a comment, or when new episodes are released for podcasts you subscribe to. Would you like to receive notifications?" delegate:_tung cancelButtonTitle:nil otherButtonTitles:@"No", @"Yes", nil];
-                                 [notifPermissionAlert setTag:21];
-                                 [notifPermissionAlert show];
+                                 [_tung promptForNotificationsForMentions];
                              }
                          }
                      }];
@@ -1181,10 +1210,10 @@ static CGRect buttonsScrollViewHomeRect;
             [TungCommonObjects showNoConnectionAlert];
         }
     } else {
-        JPLog(@"no website");
         
-        UIAlertView *noWebsiteAlert = [[UIAlertView alloc] initWithTitle:@"Bummer" message:@"This podcast doesn't have a website url in its feed." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-        [noWebsiteAlert show];
+        UIAlertController *noWebsiteAlert = [UIAlertController alertControllerWithTitle:@"Bummer" message:@"This podcast doesn't have a website url in its feed." preferredStyle:UIAlertControllerStyleAlert];
+        [noWebsiteAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:noWebsiteAlert animated:YES completion:nil];
     }
 }
 
@@ -1282,15 +1311,17 @@ static CGRect buttonsScrollViewHomeRect;
                 [self trimAudioFrom:_recordStartMarker to:_recordEndMarker];
             } else {
                 // too short
-                UIAlertView *tooShortAlert = [[UIAlertView alloc] initWithTitle:@"Too short" message:[NSString stringWithFormat:@"Clips must be at least %d seconds long", MIN_RECORD_TIME] delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-                [tooShortAlert show];
+                UIAlertController *tooShortAlert = [UIAlertController alertControllerWithTitle:@"Too short" message:[NSString stringWithFormat:@"Clips must be at least %d seconds long", MIN_RECORD_TIME] preferredStyle:UIAlertControllerStyleAlert];
+                [tooShortAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+                [self presentViewController:tooShortAlert animated:YES completion:nil];
             }
         }
         [_recordButton setNeedsDisplay];
     } else {
         
-        UIAlertView *waitForDownloadAlert = [[UIAlertView alloc] initWithTitle:@"Hang on..." message:@"You can record as soon as this episode finishes downloading." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-        [waitForDownloadAlert show];
+        UIAlertController *waitAlert = [UIAlertController alertControllerWithTitle:@"Hang on..." message:@"You can record as soon as this episode finishes downloading." preferredStyle:UIAlertControllerStyleAlert];
+        [waitAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+        [self presentViewController:waitAlert animated:YES completion:nil];
         
         if (!_tung.fileWillBeCached) {
             [_tung cacheNowPlayingEpisodeAndMoveToSaved:NO];
@@ -1428,8 +1459,9 @@ static CGRect buttonsScrollViewHomeRect;
             // vibrate
             AudioServicesPlaySystemSound(kSystemSoundID_Vibrate);
             // max record time reached alert
-            UIAlertView *maxTimeAlert = [[UIAlertView alloc] initWithTitle:@"Max time reached" message:nil delegate:self cancelButtonTitle:@"OK" otherButtonTitles:nil];
-            [maxTimeAlert show];
+            UIAlertController *maxAlert = [UIAlertController alertControllerWithTitle:@"Max time reached" message:nil preferredStyle:UIAlertControllerStyleAlert];
+            [maxAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+            [self presentViewController:maxAlert animated:YES completion:nil];
         }
     }
     if (_audioPlayer && _audioPlayer.isPlaying) {
@@ -1463,9 +1495,13 @@ static CGRect buttonsScrollViewHomeRect;
     }
     else {
         if (_playClipButton.enabled) {
-            UIAlertView *cancelClipAlert = [[UIAlertView alloc] initWithTitle:@"Start over?" message:@"Your recording will be lost." delegate:self cancelButtonTitle:@"OK" otherButtonTitles:@"Cancel", nil];
-            cancelClipAlert.tag = 3;
-            [cancelClipAlert show];
+            
+            UIAlertController *cancelClipAlert = [UIAlertController alertControllerWithTitle:@"Start over?" message:@"Your recording will be lost." preferredStyle:UIAlertControllerStyleAlert];
+            [cancelClipAlert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+            [cancelClipAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                [self resetRecording];
+            }]];
+            [self presentViewController:cancelClipAlert animated:YES completion:nil];
         } else {
             [self toggleNewClipView];
         }
@@ -2178,25 +2214,6 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
     UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[text] applicationActivities:nil];
     [self presentViewController:shareSheet animated:YES completion:nil];
 }
-
-
-#pragma mark - Handle alerts / action sheets
-
--(void) alertView:(UIAlertView *)alertView clickedButtonAtIndex:(NSInteger)buttonIndex {
-    JPLog(@"dismissed alert with button index: %ld", (long)buttonIndex);
-    
-    // reset recording prompt
-    if (alertView.tag == 3) {
-        if (buttonIndex == 0) [self resetRecording];
-    }
-}
-
-/* not used
-- (void)actionSheet:(UIActionSheet *)actionSheet didDismissWithButtonIndex:(NSInteger)buttonIndex {
-    JPLog(@"dismissed actionSheet with button index: %ld", (long)buttonIndex);
-    
-}
-*/
 
 #pragma mark - scroll view delegate methods
 

@@ -26,12 +26,16 @@
         <attribute name="artistName" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="artworkUrl" optional="YES" attributeType="String" elementID="artworkUrl600" syncable="YES"/>
         <attribute name="artworkUrlSSL" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="buttonLink" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="buttonSubtitle" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="buttonText" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="collectionId" attributeType="Double" defaultValueString="0.0" indexed="YES" syncable="YES"/>
         <attribute name="collectionName" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="desc" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="email" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="feedLastCached" optional="YES" attributeType="Date" syncable="YES"/>
         <attribute name="feedUrl" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="hideMagicButton" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
         <attribute name="isSubscribed" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
         <attribute name="keyColor1" optional="YES" attributeType="Transformable" syncable="YES"/>
         <attribute name="keyColor1Hex" optional="YES" attributeType="String" syncable="YES"/>
@@ -50,6 +54,7 @@
         <attribute name="hasSeenEpisodeExpirationAlert" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
         <attribute name="hasSeenMentionsPrompt" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
         <attribute name="hasSeenNewEpisodesPrompt" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
+        <attribute name="hasSeenPoofAlert" attributeType="Boolean" defaultValueString="NO" syncable="YES"/>
         <attribute name="hasSeenWelcomePopup" attributeType="Boolean" defaultValueString="NO" elementID="hasSeenFeedDemo" syncable="YES"/>
         <attribute name="numPodcastNotifications" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
         <attribute name="numProfileNotifications" attributeType="Integer 16" defaultValueString="0" syncable="YES"/>
@@ -73,8 +78,8 @@
     </entity>
     <elements>
         <element name="EpisodeEntity" positionX="-18" positionY="27" width="128" height="345"/>
-        <element name="PodcastEntity" positionX="-45" positionY="0" width="128" height="360"/>
-        <element name="SettingsEntity" positionX="-27" positionY="153" width="128" height="165"/>
+        <element name="PodcastEntity" positionX="-45" positionY="0" width="128" height="420"/>
+        <element name="SettingsEntity" positionX="-27" positionY="153" width="128" height="180"/>
         <element name="UserEntity" positionX="-27" positionY="126" width="128" height="255"/>
     </elements>
 </model>

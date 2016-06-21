@@ -26,7 +26,8 @@ typedef enum {
     kCircleTypeSave,
     kCircleTypeSaveWithProgress,
     kCircleTypePlay,
-    kCircleTypeSupport
+    kCircleTypeSupport,
+    kCircleTypeMagic
 } CircleButtonType;
 
 @interface CircleButton : UIButton
@@ -34,6 +35,7 @@ typedef enum {
 @property CircleButtonType type;
 @property (copy) UIColor *color; // subscribe btn
 @property (copy) NSString *buttonText; // pill text button
+@property (copy) NSString *buttonSubtitle; // magic button
 @property BOOL subscribed; // subscribe btn
 @property BOOL recommended; // recommend btn
 @property BOOL isRecording; // record btn

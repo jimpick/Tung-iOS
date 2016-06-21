@@ -37,7 +37,7 @@
 #define MIN_RECORD_TIME 2
 #define MAX_COMMENT_CHARS 220
 
-@interface TungCommonObjects : NSObject <UIAlertViewDelegate, UIActionSheetDelegate, NSURLConnectionDataDelegate, AVAssetResourceLoaderDelegate, FBSDKSharingDelegate>
+@interface TungCommonObjects : NSObject <NSURLConnectionDataDelegate, AVAssetResourceLoaderDelegate, FBSDKSharingDelegate>
 
 // for presenting views, etc.
 @property (strong, nonatomic) UIViewController *viewController;

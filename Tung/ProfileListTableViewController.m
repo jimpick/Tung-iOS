@@ -310,8 +310,7 @@
                             } else {
                                 [self endRefreshing];
                                 // other error - alert user
-                                UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                                [errorAlert show];
+                                [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                             }
                         });
                     }
@@ -1004,8 +1003,7 @@
                         }];
                     } else {
                         // other error - alert user
-                        UIAlertView *errorAlert = [[UIAlertView alloc] initWithTitle:@"Error" message:[responseDict objectForKey:@"error"] delegate:self cancelButtonTitle:nil otherButtonTitles:@"OK", nil];
-                        [errorAlert show];
+                        [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                     }
                 });
             }
