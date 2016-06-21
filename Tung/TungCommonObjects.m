@@ -3123,6 +3123,7 @@ static NSArray *colors;
                         }
                         [TungCommonObjects saveContextWithReason:@"un-recommended episode"];
                         _feedNeedsRefetch = [NSNumber numberWithBool:YES];
+                        _trendingFeedNeedsRefetch = [NSNumber numberWithBool:YES];
                         _profileFeedNeedsRefetch = [NSNumber numberWithBool:YES];
                         callback(YES);
                     }
@@ -4785,7 +4786,7 @@ static NSArray *colors;
         NSString *tungCred = [[NSString alloc] initWithData:(__bridge_transfer NSData *)cfValue encoding:NSUTF8StringEncoding];
         return tungCred;
     } else {
-    	JPLog(@"No cred found. Error: %@", [self keychainStatusToString:results]);
+    	JPLog(@"No cred found. (Error?): %@", [self keychainStatusToString:results]);
         return NULL;
     }
 }
@@ -5251,6 +5252,22 @@ static NSDateFormatter *dayDateFormatter = nil;
     UIGraphicsEndImageContext();
     
     return scaledImage;
+}
+
++ (NSURL *) addReferrerToUrlString:(NSString *)urlString {
+    NSURLComponents *components = [[NSURLComponents alloc] initWithString:urlString];
+    if (!components.scheme) {
+        components.scheme = @"http://";
+    }
+    // add referrer
+    NSString *referrer = @"ref=tungfm-iOS";
+    if (components.query) {
+        components.query = [NSString stringWithFormat:@"%@&%@", components.query, referrer];
+    } else {
+        components.query = referrer;
+    }
+    NSLog(@"added ref to url: %@", components.URL);
+    return components.URL;
 }
 
 

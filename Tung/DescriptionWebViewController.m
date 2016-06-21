@@ -11,7 +11,7 @@
 #import "JPLogRecorder.h"
 
 @interface DescriptionWebViewController ()
-@property NSURL *urlToPass;
+@property NSString *urlStringToPass;
 
 @end
 
@@ -47,7 +47,7 @@
     } else {
         
         // open web browsing modal
-        _urlToPass = request.URL;
+        _urlStringToPass = request.URL.absoluteString;
         [self performSegueWithIdentifier:@"presentWebView" sender:self];
         
         return NO;
@@ -68,7 +68,7 @@
     
     if ([[segue identifier] isEqualToString:@"presentWebView"]) {
         BrowserViewController *browserViewController = (BrowserViewController *)destination;
-        [browserViewController setValue:_urlToPass forKey:@"urlToNavigateTo"];
+        [browserViewController setValue:_urlStringToPass forKey:@"urlStringToNavigateTo"];
     }
     
 }

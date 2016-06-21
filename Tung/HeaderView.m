@@ -173,7 +173,7 @@ static NSDateFormatter *airDateFormatter = nil;
     }
     
     // large button
-    self.largeButton.color = keyColor1;
+    self.largeButton.color = keyColor2;
     [self setUpLargeButtonForEpisode:episodeEntity orPodcast:podcastEntity];
     
     [self sizeAndSetTitleForText:title];
@@ -194,10 +194,12 @@ static NSDateFormatter *airDateFormatter = nil;
 
 - (void) setUpLargeButtonForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity {
     
-    NSString *defaultText = @"🎩✨";
-    NSString *defaultSubtitle = @"Magic";
+    //NSString *defaultText = @"🎩✨";
+    //NSString *defaultSubtitle = @"Magic";
     //NSLog(@"set up large button for episode or podcast");
     if (podcastEntity) {
+        self.largeButton.hidden = YES;
+        /*
         self.largeButton.type = kCircleTypeMagic;
         if (podcastEntity.buttonText) {
             self.largeButton.buttonText = podcastEntity.buttonText;
@@ -211,10 +213,16 @@ static NSDateFormatter *airDateFormatter = nil;
                 self.largeButton.buttonSubtitle = defaultSubtitle;
                 self.largeButton.hidden = NO;
             }
-        }
+        }*/
     }
     else {
         self.largeButton.hidden = NO;
+        self.largeButton.type = kCircleTypePlay;
+        self.largeButton.on = NO;
+        if (episodeEntity.isNowPlaying.boolValue) {
+            self.largeButton.on = YES;
+        }
+        /*
         if (episodeEntity.isNowPlaying.boolValue) {
             self.largeButton.type = kCircleTypeMagic;
             if (episodeEntity.podcast.buttonText) {
@@ -234,6 +242,7 @@ static NSDateFormatter *airDateFormatter = nil;
             self.largeButton.type = kCircleTypePlay;
             self.largeButton.on = NO;
         }
+         */
     }
     
     [self.largeButton setNeedsDisplay];

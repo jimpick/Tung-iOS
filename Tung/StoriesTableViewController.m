@@ -111,7 +111,7 @@
         _contentOffsetSet = YES;
     }
     
-    if (_episodeId) {
+    if (_episodeId.length) {
         self.navigationItem.title = @"Episode";
         [self getStoriesForProfiledUserId:nil
                               orEpisodeId:_episodeId
@@ -166,19 +166,28 @@
     }
 }
 
-// only used for profiled user feed and following feed
+
 - (void) refetchFeed {
     
-    [self getStoriesNewerThan:[NSNumber numberWithInt:0]
-                  orOlderThan:[NSNumber numberWithInt:0]
-                     trending:_isForTrending
-                     withCred:NO];
-    
-    if (_profiledUserId) {
+    if (_profiledUserId.length) {
+        [self getStoriesForProfiledUserId:_profiledUserId
+                              orEpisodeId:_episodeId
+                                newerThan:[NSNumber numberWithInt:0]
+                              orOlderThan:[NSNumber numberWithInt:0]
+                                 withCred:NO];
         _tung.profileFeedNeedsRefetch = [NSNumber numberWithBool:NO];
     }
-    else if (!_isForTrending) {
-        _tung.feedNeedsRefetch = [NSNumber numberWithBool:NO];
+    else {
+        [self getStoriesNewerThan:[NSNumber numberWithInt:0]
+                      orOlderThan:[NSNumber numberWithInt:0]
+                         trending:_isForTrending
+                         withCred:NO];
+        
+        if (_isForTrending) {
+            _tung.trendingFeedNeedsRefetch = [NSNumber numberWithBool:NO];
+        } else {
+            _tung.feedNeedsRefetch = [NSNumber numberWithBool:NO];
+        }
     }
 
 }
@@ -228,7 +237,7 @@
                                      };
         [postParams addEntriesFromDictionary:credParams];
     }
-    NSLog(@"request stories with get params: %@ and post params: %@", getParams, postParams);
+    //NSLog(@"request stories with get params: %@ and post params: %@", getParams, postParams);
     
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:postParams];
     [storyRequest setHTTPBody:serializedParams];
@@ -264,7 +273,7 @@
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
                         NSTimeInterval requestDuration = [requestStarted timeIntervalSinceNow];
-                        NSArray *newStories = [responseDict objectForKey:@"stories"];
+                        NSMutableArray *newStories = [[responseDict objectForKey:@"stories"] mutableCopy];
                         
                         // set feedLastFetched date (seconds)
                         SettingsEntity *settings = [TungCommonObjects settings];
@@ -309,9 +318,9 @@
                             if (newStories.count > 0) {
                                 //JPLog(@"got stories newer than: %@", afterTime);
                                 
-                                [self endRefreshingWithNewPosts:YES];
-                                
                                 [self stopClipPlayback];
+                                
+                                [self removeOlderDuplicatesOfNewStories:newStories];
                                 
                                 NSArray *newItems = [self processStories:newStories];
                                 NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
@@ -324,6 +333,8 @@
                                 }
                                 [self.tableView endUpdates];
                                 [UIView setAnimationsEnabled:YES];
+                                
+                                [self endRefreshingWithNewPosts:YES];
                                 
                             } else {
                                 [self endRefreshing];
@@ -460,7 +471,7 @@
                 else if ([responseDict objectForKey:@"success"]) {
                     dispatch_async(dispatch_get_main_queue(), ^{
                         
-                        NSArray *newStories = [responseDict objectForKey:@"stories"];
+                        NSMutableArray *newStories = [[responseDict objectForKey:@"stories"] mutableCopy];
                         if (profiledUserId) {
                         	_tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:NO];
                         }
@@ -475,9 +486,9 @@
                             if (newStories.count > 0) {
                                 //JPLog(@"got stories newer than: %@", afterTime);
                                 
-                                [self endRefreshingWithNewPosts:YES];
-                                
                                 [self stopClipPlayback];
+                                
+                                [self removeOlderDuplicatesOfNewStories:newStories];
                                 
                                 NSArray *newItems = [self processStories:newStories];
                                 NSArray *newFeedArray = [newItems arrayByAddingObjectsFromArray:_storiesArray];
@@ -490,6 +501,8 @@
                                 }
                                 [self.tableView endUpdates];
                                 [UIView setAnimationsEnabled:YES];
+                                
+                                [self endRefreshingWithNewPosts:YES];
                                 
                             } else {
                                 [self endRefreshing];
@@ -666,22 +679,84 @@
 }
 
 
-/* 	NOT USED - old
- 	new stories fetched after feed has already been fetched may be part of those already fetched.
-	if the same story id comes down again, this method removes the older duplicate.
- 	works for trending too because story id will be episode id.
+/* 	new stories fetched after feed has already been fetched may be part of those already fetched.
+	if the same episode id comes down again, this method removes the older duplicate,
+ 	and adds any new events/users to the new story.
  */
-- (void) removeOlderDuplicatesOfNewStories:(NSArray *)newStories {
+- (void) removeOlderDuplicatesOfNewStories:(NSMutableArray *)newStories {
     
     for (int i = 0; i < newStories.count; i++) {
-        NSString *storyIdToMatch = [[[newStories objectAtIndex:i] objectForKey:@"_id"] objectForKey:@"$id"];
+        NSString *newStoryIdToMatch = [[[newStories objectAtIndex:i] objectForKey:@"_id"] objectForKey:@"$id"];
+        // new story is grouped?
+        BOOL newStoryIsGrouped = NO;
+        if ([[newStories objectAtIndex:i] objectForKey:@"users"]) {
+            newStoryIsGrouped = YES;
+        }
         
         // check for story id match in main stories array
         for (int j = 0; j < _storiesArray.count; j++) {
-            NSDictionary *headerDict = [[_storiesArray objectAtIndex:j] objectAtIndex:0];
-            
+            NSArray *existingStory = [_storiesArray objectAtIndex:j];
+            NSDictionary *headerDict = [existingStory objectAtIndex:0];
             // story match
-            if ([storyIdToMatch isEqualToString:[[headerDict objectForKey:@"_id"] objectForKey:@"$id"]]) {
+            if ([newStoryIdToMatch isEqualToString:[[headerDict objectForKey:@"_id"] objectForKey:@"$id"]]) {
+                
+                NSMutableDictionary *newStory = [[newStories objectAtIndex:i] mutableCopy];
+                
+                NSNumber *time_secs_end = [headerDict objectForKey:@"time_secs_end"];
+                [newStory setObject:time_secs_end forKey:@"time_secs_end"];
+                
+                // move existing events into new story
+                NSMutableArray *allEvents = [[newStory objectForKey:@"events"] mutableCopy];
+                for (int k = 1; k < existingStory.count; k++) {
+                    [allEvents addObject:[existingStory objectAtIndex:k]];
+                }
+                [newStory setObject:allEvents forKey:@"events"];
+                
+                // move existing users to new story, adjust as needed
+                if (newStoryIsGrouped) {
+                    
+                    NSMutableArray *newStoryUsers = [[newStory objectForKey:@"users"] mutableCopy];
+                    // both grouped
+                    if ([headerDict objectForKey:@"users"]) {
+                        // combine both users arrays
+                        NSArray *newArray = [[headerDict objectForKey:@"users"] arrayByAddingObjectsFromArray:newStoryUsers];
+                        NSArray *users = [[NSSet setWithArray:newArray] allObjects];
+                        [newStory setObject:users forKey:@"users"];
+                    }
+                    // existing story had one user, new story grouped
+                    else {
+                        // add existing story avatar if not already in new story
+                        NSString *existingAvUrl = [[headerDict objectForKey:@"user"] objectForKey:@"small_av_url"];
+                        if (![newStoryUsers containsObject:existingAvUrl]) {
+                            [newStoryUsers addObject:existingAvUrl];
+                            [newStory setObject:newStoryUsers forKey:@"users"];
+                        }
+                    }
+                }
+                else {
+                    NSDictionary *newStoryUser = [newStory objectForKey:@"user"];
+                    // existing story grouped, new story isn't
+                    if ([headerDict objectForKey:@"users"]) {
+                        NSMutableArray *newArray = [[headerDict objectForKey:@"users"] mutableCopy];
+                        [newArray addObject:[newStoryUser objectForKey:@"small_av_url"]];
+                        NSArray *users = [[NSSet setWithArray:newArray] allObjects];
+                        [newStory setObject:users forKey:@"users"];
+                        [newStory removeObjectForKey:@"user"];
+                    }
+                    // both stories have one user
+                    else {
+                        // if they are different
+                        if (![newStoryUser isEqualToDictionary:[headerDict objectForKey:@"user"]]) {
+                            NSString *existingAvUrl = [[headerDict objectForKey:@"user"] objectForKey:@"small_av_url"];
+                            NSArray *users = [NSArray arrayWithObjects:existingAvUrl, [newStoryUser objectForKey:@"small_av_url"], nil];
+                            [newStory setObject:users forKey:@"users"];
+                            [newStory removeObjectForKey:@"user"];
+                        }
+                    }
+                }
+                // finally, replace with the altered new story
+                [newStories replaceObjectAtIndex:i withObject:newStory];
+                
                 [_storiesArray removeObjectAtIndex:j];
                 // remove section (story)
                 [UIView setAnimationsEnabled:NO];
@@ -1234,6 +1309,7 @@ CGFloat labelWidth = 0;
             NSString *userId = [[[eventDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
             NSString *username = [[eventDict objectForKey:@"user"] objectForKey:@"username"];
             BOOL shareable = NO;
+            BOOL isLoggedInUser =  [userId isEqualToString:_tung.tungId];
             
             if ([type isEqualToString:@"clip"]) {
                 shareable = YES;
@@ -1243,7 +1319,7 @@ CGFloat labelWidth = 0;
                 shareLink = [NSString stringWithFormat:@"%@c/%@", [TungCommonObjects tungSiteRootUrl], clipShortlink];
                 shareText = [NSString stringWithFormat:@"Here's a clip from %@: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
                 NSString *comment = [eventDict objectForKey:@"comment"];
-                if ([userId isEqualToString:_tung.tungId]) {
+                if (isLoggedInUser) {
                     if (comment.length > 0) {
                         destructiveOption = @"Delete clip & comment";
                     } else {
@@ -1269,69 +1345,75 @@ CGFloat labelWidth = 0;
                     destructiveOption = @"Flag this comment";
                 }
             }
-
-            UIAlertController *storyOptionSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
-            if (shareable) {
-                // share option
-                [storyOptionSheet addAction:[UIAlertAction actionWithTitle:shareItemOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                    UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[shareText] applicationActivities:nil];
-                    [self presentViewController:shareSheet animated:YES completion:nil];
-                    
-                }]];
-                // copy link option
-                [storyOptionSheet addAction:[UIAlertAction actionWithTitle:copyLinkOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                    [[UIPasteboard generalPasteboard] setString:shareLink];
-                }]];
-                // play from timestamp
-                [storyOptionSheet addAction:[UIAlertAction actionWithTitle:playFromString style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                    
-                    NSString *episodeId = [[[headerDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
-                    NSString *collectionId = [[headerDict objectForKey:@"episode"] objectForKey:@"collectionId"];
-                    [self playFromTimestamp:timestamp forEpisodeWithId:episodeId andCollectionId:collectionId];
-                    
-                }]];
-            }
-            // view profile
-            [storyOptionSheet addAction:[UIAlertAction actionWithTitle:[NSString stringWithFormat:@"View @%@", username] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                
-                [self pushProfileForUserId:userId];
-            }]];
             
-            // delete or flag
-            if (destructiveOption) {
-                [storyOptionSheet addAction:[UIAlertAction actionWithTitle:destructiveOption style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-                    // delete story event
-                    if ([userId isEqualToString:_tung.tungId]) {
+            
+            if (shareable || (!shareable && !isLoggedInUser)) {
+
+                UIAlertController *storyOptionSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+                if (shareable) {
+                    // share option
+                    [storyOptionSheet addAction:[UIAlertAction actionWithTitle:shareItemOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                        UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[shareText] applicationActivities:nil];
+                        [self presentViewController:shareSheet animated:YES completion:nil];
                         
-                        UIAlertController *confirmDelete = [UIAlertController alertControllerWithTitle:@"Delete" message:@"Are you sure? This can't be undone." preferredStyle:UIAlertControllerStyleAlert];
-                        [confirmDelete addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
-                        [confirmDelete addAction:[UIAlertAction actionWithTitle:@"Delete" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-                            [self deleteEventAtIndexPath:indexPath];
+                    }]];
+                    // copy link option
+                    [storyOptionSheet addAction:[UIAlertAction actionWithTitle:copyLinkOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                        [[UIPasteboard generalPasteboard] setString:shareLink];
+                    }]];
+                    // play from timestamp
+                    [storyOptionSheet addAction:[UIAlertAction actionWithTitle:playFromString style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                        
+                        NSString *episodeId = [[[headerDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
+                        NSString *collectionId = [[headerDict objectForKey:@"episode"] objectForKey:@"collectionId"];
+                        [self playFromTimestamp:timestamp forEpisodeWithId:episodeId andCollectionId:collectionId];
+                        
+                    }]];
+                }
+                
+                if (!isLoggedInUser) {
+                    // view profile
+                    [storyOptionSheet addAction:[UIAlertAction actionWithTitle:[NSString stringWithFormat:@"View @%@", username] style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                        [self pushProfileForUserId:userId];
+                    }]];
+                }
+                
+                // delete or flag
+                if (destructiveOption) {
+                    [storyOptionSheet addAction:[UIAlertAction actionWithTitle:destructiveOption style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+                        // delete story event
+                        if (isLoggedInUser) {
                             
-                        }]];
-                        [self presentViewController:confirmDelete animated:YES completion:nil];
-                    }
-                    // request moderation
-                    else {
-                        // can only flag comments
-                        if ([[eventDict objectForKey:@"comment"] length] > 0) {
-                            
-                            NSString *quotedComment = [NSString stringWithFormat:@"\"%@\"", [eventDict objectForKey:@"comment"]];
-                            UIAlertController *confirmFlag = [UIAlertController alertControllerWithTitle:@"Flag for moderation?" message:quotedComment preferredStyle:UIAlertControllerStyleAlert];
-                            [confirmFlag addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
-                            [confirmFlag addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-                                
-                                NSString *eventId = [[eventDict objectForKey:@"id"] objectForKey:@"$id"];
-                                [_tung flagCommentWithId:eventId];
+                            UIAlertController *confirmDelete = [UIAlertController alertControllerWithTitle:@"Delete" message:@"Are you sure? This can't be undone." preferredStyle:UIAlertControllerStyleAlert];
+                            [confirmDelete addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+                            [confirmDelete addAction:[UIAlertAction actionWithTitle:@"Delete" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+                                [self deleteEventAtIndexPath:indexPath];
                                 
                             }]];
-                            [self presentViewController:confirmFlag animated:YES completion:nil];
+                            [self presentViewController:confirmDelete animated:YES completion:nil];
                         }
-                    }
-                }]];
-            }
-            [storyOptionSheet addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
-            [self presentViewController:storyOptionSheet animated:YES completion:nil];
+                        // request moderation
+                        else {
+                            // can only flag comments
+                            if ([[eventDict objectForKey:@"comment"] length] > 0) {
+                                
+                                NSString *quotedComment = [NSString stringWithFormat:@"\"%@\"", [eventDict objectForKey:@"comment"]];
+                                UIAlertController *confirmFlag = [UIAlertController alertControllerWithTitle:@"Flag for moderation?" message:quotedComment preferredStyle:UIAlertControllerStyleAlert];
+                                [confirmFlag addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+                                [confirmFlag addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
+                                    
+                                    NSString *eventId = [[eventDict objectForKey:@"id"] objectForKey:@"$id"];
+                                    [_tung flagCommentWithId:eventId];
+                                    
+                                }]];
+                                [self presentViewController:confirmFlag animated:YES completion:nil];
+                            }
+                        }
+                    }]];
+                }
+                [storyOptionSheet addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+                [self presentViewController:storyOptionSheet animated:YES completion:nil];
+        	}
         }
     }
 }

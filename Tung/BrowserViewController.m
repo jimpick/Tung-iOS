@@ -43,13 +43,10 @@
     _blurView.opacity = .4;
     _blurView.tintColor = [UIColor whiteColor];
     
-    if (!_urlToNavigateTo.scheme) { // url has no 'http' or 'https'
-        NSString *urlString = [NSString stringWithFormat:@"http://%@", _urlToNavigateTo];
-        _urlToNavigateTo = [NSURL URLWithString:urlString];
-    }
+    NSURL *url = [TungCommonObjects addReferrerToUrlString:_urlStringToNavigateTo];
     
     // instantiate webview
-    NSURLRequest *urlRequest = [NSURLRequest requestWithURL:_urlToNavigateTo];
+    NSURLRequest *urlRequest = [NSURLRequest requestWithURL:url];
     self.webView.delegate = self;
     self.webView.scrollView.scrollsToTop = YES;
     self.webView.scalesPageToFit = YES;
@@ -74,7 +71,7 @@
     _forwardBtn.tintColor = [TungCommonObjects tungColor];
     _forwardBtn = [[UIBarButtonItem alloc] initWithCustomView:forwardBtnInner];
     _forwardBtn.tintColor = [TungCommonObjects tungColor];
-    UIBarButtonItem *openInBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(openUrlInSafari)];
+    UIBarButtonItem *openInBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemAction target:self action:@selector(openActionSheet)];
     UIBarButtonItem *doneBtn = [[UIBarButtonItem alloc] initWithTitle:@"Done" style:UIBarButtonItemStyleDone target:self action:@selector(dismissWebView)];
     UIBarButtonItem *flexSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
     
@@ -130,13 +127,27 @@
     _forwardBtn.enabled = _webView.canGoForward;
 }
 
--(void) openUrlInSafari {
-    [[UIApplication sharedApplication] openURL:_urlToNavigateTo];
+- (void) openActionSheet {
+    UIAlertController *actionSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    [actionSheet addAction:[UIAlertAction actionWithTitle:@"Open in Safari" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        NSURL *url = [TungCommonObjects addReferrerToUrlString:_urlStringToNavigateTo];
+        [[UIApplication sharedApplication] openURL:url];
+    }]];
+    [actionSheet addAction:[UIAlertAction actionWithTitle:@"Options..." style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [self openInOptions];
+    }]];
+    [actionSheet addAction:[UIAlertAction actionWithTitle:@"Copy URL" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        NSString *urlString = self.webView.request.URL.absoluteString;
+        [[UIPasteboard generalPasteboard] setString:urlString];
+    }]];
+    [self presentViewController:actionSheet animated:YES completion:nil];
 }
+
 
 -(void) openInOptions {
     
-    _documentController = [UIDocumentInteractionController interactionControllerWithURL:_urlToNavigateTo];
+    NSURL *url = [TungCommonObjects addReferrerToUrlString:_urlStringToNavigateTo];
+    _documentController = [UIDocumentInteractionController interactionControllerWithURL:url];
     _documentController.UTI = @"public.url";
     [_documentController presentOpenInMenuFromRect:CGRectZero inView:self.view animated:YES];
 

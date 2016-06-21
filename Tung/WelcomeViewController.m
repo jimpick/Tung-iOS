@@ -259,6 +259,9 @@
                             handler:^(FBSDKLoginManagerLoginResult *result, NSError *error) {
                                  if (error) {
                                      JPLog(@"fb - Process error: %@", error);
+                                     if ([FBSDKAccessToken currentAccessToken]) {
+                                         [[FBSDKLoginManager new] logOut];
+                                     }
                                      NSString *alertText = [NSString stringWithFormat:@"\"%@\"", error];
                                      UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Facebook error" message:alertText preferredStyle:UIAlertControllerStyleAlert];
                                      [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];

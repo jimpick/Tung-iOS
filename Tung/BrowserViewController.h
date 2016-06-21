@@ -17,6 +17,6 @@
 @property (strong, nonatomic) IBOutlet UIActivityIndicatorView *spinner;
 @property (strong, nonatomic) IBOutlet FXBlurView *blurView;
 
-@property NSURL *urlToNavigateTo;
+@property NSString *urlStringToNavigateTo;
 
 @end

@@ -133,6 +133,7 @@
 @property (strong, nonatomic) NSNumber *profileNeedsRefresh;
 @property (strong, nonatomic) NSNumber *notificationsNeedRefresh;
 @property (strong, nonatomic) NSNumber *trendingFeedNeedsRefresh;
+@property (strong, nonatomic) NSNumber *trendingFeedNeedsRefetch;
 
 // core data
 + (BOOL) saveContextWithReason:(NSString*)reason;
@@ -258,5 +259,6 @@
 + (NSNumber *) getAllocatedSizeOfDirectoryAtURL:(NSURL *)directoryURL error:(NSError * __autoreleasing *)error;
 + (NSString *) formatBytes:(NSNumber *)bytes;
 + (UIImage *) image:(UIImage *)img croppedAndScaledToSquareSizeWithDimension:(CGFloat)dimension;
++ (NSURL *) addReferrerToUrlString:(NSString *)urlString;
 
 @end

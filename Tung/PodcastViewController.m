@@ -155,6 +155,7 @@
     }
 }
 
+// not yet used
 - (void) largeButtonInHeaderTapped {
     
     // support button
@@ -164,7 +165,7 @@
         if (_podcastEntity.buttonLink && _podcastEntity.buttonLink.length) {
             if (_tung.connectionAvailable.boolValue) {
                 BrowserViewController *webView = [self.storyboard instantiateViewControllerWithIdentifier:@"webView"];
-                webView.urlToNavigateTo = [NSURL URLWithString:_podcastEntity.buttonLink];
+                webView.urlStringToNavigateTo = _podcastEntity.buttonLink;
                 [self presentViewController:webView animated:YES completion:nil];
             } else {
                 [TungCommonObjects showNoConnectionAlert];
@@ -196,9 +197,8 @@
             [magicButtonAlert addAction:[UIAlertAction actionWithTitle:@"Customize!" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                 if (_tung.connectionAvailable.boolValue) {
                     // url unique to this podcast
-                    NSString *magicButtonUrlString = [NSString stringWithFormat:@"%@magic-button?id=%@", [TungCommonObjects tungSiteRootUrl], _podcastEntity.collectionId];
                     BrowserViewController *webView = [self.storyboard instantiateViewControllerWithIdentifier:@"webView"];
-                    webView.urlToNavigateTo = [NSURL URLWithString:magicButtonUrlString];
+                    webView.urlStringToNavigateTo = [NSString stringWithFormat:@"%@magic-button?id=%@", [TungCommonObjects tungSiteRootUrl], _podcastEntity.collectionId];
                     [self presentViewController:webView animated:YES completion:nil];
                     
                 } else {

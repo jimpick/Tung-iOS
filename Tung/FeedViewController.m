@@ -171,7 +171,10 @@
     // trending feed
     if (_switcher.selectedSegmentIndex == 0) {
         [_trendingFeed.tableView reloadData];
-        if (_tung.trendingFeedNeedsRefresh.boolValue) {
+        if (_tung.trendingFeedNeedsRefetch.boolValue) {
+            [_trendingFeed refetchFeed];
+        }
+        else if (_tung.trendingFeedNeedsRefresh.boolValue) {
             [_trendingFeed refreshFeed];
         }
     }

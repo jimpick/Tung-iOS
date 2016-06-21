@@ -58,7 +58,7 @@
 @property CommentsTableViewController *commentsView;
 @property AVAudioPlayer *audioPlayer;
 @property UILabel *nothingPlayingLabel;
-@property NSURL *urlToPass;
+@property NSString *urlStringToPass;
 @property BOOL lockPosbar;
 @property BOOL posbarIsBeingDragged;
 
@@ -594,7 +594,8 @@ NSTimer *markAsSeenTimer;
     [_headerView.subscribeButton addTarget:self action:@selector(subscribeToPodcastViaSender:) forControlEvents:UIControlEventTouchUpInside];
     
     if (_isNowPlayingView) {
-        [_headerView setUpLargeButtonForEpisode:nil orPodcast:episodeEntity.podcast];
+        //[_headerView setUpLargeButtonForEpisode:nil orPodcast:episodeEntity.podcast];
+        _headerView.largeButton.hidden = YES;
     }
     
     [_headerView.largeButton addTarget:self action:@selector(largeButtonInHeaderTapped) forControlEvents:UIControlEventTouchUpInside];
@@ -670,11 +671,12 @@ NSTimer *markAsSeenTimer;
 
 - (void) largeButtonInHeaderTapped {
     
+    /* magic button code
     if (_episodeEntity.isNowPlaying.boolValue) {
         // Magic button - customized?
         if (_episodeEntity.podcast.buttonLink && _episodeEntity.podcast.buttonLink.length) {
             if (_tung.connectionAvailable.boolValue) {
-                _urlToPass = [NSURL URLWithString:_episodeEntity.podcast.buttonLink];
+                _urlStringToPass = _episodeEntity.podcast.buttonLink;
                 [self performSegueWithIdentifier:@"presentWebView" sender:self];
             } else {
                 [TungCommonObjects showNoConnectionAlert];
@@ -706,8 +708,7 @@ NSTimer *markAsSeenTimer;
             [magicButtonAlert addAction:[UIAlertAction actionWithTitle:@"Customize!" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                 if (_tung.connectionAvailable.boolValue) {
                         // url unique to this podcast
-                    NSString *magicButtonUrlString = [NSString stringWithFormat:@"%@magic-button?id=%@", [TungCommonObjects tungSiteRootUrl], _episodeEntity.collectionId];
-                    _urlToPass = [NSURL URLWithString:magicButtonUrlString];
+                    _urlStringToPass = [NSString stringWithFormat:@"%@magic-button?id=%@", [TungCommonObjects tungSiteRootUrl], _episodeEntity.collectionId];
                     [self performSegueWithIdentifier:@"presentWebView" sender:self];
                     
                 } else {
@@ -718,14 +719,24 @@ NSTimer *markAsSeenTimer;
             [self presentViewController:magicButtonAlert animated:YES completion:nil];
         }
         
-    }
-    else {
+    } */
+    
+    if (!_isNowPlayingView) {
         // play button
         if (_episodeEntity.url.length > 0) {
+            if (_headerView.largeButton.on) {
+                // select Now Playing tab
+                MainTabBarController *tabVC = (MainTabBarController *)self.parentViewController.parentViewController;
+                tabVC.selectedIndex = 1;
+                UIButton *btn = [[UIButton alloc] init];
+                btn.tag = 1;
+                [tabVC selectTab:btn];
+            } else {
 
-            [_tung queueAndPlaySelectedEpisode:_episodeEntity.url fromTimestamp:nil];
-            [_headerView setUpLargeButtonForEpisode:_episodeEntity orPodcast:nil];
-            [_episodesView.tableView reloadData];
+                [_tung queueAndPlaySelectedEpisode:_episodeEntity.url fromTimestamp:nil];
+                [_headerView setUpLargeButtonForEpisode:_episodeEntity orPodcast:nil];
+                [_episodesView.tableView reloadData];
+            }
 
         } else {
             
@@ -1189,7 +1200,7 @@ static CGRect buttonsScrollViewHomeRect;
     } else {
         
         // open web browsing modal
-        _urlToPass = request.URL;
+        _urlStringToPass = request.URL.absoluteString;
         if (_tung.connectionAvailable.boolValue) {
         	[self performSegueWithIdentifier:@"presentWebView" sender:self];
         } else {
@@ -1204,7 +1215,7 @@ static CGRect buttonsScrollViewHomeRect;
     // open web browsing modal
     if (_episodeEntity.podcast.website.length) {
         if (_tung.connectionAvailable.boolValue) {
-            _urlToPass = [NSURL URLWithString:_episodeEntity.podcast.website];            
+            _urlStringToPass = _episodeEntity.podcast.website;
             [self performSegueWithIdentifier:@"presentWebView" sender:self];
         } else {
             [TungCommonObjects showNoConnectionAlert];
@@ -1516,7 +1527,7 @@ static CGRect buttonsScrollViewHomeRect;
         _shareTimestamp = [TungCommonObjects convertSecondsToTimeString:0];
     }
     _shareLabel.text = [NSString stringWithFormat:@"New comment @ %@", _shareTimestamp];
-    _commentAndPostView.commentTextView.text = @"";
+    //_commentAndPostView.commentTextView.text = @"";
     [_commentAndPostView.postButton setEnabled:NO];
     [self toggleNewComment];
 }
@@ -2234,7 +2245,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
     
     if ([[segue identifier] isEqualToString:@"presentWebView"]) {
         BrowserViewController *browserViewController = (BrowserViewController *)destination;
-        [browserViewController setValue:_urlToPass forKey:@"urlToNavigateTo"];
+        [browserViewController setValue:_urlStringToPass forKey:@"urlStringToNavigateTo"];
     }
 
 }

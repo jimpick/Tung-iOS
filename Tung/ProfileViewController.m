@@ -24,7 +24,7 @@
 @property ProfileListTableViewController *notificationsView;
 @property (strong, nonatomic) ProfileHeaderView *profileHeader;
 @property UIBarButtonItem *tableHeaderLabel;
-@property NSURL *urlToPass;
+@property NSString *urlStringToPass;
 @property UserEntity *userEntity;
 @property NSLayoutConstraint *profileHeightConstraint;
 
@@ -821,7 +821,7 @@ static CGSize profileHeaderScrollViewSize;
     } else {
         
         // open web browsing modal
-        _urlToPass = request.URL;
+        _urlStringToPass = request.URL.absoluteString;
         [self performSegueWithIdentifier:@"presentWebView" sender:self];
         
         return NO;
@@ -836,7 +836,7 @@ static CGSize profileHeaderScrollViewSize;
     
     if ([[segue identifier] isEqualToString:@"presentWebView"]) {
         BrowserViewController *browserViewController = (BrowserViewController *)destination;
-        [browserViewController setValue:_urlToPass forKey:@"urlToNavigateTo"];
+        [browserViewController setValue:_urlStringToPass forKey:@"urlStringToNavigateTo"];
     }
     else if ([[segue identifier] isEqualToString:@"presentEditProfileView"]) {
         [destination setValue:@"editProfile" forKey:@"rootView"];
