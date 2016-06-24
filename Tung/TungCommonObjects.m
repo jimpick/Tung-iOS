@@ -184,14 +184,14 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    //return @"https://api.tung.fm/";
-    return @"https://staging-api.tung.fm/";
+    return @"https://api.tung.fm/";
+    //return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
     
-    //return @"https://tung.fm/";
-    return @"https://staging.tung.fm/";
+    return @"https://tung.fm/";
+    //return @"https://staging.tung.fm/";
 }
 
 + (NSString *) apiKey {
@@ -5001,6 +5001,8 @@ static NSNumberFormatter *stringToNum = nil;
             return @"Interaction with the Security Server is not allowed.";
         case -26275:
             return @"Unable to decode the provided data.";
+        case -34018:
+            return @"errSecMissingEntitlement";
         default:
             return [NSString stringWithFormat:@"Unknown error: %d", (int)status];
     }

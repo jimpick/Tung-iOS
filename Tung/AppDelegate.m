@@ -29,7 +29,6 @@
     else {
         JPLog(@"tungId already existed when app didFinishLaunching");
     }
-    // look for tung cred in keychain
     BOOL isLoggedIn = NO;
     if (_tung.tungId.length && _tung.tungToken.length) {
         isLoggedIn = YES;
