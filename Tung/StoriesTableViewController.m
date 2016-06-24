@@ -1695,14 +1695,15 @@ CGFloat labelWidth = 0;
         
         // shrink profile header
         if (_profiledUserId.length) {
-            if (!_profileHeader.isMinimized && scrollView.contentSize.height > scrollView.frame.size.height && scrollView.contentOffset.y > _lastScrollViewOffset) {
-                // scrolling down
+            if (!_profileHeader.isMinimized && scrollView.contentSize.height > scrollView.frame.size.height + 100 && scrollView.contentOffset.y > _lastScrollViewOffset) {
+                NSLog(@"content height: %f, frame height: %f", scrollView.contentSize.height, scrollView.frame.size.height);
+                // scrolling down (content moving up)
                 NSNotification *minimizeHeaderNotif = [NSNotification notificationWithName:@"shouldMinimizeHeaderView" object:nil userInfo:nil];
                 [[NSNotificationCenter defaultCenter] postNotification:minimizeHeaderNotif];
             }
             
             else if (scrollView.contentOffset.y < _lastScrollViewOffset) {
-                // scrolling up
+                // scrolling up (content moving down)
                 if (_profileHeader.isMinimized && scrollView.contentOffset.y <= 100) {
                     NSNotification *maximizeHeaderNotif = [NSNotification notificationWithName:@"shouldMaximizeHeaderView" object:nil userInfo:nil];
                     [[NSNotificationCenter defaultCenter] postNotification:maximizeHeaderNotif];

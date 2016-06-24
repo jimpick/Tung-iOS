@@ -199,7 +199,7 @@
 - (void) switchFeeds:(id)sender {
     
     UISegmentedControl *switcher = (UISegmentedControl *)sender;
-    NSLog(@"switcher selected index: %ld", (long)switcher.selectedSegmentIndex);
+    //NSLog(@"switcher selected index: %ld", (long)switcher.selectedSegmentIndex);
     if (switcher.selectedSegmentIndex == 0) {
         _followingFeed.view.hidden = YES;
         _trendingFeed.view.hidden = NO;

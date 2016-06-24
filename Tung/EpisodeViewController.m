@@ -422,7 +422,7 @@ NSTimer *markAsSeenTimer;
             [_tung savePositionForNowPlayingAndSync:NO];
             [_episodesView assignSavedPropertiesToEpisodeArray];
             [_episodesView.tableView reloadData];
-            markAsSeenTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:_episodesView selector:@selector(markNewEpisodesAsSeen) userInfo:nil repeats:NO];
+            markAsSeenTimer = [NSTimer scheduledTimerWithTimeInterval:1.5 target:_episodesView selector:@selector(markNewEpisodesAsSeen) userInfo:nil repeats:NO];
             _descriptionView.view.hidden = YES;
             break;
         default: // show description
@@ -1200,8 +1200,12 @@ static CGRect buttonsScrollViewHomeRect;
 }
 
 - (void) tungButtonTapped {
-    UIAlertController *thanksAlert = [UIAlertController alertControllerWithTitle:@"Thanks for using Tung!" message:@"Hope you're enjoying it 😎" preferredStyle:UIAlertControllerStyleAlert];
-    [thanksAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+    UIAlertController *thanksAlert = [UIAlertController alertControllerWithTitle:@"Thanks for using Tung!" message:@"Hope you're enjoying it 😎\n\nCare to show some 💜?" preferredStyle:UIAlertControllerStyleAlert];
+    [thanksAlert addAction:[UIAlertAction actionWithTitle:@"No thanks" style:UIAlertActionStyleDefault handler:nil]];
+    [thanksAlert addAction:[UIAlertAction actionWithTitle:@"Rate us" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://itunes.apple.com/us/app/tung.fm/id932939338"]];
+    }]];
+    thanksAlert.preferredAction = [thanksAlert.actions objectAtIndex:1];
     [self presentViewController:thanksAlert animated:YES completion:nil];
 }
 

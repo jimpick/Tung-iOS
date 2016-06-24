@@ -116,23 +116,48 @@
 // and also marking new episodes as "seen" to reset badge.
 -(void) markNewEpisodesAsSeen {
     
-    SettingsEntity *settings = [TungCommonObjects settings];
-    
     if (_episodeArray && _episodeArray.count) {
+        
+        NSLog(@"mark new episodes as seen");
+        
+        NSMutableArray *rowsToReload = [NSMutableArray array];
+        
+        if (_podcastEntity.mostRecentEpisodeDate) {
+            // find new episodes and fade rows back to white
+            NSArray *visibleRows = [self.tableView indexPathsForVisibleRows];
+            for (int i = 0; i < visibleRows.count; i++) {
+                NSIndexPath *indexPath = [visibleRows objectAtIndex:i];
+                NSDictionary *episodeDict = [_episodeArray objectAtIndex:indexPath.row];
+                NSDate *pubDate = [episodeDict objectForKey:@"pubDate"];
+                if ([_podcastEntity.mostRecentSeenEpisodeDate compare:pubDate] == NSOrderedAscending) {
+                    [rowsToReload addObject:indexPath];
+                }
+            }
+        }
+        
+        SettingsEntity *settings = [TungCommonObjects settings];
+    
         NSNumber *numNew = _podcastEntity.numNewEpisodes;
         _podcastEntity.numNewEpisodes = [NSNumber numberWithInt:0];
         // in case mostRecentEpisodeDate was not set yet or new episode was published after bkgd fetch
         NSDate *mostRecentEpisodeDate = [[_episodeArray objectAtIndex:0] objectForKey:@"pubDate"];
         _podcastEntity.mostRecentEpisodeDate = mostRecentEpisodeDate;
         _podcastEntity.mostRecentSeenEpisodeDate = mostRecentEpisodeDate;
+        if (rowsToReload.count) {
+            [self.tableView reloadRowsAtIndexPaths:rowsToReload withRowAnimation: UITableViewRowAnimationFade];
+        }
+        
         NSInteger numPodcastNotifications = settings.numPodcastNotifications.integerValue - numNew.integerValue;
         if (numPodcastNotifications < 0) numPodcastNotifications = 0;
         settings.numPodcastNotifications = [NSNumber numberWithInteger:numPodcastNotifications];
         [_tung setBadgeNumber:settings.numPodcastNotifications forBadge:_tung.subscriptionsBadge];
         
         [TungCommonObjects saveContextWithReason:@"marking new episodes as \"seen\""];
+		
+        NSInteger numApplicationNotifications = numPodcastNotifications + settings.numProfileNotifications.integerValue;
+    	[[UIApplication sharedApplication] setApplicationIconBadgeNumber:numApplicationNotifications];
     }
-    [[UIApplication sharedApplication] setApplicationIconBadgeNumber:settings.numProfileNotifications.integerValue];
+    
 }
 
 #pragma mark - respond to save status changes

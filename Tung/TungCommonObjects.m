@@ -402,7 +402,7 @@ CGSize screenSize;
                 // play
                 if (secs > 0) {
                     
-                    JPLog(@"seeking to time: %f (progress: %f)", secs, _npEpisodeEntity.trackProgress.floatValue);
+                    //NSLog(@"seeking to time: %f (progress: %f)", secs, _npEpisodeEntity.trackProgress.floatValue);
                     [_trackInfo setObject:[NSNumber numberWithFloat:secs] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
                     [_player seekToTime:time completionHandler:^(BOOL finished) {
                         //JPLog(@"finished seeking: %@", (finished) ? @"Yes" : @"No");

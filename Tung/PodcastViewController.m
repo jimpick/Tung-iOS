@@ -75,7 +75,8 @@
     
     self.navigationController.navigationBar.translucent = NO;
     
-    //[_episodesView markNewEpisodesAsSeen];
+    // delay markNewEpisodesAsSeen
+    [NSTimer scheduledTimerWithTimeInterval:1.5 target:_episodesView selector:@selector(markNewEpisodesAsSeen) userInfo:nil repeats:NO];
     
     NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:NO reachable:_tung.connectionAvailable.boolValue];
     [self setUpViewForDict:feedDict];

@@ -122,7 +122,8 @@
 
 - (BOOL)prefersStatusBarHidden
 {
-    return YES;
+    //return YES;
+    return NO;
 }
 
 - (void)didReceiveMemoryWarning
