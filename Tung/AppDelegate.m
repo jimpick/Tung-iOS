@@ -23,10 +23,15 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     _tung = [TungCommonObjects establishTungObjects];
-    [_tung establishCred];
+    if (!_tung.tungId.length && !_tung.tungToken.length) {
+    	[_tung establishCred];
+    }
+    else {
+        JPLog(@"tungId already existed when app didFinishLaunching");
+    }
     // look for tung cred in keychain
     BOOL isLoggedIn = NO;
-    if (_tung.tungId && _tung.tungToken) {
+    if (_tung.tungId.length && _tung.tungToken.length) {
         isLoggedIn = YES;
         // if user is registered for remote notifs, call below methods
         // bc "device token changes frequently" according to docs

@@ -184,14 +184,14 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    return @"https://api.tung.fm/";
-    //return @"https://staging-api.tung.fm/";
+    //return @"https://api.tung.fm/";
+    return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
     
-    return @"https://tung.fm/";
-    //return @"https://staging.tung.fm/";
+    //return @"https://tung.fm/";
+    return @"https://staging.tung.fm/";
 }
 
 + (NSString *) apiKey {
@@ -412,22 +412,16 @@ CGSize screenSize;
                     }];
                 } else {
                     [_trackInfo setObject:[NSNumber numberWithFloat:0] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
-                    [_showBufferingTimer invalidate];
-                    [self setControlButtonStateToPause];
-                    
-                    if ([self isPlaying] && _fileIsLocal) {
-                        //JPLog(@"play from beginning - already playing");
-                    } else {
+                    if ([self isPlaying]) {
+                        [_showBufferingTimer invalidate];
+                        [self setControlButtonStateToPause];
+                    }
+                    else {
                         //JPLog(@"play from beginning - with preroll");
                         [_player prerollAtRate:1.0 completionHandler:^(BOOL finished) {
                             //JPLog(@"-- finished preroll: %d", finished);
                             [_showBufferingTimer invalidate];
-                            if ([self isPlaying]) {
-                                //JPLog(@"--- isPlaying");
-                            } else {
-                                //JPLog(@"--- playerPlay");
-                                [self playerPlay];
-                            }
+                            [self playerPlay];
                             [self determineTotalSeconds];
                         }];
                     }
@@ -1420,14 +1414,10 @@ static NSString *episodeDirName = @"episodes";
         NSString *episodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
         NSError *error;
         if ([_trackData writeToFile:episodeFilepath options:0 error:&error]) {
+            
+            _fileIsLocal = YES;
             //JPLog(@"-- saved podcast track in temp episode dir: %@", episodeFilepath);
-            
-            // exchange downloaded data for cached data so resource loader can access it
-            NSURL *audioFileUrl = [self getEpisodeUrl:[self.playQueue objectAtIndex:0]];
-            _trackData = [[NSData dataWithContentsOfURL:audioFileUrl] mutableCopy];
-            
-            //_trackData = nil;
-            _trackDataConnection = nil;
+            _trackData = nil;
             // move to saved?
             if (_saveOnDownloadComplete) {
                 [self moveToSavedOrQueueDownloadForEpisode:_npEpisodeEntity];
@@ -1574,9 +1564,14 @@ static NSString *episodeDirName = @"episodes";
 - (BOOL)resourceLoader:(AVAssetResourceLoader *)resourceLoader shouldWaitForLoadingOfRequestedResource:(AVAssetResourceLoadingRequest *)loadingRequest
 {
     //JPLog(@"[AVAssetResourceLoaderDelegate] should wait for loading of requested resource");
-    
+    // implemented fix for stalling playback: http://stackoverflow.com/a/29977243/591487
+    if (_fileIsLocal) {
+        [self.pendingRequests addObject:loadingRequest];
+        [self processPendingRequests];
+        return YES;
+    }
     // initiate connection only if we haven't already downloaded the file
-    if (_trackDataConnection == nil && !_fileIsLocal)
+    else if (_trackDataConnection == nil)
     {
         NSURL *interceptedURL = [loadingRequest.request URL];
         NSURLComponents *actualURLComponents = [[NSURLComponents alloc] initWithURL:interceptedURL resolvingAgainstBaseURL:NO];
@@ -1591,8 +1586,6 @@ static NSString *episodeDirName = @"episodes";
     }
     
     [self.pendingRequests addObject:loadingRequest];
-    
-    [self processPendingRequests]; // necessary? 
     
     return YES;
 }
