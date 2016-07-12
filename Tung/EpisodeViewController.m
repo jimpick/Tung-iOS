@@ -1200,9 +1200,9 @@ static CGRect buttonsScrollViewHomeRect;
 }
 
 - (void) tungButtonTapped {
-    UIAlertController *thanksAlert = [UIAlertController alertControllerWithTitle:@"Thanks for using Tung!" message:@"Hope you're enjoying it 😎\n\nCare to show some 💜?" preferredStyle:UIAlertControllerStyleAlert];
-    [thanksAlert addAction:[UIAlertAction actionWithTitle:@"No thanks" style:UIAlertActionStyleDefault handler:nil]];
-    [thanksAlert addAction:[UIAlertAction actionWithTitle:@"Rate us" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    UIAlertController *thanksAlert = [UIAlertController alertControllerWithTitle:@"Thanks for using Tung!" message:@"Hope you're enjoying it 😎" preferredStyle:UIAlertControllerStyleAlert];
+    [thanksAlert addAction:[UIAlertAction actionWithTitle:@"Dismiss" style:UIAlertActionStyleDefault handler:nil]];
+    [thanksAlert addAction:[UIAlertAction actionWithTitle:@"Rate Tung" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://itunes.apple.com/us/app/tung.fm/id932939338"]];
     }]];
     thanksAlert.preferredAction = [thanksAlert.actions objectAtIndex:1];

@@ -166,10 +166,30 @@
     
     [self loginRequestBegan];
     
-    
     [[Twitter sharedInstance] logInWithCompletion:^(TWTRSession *session, NSError *error) {
         if (session) {
             JPLog(@"signed in as %@", [session userName]);
+            
+            /*	because of keychain issues, user data, subs, etc may already exist
+             but may be for a different account than they are signing in with.
+             check if it's the same and else, delete data.
+             */
+            AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+            error = nil;
+            NSFetchRequest *findUser = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
+            NSPredicate *predicate = [NSPredicate predicateWithFormat: @"twitter_id == %@", [session userID]];
+            [findUser setPredicate:predicate];
+            NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findUser error:&error];
+            
+            if (result.count == 0) {
+                JPLog(@"signing in as different user than for whom data is present");
+                [_tung removeSignedInUserData];
+                [_tung resetPlayerAndQueue];
+                // close FB session if open
+                if ([FBSDKAccessToken currentAccessToken]) {
+                    [[FBSDKLoginManager new] logOut];
+                }
+            }
             
             TWTROAuthSigning *oauthSigning = [[TWTROAuthSigning alloc] initWithAuthConfig:[Twitter sharedInstance].authConfig authSession:session];
             NSDictionary *authHeaders = [oauthSigning OAuthEchoHeadersToVerifyCredentials];
@@ -277,6 +297,25 @@
                                  else {
                                      JPLog(@"fb - Logged in");
                                      if ([FBSDKAccessToken currentAccessToken]) {
+                                         
+                                         /*	because of keychain issues, user data, subs, etc may already exist
+                                          but may be for a different account than they are signing in with.
+                                          check if it's the same and else, delete data.
+                                          */
+                                         AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+                                         error = nil;
+                                         NSFetchRequest *findUser = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
+                                         NSPredicate *predicate = [NSPredicate predicateWithFormat: @"facebook_id == %@", [[FBSDKAccessToken currentAccessToken] userID]];
+                                         [findUser setPredicate:predicate];
+                                         NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findUser error:&error];
+                                         
+                                         if (result.count == 0) {
+                                             JPLog(@"signing in as different user than for whom data is present");
+                                             [_tung removeSignedInUserData];
+                                             [_tung resetPlayerAndQueue];
+                                             [[Twitter sharedInstance] logOut];
+                                         }
+                                         
                                          NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
                                          //NSLog(@"fb access token: %@", tokenString);
                                          [_tung verifyCredWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {

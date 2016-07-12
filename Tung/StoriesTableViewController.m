@@ -1498,19 +1498,19 @@ CGFloat labelWidth = 0;
         [[UIPasteboard generalPasteboard] setString:episodeLink];
         
     }]];
-    // share interaction
-    /*
-    [optionSheet addAction:[UIAlertAction actionWithTitle:@"Share this interaction" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        NSString *storyShareText = [self getShareTextForStoryWithDict:headerDict];
-        UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[storyShareText] applicationActivities:nil];
-        [self presentViewController:shareSheet animated:YES completion:nil];
-    }]];
-    // copy link for interaction
-    [optionSheet addAction:[UIAlertAction actionWithTitle:@"Copy link to interaction" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        NSString *storyLink = [headerDict objectForKey:@"storyLink"];
-        [[UIPasteboard generalPasteboard] setString:storyLink];
-    }]]; 
-     */
+    // share interaction if it's a single user story
+    if ([headerDict objectForKey:@"storyLink"]) {
+        [optionSheet addAction:[UIAlertAction actionWithTitle:@"Share this interaction" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            NSString *storyShareText = [self getShareTextForStoryWithDict:headerDict];
+            UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[storyShareText] applicationActivities:nil];
+            [self presentViewController:shareSheet animated:YES completion:nil];
+        }]];
+        // copy link for interaction
+        [optionSheet addAction:[UIAlertAction actionWithTitle:@"Copy link to interaction" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            NSString *storyLink = [headerDict objectForKey:@"storyLink"];
+            [[UIPasteboard generalPasteboard] setString:storyLink];
+        }]];
+    }
     // flag
     [optionSheet addAction:[UIAlertAction actionWithTitle:@"Flag this" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         UIAlertController *howToFlagAlert = [UIAlertController alertControllerWithTitle:@"Flagging" message:@"To flag a comment for moderation, long press on the comment, and select 'Flag this comment'.\n\nPlease remember Tung cannot moderate the content of podcasts." preferredStyle:UIAlertControllerStyleAlert];
@@ -1523,15 +1523,19 @@ CGFloat labelWidth = 0;
 }
 
 - (NSString *) getShareTextForStoryWithDict:(NSDictionary *)headerDict {
-    NSString *shareLink = [headerDict objectForKey:@"storyLink"];
-    NSString *shareText;
-    NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
-    if ([uid isEqualToString:_tung.tungId]) {
-        shareText = [NSString stringWithFormat:@"I listened to %@ on #tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+    if ([headerDict objectForKey:@"user"]) {
+        NSString *shareLink = [headerDict objectForKey:@"storyLink"];
+        NSString *shareText;
+        NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+        if ([uid isEqualToString:_tung.tungId]) {
+            shareText = [NSString stringWithFormat:@"I listened to %@ on #tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+        } else {
+            shareText = [NSString stringWithFormat:@"%@ listened to %@ on #tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+        }
+        return shareText;
     } else {
-        shareText = [NSString stringWithFormat:@"%@ listened to %@ on #tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+        return nil;
     }
-    return shareText;
 }
 - (NSString *) getShareTextForEpisodeWithDict:(NSDictionary *)headerDict {
     NSString *shareLink = [headerDict objectForKey:@"episodeLink"];

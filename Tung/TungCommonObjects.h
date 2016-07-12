@@ -195,6 +195,8 @@
 - (void) getSuggestedUsersWithCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) preloadAlbumArtForSuggestedUsers:(NSArray *)suggestedUsers;
 - (void) inviteFriends:(NSString *)friends;
+- (void) removeSignedInUserData;
+- (void) resetPlayerAndQueue;
 - (void) signOut;
 
 // twitter

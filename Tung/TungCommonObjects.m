@@ -184,14 +184,14 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    return @"https://api.tung.fm/";
-    //return @"https://staging-api.tung.fm/";
+    //return @"https://api.tung.fm/";
+    return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
     
-    return @"https://tung.fm/";
-    //return @"https://staging.tung.fm/";
+    //return @"https://tung.fm/";
+    return @"https://staging.tung.fm/";
 }
 
 + (NSString *) apiKey {
@@ -846,7 +846,7 @@ CGSize screenSize;
     	_currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO reachable:_connectionAvailable.boolValue]];
     }
 
-    if (_currentFeedIndex + 1 >= 0) {
+    if (_currentFeedIndex + 1 < _currentFeed.count) {
         JPLog(@"play previous episode in feed");
         [self ejectCurrentEpisode];
         _currentFeedIndex++;
@@ -884,14 +884,21 @@ CGSize screenSize;
 
 
 - (void) playerError:(NSNotification *)notification {
-    JPLog(@"PLAYER ERROR: %@ ...attempting to recover playback", [notification userInfo]);
-    
-    [TungCommonObjects simpleErrorAlertWithMessage:[NSString stringWithFormat:@"Player error: \"%@\"\n\nAttempting to recover playback.", [notification userInfo]]];
+    JPLog(@"PLAYER ERROR: %@ ...attempting to recover playback", notification);
 
     // re-queue now playing
     [self savePositionForNowPlayingAndSync:NO];
+    
+    [self resetPlayer];
+    
     NSString *urlString = _npEpisodeEntity.url;
     [self queueAndPlaySelectedEpisode:urlString fromTimestamp:nil];
+    
+    
+    
+    UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Player Error" message:@"Attempting to recover playback." preferredStyle:UIAlertControllerStyleAlert];
+    [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+    [[TungCommonObjects activeViewController] presentViewController:errorAlert animated:YES completion:nil];
 }
 
 // looks for local file, else returns url with custom scheme
@@ -1417,7 +1424,7 @@ static NSString *episodeDirName = @"episodes";
             
             _fileIsLocal = YES;
             //JPLog(@"-- saved podcast track in temp episode dir: %@", episodeFilepath);
-            _trackData = nil;
+            //_trackData = nil;
             // move to saved?
             if (_saveOnDownloadComplete) {
                 [self moveToSavedOrQueueDownloadForEpisode:_npEpisodeEntity];
@@ -3965,19 +3972,7 @@ static NSArray *colors;
     }];
 }
 
--(void) signOut {
-    JPLog(@"--- signing out");
-    
-    [self stopClipPlayback];
-    [self playerPause];
-    [_syncProgressTimer invalidate];
-    _playQueue = [@[] mutableCopy];
-    _npEpisodeEntity = nil;
-    
-    [self resetPlayer];
-    
-    //[self deleteLoggedInUserData];
-    [TungCommonObjects removeAllUserData];
+- (void) removeSignedInUserData {
     [TungCommonObjects removePodcastAndEpisodeData];
     [TungCommonObjects deleteAllCachedEpisodes];
     [TungCommonObjects deleteCachedData];
@@ -3987,6 +3982,28 @@ static NSArray *colors;
     _tungId = @"";
     _tungToken = @"";
     _sessionId = @"";
+    
+}
+
+- (void) resetPlayerAndQueue {
+    [self stopClipPlayback];
+    [self playerPause];
+    [_syncProgressTimer invalidate];
+    _playQueue = [@[] mutableCopy];
+    _npEpisodeEntity = nil;
+    
+    [self resetPlayer];
+}
+
+-(void) signOut {
+    JPLog(@"--- signing out");
+    
+    [self resetPlayerAndQueue];
+    
+    //[self deleteLoggedInUserData];
+    [TungCommonObjects removeAllUserData];
+    
+    [self removeSignedInUserData];
     
     // twitter
     [[Twitter sharedInstance] logOut];
