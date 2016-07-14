@@ -513,7 +513,7 @@
 }
 
 - (void) followingChanged:(NSNotification*)notification {
-    
+    NSLog(@"following changed");
     PillButton *btn = [[notification userInfo] objectForKey:@"sender"];
     
     if (_forOnboarding) {
@@ -521,8 +521,6 @@
         if ([[notification userInfo] objectForKey:@"unfollowedUser"]) {
             // unfollow
             [_usersToFollow removeObject:[[notification userInfo] objectForKey:@"unfollowedUser"]];
-            btn.on = NO;
-            [btn setNeedsDisplay];
         }
         if ([[notification userInfo] objectForKey:@"followedUser"]) {
             // follow
@@ -539,8 +537,6 @@
             UIAlertController *unfollowConfirmAlert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:@"Unfollow @%@?", [[notification userInfo] objectForKey:@"username"]] message:nil preferredStyle:UIAlertControllerStyleAlert];
             [unfollowConfirmAlert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                 
-                btn.on = NO;
-                [btn setNeedsDisplay];
                 NSString *userId = [[notification userInfo] objectForKey:@"unfollowedUser"];
                 // unfollow
                 [_tung unfollowUserWithId:userId withCallback:^(BOOL success, NSDictionary *response) {

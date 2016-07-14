@@ -40,6 +40,8 @@
                       @"username": cell.username
                       };
         
+        btn.on = NO;
+        
     }
     else {
         // follow
@@ -47,8 +49,8 @@
                       @"sender": btn
                       };
         btn.on = YES;
-        [btn setNeedsDisplay];
     }
+    [btn setNeedsDisplay];
     
     NSNotification *followingChangedNotif = [NSNotification notificationWithName:@"followingChanged" object:nil userInfo:userInfo];
     [[NSNotificationCenter defaultCenter] postNotification:followingChangedNotif];

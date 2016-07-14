@@ -111,6 +111,10 @@ static NSDateFormatter *airDateFormatter = nil;
     NSData *artImageData;
     UIColor *keyColor1, *keyColor2;
     
+    if ([TungCommonObjects screenSize].width < 375) {
+        _descriptionLabel.numberOfLines = 2;
+    }
+    
     if (podcastEntity) {
         title = podcastEntity.collectionName;
         NSString *artist = [podcastEntity.artistName stringByReplacingOccurrencesOfString:@"\n" withString:@" "];
@@ -283,7 +287,7 @@ static NSDateFormatter *airDateFormatter = nil;
     float height = margin + margin; // top and bottom margin
     height += self.titleLabel.frame.size.height;
     height += self.subTitleLabel.frame.size.height; // label heights
-    height += 16 + 62; // between label and sub btn, sub btn height
+    height += 10 + 62; // between label and sub btn, sub btn height
     height += self.descriptionLabel.frame.size.height + 7; // top margin and desc label height
     //NSLog(@"-- FINAL HEIGHT: %f", height);
     

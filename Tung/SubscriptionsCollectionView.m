@@ -25,6 +25,7 @@
 @property UILabel *noSubsLabel;
 @property UIImageView *findPodcastsHere;
 @property BOOL fetched;
+@property BOOL isActiveView;
 
 @end
 
@@ -110,6 +111,8 @@ NSTimer *promptTimer;
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
+    _isActiveView = YES;
+    
     _tung.viewController = self;
     
     SettingsEntity *settings = [TungCommonObjects settings];
@@ -146,6 +149,7 @@ NSTimer *promptTimer;
 
 - (void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
+    _isActiveView = NO;
     [promptTimer invalidate];
     if (_editingNotifications) [self toggleEditNotifySettings];
 }
@@ -287,46 +291,49 @@ NSTimer *promptTimer;
 }
 
 - (void) controllerDidChangeContent:(NSFetchedResultsController *)controller {
-    //JPLog(@"controller did change content");
-    [self.collectionView performBatchUpdates:^{
-        for (NSDictionary *change in _sectionChanges) {
-            [change enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-                NSFetchedResultsChangeType type = [key unsignedIntegerValue];
-                switch(type) {
-                    case NSFetchedResultsChangeInsert:
-                        [self.collectionView insertSections:[NSIndexSet indexSetWithIndex:[obj unsignedIntegerValue]]];
-                        break;
-                    case NSFetchedResultsChangeDelete:
-                        [self.collectionView deleteSections:[NSIndexSet indexSetWithIndex:[obj unsignedIntegerValue]]];
-                        break;
-                    default:
-                        break;
-                }
-            }];
-        }
-        for (NSDictionary *change in _itemChanges) {
-            [change enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-                NSFetchedResultsChangeType type = [key unsignedIntegerValue];
-                switch(type) {
-                    case NSFetchedResultsChangeInsert:
-                        [self.collectionView insertItemsAtIndexPaths:@[obj]];
-                        break;
-                    case NSFetchedResultsChangeDelete:
-                        [self.collectionView deleteItemsAtIndexPaths:@[obj]];
-                        break;
-                    case NSFetchedResultsChangeUpdate:
-                        [self.collectionView reloadItemsAtIndexPaths:@[obj]];
-                        break;
-                    case NSFetchedResultsChangeMove:
-                        [self.collectionView moveItemAtIndexPath:obj[0] toIndexPath:obj[1]];
-                        break;
-                }
-            }];
-        }
-    } completion:^(BOOL finished) {
-        _sectionChanges = nil;
-        _itemChanges = nil;
-    }];
+    NSLog(@"controller did change content");
+    if (_isActiveView) {
+        NSLog(@"perform changes");
+        [self.collectionView performBatchUpdates:^{
+            for (NSDictionary *change in _sectionChanges) {
+                [change enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+                    NSFetchedResultsChangeType type = [key unsignedIntegerValue];
+                    switch(type) {
+                        case NSFetchedResultsChangeInsert:
+                            [self.collectionView insertSections:[NSIndexSet indexSetWithIndex:[obj unsignedIntegerValue]]];
+                            break;
+                        case NSFetchedResultsChangeDelete:
+                            [self.collectionView deleteSections:[NSIndexSet indexSetWithIndex:[obj unsignedIntegerValue]]];
+                            break;
+                        default:
+                            break;
+                    }
+                }];
+            }
+            for (NSDictionary *change in _itemChanges) {
+                [change enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
+                    NSFetchedResultsChangeType type = [key unsignedIntegerValue];
+                    switch(type) {
+                        case NSFetchedResultsChangeInsert:
+                            [self.collectionView insertItemsAtIndexPaths:@[obj]];
+                            break;
+                        case NSFetchedResultsChangeDelete:
+                            [self.collectionView deleteItemsAtIndexPaths:@[obj]];
+                            break;
+                        case NSFetchedResultsChangeUpdate:
+                            [self.collectionView reloadItemsAtIndexPaths:@[obj]];
+                            break;
+                        case NSFetchedResultsChangeMove:
+                            [self.collectionView moveItemAtIndexPath:obj[0] toIndexPath:obj[1]];
+                            break;
+                    }
+                }];
+            }
+        } completion:^(BOOL finished) {
+            _sectionChanges = nil;
+            _itemChanges = nil;
+        }];
+    }
 }
 
 #pragma mark <UICollectionViewDataSource>

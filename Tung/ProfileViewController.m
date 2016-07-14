@@ -44,9 +44,6 @@
 @implementation ProfileViewController
 
 
-
-
-
 - (void) viewDidLoad {
     
     [super viewDidLoad];
@@ -203,6 +200,7 @@
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(followingCountChanged:) name:@"followingCountChanged" object:nil];// respond to follow/unfollow events
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(minimizeProfileHeaderview) name:@"shouldMinimizeHeaderView" object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(maximizeProfileHeaderview) name:@"shouldMaximizeHeaderView" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(respondToProfiledUserFollowChange:) name:@"profiledUserFollowChange" object:nil];
     
 }
 
@@ -562,47 +560,83 @@ NSTimer *sessionCheckTimer;
     [self performSegueWithIdentifier:@"presentEditProfileView" sender:self];
 }
 
+
 - (void) followOrUnfollowProfiledUser {
     
-    NSNumber *userFollowsStartingValue = [_profiledUserData objectForKey:@"userFollows"];
-    NSNumber *followersStartingValue = [_profiledUserData objectForKey:@"followerCount"];
-    BOOL follows = [userFollowsStartingValue boolValue];
+    if (_tung.connectionAvailable.boolValue) {
     
-    if (follows) {
-        // unfollow
-        [_tung unfollowUserWithId:_profiledUserId withCallback:^(BOOL success, NSDictionary *response) {
-            if (success) {
-                if (![response objectForKey:@"userNotFollowing"]) {
-                	_tung.feedNeedsRefetch = [NSNumber numberWithBool:YES];
-                }
-            }
-            else {
-                [_profiledUserData setValue:userFollowsStartingValue forKey:@"userFollows"];
-                [_profiledUserData setValue:followersStartingValue forKey:@"followerCount"];
-                [self updateUserFollowingCounts];
-            }
-        }];
-        [_profiledUserData setValue:[NSNumber numberWithInt:0] forKey:@"userFollows"];
-        [_profiledUserData setValue:[NSNumber numberWithInt:[followersStartingValue intValue] -1] forKey:@"followerCount"];
+        NSMutableDictionary *userInfo = [@{
+                                          @"profiledUserId": _profiledUserId,
+                                          @"username": [_profiledUserData objectForKey:@"username"]
+                                          } mutableCopy];
+        
+        if (_profileHeader.editFollowBtn.on) {
+            // unfollow
+            [userInfo setObject:@"unfollow" forKey:@"action"];
+            
+        }
+        else {
+            // follow
+            [userInfo setObject:@"follow" forKey:@"action"];
+        }
+        
+        NSNotification *profiledUserFollowChangeNotif = [NSNotification notificationWithName:@"profiledUserFollowChange" object:nil userInfo:userInfo];
+        [[NSNotificationCenter defaultCenter] postNotification:profiledUserFollowChangeNotif];
     }
     else {
-        // follow
-        [_tung followUserWithId:_profiledUserId withCallback:^(BOOL success, NSDictionary *response) {
-            if (success) {
-                if (![response objectForKey:@"userAlreadyFollowing"]) {
-                	_tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
-                }
-            }
-            else {
-                [_profiledUserData setValue:userFollowsStartingValue forKey:@"userFollows"];
-                [_profiledUserData setValue:followersStartingValue forKey:@"followerCount"];
-                [self updateUserFollowingCounts];
-            }
-        }];
-        [_profiledUserData setValue:[NSNumber numberWithInt:1] forKey:@"userFollows"];
-        [_profiledUserData setValue:[NSNumber numberWithInt:[followersStartingValue intValue] +1] forKey:@"followerCount"];
+        [TungCommonObjects showNoConnectionAlert];
     }
-    // GUI
+}
+
+- (void) respondToProfiledUserFollowChange:(NSNotification*)notification {
+    
+    //NSLog(@"respond to profiled user follow change. profile page for id: %@", _profiledUserId);
+    NSString *targetId = [[notification userInfo] objectForKey:@"profiledUserId"];
+    NSString *action = [[notification userInfo] objectForKey:@"action"];
+    
+    if ([targetId isEqualToString:_profiledUserId]) {
+        // NOT the user: update follow count and make follow/unfollow request
+        
+        NSNumber *followersStartingValue = [_profiledUserData objectForKey:@"followerCount"];
+        
+        if ([action isEqualToString:@"follow"]) {
+            //NSLog(@"follow user");
+            // follow
+            [_tung followUserWithId:_profiledUserId withCallback:^(BOOL success, NSDictionary *response) {
+                if (success && ![response objectForKey:@"userAlreadyFollowing"]) {
+                    _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
+                }
+            }];
+            [_profiledUserData setValue:[NSNumber numberWithInt:1] forKey:@"userFollows"];
+            [_profiledUserData setValue:[NSNumber numberWithInt:[followersStartingValue intValue] +1] forKey:@"followerCount"];
+        }
+        else {
+            //NSLog(@"unfollow user");
+            [_tung unfollowUserWithId:_profiledUserId withCallback:^(BOOL success, NSDictionary *response) {
+                if (success && ![response objectForKey:@"userNotFollowing"]) {
+                    _tung.feedNeedsRefetch = [NSNumber numberWithBool:YES];
+                }
+            }];
+            [_profiledUserData setValue:[NSNumber numberWithInt:0] forKey:@"userFollows"];
+            [_profiledUserData setValue:[NSNumber numberWithInt:[followersStartingValue intValue] -1] forKey:@"followerCount"];
+        }
+    }
+    else {
+        // user profile page: update follow count and notifs
+        NSNumber *followingStartingValue = [_profiledUserData objectForKey:@"followingCount"];
+        NSNumber *follows = [NSNumber numberWithBool:NO];
+        
+        if ([action isEqualToString:@"follow"]) {
+            
+            follows = [NSNumber numberWithBool:YES];
+            [_profiledUserData setValue:[NSNumber numberWithInt:[followingStartingValue intValue] +1] forKey:@"followingCount"];
+        }
+        else {
+            [_profiledUserData setValue:[NSNumber numberWithInt:[followingStartingValue intValue] -1] forKey:@"followingCount"];
+            
+        }
+        [_notificationsView makeTableConsistentForFollowing:follows userId:targetId];
+    }
     [self updateUserFollowingCounts];
 }
 
@@ -694,10 +728,10 @@ NSTimer *sessionCheckTimer;
         [TungCommonObjects deleteCachedData];
         [TungCommonObjects showBannerAlertForText:@"All cached data has been deleted."];
     }]]; */
-    
+    /*
     [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Application log"	 style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [self performSegueWithIdentifier:@"presentLogView" sender:self];
-    }]];
+    }]]; */
     [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Sign out" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         [_tung signOut];
     }]];

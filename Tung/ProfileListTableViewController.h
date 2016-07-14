@@ -34,5 +34,6 @@
 - (void) refreshFeed;
 - (void) refetchFeed;
 - (void) initSearchController;
+- (void) makeTableConsistentForFollowing:(NSNumber *)following userId:(NSString *)userId;
 
 @end

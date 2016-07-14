@@ -26,6 +26,7 @@
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (nonatomic, assign) CGRect endingLogoFrame;
 @property (nonatomic, strong) NSString *appToken;
+@property BOOL userDataExists;
 
 @end
 
@@ -57,6 +58,20 @@
             [TungCommonObjects showNoConnectionAlert];
         }
     }];
+    
+    /*	because of keychain issues, user data, subs, etc may already exist
+     but may be for a different account than they are signing in with.
+     below check if any user data exists. in login functions, check if it's 
+     the same and else, delete data.
+     */
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSError *error = nil;
+    NSFetchRequest *users = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
+    NSArray *uResult = [appDelegate.managedObjectContext executeFetchRequest:users error:&error];
+    if (uResult.count > 0) {
+        //UserEntity *user = [uResult objectAtIndex:0];
+        _userDataExists = YES;
+    }
     
 }
 
@@ -170,24 +185,22 @@
         if (session) {
             JPLog(@"signed in as %@", [session userName]);
             
-            /*	because of keychain issues, user data, subs, etc may already exist
-             but may be for a different account than they are signing in with.
-             check if it's the same and else, delete data.
-             */
-            AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
-            error = nil;
-            NSFetchRequest *findUser = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
-            NSPredicate *predicate = [NSPredicate predicateWithFormat: @"twitter_id == %@", [session userID]];
-            [findUser setPredicate:predicate];
-            NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findUser error:&error];
-            
-            if (result.count == 0) {
-                JPLog(@"signing in as different user than for whom data is present");
-                [_tung removeSignedInUserData];
-                [_tung resetPlayerAndQueue];
-                // close FB session if open
-                if ([FBSDKAccessToken currentAccessToken]) {
-                    [[FBSDKLoginManager new] logOut];
+            if (_userDataExists) {
+                AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+                error = nil;
+                NSFetchRequest *findUser = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
+                NSPredicate *predicate = [NSPredicate predicateWithFormat: @"twitter_id == %@", [session userID]];
+                [findUser setPredicate:predicate];
+                NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findUser error:&error];
+                
+                if (result.count == 0) {
+                    JPLog(@"signing in as different user than for whom data is present");
+                    [_tung removeSignedInUserData];
+                    [_tung resetPlayerAndQueue];
+                    // close FB session if open
+                    if ([FBSDKAccessToken currentAccessToken]) {
+                        [[FBSDKLoginManager new] logOut];
+                    }
                 }
             }
             
@@ -298,22 +311,20 @@
                                      JPLog(@"fb - Logged in");
                                      if ([FBSDKAccessToken currentAccessToken]) {
                                          
-                                         /*	because of keychain issues, user data, subs, etc may already exist
-                                          but may be for a different account than they are signing in with.
-                                          check if it's the same and else, delete data.
-                                          */
-                                         AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
-                                         error = nil;
-                                         NSFetchRequest *findUser = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
-                                         NSPredicate *predicate = [NSPredicate predicateWithFormat: @"facebook_id == %@", [[FBSDKAccessToken currentAccessToken] userID]];
-                                         [findUser setPredicate:predicate];
-                                         NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findUser error:&error];
-                                         
-                                         if (result.count == 0) {
-                                             JPLog(@"signing in as different user than for whom data is present");
-                                             [_tung removeSignedInUserData];
-                                             [_tung resetPlayerAndQueue];
-                                             [[Twitter sharedInstance] logOut];
+                                         if (_userDataExists) {
+                                             AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+                                             error = nil;
+                                             NSFetchRequest *findUser = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
+                                             NSPredicate *predicate = [NSPredicate predicateWithFormat: @"facebook_id == %@", [[FBSDKAccessToken currentAccessToken] userID]];
+                                             [findUser setPredicate:predicate];
+                                             NSArray *findUserResult = [appDelegate.managedObjectContext executeFetchRequest:findUser error:&error];
+                                             
+                                             if (findUserResult.count == 0) {
+                                                 JPLog(@"signing in as different user than for whom data is present");
+                                                 [_tung removeSignedInUserData];
+                                                 [_tung resetPlayerAndQueue];
+                                                 [[Twitter sharedInstance] logOut];
+                                             }
                                          }
                                          
                                          NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];

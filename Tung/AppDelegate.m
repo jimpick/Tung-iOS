@@ -23,7 +23,7 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     _tung = [TungCommonObjects establishTungObjects];
-    if (!_tung.tungId.length && !_tung.tungToken.length) {
+    if (!_tung.tungId.length || !_tung.tungToken.length) {
     	[_tung establishCred];
     }
     else {

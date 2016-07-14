@@ -1241,7 +1241,7 @@
         <!--Description Web View Controller-->
         <scene sceneID="jJ3-K5-Q8J">
             <objects>
-                <viewController storyboardIdentifier="descWebView" id="Ed5-1A-CAv" customClass="DescriptionWebViewController" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="descWebView" extendedLayoutIncludesOpaqueBars="YES" id="Ed5-1A-CAv" customClass="DescriptionWebViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="HrI-j0-DDt"/>
                         <viewControllerLayoutGuide type="bottom" id="UlX-T5-4hQ"/>
@@ -1336,13 +1336,13 @@
         <!--Podcast View Controller-->
         <scene sceneID="Cyv-n0-P7M">
             <objects>
-                <viewController storyboardIdentifier="podcastView" id="oTE-aJ-43R" customClass="PodcastViewController" sceneMemberID="viewController">
+                <viewController storyboardIdentifier="podcastView" extendedLayoutIncludesOpaqueBars="YES" id="oTE-aJ-43R" customClass="PodcastViewController" sceneMemberID="viewController">
                     <layoutGuides>
                         <viewControllerLayoutGuide type="top" id="8G5-3S-dzB"/>
                         <viewControllerLayoutGuide type="bottom" id="xaf-cB-hM8"/>
                     </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="ggE-Q3-Z9c">
-                        <rect key="frame" x="0.0" y="64" width="320" height="504"/>
+                        <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
                         <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
                     </view>
@@ -1744,8 +1744,8 @@
                                                 <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
                                             </state>
                                         </button>
-                                        <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" tag="1" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Sub Label" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="awN-d7-UhQ">
-                                            <rect key="frame" x="66" y="43" width="101" height="14"/>
+                                        <label opaque="NO" clipsSubviews="YES" userInteractionEnabled="NO" tag="1" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Sub Label" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="8" translatesAutoresizingMaskIntoConstraints="NO" id="awN-d7-UhQ">
+                                            <rect key="frame" x="66" y="43" width="104" height="14"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="14" id="8Tk-LB-ayA"/>
                                             </constraints>
@@ -1754,18 +1754,18 @@
                                             <nil key="highlightedColor"/>
                                         </label>
                                         <view hidden="YES" contentMode="scaleToFill" translatesAutoresizingMaskIntoConstraints="NO" id="L6L-E9-gyT" customClass="IconView">
-                                            <rect key="frame" x="59" y="34" width="32" height="32"/>
+                                            <rect key="frame" x="59" y="34" width="30" height="30"/>
                                             <color key="backgroundColor" white="0.66666666666666663" alpha="1" colorSpace="calibratedWhite"/>
                                             <constraints>
-                                                <constraint firstAttribute="height" constant="32" id="48I-kA-gwL"/>
-                                                <constraint firstAttribute="width" constant="32" id="8fk-qg-E6s"/>
+                                                <constraint firstAttribute="height" constant="30" id="48I-kA-gwL"/>
+                                                <constraint firstAttribute="width" constant="30" id="8fk-qg-E6s"/>
                                             </constraints>
                                         </view>
                                         <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="NHB-yv-L9E" customClass="PillButton">
-                                            <rect key="frame" x="175" y="21" width="111" height="38"/>
+                                            <rect key="frame" x="178" y="21" width="108" height="38"/>
                                             <constraints>
                                                 <constraint firstAttribute="height" constant="38" id="3gJ-V3-c6Y"/>
-                                                <constraint firstAttribute="width" constant="111" id="toO-HM-FvZ"/>
+                                                <constraint firstAttribute="width" constant="108" id="toO-HM-FvZ"/>
                                             </constraints>
                                             <connections>
                                                 <action selector="followOrUnfollowUser:" destination="c8a-vf-udV" eventType="touchUpInside" id="cTr-AA-gHL"/>
@@ -1780,8 +1780,8 @@
                                             <color key="textColor" white="0.33333333333333331" alpha="1" colorSpace="calibratedWhite"/>
                                             <nil key="highlightedColor"/>
                                         </label>
-                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="username" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="FiF-Ch-GR5">
-                                            <rect key="frame" x="66" y="18" width="101" height="21"/>
+                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="username" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" minimumFontSize="10" translatesAutoresizingMaskIntoConstraints="NO" id="FiF-Ch-GR5">
+                                            <rect key="frame" x="66" y="18" width="104" height="21"/>
                                             <fontDescription key="fontDescription" type="boldSystem" pointSize="17"/>
                                             <color key="textColor" red="0.3411764705882353" green="0.3529411764705882" blue="0.84313725490196079" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                                             <nil key="highlightedColor"/>
@@ -2026,6 +2026,6 @@
         <image name="tungSignInLogo.png" width="194" height="124"/>
     </resources>
     <inferredMetricsTieBreakers>
-        <segue reference="09H-aj-Zdd"/>
+        <segue reference="dk8-9Y-zcj"/>
     </inferredMetricsTieBreakers>
 </document>

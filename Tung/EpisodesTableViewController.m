@@ -118,7 +118,7 @@
     
     if (_episodeArray && _episodeArray.count) {
         
-        NSLog(@"mark new episodes as seen");
+        //NSLog(@"mark new episodes as seen");
         
         NSMutableArray *rowsToReload = [NSMutableArray array];
         

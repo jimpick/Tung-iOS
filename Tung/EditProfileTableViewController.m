@@ -226,6 +226,9 @@ static UIImage *iconRedX;
         [self presentViewController:errorsAlert animated:YES completion:nil];
     }
 }
+- (void) viewWillDisappear:(BOOL)animated {
+    [[_fields objectAtIndex:_activeFieldIndex] resignFirstResponder];
+}
 
 - (void) viewDidAppear:(BOOL)animated {
     

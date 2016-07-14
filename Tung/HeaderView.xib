@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="9531" systemVersion="15C50" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="10117" systemVersion="15E65" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9529"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="10085"/>
     </dependencies>
     <objects>
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="HeaderView">
@@ -37,7 +37,7 @@
                     </constraints>
                 </imageView>
                 <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Label" lineBreakMode="tailTruncation" numberOfLines="4" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="sm5-bR-URW">
-                    <rect key="frame" x="12" y="140" width="351" height="15"/>
+                    <rect key="frame" x="12" y="134" width="351" height="15"/>
                     <fontDescription key="fontDescription" type="system" pointSize="12"/>
                     <color key="textColor" red="1" green="1" blue="1" alpha="0.80000000000000004" colorSpace="custom" customColorSpace="sRGB"/>
                     <nil key="highlightedColor"/>
@@ -63,14 +63,14 @@
                     </variation>
                 </label>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" buttonType="roundedRect" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4KU-bK-8sC" customClass="CircleButton">
-                    <rect key="frame" x="12" y="70" width="69" height="62"/>
+                    <rect key="frame" x="12" y="64" width="69" height="62"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="69" id="9IC-jU-NgJ"/>
                         <constraint firstAttribute="height" constant="62" id="dvm-p7-42T"/>
                     </constraints>
                 </button>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="4ma-BI-uyd" customClass="CircleButton">
-                    <rect key="frame" x="91" y="70" width="86" height="62"/>
+                    <rect key="frame" x="91" y="64" width="86" height="62"/>
                     <constraints>
                         <constraint firstAttribute="width" constant="86" id="dkC-9s-aKP"/>
                         <constraint firstAttribute="height" constant="62" id="iNP-R9-0BS"/>
@@ -93,7 +93,7 @@
                 <constraint firstAttribute="trailing" secondItem="fLF-cu-77A" secondAttribute="trailing" constant="12" id="ZxX-Ey-bGM"/>
                 <constraint firstItem="2Jl-63-wuU" firstAttribute="top" secondItem="ect-QW-a9O" secondAttribute="bottom" constant="2" id="aer-km-FmU"/>
                 <constraint firstItem="ect-QW-a9O" firstAttribute="leading" secondItem="iN0-l3-epB" secondAttribute="leading" constant="12" id="eMD-lI-NnS"/>
-                <constraint firstItem="4KU-bK-8sC" firstAttribute="top" secondItem="2Jl-63-wuU" secondAttribute="bottom" constant="16" id="exy-fc-m5C"/>
+                <constraint firstItem="4KU-bK-8sC" firstAttribute="top" secondItem="2Jl-63-wuU" secondAttribute="bottom" constant="10" id="exy-fc-m5C"/>
                 <constraint firstItem="4ma-BI-uyd" firstAttribute="top" secondItem="4KU-bK-8sC" secondAttribute="top" id="fYd-sz-MSW"/>
                 <constraint firstItem="4ma-BI-uyd" firstAttribute="leading" secondItem="4KU-bK-8sC" secondAttribute="trailing" constant="10" id="k7N-8v-OX4"/>
                 <constraint firstItem="sm5-bR-URW" firstAttribute="top" secondItem="4KU-bK-8sC" secondAttribute="bottom" constant="8" id="l4h-8q-KMA"/>

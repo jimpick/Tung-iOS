@@ -869,7 +869,7 @@
         // view all events for episode id
         NSDictionary *headerDict = [[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:0];
         NSString *episodeId = [[[headerDict objectForKey:@"episode"] objectForKey:@"id"] objectForKey:@"$id"];
-        NSLog(@"episodeId: %@", episodeId);
+        //NSLog(@"episodeId: %@", episodeId);
         StoriesTableViewController *storyDetailView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"storiesTableView"];
         storyDetailView.episodeId = episodeId;
     

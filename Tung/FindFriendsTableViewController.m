@@ -137,6 +137,7 @@
 
 - (void) viewWillAppear:(BOOL)animated {
     [super viewWillAppear:animated];
+    self.definesPresentationContext = YES;
     
     if ([_profileSearchView.searchController isActive]) {
         [_profileSearchView.searchController.searchBar setShowsCancelButton:YES];
@@ -144,6 +145,11 @@
         [_profileSearchView.searchController.searchBar setShowsCancelButton:NO];
     }
 
+}
+
+- (void) viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    self.definesPresentationContext = NO;
 }
 
 - (void) viewDidAppear:(BOOL)animated {
@@ -248,6 +254,8 @@
                     if (success) {
                         if (![response objectForKey:@"userNotFollowing"]) {
                             _tung.feedNeedsRefetch = [NSNumber numberWithBool:YES]; // following changed
+                            NSNotification *followingCountChangedNotif = [NSNotification notificationWithName:@"followingCountChanged" object:nil userInfo:response];
+                            [[NSNotificationCenter defaultCenter] postNotification:followingCountChangedNotif];
                         }
                     }
                     else {
@@ -261,20 +269,6 @@
             unfollowConfirmAlert.preferredAction = [unfollowConfirmAlert.actions objectAtIndex:1];
             [self presentViewController:unfollowConfirmAlert animated:YES completion:nil];
 
-            
-            NSString *userId = [[notification userInfo] objectForKey:@"unfollowedUser"];
-            // unfollow
-            [_tung unfollowUserWithId:userId withCallback:^(BOOL success, NSDictionary *response) {
-                if (success) {
-                    if (![response objectForKey:@"userNotFollowing"]) {
-                        _tung.feedNeedsRefetch = [NSNumber numberWithBool:YES]; // following changed
-                    }
-                }
-                else {
-                    btn.on = YES;
-                    [btn setNeedsDisplay];
-                }
-            }];
         }
         if ([[notification userInfo] objectForKey:@"followedUser"]) {
             NSString *userId = [[notification userInfo] objectForKey:@"followedUser"];
@@ -284,6 +278,8 @@
                     NSLog(@"successfully followed user from friends");
                     if (![response objectForKey:@"userAlreadyFollowing"]) {
                         _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES]; // following changed
+                        NSNotification *followingCountChangedNotif = [NSNotification notificationWithName:@"followingCountChanged" object:nil userInfo:response];
+                        [[NSNotificationCenter defaultCenter] postNotification:followingCountChangedNotif];
                     }
                 }
                 else {
