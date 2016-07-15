@@ -3243,11 +3243,13 @@ static NSArray *colors;
     
     NSDictionary *params;
     if (episodeEntity.id) {
-        params = @{@"collectionId": episodeEntity.collectionId,
+        params = @{@"apiKey": [TungCommonObjects apiKey],
+                   @"collectionId": episodeEntity.collectionId,
                    @"episodeId": episodeEntity.id,
                    };
     } else {
-        params = @{@"collectionId": episodeEntity.collectionId,
+        params = @{@"apiKey": [TungCommonObjects apiKey],
+                   @"collectionId": episodeEntity.collectionId,
                    @"GUID": episodeEntity.guid,
                    @"episodeUrl": episodeEntity.url,
                    @"episodePubDate": [ISODateFormatter stringFromDate:episodeEntity.pubDate],

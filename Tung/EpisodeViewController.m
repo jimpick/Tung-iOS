@@ -286,6 +286,7 @@ UIActivityIndicatorView *backgroundSpinner;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillAppear:) name:UIKeyboardWillShowNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillBeHidden:) name:UIKeyboardWillHideNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(resignKeyboardIfActive) name:@"shouldResignKeyboard" object:nil];
     
     if (!_isNowPlayingView) {
         
@@ -1970,10 +1971,11 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
 }
 
 //- (void) keyboardWillChangeFrame:(NSNotification*)notification {
+//    NSLog(@"keyboard will change frame");
 //}
 
 - (void) keyboardWillBeHidden:(NSNotification*)notification {
-    
+    //NSLog(@"keyboard will be hidden");
     if (_shareIntention && !_searchActive) {
         _hideControlsButton.hidden = NO;
         _buttonsScrollView.hidden = NO;
@@ -2037,6 +2039,11 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
             _commentAndPostView.tapToCommentLabel.alpha = 1;
         }
     }
+}
+
+- (void) resignKeyboardIfActive {
+    //NSLog(@"resign keyboard if active");
+    [_commentAndPostView.commentTextView resignFirstResponder];
 }
 
 #pragma mark - Sharing

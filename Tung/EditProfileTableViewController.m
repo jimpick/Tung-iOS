@@ -325,7 +325,7 @@ static UIImage *iconRedX;
             [TungCommonObjects saveUserWithDict:_profileData];
             
             _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES];
-            _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
+            _tung.feedNeedsRefetch = [NSNumber numberWithBool:YES];
             
             [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(leftBarItem:) userInfo:nil repeats:NO];
         }

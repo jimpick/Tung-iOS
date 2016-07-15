@@ -157,6 +157,10 @@ static CGFloat commentBubbleMargins = 27;
 
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
     //JPLog(@"%@", [_commentsArray objectAtIndex:indexPath.row]);
+    
+    NSNotification *shouldResignKeyboardNotif = [NSNotification notificationWithName:@"shouldResignKeyboard" object:nil userInfo:nil];
+    [[NSNotificationCenter defaultCenter] postNotification:shouldResignKeyboardNotif];
+    
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];

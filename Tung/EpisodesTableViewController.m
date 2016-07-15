@@ -347,6 +347,10 @@ static NSString *cellIdentifier = @"EpisodeCell";
 #pragma mark - Table view delegate methods
 
 - (void) tableView:(UITableView *)tableView didSelectRowAtIndexPath:(NSIndexPath *)indexPath {
+    
+    
+    NSNotification *shouldResignKeyboardNotif = [NSNotification notificationWithName:@"shouldResignKeyboard" object:nil userInfo:nil];
+    [[NSNotificationCenter defaultCenter] postNotification:shouldResignKeyboardNotif];
     //NSLog(@"%@", [_episodeArray objectAtIndex:indexPath.row]);
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
