@@ -20,6 +20,7 @@
 @property (strong, nonatomic) StoriesTableViewController *followingFeed;
 @property (strong, nonatomic) StoriesTableViewController *trendingFeed;
 @property NSInteger activeFeedIndex;
+@property UIBarButtonItem *findFriendsBarButtonItem;
 
 @end
 
@@ -52,7 +53,8 @@
     findFriendsInner.type = kIconButtonTypeFindFriends;
     findFriendsInner.color = [TungCommonObjects tungColor];
     [findFriendsInner addTarget:self action:@selector(pushFindFriendsView) forControlEvents:UIControlEventTouchUpInside];
-    self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:findFriendsInner];
+    _findFriendsBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:findFriendsInner];
+    self.navigationItem.leftBarButtonItem = _findFriendsBarButtonItem;
     
     // Following feed
     _followingFeed = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
@@ -226,6 +228,8 @@
     
     self.navigationItem.titleView = _podcast.searchController.searchBar;
     [self.navigationItem setRightBarButtonItem:nil animated:YES];
+    [self.navigationItem setLeftBarButtonItem:nil animated:YES];
+    
     
     [_podcast.searchController.searchBar becomeFirstResponder];
     
@@ -242,6 +246,7 @@
     self.navigationItem.titleView = _switcher;
     UIBarButtonItem *searchBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiatePodcastSearch)];
     [self.navigationItem setRightBarButtonItem:searchBtn animated:YES];
+    [self.navigationItem setLeftBarButtonItem:_findFriendsBarButtonItem animated:YES];
     
 }
 

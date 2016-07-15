@@ -64,7 +64,7 @@ static UIImage *iconRedX;
         
         // preload suggested users
         if (!_suggestedUsersArray) {
-            NSLog(@"get suggested users");
+            //NSLog(@"get suggested users");
             [_tung getSuggestedUsersWithCallback:^(BOOL success, NSDictionary *response) {
                 if (success) {
                     _suggestedUsersArray = [response objectForKey:@"success"];

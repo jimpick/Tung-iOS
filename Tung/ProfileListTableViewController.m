@@ -513,7 +513,7 @@
 }
 
 - (void) followingChanged:(NSNotification*)notification {
-    NSLog(@"following changed");
+    
     PillButton *btn = [[notification userInfo] objectForKey:@"sender"];
     
     if (_forOnboarding) {

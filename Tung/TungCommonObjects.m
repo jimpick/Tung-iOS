@@ -646,6 +646,10 @@ CGSize screenSize;
             PodcastEntity *npPodcastEntity = _npEpisodeEntity.podcast;
             _npEpisodeEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:npPodcastEntity save:NO];
         }
+        // increment listen count if it isn't already playing
+        if (!_npEpisodeEntity.isNowPlaying.boolValue) {
+            [self incrementPlayCountForEpisode:_npEpisodeEntity];
+        }
         
         _npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:YES];
         [TungCommonObjects saveContextWithReason:@"now playing changed"];
@@ -3082,6 +3086,7 @@ static NSArray *colors;
     [unRecommendPodcastRequest setHTTPMethod:@"POST"];
     NSString *episodeId = (episodeEntity.id) ? episodeEntity.id : @"";
     NSDictionary *params = @{@"sessionId":_sessionId,
+                             @"collectionId": episodeEntity.collectionId,
                              @"episodeId": episodeId
                              };
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
@@ -3103,13 +3108,6 @@ static NSArray *colors;
                                 [self unRecommendEpisode:episodeEntity withCallback:callback];
                             }];
                         }
-                        else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need episode info"]) {
-                            // shouldn't ever happen...
-                            __unsafe_unretained typeof(self) weakSelf = self;
-                            [self addEpisode:episodeEntity withCallback:^{
-                                [weakSelf unRecommendEpisode:episodeEntity withCallback:callback];
-                            }];
-                        }
                         else {
                             JPLog(@"Error un-recommending episode: %@", [responseDict objectForKey:@"error"]);
                             [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
@@ -3117,6 +3115,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
+                        //NSLog(@"unrecommend response: %@", responseDict);
                         episodeEntity.isRecommended = [NSNumber numberWithBool:NO];
                         UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
                         if (loggedUser) {
@@ -3222,8 +3221,6 @@ static NSArray *colors;
                             loggedUser.lastDataChange = lastDataChange;
                         }
                         [TungCommonObjects saveContextWithReason:@"save lastDataChange"];
-                        _feedNeedsRefresh = [NSNumber numberWithBool:YES];
-                        _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
                     }
                 }
                 else {
@@ -3234,6 +3231,71 @@ static NSArray *colors;
         }
         else {
             JPLog(@"Error syncing progress: %@", error.localizedDescription);
+        }
+    }];
+}
+
+- (void) incrementPlayCountForEpisode:(EpisodeEntity *)episodeEntity {
+    
+    NSURL *incrementCountRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/increment-listen-count.php", [TungCommonObjects apiRootUrl]]];
+    NSMutableURLRequest *incrementCountRequest = [NSMutableURLRequest requestWithURL:incrementCountRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [incrementCountRequest setHTTPMethod:@"POST"];
+    
+    NSDictionary *params;
+    if (episodeEntity.id) {
+        params = @{@"collectionId": episodeEntity.collectionId,
+                   @"episodeId": episodeEntity.id,
+                   };
+    } else {
+        params = @{@"collectionId": episodeEntity.collectionId,
+                   @"GUID": episodeEntity.guid,
+                   @"episodeUrl": episodeEntity.url,
+                   @"episodePubDate": [ISODateFormatter stringFromDate:episodeEntity.pubDate],
+                   @"episodeTitle": episodeEntity.title
+                   };
+    }
+    //NSLog(@"increment play count request with params: %@", params);
+    
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [incrementCountRequest setHTTPBody:serializedParams];
+    NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+    [NSURLConnection sendAsynchronousRequest:incrementCountRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    if ([responseDict objectForKey:@"error"]) {
+                        // no podcast record
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
+                            __unsafe_unretained typeof(self) weakSelf = self;
+                            [TungCommonObjects addOrUpdatePodcast:episodeEntity.podcast orEpisode:episodeEntity withCallback:^ {
+                                [weakSelf incrementPlayCountForEpisode:episodeEntity];
+                            }];
+                        }
+                        else {
+                            JPLog(@"Error incrementing play count: %@", [responseDict objectForKey:@"error"]);
+                        }
+                    }
+                    else if ([responseDict objectForKey:@"success"]) {
+                        //JPLog(@"%@", responseDict);
+                        if (!episodeEntity.id) {
+                            // save episode id and shortlink
+                            NSString *episodeId = [responseDict objectForKey:@"episodeId"];
+                            NSString *shortlink = [responseDict objectForKey:@"shortlink"];
+                            episodeEntity.id = episodeId;
+                            episodeEntity.shortlink = shortlink;
+                        }
+                    }
+                }
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error. HTML: %@", html);
+                }
+            });
+        }
+        else {
+            JPLog(@"Error incrementing play count: %@", error.localizedDescription);
         }
     }];
 }
@@ -4783,7 +4845,7 @@ static NSArray *colors;
 
 // get keychain credentials
 + (NSString *) getKeychainCred {
-    NSLog(@"get keychain cred");
+    //NSLog(@"get keychain cred");
     NSString *key = @"tung credentials";
     NSString *service = [[NSBundle mainBundle] bundleIdentifier];
     NSDictionary *query = @{
@@ -4796,11 +4858,12 @@ static NSArray *colors;
     OSStatus results = SecItemCopyMatching((__bridge CFDictionaryRef)query, (CFTypeRef *)&cfValue);
     
     if (results == errSecSuccess) {
-        NSLog(@"credentials found");
+        //NSLog(@"credentials found");
         NSString *tungCred = [[NSString alloc] initWithData:(__bridge_transfer NSData *)cfValue encoding:NSUTF8StringEncoding];
         return tungCred;
     } else {
-    	JPLog(@"No cred found. (Error?): %@", [self keychainStatusToString:results]);
+        JPLog(@"No cred found. %@", [self keychainStatusToString:results]);
+        CLS_LOG(@"No cred found. %@", [self keychainStatusToString:results]);
         return NULL;
     }
 }
@@ -5282,7 +5345,7 @@ static NSDateFormatter *dayDateFormatter = nil;
     } else {
         components.query = referrer;
     }
-    NSLog(@"added ref to url: %@", components.URL);
+    //NSLog(@"added ref to url: %@", components.URL);
     return components.URL;
 }
 

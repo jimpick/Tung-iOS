@@ -182,6 +182,7 @@
 - (void) recommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success))callback;
 - (void) unRecommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success))callback;;
 - (void) syncProgressForEpisode:(EpisodeEntity *)episodeEntity;
+- (void) incrementPlayCountForEpisode:(EpisodeEntity *)episodeEntity;
 - (void) postComment:(NSString*)comment atTime:(NSString*)timestamp onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) postClipWithComment:(NSString*)comment atTime:(NSString*)timestamp withDuration:(NSString *)duration onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) deleteStoryEventWithId:(NSString *)eventId withCallback:(void (^)(BOOL success))callback;
