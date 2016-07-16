@@ -185,14 +185,14 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    //return @"https://api.tung.fm/";
-    return @"https://staging-api.tung.fm/";
+    return @"https://api.tung.fm/";
+    //return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
     
-    //return @"https://tung.fm/";
-    return @"https://staging.tung.fm/";
+    return @"https://tung.fm/";
+    //return @"https://staging.tung.fm/";
 }
 
 + (NSString *) apiKey {
@@ -3269,7 +3269,7 @@ static NSArray *colors;
                    @"episodeTitle": episodeEntity.title
                    };
     }
-    NSLog(@"increment play count request with params: %@", params);
+    //NSLog(@"increment play count request with params: %@", params);
     
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [incrementCountRequest setHTTPBody:serializedParams];

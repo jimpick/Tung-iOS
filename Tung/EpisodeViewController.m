@@ -531,7 +531,7 @@ NSTimer *markAsSeenTimer;
 - (void) refreshSubscribeStatus:(NSNotification *) notification {
     NSNumber *collectionId = [[notification userInfo] objectForKey:@"collectionId"];
     
-    if ([collectionId isEqualToNumber:_episodeEntity.collectionId]) {
+    if ([collectionId isEqualToNumber:_episodeEntity.podcast.collectionId]) {
         _headerView.subscribeButton.subscribed = _episodeEntity.podcast.isSubscribed.boolValue;
         [_headerView.subscribeButton setNeedsDisplay];
     }

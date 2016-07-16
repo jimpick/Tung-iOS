@@ -1874,7 +1874,7 @@
         <!--Subscriptions Collection View-->
         <scene sceneID="zYN-4U-hIc">
             <objects>
-                <collectionViewController id="bgb-g9-QEu" customClass="SubscriptionsCollectionView" sceneMemberID="viewController">
+                <collectionViewController extendedLayoutIncludesOpaqueBars="YES" id="bgb-g9-QEu" customClass="SubscriptionsCollectionView" sceneMemberID="viewController">
                     <collectionView key="view" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" id="MiZ-59-O7B">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="568"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
