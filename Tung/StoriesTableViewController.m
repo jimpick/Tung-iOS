@@ -290,8 +290,8 @@
                             
                             JPLog(@"got stories AND session in %f seconds.", fabs(requestDuration));
                             _tung.sessionId = [responseDict objectForKey:@"sessionId"];
-                            // TODO: remove before release
-                            NSLog(@"session id: %@", _tung.sessionId);
+                            
+                            //NSLog(@"session id: %@", _tung.sessionId);
                             //NSLog(@"user: %@", [responseDict objectForKey:@"user"]);
                             _tung.connectionAvailable = [NSNumber numberWithBool:YES];
                             // check if data needs syncing

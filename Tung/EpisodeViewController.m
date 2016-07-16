@@ -287,6 +287,7 @@ UIActivityIndicatorView *backgroundSpinner;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(keyboardWillBeHidden:) name:UIKeyboardWillHideNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(resignKeyboardIfActive) name:@"shouldResignKeyboard" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refreshSubscribeStatus:) name:@"refreshSubscribeStatus" object:nil];
     
     if (!_isNowPlayingView) {
         
@@ -524,6 +525,15 @@ NSTimer *markAsSeenTimer;
     
     if (!_saveButton.on) {
         _progressBar.progress = 0;
+    }
+}
+
+- (void) refreshSubscribeStatus:(NSNotification *) notification {
+    NSNumber *collectionId = [[notification userInfo] objectForKey:@"collectionId"];
+    
+    if ([collectionId isEqualToNumber:_episodeEntity.collectionId]) {
+        _headerView.subscribeButton.subscribed = _episodeEntity.podcast.isSubscribed.boolValue;
+        [_headerView.subscribeButton setNeedsDisplay];
     }
 }
 
@@ -1204,7 +1214,8 @@ static CGRect buttonsScrollViewHomeRect;
     UIAlertController *thanksAlert = [UIAlertController alertControllerWithTitle:@"Thanks for using Tung!" message:@"Hope you're enjoying it 😎" preferredStyle:UIAlertControllerStyleAlert];
     [thanksAlert addAction:[UIAlertAction actionWithTitle:@"Dismiss" style:UIAlertActionStyleDefault handler:nil]];
     [thanksAlert addAction:[UIAlertAction actionWithTitle:@"Rate Tung" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"https://itunes.apple.com/us/app/tung.fm/id932939338"]];
+        // @"https://itunes.apple.com/us/app/tung.fm/id932939338"
+        [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"itms-apps://itunes.apple.com/app/id932939338"]];
     }]];
     thanksAlert.preferredAction = [thanksAlert.actions objectAtIndex:1];
     [self presentViewController:thanksAlert animated:YES completion:nil];
@@ -1554,7 +1565,9 @@ static CGRect buttonsScrollViewHomeRect;
     }
     _shareLabel.text = [NSString stringWithFormat:@"New comment @ %@", _shareTimestamp];
     //_commentAndPostView.commentTextView.text = @"";
-    [_commentAndPostView.postButton setEnabled:NO];
+    if (!_commentAndPostView.commentTextView.text.length) {
+    	[_commentAndPostView.postButton setEnabled:NO];
+    }
     [self toggleNewComment];
 }
 
@@ -1918,7 +1931,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
         //JPLog(@"keyboard will appear. %@", keyboardInfo);
         //JPLog(@"keyboard will appear. rect begin: %@, rect end: %@", NSStringFromCGRect(keyboardRectBegin),NSStringFromCGRect(keyboardRectEnd));
         
-        // keyboard changes height (switch to emoji, open auto complete
+        // keyboard changes height (switch to emoji, open auto complete)
         if (_keyboardActive) {
             
             CGFloat diff = keyboardRectEnd.size.height - keyboardRectBegin.size.height;
@@ -2068,6 +2081,9 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
                 }
             }];
         }
+        else {
+            NSLog(@"twitter session: %@", [Twitter sharedInstance].sessionStore.session);
+        }
     }
 }
 
@@ -2158,7 +2174,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
         
         [_commentAndPostView.postButton setEnabled:NO];
         [_commentAndPostView.postActivityIndicator startAnimating];
-        NSLog(@"post clip with duration: %@", _recordingDuration);
+        //NSLog(@"post clip with duration: %@", _recordingDuration);
         [_tung postClipWithComment:text atTime:_shareTimestamp withDuration:_recordingDuration onEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
             [_commentAndPostView.postActivityIndicator stopAnimating];
             [_commentAndPostView.postButton setEnabled:YES];
@@ -2250,9 +2266,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
 
 - (void) openShareSheetForEntity:(EpisodeEntity *)episodeEntity {
     
-    NSDictionary *userDict = [_tung getLoggedInUserData];
-    NSString *username = [userDict objectForKey:@"username"];
-    NSString *text = [NSString stringWithFormat:@"Listening to %@ on #tung: %@e/%@/%@", episodeEntity.title, [TungCommonObjects tungSiteRootUrl], episodeEntity.shortlink, username];
+    NSString *text = [NSString stringWithFormat:@"Listening to %@ on #tung: %@e/%@", episodeEntity.title, [TungCommonObjects tungSiteRootUrl], episodeEntity.shortlink];
     
     UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[text] applicationActivities:nil];
     [self presentViewController:shareSheet animated:YES completion:nil];

@@ -270,7 +270,7 @@ NSTimer *promptTimer;
     [_sectionChanges addObject:change];
 }
 - (void) controller:(NSFetchedResultsController *)controller didChangeObject:(id)anObject atIndexPath:(NSIndexPath *)indexPath forChangeType:(NSFetchedResultsChangeType)type newIndexPath:(NSIndexPath *)newIndexPath {
-    //JPLog(@"controller did change object");
+    //NSLog(@"controller did change object");
     
     NSMutableDictionary *change = [[NSMutableDictionary alloc] init];
     switch(type) {
@@ -291,9 +291,9 @@ NSTimer *promptTimer;
 }
 
 - (void) controllerDidChangeContent:(NSFetchedResultsController *)controller {
-    NSLog(@"controller did change content");
+    //NSLog(@"controller did change content");
     if (_isActiveView) {
-        NSLog(@"perform changes");
+        //NSLog(@"perform changes");
         [self.collectionView performBatchUpdates:^{
             for (NSDictionary *change in _sectionChanges) {
                 [change enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {

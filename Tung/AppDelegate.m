@@ -68,7 +68,7 @@
         [self application:application didReceiveRemoteNotification:userInfo];
     }
 
-    NSLog(@"application did finish launching with options");
+    //NSLog(@"application did finish launching with options");
     return YES;
 }
 
@@ -232,7 +232,7 @@
     }
     free(bytes);
     
-    NSLog(@"successfully registered for remote notifications. token: %@", tokenAsString);
+    //NSLog(@"successfully registered for remote notifications. token: %@", tokenAsString);
     
     [self postDeviceToken:tokenAsString];
     
@@ -280,7 +280,7 @@
                              @"tungToken": _tung.tungToken,
                              @"deviceToken": token
                              };
-    NSLog(@"post device token with params: %@", params);
+    //NSLog(@"post device token with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [postDeviceTokenRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -355,7 +355,7 @@
 - (void)applicationWillTerminate:(UIApplication *)application
 {
     // Saves changes in the application's managed object context before the application terminates.
-    JPLog(@"!!!!!!!!! CRASH OR FORCE-QUIT - application will terminate");
+    JPLog(@"CRASH OR FORCE-QUIT - application will terminate"); // never appears in log
     [self saveContext];
 }
 

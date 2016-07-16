@@ -42,6 +42,7 @@
 
 @property (strong, nonatomic) NSTimer *syncProgressTimer;
 @property (strong, nonatomic) NSTimer *showBufferingTimer;
+@property (strong, nonatomic) NSTimer *incPlayCountTimer;
 @property (strong, nonatomic) NSNumber *gettingSession;
 
 @end
@@ -648,7 +649,7 @@ CGSize screenSize;
         }
         // increment listen count if it isn't already playing
         if (!_npEpisodeEntity.isNowPlaying.boolValue) {
-            [self incrementPlayCountForEpisode:_npEpisodeEntity];
+            _incPlayCountTimer = [NSTimer scheduledTimerWithTimeInterval:10.0 target:self selector:@selector(incrementPlayCountForNowPlaying) userInfo:nil repeats:NO];
         }
         
         _npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:YES];
@@ -707,6 +708,7 @@ CGSize screenSize;
     _npViewSetupForCurrentEpisode = NO;
     _shouldStayPaused = NO;
     _totalSeconds = 0;
+    [_incPlayCountTimer invalidate];
     
     // remove old player and observers
     if (_player) {
@@ -2625,7 +2627,6 @@ static NSArray *colors;
         return;
     }
     
-    //NSLog(@"add podcast/episode request");
     NSURL *addEpisodeRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/add-or-update-podcast.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *addEpisodeRequest = [NSMutableURLRequest requestWithURL:addEpisodeRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [addEpisodeRequest setHTTPMethod:@"POST"];
@@ -2633,7 +2634,7 @@ static NSArray *colors;
     NSString *email = (podcastEntity.email) ? podcastEntity.email : @"";
     NSString *website = (podcastEntity.website) ? podcastEntity.website : @"";
     
-    //NSLog(@"Add or Update Podcast for entity: %@", podcastEntity);
+    NSLog(@"Add or Update Podcast for entity: %@", podcastEntity.collectionName);
     //NSLog(@"episode entity: %@", episodeEntity);
     NSMutableDictionary *params = [@{@"apiKey": [TungCommonObjects apiKey],
                                     @"collectionId": podcastEntity.collectionId,
@@ -2906,6 +2907,10 @@ static NSArray *colors;
                     podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
                     [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user, subscribe status changed"];
                     // important: do not assign shortlink from subscribe story to episode entity
+                    // notification
+                    NSDictionary *userInfo = @{ @"collectionId": podcastEntity.collectionId };
+                    NSNotification *subscribeChangeNotif = [NSNotification notificationWithName:@"refreshSubscribeStatus" object:nil userInfo:userInfo];
+                    [[NSNotificationCenter defaultCenter] postNotification:subscribeChangeNotif];
                 }
             }
             else {
@@ -2969,6 +2974,10 @@ static NSArray *colors;
                     podcastEntity.timeSubscribed = [NSNumber numberWithInt:0];
                     podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
                     [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user, subscribe status change"];
+                    // notification
+                    NSDictionary *userInfo = @{ @"collectionId": podcastEntity.collectionId };
+                    NSNotification *subscribeChangeNotif = [NSNotification notificationWithName:@"refreshSubscribeStatus" object:nil userInfo:userInfo];
+                    [[NSNotificationCenter defaultCenter] postNotification:subscribeChangeNotif];
                 }
             }
             else {
@@ -3235,6 +3244,10 @@ static NSArray *colors;
     }];
 }
 
+- (void) incrementPlayCountForNowPlaying {
+    [self incrementPlayCountForEpisode:_npEpisodeEntity];
+}
+
 - (void) incrementPlayCountForEpisode:(EpisodeEntity *)episodeEntity {
     
     NSURL *incrementCountRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/increment-listen-count.php", [TungCommonObjects apiRootUrl]]];
@@ -3256,7 +3269,7 @@ static NSArray *colors;
                    @"episodeTitle": episodeEntity.title
                    };
     }
-    //NSLog(@"increment play count request with params: %@", params);
+    NSLog(@"increment play count request with params: %@", params);
     
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [incrementCountRequest setHTTPBody:serializedParams];
@@ -3478,7 +3491,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        JPLog(@"successfully posted clip");
+                        //JPLog(@"successfully posted clip");
                         if (!episodeEntity.id) {
                             // save episode id and shortlink
                             NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -4052,11 +4065,10 @@ static NSArray *colors;
 - (void) resetPlayerAndQueue {
     [self stopClipPlayback];
     [self playerPause];
+    [self resetPlayer];
     [_syncProgressTimer invalidate];
     _playQueue = [@[] mutableCopy];
     _npEpisodeEntity = nil;
-    
-    [self resetPlayer];
 }
 
 -(void) signOut {
@@ -4207,18 +4219,15 @@ static NSArray *colors;
         [client sendTwitterRequest:request completion:^(NSURLResponse *urlResponse, NSData *data, NSError *connectionError) {
             NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *)urlResponse;
             long responseCode =  (long)[httpResponse statusCode];
-            if (responseCode == 200) {
-                JPLog(@"tweet posted");
-            }
             
-            JPLog(@"Twitter HTTP response: %li", responseCode);
-            if (connectionError != nil) {
-                JPLog(@"Error: %@", connectionError);
+            //JPLog(@"Twitter HTTP response: %li", responseCode);
+            if (responseCode != 200 || connectionError != nil) {
+                JPLog(@"post tweet error (%li): %@", responseCode, connectionError);
             }
         }];
     }
     else {
-        JPLog(@"Error: %@", clientError);
+        JPLog(@"post tweet error: %@", clientError);
     }
     
 }
