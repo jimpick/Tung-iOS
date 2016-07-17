@@ -217,20 +217,17 @@
                         _tung.connectionAvailable = [NSNumber numberWithBool:YES];
                         
                         //NSLog(@"session id: %@", _tung.sessionId);
-                        UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
+                        NSMutableDictionary *loggedUserDict = [[responseDict objectForKey:@"user"] mutableCopy];
+                        [loggedUserDict setObject:[responseDict objectForKey:@"token"] forKey:@"token"];
+                        _tung.loggedInUser = [TungCommonObjects saveUserWithDict:loggedUserDict isLoggedInUser:YES];
                         //JPLog(@"logged in user: %@", [TungCommonObjects entityToDict:loggedUser]);
                         NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
                         
                         //JPLog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
-                        if (lastDataChange.floatValue > loggedUser.lastDataChange.floatValue) {
+                        if (lastDataChange.floatValue > _tung.loggedInUser.lastDataChange.floatValue) {
                             //JPLog(@"needs restore. ");
-                            [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
+                            [_tung restorePodcastDataSinceTime:_tung.loggedInUser.lastDataChange];
                         }
-                        
-                        // construct token of id and token together and save to keychain
-                        NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
-                        NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
-                        [_tung saveKeychainCred:tungCred];
                         
                         // show feed
                         UIViewController *feed = [self.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];
@@ -339,22 +336,18 @@
                                                      JPLog(@"user exists. signing in...");
                                                      _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                                                      _tung.connectionAvailable = [NSNumber numberWithBool:YES];
-                                                     UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
+                                                     
+                                                     NSMutableDictionary *loggedUserDict = [[responseDict objectForKey:@"user"] mutableCopy];
+                                                     [loggedUserDict setObject:[responseDict objectForKey:@"token"] forKey:@"token"];
+                                                     _tung.loggedInUser = [TungCommonObjects saveUserWithDict:loggedUserDict isLoggedInUser:YES];
                                                      //JPLog(@"logged in user: %@", [TungCommonObjects entityToDict:loggedUser]);
                                                      NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
                                                      
-                                                     JPLog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
-                                                     if (lastDataChange.floatValue > loggedUser.lastDataChange.floatValue) {
+                                                     JPLog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, _tung.loggedInUser.lastDataChange);
+                                                     if (lastDataChange.floatValue > _tung.loggedInUser.lastDataChange.floatValue) {
                                                          JPLog(@"needs restore. ");
-                                                         [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
+                                                         [_tung restorePodcastDataSinceTime:_tung.loggedInUser.lastDataChange];
                                                      }
-                                                     
-                                                     NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
-                                                     
-                                                     // construct token of id and token together
-                                                     NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
-                                                     // save cred to keychain
-                                                     [_tung saveKeychainCred:tungCred];
                                                      
                                                      // show feed
                                                      UIViewController *feed = [self.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];

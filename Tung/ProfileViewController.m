@@ -54,7 +54,7 @@
     
     // profiled user
     if (!_profiledUserId) {
-        _profiledUserId = _tung.tungId;
+        _profiledUserId = _tung.loggedInUser.tung_id;
         
         _isLoggedInUser = YES;
         self.navigationItem.title = @"My Profile";
@@ -78,7 +78,7 @@
         self.navigationItem.title = @"Loading…";
         // first if above determines if this is the profile page by checking if
         // profiledUserId is set, but logged in user's id may still be pushed
-        if ([_profiledUserId isEqualToString:_tung.tungId]) {
+        if ([_profiledUserId isEqualToString:_tung.loggedInUser.tung_id]) {
             _isLoggedInUser = YES;
         }
     }
@@ -170,7 +170,7 @@
     if (_isLoggedInUser) {
         _notificationsView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
         _notificationsView.queryType = @"Notifications";
-        _notificationsView.target_id = _tung.tungId;
+        _notificationsView.target_id = _tung.loggedInUser.tung_id;
         _notificationsView.edgesForExtendedLayout = UIRectEdgeNone;
         _notificationsView.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
         [self addChildViewController:_notificationsView];
@@ -327,45 +327,22 @@ NSTimer *sessionCheckTimer;
         if (reachable) {
         
             if (_isLoggedInUser) {
-                _profiledUserData = [[_tung getLoggedInUserData] mutableCopy];
-                if (_profiledUserData) {
-                    //JPLog(@"Is logged in user: Has logged-in user data.");
-                    [self setUpProfileHeaderViewForData];
-                    // request profile just to get current follower/following counts
-                    [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
-                        if (jsonData != nil) {
-                            NSDictionary *responseDict = jsonData;
-                            if ([responseDict objectForKey:@"user"]) {
-                                _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
-                                [self updateUserFollowingCounts];
-                                if (_tung.profileFeedNeedsRefresh.boolValue) {
-                                    [_storiesView refreshFeed];
-                                }
+                _profiledUserData = [[TungCommonObjects entityToDict:_tung.loggedInUser] mutableCopy];
+                //JPLog(@"Is logged in user: Has logged-in user data.");
+                [self setUpProfileHeaderViewForData];
+                // request profile just to get current follower/following counts
+                [_tung getProfileDataForUser:_tung.loggedInUser.tung_id withCallback:^(NSDictionary *jsonData) {
+                    if (jsonData != nil) {
+                        NSDictionary *responseDict = jsonData;
+                        if ([responseDict objectForKey:@"user"]) {
+                            _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
+                            [self updateUserFollowingCounts];
+                            if (_tung.profileFeedNeedsRefresh.boolValue) {
+                                [_storiesView refreshFeed];
                             }
                         }
-                    }];
-                }
-                else {
-                    // restore logged in user data
-                    JPLog(@"Is logged in user: Was missing logged-in user data - fetching for id: %@", _tung.tungId);
-                    [_tung getProfileDataForUser:_tung.tungId withCallback:^(NSDictionary *jsonData) {
-                        if (jsonData != nil) {
-                            NSDictionary *responseDict = jsonData;
-                            if ([responseDict objectForKey:@"user"]) {
-                                JPLog(@"got user: %@", [responseDict objectForKey:@"user"]);
-                                [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
-                                _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
-                                [self setUpProfileHeaderViewForData];
-                                if (_tung.profileFeedNeedsRefresh.boolValue) {
-                                    [_storiesView refreshFeed];
-                                }
-                            }
-                            else if ([responseDict objectForKey:@"error"]) {
-                                [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
-                            }
-                        }
-                    }];
-                }
+                    }
+                }];
             }
             else {
                 
@@ -728,10 +705,10 @@ NSTimer *sessionCheckTimer;
         [TungCommonObjects deleteCachedData];
         [TungCommonObjects showBannerAlertForText:@"All cached data has been deleted."];
     }]]; */
-    /*
+    
     [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Application log"	 style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [self performSegueWithIdentifier:@"presentLogView" sender:self];
-    }]]; */
+    }]]; 
     [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Sign out" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         [_tung signOut];
     }]];
@@ -755,13 +732,6 @@ static CGSize profileHeaderScrollViewSize;
         _profileHeader.isAnimating = YES;
         profileHeaderScrollViewSize = _profileHeader.scrollView.contentSize;
         
-        // make sure scroll view is showing name and avatar
-        float fractionalPage = (uint) _profileHeader.scrollView.contentOffset.x / [TungCommonObjects screenSize].width;
-        NSInteger page = lround(fractionalPage);
-        if (page == 1) {
-            
-            [_profileHeader.scrollView scrollRectToVisible:CGRectMake(0, 0, [TungCommonObjects screenSize].width, profileHeaderScrollViewHeight) animated:YES];
-        }
         _profileHeader.nameLabel.hidden = NO;
         _profileHeader.nameLabel.alpha = 0;
         

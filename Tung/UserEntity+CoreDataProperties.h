@@ -2,7 +2,7 @@
 //  UserEntity+CoreDataProperties.h
 //  Tung
 //
-//  Created by Jamie Perkins on 1/10/16.
+//  Created by Jamie Perkins on 7/17/16.
 //  Copyright © 2016 Jamie Perkins. All rights reserved.
 //
 //  Choose "Create NSManagedObject Subclass…" from the Core Data editor menu
@@ -29,6 +29,8 @@ NS_ASSUME_NONNULL_BEGIN
 @property (nullable, nonatomic, retain) NSString *twitter_username;
 @property (nullable, nonatomic, retain) NSString *url;
 @property (nullable, nonatomic, retain) NSString *username;
+@property (nullable, nonatomic, retain) NSNumber *isLoggedInUser;
+@property (nullable, nonatomic, retain) NSString *token;
 
 @end
 

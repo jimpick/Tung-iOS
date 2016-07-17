@@ -23,15 +23,9 @@
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
     _tung = [TungCommonObjects establishTungObjects];
-    if (!_tung.tungId.length || !_tung.tungToken.length) {
-    	[_tung establishCred];
-    }
-    else {
-        JPLog(@"tungId already existed when app didFinishLaunching");
-    }
-    BOOL isLoggedIn = NO;
-    if (_tung.tungId.length && _tung.tungToken.length) {
-        isLoggedIn = YES;
+
+    BOOL isLoggedIn = (_tung.loggedInUser && _tung.loggedInUser.tung_id && _tung.loggedInUser.token);
+    if (isLoggedIn) {
         // if user is registered for remote notifs, call below methods
         // bc "device token changes frequently" according to docs
         if ([[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
@@ -276,8 +270,8 @@
     NSURL *postDeviceTokenRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/post-device-token.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *postDeviceTokenRequest = [NSMutableURLRequest requestWithURL:postDeviceTokenRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [postDeviceTokenRequest setHTTPMethod:@"POST"];
-    NSDictionary *params = @{@"tungId":_tung.tungId,
-                             @"tungToken": _tung.tungToken,
+    NSDictionary *params = @{@"tungId":_tung.loggedInUser.tung_id,
+                             @"tungToken": _tung.loggedInUser.token,
                              @"deviceToken": token
                              };
     //NSLog(@"post device token with params: %@", params);
@@ -340,9 +334,7 @@
 
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
-    if (!_tung.tungId || _tung.tungId.length == 0) {
-    	[_tung establishCred];
-    }
+
     //JPLog(@"Application did become active");
     [_tung checkForNowPlaying];
     // check reachability

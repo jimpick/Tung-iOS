@@ -77,8 +77,8 @@ static UIImage *iconRedX;
         // edit profile
         self.navigationItem.title = @"Edit Profile";
         _refreshAvatarBtn.hidden = NO;
-        _profileData = [[_tung getLoggedInUserData] mutableCopy];
-        _userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
+        _profileData = [[TungCommonObjects entityToDict:_tung.loggedInUser] mutableCopy];
+        _userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.loggedInUser.tung_id];
         [self setAvatarFromExistingAvatar];
         // for checking if we need to save
         _formIsPristine = YES;
@@ -322,7 +322,7 @@ static UIImage *iconRedX;
             [_profileData setValue:_field_url.text forKey:@"url"];
             [_profileData setValue:_field_email.text forKey:@"email"];
             
-            [TungCommonObjects saveUserWithDict:_profileData];
+            [TungCommonObjects saveUserWithDict:_profileData isLoggedInUser:YES];
             
             _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES];
             _tung.feedNeedsRefetch = [NSNumber numberWithBool:YES];
@@ -419,11 +419,9 @@ static UIImage *iconRedX;
     [_avatarActivityIndicator startAnimating];
     _working = YES;
     
-    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
-    
-    if (loggedUser.facebook_id) {
+    if (_tung.loggedInUser.facebook_id) {
         // Facebook
-        NSString *avatarURL = [NSString stringWithFormat:@"https://graph.facebook.com/%@/picture?type=square&height=640&width=640", loggedUser.facebook_id];
+        NSString *avatarURL = [NSString stringWithFormat:@"https://graph.facebook.com/%@/picture?type=square&height=640&width=640", _tung.loggedInUser.facebook_id];
         
         [_profileData setObject:avatarURL forKey:@"avatarURL"];
         dispatch_async(dispatch_get_main_queue(), ^{
@@ -566,7 +564,7 @@ static UIImage *iconRedX;
                     [TungCommonObjects replaceCachedSmallAvatarWithDataAtUrlString:[_profileData objectForKey:@"small_av_url"]];
                     // save
                     JPLog(@"saving new profile data: %@", _profileData);
-                    [TungCommonObjects saveUserWithDict:_profileData];
+                    [TungCommonObjects saveUserWithDict:_profileData isLoggedInUser:YES];
                     // set flags
                     _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];
                     _tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];

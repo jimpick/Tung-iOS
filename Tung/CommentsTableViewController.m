@@ -78,7 +78,7 @@ static NSString *cellIdentifierMine = @"commentCellMine";
     NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
     NSString *idString = [[[commentDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
     
-    if ([idString isEqualToString:_tung.tungId]) {
+    if ([idString isEqualToString:_tung.loggedInUser.tung_id]) {
         UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifierMine];
         [self configureCommentMineCell:cell forIndexPath:indexPath];
         return cell;
@@ -166,7 +166,7 @@ static CGFloat commentBubbleMargins = 27;
     NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
     NSString *idString = [[[commentDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
     
-    if ([idString isEqualToString:_tung.tungId]) {
+    if ([idString isEqualToString:_tung.loggedInUser.tung_id]) {
         // logged-in user's comment
         UIAlertController *deleteCommentActionSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
         [deleteCommentActionSheet addAction:[UIAlertAction actionWithTitle:@"Delete this comment" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
@@ -249,7 +249,7 @@ UILabel *prototypeLabel;
     NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
     NSString *idString = [[[commentDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
     // if theirs
-    if (![idString isEqualToString:_tung.tungId]) {
+    if (![idString isEqualToString:_tung.loggedInUser.tung_id]) {
         totalHeight += 16; // timestamp label height and space
     }
     totalHeight += 17; // comment bkgd top and bottom margins and extra point

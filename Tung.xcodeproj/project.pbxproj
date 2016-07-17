@@ -301,7 +301,7 @@
 		7D5BC1B91A547E5D008C008D /* tabBar-search-inactive@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tabBar-search-inactive@2x.png"; sourceTree = "<group>"; };
 		7D61889419F18FC600F414C2 /* EditProfileTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EditProfileTableViewController.h; sourceTree = "<group>"; };
 		7D61889519F18FC600F414C2 /* EditProfileTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = EditProfileTableViewController.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
-		7D61F91818A1EB2F00710CA7 /* tung.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tung.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7D61F91818A1EB2F00710CA7 /* tung beta.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "tung beta.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		7D61F91B18A1EB2F00710CA7 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		7D61F91D18A1EB2F00710CA7 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		7D61F91F18A1EB2F00710CA7 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -386,6 +386,7 @@
 		7DB6A1BA1C011C110057D337 /* TwitterKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = TwitterKit.framework; path = Tung/TwitterKit.framework; sourceTree = "<group>"; };
 		7DB6A1BB1C011C110057D337 /* TwitterKitResources.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; name = TwitterKitResources.bundle; path = Tung/TwitterKitResources.bundle; sourceTree = "<group>"; };
 		7DB6A1BC1C011C110057D337 /* TwitterCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = TwitterCore.framework; path = Tung/TwitterCore.framework; sourceTree = "<group>"; };
+		7DB78EA11D3C265100C31ABD /* TungDataModel 7.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TungDataModel 7.xcdatamodel"; sourceTree = "<group>"; };
 		7DBCC1991A1020E2006AB72D /* Crashlytics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Crashlytics.framework; sourceTree = SOURCE_ROOT; };
 		7DBCC19A1A1020E2006AB72D /* Fabric.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; path = Fabric.framework; sourceTree = SOURCE_ROOT; };
 		7DBD312919ED8782008938BC /* tungNavBarLogoWhite@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tungNavBarLogoWhite@2x.png"; sourceTree = "<group>"; };
@@ -521,7 +522,7 @@
 		7D61F91918A1EB2F00710CA7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				7D61F91818A1EB2F00710CA7 /* tung.app */,
+				7D61F91818A1EB2F00710CA7 /* tung beta.app */,
 				7D61F93818A1EB2F00710CA7 /* TungTests.xctest */,
 			);
 			name = Products;
@@ -843,7 +844,7 @@
 			);
 			name = Tung;
 			productName = Tung;
-			productReference = 7D61F91818A1EB2F00710CA7 /* tung.app */;
+			productReference = 7D61F91818A1EB2F00710CA7 /* tung beta.app */;
 			productType = "com.apple.product-type.application";
 		};
 		7D61F93718A1EB2F00710CA7 /* TungTests */ = {
@@ -1224,7 +1225,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1236,8 +1237,8 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
-				PRODUCT_NAME = tung;
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
+				PRODUCT_NAME = "tung beta";
 				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
@@ -1248,7 +1249,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CODE_SIGN_IDENTITY = "iPhone Distribution";
+				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1260,8 +1261,8 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
-				PRODUCT_NAME = tung;
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
+				PRODUCT_NAME = "tung beta";
 				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
@@ -1345,6 +1346,7 @@
 		7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				7DB78EA11D3C265100C31ABD /* TungDataModel 7.xcdatamodel */,
 				7D64D04F1D106CF100560D4D /* TungDataModel 6.xcdatamodel */,
 				7DC90CD81CFE363A005E3185 /* TungDataModel 5.xcdatamodel */,
 				7D6E02D81C63B75F000DE54E /* TungDataModel 4.xcdatamodel */,
@@ -1352,7 +1354,7 @@
 				7DDD164E1C2DEDEE004D5193 /* TungDataModel 2.xcdatamodel */,
 				7D282C871AF2C89F00495E74 /* TungDataModel.xcdatamodel */,
 			);
-			currentVersion = 7D64D04F1D106CF100560D4D /* TungDataModel 6.xcdatamodel */;
+			currentVersion = 7DB78EA11D3C265100C31ABD /* TungDataModel 7.xcdatamodel */;
 			path = TungDataModel.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

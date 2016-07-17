@@ -2151,7 +2151,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
                 _commentAndPostView.commentTextView.text = @"";
                 [self toggleNewComment];
                 
-                NSString *username = [[_tung getLoggedInUserData] objectForKey:@"username"];
+                NSString *username = _tung.loggedInUser.username;
                 NSString *link = [NSString stringWithFormat:@"%@e/%@/%@", [TungCommonObjects tungSiteRootUrl], _tung.npEpisodeEntity.shortlink, username];
                 // tweet?
                 if (_commentAndPostView.twitterButton.on) {

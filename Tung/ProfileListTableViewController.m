@@ -156,7 +156,7 @@
             _navTitle = _queryType;
             
             // default target
-            if (_target_id == NULL) _target_id = _tung.tungId;
+            if (_target_id == NULL) _target_id = _tung.loggedInUser.tung_id;
             
         	// refresh control
             self.refreshControl = [[UIRefreshControl alloc] init];
@@ -164,8 +164,7 @@
             
             if ([_queryType isEqualToString:@"Notifications"]) {
                 // establish last seen notification time
-                UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
-                _lastSeenNotification = loggedUser.lastSeenNotification;
+                _lastSeenNotification = _tung.loggedInUser.lastSeenNotification;
             }
             [self refreshFeed];
         }
@@ -459,9 +458,8 @@
 - (void) markNotificationsAsSeen {
     
     if (_profileArray && _profileArray.count) {
-        UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
         NSNumber *mostRecent = [[_profileArray objectAtIndex:0] objectForKey:@"time_secs"];
-        loggedUser.lastSeenNotification = mostRecent;
+        _tung.loggedInUser.lastSeenNotification = mostRecent;
         _lastSeenNotification = mostRecent;
         [TungCommonObjects saveContextWithReason:@"marking new notifications as \"seen\""];
     }
@@ -715,7 +713,7 @@
         profileCell.followBtnTrailingConstraint.constant = 12;
     }
     else {
-        if ([_tung.tungId isEqualToString:[profileDict objectForKey:@"id"]]) {
+        if ([_tung.loggedInUser.tung_id isEqualToString:[profileDict objectForKey:@"id"]]) {
             profileCell.followBtn.hidden = YES;
             profileCell.youLabel.hidden = NO;
             profileCell.accessoryType = UITableViewCellAccessoryNone;
@@ -764,7 +762,7 @@
         [self pushEpisodeViewForIndexPath:indexPath withFocusedEventId:eventId];
     }
     else {
-        if (![_tung.tungId isEqualToString:[profileDict objectForKey:@"id"]]) {
+        if (![_tung.loggedInUser.tung_id isEqualToString:[profileDict objectForKey:@"id"]]) {
     		[self pushProfileForUserAtIndexPath:indexPath];
         }
     }

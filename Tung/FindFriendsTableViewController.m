@@ -407,7 +407,7 @@
         suCell.subLabel.text = [userDict objectForKey:@"name"];
         
         // follow button
-        if (!_profileData && [_tung.tungId isEqualToString:[[userDict objectForKey:@"id"] objectForKey:@"$id"]]) {
+        if (!_profileData && [_tung.loggedInUser.tung_id isEqualToString:[[userDict objectForKey:@"id"] objectForKey:@"$id"]]) {
             suCell.followBtn.hidden = YES;
             suCell.youLabel.hidden = NO;
         }

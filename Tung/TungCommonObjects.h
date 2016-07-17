@@ -42,8 +42,7 @@
 // for presenting views, etc.
 @property (strong, nonatomic) UIViewController *viewController;
 // cred/session
-@property (strong, nonatomic) NSString *tungId;
-@property (strong, nonatomic) NSString *tungToken;
+@property (strong, nonatomic) UserEntity *loggedInUser;
 @property (strong, nonatomic) NSString *sessionId;
 @property NSNumber *connectionAvailable;
 
@@ -145,10 +144,9 @@
 + (NSDate *) ISODateToNSDate: (NSString *)pubDate;
 + (EpisodeEntity *) getEpisodeEntityFromEpisodeId:(NSString *)episodeId;
 + (EpisodeEntity *) getEpisodeEntityFromUrlString:(NSString *)urlString;
-+ (UserEntity *) saveUserWithDict:(NSDictionary *)userDict;
++ (UserEntity *) saveUserWithDict:(NSDictionary *)userDict isLoggedInUser:(BOOL)isLoggedInUser;
 + (UserEntity *) retrieveUserEntityForUserWithId:(NSString *)userId;
-- (NSDictionary *) getLoggedInUserData;
-- (void) deleteLoggedInUserData;
++ (UserEntity *) getLoggedInUser;
 + (BOOL) checkForUserData;
 + (BOOL) checkForPodcastData;
 + (SettingsEntity *) settings;
@@ -169,8 +167,6 @@
 
 // requests
 - (void) checkReachabilityWithCallback:(void (^)(BOOL reachable))callback;
-- (void) establishCred;
-- (void) saveKeychainCred: (NSString *)cred;
 - (void) getSessionWithCallback:(void (^)(void))callback;
 - (void) handleUnauthorizedWithCallback:(void (^)(void))callback;
 // stories post requests
@@ -239,11 +235,15 @@
 + (NSString *) getPodcastArtPathWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
 + (NSURL *) getClipFileURL;
 
+// keychain
+- (void) establishCred;
+- (void) saveKeychainCred: (NSString *)cred;
++ (NSString *) getKeychainCred;
++ (void) deleteCredentials;
+
 // misc class methods
 + (void) clearTempDirectory;
 + (NSString *) generateHash;
-+ (NSString *) getKeychainCred;
-+ (void) deleteCredentials;
 + (NSData *) generateBodyFromDictionary:(NSDictionary *)dict withBoundary:(NSString *)boundary;
 + (NSData *) serializeParamsForPostRequest:(NSDictionary *)params;
 + (NSString *) serializeParamsForGetRequest:(NSDictionary *)params;

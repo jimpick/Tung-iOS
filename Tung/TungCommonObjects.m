@@ -65,6 +65,10 @@ NSDateFormatter *ISODateFormatter;
         
         _sessionId = @"";
         
+        _loggedInUser = [TungCommonObjects getLoggedInUser];
+        
+        NSLog(@"logged in user: %@", _loggedInUser);
+        
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
         
@@ -185,8 +189,8 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    return @"https://api.tung.fm/";
-    //return @"https://staging-api.tung.fm/";
+    //return @"https://api.tung.fm/";
+    return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
@@ -1813,7 +1817,7 @@ UILabel *prototypeBadge;
     } else {
         // make sure guid is present for new entity
         if ([episodeDict objectForKey:@"guid"] == [NSNull null]) {
-            JPLog(@"did not get episode entity - cannot create episode entity without GUID");
+            JPLog(@"did not get episode entity - cannot create episode entity without GUID. %@", episodeDict);
             return nil;
         }
         // new entity
@@ -1983,7 +1987,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 }
 
 
-+ (UserEntity *) saveUserWithDict:(NSDictionary *)userDict {
++ (UserEntity *) saveUserWithDict:(NSDictionary *)userDict isLoggedInUser:(BOOL)isLoggedInUser {
     
     NSString *tungId;
     if ([userDict objectForKey:@"_id"]) {
@@ -2021,8 +2025,16 @@ static NSDateFormatter *ISODateInterpreter = nil;
         NSString *facebook_id = [userDict objectForKey:@"facebook_id"]; //ensure string
         userEntity.facebook_id = facebook_id;
     }
+    
+    if ([userDict objectForKey:@"token"] && [[userDict objectForKey:@"token"] isKindOfClass:[NSString class]]) {
+        userEntity.token = [userDict objectForKey:@"token"];
+    }
+    
+    userEntity.isLoggedInUser = [NSNumber numberWithBool:isLoggedInUser];
 
     [TungCommonObjects saveContextWithReason:@"save new user entity"];
+    
+    NSLog(@"saved user: %@", [TungCommonObjects entityToDict:userEntity]);
     
     return userEntity;
 }
@@ -2044,25 +2056,20 @@ static NSDateFormatter *ISODateInterpreter = nil;
     }
 }
 
-- (NSDictionary *) getLoggedInUserData {
++ (UserEntity *) getLoggedInUser {
+
+    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    NSError *error = nil;
+    NSFetchRequest *findLoggedInUser = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isLoggedInUser == YES"];
+    [findLoggedInUser setPredicate:predicate];
+    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findLoggedInUser error:&error];
     
-    if (_tungId) {
-        UserEntity *userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
-        return [TungCommonObjects entityToDict:userEntity];
+    if (result.count > 0) {
+        UserEntity *user = [result objectAtIndex:0];
+        return user;
     } else {
         return nil;
-    }
-    
-}
-
-// not used
-- (void) deleteLoggedInUserData {
-    
-    UserEntity *userEntity = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
-    if (userEntity) {
-        AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
-        [appDelegate.managedObjectContext deleteObject:userEntity];
-        [TungCommonObjects saveContextWithReason:@"delete logged in user entity"];
     }
 }
 
@@ -2413,51 +2420,13 @@ static NSArray *colors;
     }
 }
 
-- (void) establishCred {
-    NSString *tungCred = [TungCommonObjects getKeychainCred];
-    NSArray *components = [tungCred componentsSeparatedByString:@":"];
-    _tungId = [components objectAtIndex:0];
-    _tungToken = [components objectAtIndex:1];
-    //NSLog(@"id: %@", _tungId);
-    //NSLog(@"token: %@", _tungToken);
-}
-
-// save cred to keychain, set _tungId and _tungToken
-- (void) saveKeychainCred: (NSString *)cred {
-    
-    [TungCommonObjects deleteCredentials];
-    
-    NSString *account = @"tung credentials";
-    NSString *service = [[NSBundle mainBundle] bundleIdentifier];
-    
-    NSArray *credArray = [cred componentsSeparatedByString:@":"];
-    _tungId = [credArray objectAtIndex:0];
-    _tungToken = [credArray objectAtIndex:1];
-    [CrashlyticsKit setUserIdentifier:_tungId];
-    
-    NSData *valueData = [cred dataUsingEncoding:NSUTF8StringEncoding];
-    NSDictionary *id_security_item = @{
-                                       (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
-                                       (__bridge id)kSecAttrService : service,
-                                       (__bridge id)kSecAttrAccount : account,
-                                       (__bridge id)kSecValueData : valueData
-                                       };
-    CFTypeRef result = NULL;
-    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)id_security_item, &result);
-    
-    if (status == errSecSuccess) {
-        JPLog(@"save cred: successfully stored credentials");
-    } else {
-        JPLog(@"save cred: failed to store cred with error: %@", [TungCommonObjects keychainStatusToString:status]);
-    }
-}
 
 // all requests require a session ID instead of credentials
 // start here and get session with credentials
 - (void) getSessionWithCallback:(void (^)(void))callback {
     JPLog(@"getting new session");
 
-    if (!_tungId) {
+    if (!_loggedInUser.tung_id) {
         JPLog(@"Tung ID was null, re-establish cred");
         [self establishCred];
     }
@@ -2471,8 +2440,8 @@ static NSArray *colors;
     NSURL *getSessionRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/session.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *getSessionRequest = [NSMutableURLRequest requestWithURL:getSessionRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [getSessionRequest setHTTPMethod:@"POST"];
-    NSDictionary *cred = @{@"tung_id": _tungId,
-                           @"token": _tungToken
+    NSDictionary *cred = @{@"tung_id": _loggedInUser.tung_id,
+                           @"token": _loggedInUser.token
                            };
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:cred];
     [getSessionRequest setHTTPBody:serializedParams];
@@ -2537,13 +2506,10 @@ static NSArray *colors;
     
     JPLog(@"handle unauthorized with callback");
     
-    [TungCommonObjects deleteCredentials];
-    
-    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
-    if (loggedUser && loggedUser.tung_id) {
+    if (_loggedInUser && _loggedInUser.tung_id) {
         
         // signed up with twitter
-        if (loggedUser.twitter_id && [Twitter sharedInstance].session) {
+        if (_loggedInUser.twitter_id && [Twitter sharedInstance].session) {
             
             TWTROAuthSigning *oauthSigning = [[TWTROAuthSigning alloc] initWithAuthConfig:[Twitter sharedInstance].authConfig authSession:[Twitter sharedInstance].session];
             
@@ -2556,22 +2522,15 @@ static NSArray *colors;
                     _connectionAvailable = [NSNumber numberWithInt:1];
                     
                     NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                    //JPLog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
-                    if (lastDataChange.doubleValue > loggedUser.lastDataChange.doubleValue) {
+                    //JPLog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, _loggedInUser.lastDataChange);
+                    if (lastDataChange.doubleValue > _loggedInUser.lastDataChange.doubleValue) {
                         JPLog(@"needs restore. ");
-                        [self restorePodcastDataSinceTime:loggedUser.lastDataChange];
+                        [self restorePodcastDataSinceTime:_loggedInUser.lastDataChange];
                     }
                     
-                    // construct token of id and token together and save to keychain
-                    NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
-                    NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
-                    [self saveKeychainCred:tungCred];
-                    
-                    // post device token if user is registered for remote notifs
-                    if ([[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
-                        [[UIApplication sharedApplication] registerForRemoteNotifications];
-                        [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
-                    }
+                    NSMutableDictionary *loggedUserDict = [[responseDict objectForKey:@"user"] mutableCopy];
+                    [loggedUserDict setObject:[responseDict objectForKey:@"token"] forKey:@"token"];
+                    _loggedInUser = [TungCommonObjects saveUserWithDict:loggedUserDict isLoggedInUser:YES];
                     
                     callback();
                 }
@@ -2579,7 +2538,7 @@ static NSArray *colors;
             return;
         }
         // signed up with facebook
-        else if (loggedUser.facebook_id && [FBSDKAccessToken currentAccessToken]) {
+        else if (_loggedInUser.facebook_id && [FBSDKAccessToken currentAccessToken]) {
             
             NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
             [self verifyCredWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {
@@ -2589,16 +2548,15 @@ static NSArray *colors;
                     _connectionAvailable = [NSNumber numberWithInt:1];
                     
                     NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                    JPLog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
-                    if (lastDataChange.doubleValue > loggedUser.lastDataChange.doubleValue) {
+                    JPLog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, _loggedInUser.lastDataChange);
+                    if (lastDataChange.doubleValue > _loggedInUser.lastDataChange.doubleValue) {
                         JPLog(@"needs restore. ");
-                        [self restorePodcastDataSinceTime:loggedUser.lastDataChange];
+                        [self restorePodcastDataSinceTime:_loggedInUser.lastDataChange];
                     }
                     
-                    // construct token of id and token together and save to keychain
-                    NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
-                    NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
-                    [self saveKeychainCred:tungCred];
+                    NSMutableDictionary *loggedUserDict = [[responseDict objectForKey:@"user"] mutableCopy];
+                    [loggedUserDict setObject:[responseDict objectForKey:@"token"] forKey:@"token"];
+                    _loggedInUser = [TungCommonObjects saveUserWithDict:loggedUserDict isLoggedInUser:YES];
                     
                     callback();
                 }
@@ -2780,12 +2738,10 @@ static NSArray *colors;
 //                    JPLog(@"- script duration: %@", [responseDict objectForKey:@"scriptDuration"]);
 //                    JPLog(@"- memory usage: %@", [responseDict objectForKey:@"memoryUsage"]);
 //                    JPLog(@"- lastDataChange: %@", [responseDict objectForKey:@"lastDataChange"]);
-                    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
-                    if (loggedUser) {
-                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                        loggedUser.lastDataChange = lastDataChange;
-                        [TungCommonObjects saveContextWithReason:@"updated lastDataChange for restore"];
-                    }
+                    
+                    NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                    _loggedInUser.lastDataChange = lastDataChange;
+                    [TungCommonObjects saveContextWithReason:@"updated lastDataChange for restore"];
                 }
             }
             else {
@@ -2899,10 +2855,7 @@ static NSArray *colors;
                     [button setEnabled:YES];
                     [TungCommonObjects savePodcastArtForEntity:podcastEntity];
                     NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
-                    if (loggedUser) {
-                        loggedUser.lastDataChange = lastDataChange;
-                    }
+                    _loggedInUser.lastDataChange = lastDataChange;
                     podcastEntity.timeSubscribed = lastDataChange;
                     podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
                     [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user, subscribe status changed"];
@@ -2966,11 +2919,8 @@ static NSArray *colors;
                 else if ([responseDict objectForKey:@"success"]) {
                     [button setEnabled:YES];
                     [TungCommonObjects unsavePodcastArtForEntity:podcastEntity];
-                    UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
-                    if (loggedUser) {
-                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                        loggedUser.lastDataChange = lastDataChange;
-                    }
+                    NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                    _loggedInUser.lastDataChange = lastDataChange;
                     podcastEntity.timeSubscribed = [NSNumber numberWithInt:0];
                     podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
                     [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user, subscribe status change"];
@@ -3061,11 +3011,8 @@ static NSArray *colors;
                             episodeEntity.shortlink = shortlink;
                         }
                         episodeEntity.isRecommended = [NSNumber numberWithBool:YES];
-                        UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
-                        if (loggedUser) {
-                            NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                            loggedUser.lastDataChange = lastDataChange;
-                        }
+                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                        _loggedInUser.lastDataChange = lastDataChange;
                         [TungCommonObjects saveContextWithReason:@"recommended episode"];
                         _feedNeedsRefresh = [NSNumber numberWithBool:YES];
                         _profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
@@ -3126,11 +3073,8 @@ static NSArray *colors;
                     else if ([responseDict objectForKey:@"success"]) {
                         //NSLog(@"unrecommend response: %@", responseDict);
                         episodeEntity.isRecommended = [NSNumber numberWithBool:NO];
-                        UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
-                        if (loggedUser) {
-                            NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                            loggedUser.lastDataChange = lastDataChange;
-                        }
+                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                        _loggedInUser.lastDataChange = lastDataChange;
                         [TungCommonObjects saveContextWithReason:@"un-recommended episode"];
                         _feedNeedsRefetch = [NSNumber numberWithBool:YES];
                         _trendingFeedNeedsRefetch = [NSNumber numberWithBool:YES];
@@ -3224,11 +3168,8 @@ static NSArray *colors;
                             episodeEntity.id = episodeId;
                             episodeEntity.shortlink = shortlink;
                         }
-                        UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tungId];
-                        if (loggedUser) {
-                            NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                            loggedUser.lastDataChange = lastDataChange;
-                        }
+                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                        _loggedInUser.lastDataChange = lastDataChange;
                         [TungCommonObjects saveContextWithReason:@"save lastDataChange"];
                     }
                 }
@@ -4056,8 +3997,8 @@ static NSArray *colors;
     [self deleteAllSavedEpisodes];
     
     // session
-    _tungId = @"";
-    _tungToken = @"";
+    _loggedInUser.tung_id = @"";
+    _loggedInUser.token = @"";
     _sessionId = @"";
     
 }
@@ -4076,16 +4017,13 @@ static NSArray *colors;
     
     [self resetPlayerAndQueue];
     
-    //[self deleteLoggedInUserData];
+    _loggedInUser = nil;
     [TungCommonObjects removeAllUserData];
     
     [self removeSignedInUserData];
     
     // twitter
     [[Twitter sharedInstance] logOut];
-    
-    // delete cred
-    [TungCommonObjects deleteCredentials];
     
     // close FB session if open
     if ([FBSDKAccessToken currentAccessToken]) {
@@ -4808,52 +4746,48 @@ static NSArray *colors;
     return [NSURL fileURLWithPath:clipFilePath];
 }
 
-#pragma mark - class methods
+#pragma mark - Keychain
 
-+ (void)clearTempDirectory { // used only for debugging
-    NSArray* tmpDirectory = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:NSTemporaryDirectory() error:NULL];
-    for (NSString *file in tmpDirectory) {
-        [[NSFileManager defaultManager] removeItemAtPath:[NSString stringWithFormat:@"%@%@", NSTemporaryDirectory(), file] error:NULL];
-    }
-    NSLog(@"cleared temporary directory");
+/* keychain functions not used because of bugs that Apple won't/can't fix */
+
+- (void) establishCred {
+    NSString *tungCred = [TungCommonObjects getKeychainCred];
+    NSArray *components = [tungCred componentsSeparatedByString:@":"];
+    _loggedInUser.tung_id = [components objectAtIndex:0];
+    _loggedInUser.token = [components objectAtIndex:1];
+    //NSLog(@"id: %@", _loggedInUser.tung_id);
+    //NSLog(@"token: %@", _loggedInUser.token);
 }
 
-/*
- // always reports no connection
-- (void) checkTungReachability {
-    // causes long pause
-    JPLog(@"checking tung reachability against %@", [TungCommonObjects apiRootUrl]);
-    Reachability *tungReachability = [Reachability reachabilityWithHostName:[TungCommonObjects apiRootUrl]];
-    NetworkStatus tungStatus = [tungReachability currentReachabilityStatus];
-    switch (tungStatus) {
-        case NotReachable: {
-            JPLog(@"TUNG not reachable");
- 			[self showNoConnectionAlert];
-            break;
-        }
-        case ReachableViaWWAN:
-            JPLog(@"TUNG reachable via cellular data");
-            break;
-        case ReachableViaWiFi:
-            JPLog(@"TUNG reachable via wifi");
-            break;
+// save cred to keychain, set _loggedInUser.tung_id and _loggedInUser.token
+- (void) saveKeychainCred: (NSString *)cred {
+    
+    [TungCommonObjects deleteCredentials];
+    
+    NSString *account = @"tung credentials";
+    NSString *service = [[NSBundle mainBundle] bundleIdentifier];
+    
+    NSArray *credArray = [cred componentsSeparatedByString:@":"];
+    _loggedInUser.tung_id = [credArray objectAtIndex:0];
+    _loggedInUser.token = [credArray objectAtIndex:1];
+    [CrashlyticsKit setUserIdentifier:_loggedInUser.tung_id];
+    
+    NSData *valueData = [cred dataUsingEncoding:NSUTF8StringEncoding];
+    NSDictionary *id_security_item = @{
+                                       (__bridge id)kSecClass : (__bridge id)kSecClassGenericPassword,
+                                       (__bridge id)kSecAttrService : service,
+                                       (__bridge id)kSecAttrAccount : account,
+                                       (__bridge id)kSecValueData : valueData
+                                       };
+    CFTypeRef result = NULL;
+    OSStatus status = SecItemAdd((__bridge CFDictionaryRef)id_security_item, &result);
+    
+    if (status == errSecSuccess) {
+        JPLog(@"save cred: successfully stored credentials");
+    } else {
+        JPLog(@"save cred: failed to store cred with error: %@", [TungCommonObjects keychainStatusToString:status]);
     }
 }
- */
-+ (NSString *) generateHash {
-    
-    NSString *characters = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    NSString *hash = @"";
-    
-    for (int i = 0; i < 32; i++) {
-        int randNum = arc4random() % [characters length];
-        NSString *charToAdd = [characters substringWithRange:NSMakeRange(randNum, 1)];
-        hash = [hash stringByAppendingString:charToAdd];
-    }
-    
-    return hash;
-}
-
 // get keychain credentials
 + (NSString *) getKeychainCred {
     //NSLog(@"get keychain cred");
@@ -4901,6 +4835,52 @@ static NSArray *colors;
     } else {
         JPLog(@"failed to delete keychain cred - did not exist");
     }
+}
+
+#pragma mark - class methods
+
++ (void)clearTempDirectory { // used only for debugging
+    NSArray* tmpDirectory = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:NSTemporaryDirectory() error:NULL];
+    for (NSString *file in tmpDirectory) {
+        [[NSFileManager defaultManager] removeItemAtPath:[NSString stringWithFormat:@"%@%@", NSTemporaryDirectory(), file] error:NULL];
+    }
+    NSLog(@"cleared temporary directory");
+}
+
+/*
+ // always reports no connection
+- (void) checkTungReachability {
+    // causes long pause
+    JPLog(@"checking tung reachability against %@", [TungCommonObjects apiRootUrl]);
+    Reachability *tungReachability = [Reachability reachabilityWithHostName:[TungCommonObjects apiRootUrl]];
+    NetworkStatus tungStatus = [tungReachability currentReachabilityStatus];
+    switch (tungStatus) {
+        case NotReachable: {
+            JPLog(@"TUNG not reachable");
+ 			[self showNoConnectionAlert];
+            break;
+        }
+        case ReachableViaWWAN:
+            JPLog(@"TUNG reachable via cellular data");
+            break;
+        case ReachableViaWiFi:
+            JPLog(@"TUNG reachable via wifi");
+            break;
+    }
+}
+ */
++ (NSString *) generateHash {
+    
+    NSString *characters = @"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    NSString *hash = @"";
+    
+    for (int i = 0; i < 32; i++) {
+        int randNum = arc4random() % [characters length];
+        NSString *charToAdd = [characters substringWithRange:NSMakeRange(randNum, 1)];
+        hash = [hash stringByAppendingString:charToAdd];
+    }
+    
+    return hash;
 }
 
 + (NSData *) generateBodyFromDictionary:(NSDictionary *)dict withBoundary:(NSString *)boundary {

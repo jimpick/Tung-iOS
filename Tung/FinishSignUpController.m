@@ -137,7 +137,7 @@
                         //NSLog(@"successful registration %@", responseDict);
                         _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                         _tung.connectionAvailable = [NSNumber numberWithBool:YES];
-                        [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
+                        [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"] isLoggedInUser:YES];
                         
                         NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
                         

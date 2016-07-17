@@ -2,7 +2,7 @@
 //  UserEntity+CoreDataProperties.m
 //  Tung
 //
-//  Created by Jamie Perkins on 1/10/16.
+//  Created by Jamie Perkins on 7/17/16.
 //  Copyright © 2016 Jamie Perkins. All rights reserved.
 //
 //  Choose "Create NSManagedObject Subclass…" from the Core Data editor menu
@@ -27,5 +27,7 @@
 @dynamic twitter_username;
 @dynamic url;
 @dynamic username;
+@dynamic isLoggedInUser;
+@dynamic token;
 
 @end

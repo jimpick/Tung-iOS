@@ -232,8 +232,8 @@
     
     NSMutableDictionary *postParams = [@{@"sessionId": _tung.sessionId} mutableCopy];
     if (withCred) {
-        NSDictionary *credParams = @{@"tung_id": _tung.tungId,
-                                     @"token": _tung.tungToken
+        NSDictionary *credParams = @{@"tung_id": _tung.loggedInUser.tung_id,
+                                     @"token": _tung.loggedInUser.token
                                      };
         [postParams addEntriesFromDictionary:credParams];
     }
@@ -295,21 +295,11 @@
                             //NSLog(@"user: %@", [responseDict objectForKey:@"user"]);
                             _tung.connectionAvailable = [NSNumber numberWithBool:YES];
                             // check if data needs syncing
-                            UserEntity *loggedUser = [TungCommonObjects retrieveUserEntityForUserWithId:_tung.tungId];
                             NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                            if (loggedUser) {
-                                JPLog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, loggedUser.lastDataChange);
-                                if (lastDataChange.doubleValue > loggedUser.lastDataChange.doubleValue) {
-                                    JPLog(@"needs restore. ");
-                                    [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
-                                }
-                            } else {
-                                // no logged in user data - save with data from request
-                                JPLog(@"no logged in user data... save new entity and restore data");
-                                UserEntity *loggedUser = [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"]];
-                                
-                                // we don't have local data to compare, so we just restore
-                                [_tung restorePodcastDataSinceTime:loggedUser.lastDataChange];
+                            JPLog(@"lastDataChange (server): %@, lastDataChange (local): %@", lastDataChange, _tung.loggedInUser.lastDataChange);
+                            if (lastDataChange.doubleValue > _tung.loggedInUser.lastDataChange.doubleValue) {
+                                JPLog(@"needs restore. ");
+                                [_tung restorePodcastDataSinceTime:_tung.loggedInUser.lastDataChange];
                             }
                         }
                         
@@ -424,8 +414,8 @@
                              @"olderThan": beforeTime
                              } mutableCopy];
     if (withCred) {
-        NSDictionary *credParams = @{@"tung_id": _tung.tungId,
-                                     @"token": _tung.tungToken
+        NSDictionary *credParams = @{@"tung_id": _tung.loggedInUser.tung_id,
+                                     @"token": _tung.loggedInUser.token
                                      };
         [params addEntriesFromDictionary:credParams];
     }
@@ -1309,7 +1299,7 @@ CGFloat labelWidth = 0;
             NSString *userId = [[[eventDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
             NSString *username = [[eventDict objectForKey:@"user"] objectForKey:@"username"];
             BOOL shareable = NO;
-            BOOL isLoggedInUser =  [userId isEqualToString:_tung.tungId];
+            BOOL isLoggedInUser =  [userId isEqualToString:_tung.loggedInUser.tung_id];
             
             if ([type isEqualToString:@"clip"]) {
                 shareable = YES;
@@ -1339,7 +1329,7 @@ CGFloat labelWidth = 0;
                 copyLinkOption = @"Copy link to comment";
                 shareLink = [headerDict objectForKey:@"storyLink"];
                 shareText = [self getShareTextForStoryWithDict:headerDict];
-                if ([userId isEqualToString:_tung.tungId]) {
+                if (isLoggedInUser) {
                     destructiveOption = @"Delete this comment";
                 } else {
                     destructiveOption = @"Flag this comment";
@@ -1527,7 +1517,7 @@ CGFloat labelWidth = 0;
         NSString *shareLink = [headerDict objectForKey:@"storyLink"];
         NSString *shareText;
         NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
-        if ([uid isEqualToString:_tung.tungId]) {
+        if ([uid isEqualToString:_tung.loggedInUser.tung_id]) {
             shareText = [NSString stringWithFormat:@"I listened to %@ on #tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
         } else {
             shareText = [NSString stringWithFormat:@"%@ listened to %@ on #tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
@@ -1700,7 +1690,7 @@ CGFloat labelWidth = 0;
         // shrink profile header
         if (_profiledUserId.length) {
             if (!_profileHeader.isMinimized && scrollView.contentSize.height > scrollView.frame.size.height + 100 && scrollView.contentOffset.y > _lastScrollViewOffset) {
-                NSLog(@"content height: %f, frame height: %f", scrollView.contentSize.height, scrollView.frame.size.height);
+                //NSLog(@"content height: %f, frame height: %f", scrollView.contentSize.height, scrollView.frame.size.height);
                 // scrolling down (content moving up)
                 NSNotification *minimizeHeaderNotif = [NSNotification notificationWithName:@"shouldMinimizeHeaderView" object:nil userInfo:nil];
                 [[NSNotificationCenter defaultCenter] postNotification:minimizeHeaderNotif];
