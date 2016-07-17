@@ -6,8 +6,8 @@
 //  Copyright (c) 2014 Jamie Perkins. All rights reserved.
 //
 /*
- - manage user credentials
- - manage server session
+ - holds logged in user entity
+ - holds server session
  - manage global properties
  - manage 1 global player instance
  - manage player controls
@@ -32,7 +32,7 @@
 #import <FBSDKShareKit/FBSDKShareKit.h>
 
 // constants
-#define NUM_REQUIRED_FOLLOWS 5
+#define NUM_REQUIRED_FOLLOWS 2
 #define MAX_RECORD_TIME 29
 #define MIN_RECORD_TIME 2
 #define MAX_COMMENT_CHARS 220

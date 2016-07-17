@@ -67,7 +67,7 @@ NSDateFormatter *ISODateFormatter;
         
         _loggedInUser = [TungCommonObjects getLoggedInUser];
         
-        NSLog(@"logged in user: %@", _loggedInUser);
+        //NSLog(@"logged in user: %@", _loggedInUser);
         
         // refresh feed flag
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
@@ -2034,7 +2034,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 
     [TungCommonObjects saveContextWithReason:@"save new user entity"];
     
-    NSLog(@"saved user: %@", [TungCommonObjects entityToDict:userEntity]);
+    //NSLog(@"saved user: %@", [TungCommonObjects entityToDict:userEntity]);
     
     return userEntity;
 }

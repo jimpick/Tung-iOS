@@ -137,14 +137,10 @@
                         //NSLog(@"successful registration %@", responseDict);
                         _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                         _tung.connectionAvailable = [NSNumber numberWithBool:YES];
-                        [TungCommonObjects saveUserWithDict:[responseDict objectForKey:@"user"] isLoggedInUser:YES];
                         
-                        NSString *tungId = [[[responseDict objectForKey:@"user"] objectForKey:@"_id"] objectForKey:@"$id"];
-                        
-                        // construct token of id and token together
-                        NSString *tungCred = [NSString stringWithFormat:@"%@:%@", tungId, [responseDict objectForKey:@"token"]];
-                        // save cred to keychain
-                        [_tung saveKeychainCred:tungCred];
+                        NSMutableDictionary *loggedUserDict = [[responseDict objectForKey:@"user"] mutableCopy];
+                        [loggedUserDict setObject:[responseDict objectForKey:@"token"] forKey:@"token"];
+                        _tung.loggedInUser = [TungCommonObjects saveUserWithDict:loggedUserDict isLoggedInUser:YES];
                         
                         // show feed
                         UIViewController *feed = [self.navigationController.storyboard instantiateViewControllerWithIdentifier:@"authenticated"];
