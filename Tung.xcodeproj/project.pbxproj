@@ -301,7 +301,7 @@
 		7D5BC1B91A547E5D008C008D /* tabBar-search-inactive@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tabBar-search-inactive@2x.png"; sourceTree = "<group>"; };
 		7D61889419F18FC600F414C2 /* EditProfileTableViewController.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EditProfileTableViewController.h; sourceTree = "<group>"; };
 		7D61889519F18FC600F414C2 /* EditProfileTableViewController.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; lineEnding = 0; path = EditProfileTableViewController.m; sourceTree = "<group>"; xcLanguageSpecificationIdentifier = xcode.lang.objc; };
-		7D61F91818A1EB2F00710CA7 /* tung beta.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "tung beta.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		7D61F91818A1EB2F00710CA7 /* tung.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tung.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		7D61F91B18A1EB2F00710CA7 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = System/Library/Frameworks/Foundation.framework; sourceTree = SDKROOT; };
 		7D61F91D18A1EB2F00710CA7 /* CoreGraphics.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = CoreGraphics.framework; path = System/Library/Frameworks/CoreGraphics.framework; sourceTree = SDKROOT; };
 		7D61F91F18A1EB2F00710CA7 /* UIKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = UIKit.framework; path = System/Library/Frameworks/UIKit.framework; sourceTree = SDKROOT; };
@@ -522,7 +522,7 @@
 		7D61F91918A1EB2F00710CA7 /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				7D61F91818A1EB2F00710CA7 /* tung beta.app */,
+				7D61F91818A1EB2F00710CA7 /* tung.app */,
 				7D61F93818A1EB2F00710CA7 /* TungTests.xctest */,
 			);
 			name = Products;
@@ -844,7 +844,7 @@
 			);
 			name = Tung;
 			productName = Tung;
-			productReference = 7D61F91818A1EB2F00710CA7 /* tung beta.app */;
+			productReference = 7D61F91818A1EB2F00710CA7 /* tung.app */;
 			productType = "com.apple.product-type.application";
 		};
 		7D61F93718A1EB2F00710CA7 /* TungTests */ = {
@@ -1225,7 +1225,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "iPhone Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1237,8 +1237,8 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
-				PRODUCT_NAME = "tung beta";
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
+				PRODUCT_NAME = tung;
 				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};
@@ -1249,7 +1249,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "iPhone Distribution";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1261,8 +1261,8 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
-				PRODUCT_NAME = "tung beta";
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
+				PRODUCT_NAME = tung;
 				PROVISIONING_PROFILE = "";
 				WRAPPER_EXTENSION = app;
 			};

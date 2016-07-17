@@ -32,7 +32,7 @@
 #import <FBSDKShareKit/FBSDKShareKit.h>
 
 // constants
-#define NUM_REQUIRED_FOLLOWS 2
+#define NUM_REQUIRED_FOLLOWS 5
 #define MAX_RECORD_TIME 29
 #define MIN_RECORD_TIME 2
 #define MAX_COMMENT_CHARS 220

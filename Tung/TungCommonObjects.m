@@ -189,8 +189,8 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    //return @"https://api.tung.fm/";
-    return @"https://staging-api.tung.fm/";
+    return @"https://api.tung.fm/";
+    //return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
@@ -1859,18 +1859,24 @@ UILabel *prototypeBadge;
     }
     
     NSString *url;
+    BOOL urlWasSet = NO;
     if ([episodeDict objectForKey:@"url"]) {
         url = [episodeDict objectForKey:@"url"];
+        urlWasSet = YES;
     }
     else if ([episodeDict objectForKey:@"enclosure"]) {
         NSDictionary *enclosureDict = [TungCommonObjects getEnclosureDictForEpisode:episodeDict];
-    	url = [[enclosureDict objectForKey:@"el:attributes"] objectForKey:@"url"];
+        url = [[enclosureDict objectForKey:@"el:attributes"] objectForKey:@"url"];
+        urlWasSet = YES;
     }
     else if (!episodeEntity.url) {
         //JPLog(@"episode dict missing url: %@", episodeDict);
         url = @"";
+        urlWasSet = YES;
     }
-    episodeEntity.url = url;
+    if (urlWasSet) {
+    	episodeEntity.url = url;
+    }
     if ([episodeDict objectForKey:@"trackProgress"]) {
         NSNumber *progress = [episodeDict objectForKey:@"trackProgress"];
         episodeEntity.trackProgress = progress;
@@ -1885,7 +1891,9 @@ UILabel *prototypeBadge;
     if ([episodeDict objectForKey:@"title"]) {
     	episodeEntity.title = [episodeDict objectForKey:@"title"];
     }
-    episodeEntity.desc = [TungCommonObjects findEpisodeDescriptionWithDict:episodeDict];
+    if (!episodeEntity.desc) {
+    	episodeEntity.desc = [TungCommonObjects findEpisodeDescriptionWithDict:episodeDict];
+    }
 
     if (save) [TungCommonObjects saveContextWithReason:@"save episode entity"];
     
