@@ -49,7 +49,7 @@
     
     _header1.text = @"Feeds";
     _iconView1.type = kIconTypeFeed;
-    _body1.text = @"Discover episodes that are trending and from people you follow.";
+    _body1.text = @"Discover episodes that are trending, and from people you follow.";
     [_button1 setTitle:@"Next" forState:UIControlStateNormal];
     [_button1 addTarget:self action:@selector(nextPage) forControlEvents:UIControlEventTouchUpInside];
     _reverseIconView1.type = kIconTypeFeed;
