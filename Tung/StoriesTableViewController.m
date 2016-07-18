@@ -368,6 +368,12 @@
                             }
                             [self.tableView reloadData];
                             
+                            // welcome tutorial
+                            SettingsEntity *settings = [TungCommonObjects settings];
+                            if (!settings.hasSeenWelcomePopup.boolValue) {
+                                [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(showWelcomePopup) userInfo:nil repeats:NO];
+                            }
+                            
                         }
                         
                     });
