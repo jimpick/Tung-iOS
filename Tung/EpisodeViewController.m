@@ -61,6 +61,7 @@
 @property NSString *urlStringToPass;
 @property BOOL lockPosbar;
 @property BOOL posbarIsBeingDragged;
+@property UIBarButtonItem *tungBarButtonItem;
 
 @property BOOL isRecording;
 @property NSDate *recordStartTime;
@@ -126,7 +127,8 @@ UIActivityIndicatorView *backgroundSpinner;
         tungButtonInner.type = kIconButtonTypeTungLogoType;
         tungButtonInner.color = [UIColor colorWithRed:0.8 green:0.8 blue:0.8 alpha:1];
         [tungButtonInner addTarget:self action:@selector(tungButtonTapped) forControlEvents:UIControlEventTouchUpInside];
-        self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:tungButtonInner];
+        _tungBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:tungButtonInner];
+        self.navigationItem.leftBarButtonItem = _tungBarButtonItem;
         
         self.view.backgroundColor = [TungCommonObjects bkgdGrayColor];
         
@@ -460,6 +462,7 @@ NSTimer *markAsSeenTimer;
     
     self.navigationItem.titleView = _podcast.searchController.searchBar;
     [self.navigationItem setRightBarButtonItem:nil animated:YES];
+    [self.navigationItem setLeftBarButtonItem:nil animated:YES];
     
     [_podcast.searchController.searchBar becomeFirstResponder];
     
@@ -476,6 +479,9 @@ NSTimer *markAsSeenTimer;
     self.navigationItem.titleView = nil;
     UIBarButtonItem *searchBtn = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemSearch target:self action:@selector(initiatePodcastSearch)];
     [self.navigationItem setRightBarButtonItem:searchBtn animated:YES];
+    if (_isNowPlayingView) {
+        [self.navigationItem setLeftBarButtonItem:_tungBarButtonItem animated:YES];
+    }
     
 }
 
@@ -1265,7 +1271,7 @@ static CGRect buttonsScrollViewHomeRect;
 
     //JPLog(@"//// trim audio from %f to %f", startMarker, endMarker);
     // input    
-    NSURL *audioFileUrl = [_tung getEpisodeUrl:[_tung.playQueue objectAtIndex:0]];
+    NSURL *audioFileUrl = [_tung getEpisodeUrl:[TungCommonObjects urlFromString:[_tung.playQueue objectAtIndex:0]]];
     // test if input file has any bytes
     //NSData *audioURLData = [NSData dataWithContentsOfURL:audioFileUrl];
     //JPLog(@"//// audio file data length: %lu", (unsigned long)audioURLData.length);

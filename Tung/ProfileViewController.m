@@ -705,10 +705,10 @@ NSTimer *sessionCheckTimer;
         [TungCommonObjects deleteCachedData];
         [TungCommonObjects showBannerAlertForText:@"All cached data has been deleted."];
     }]]; */
-    
-    [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Application log"	 style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+    /*
+    [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Application log" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [self performSegueWithIdentifier:@"presentLogView" sender:self];
-    }]]; 
+    }]]; */
     [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Sign out" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
         [_tung signOut];
     }]];

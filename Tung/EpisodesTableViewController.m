@@ -270,9 +270,9 @@ static NSString *cellIdentifier = @"EpisodeCell";
         
         NSDictionary *enclosureDict = [TungCommonObjects getEnclosureDictForEpisode:episodeDict];
         NSString *urlString = [[enclosureDict objectForKey:@"el:attributes"] objectForKey:@"url"];
-        NSURL *playingUrl = [_tung.playQueue objectAtIndex:0];
+        NSString *playingUrlString = [_tung.playQueue objectAtIndex:0];
         
-        if ([urlString isEqualToString:playingUrl.absoluteString]) {
+        if ([urlString isEqualToString:playingUrlString]) {
             episodeCell.iconView.type = kIconTypeNowPlaying;
             episodeCell.iconView.color = [TungCommonObjects tungColor];
             episodeCell.leadingTitleConstraint.constant = 36;

@@ -224,8 +224,7 @@ CGSize screenSize;
         
         if ([epEntity.title isKindOfClass:[NSString class]] && [epEntity.url isKindOfClass:[NSString class]]) {
             _npEpisodeEntity = epEntity;
-            NSURL *url = [NSURL URLWithString:_npEpisodeEntity.url];
-            _playQueue = [@[url] mutableCopy];
+            _playQueue = [@[_npEpisodeEntity.url] mutableCopy];
             if ([self isPlaying]) {
                 [self setControlButtonStateToPause];
             } else {
@@ -411,7 +410,6 @@ CGSize screenSize;
                     [_trackInfo setObject:[NSNumber numberWithFloat:secs] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
                     [_player seekToTime:time completionHandler:^(BOOL finished) {
                         //JPLog(@"finished seeking: %@", (finished) ? @"Yes" : @"No");
-                        
                         [_showBufferingTimer invalidate];
                         [_player play];
                     }];
@@ -532,7 +530,7 @@ CGSize screenSize;
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
 }
 - (void) setControlButtonStateToBuffering {
-    NSLog(@"set control button state to buffering");
+    //NSLog(@"set control button state to buffering");
     [_btnActivityIndicator startAnimating];
     [_btn_player setImage:nil forState:UIControlStateNormal];
     [_btn_player setImage:nil forState:UIControlStateHighlighted];
@@ -558,7 +556,7 @@ CGSize screenSize;
 - (void) queueAndPlaySelectedEpisode:(NSString *)urlString fromTimestamp:(NSString *)timestamp {
     
     // url and file
-    NSURL *url = [NSURL URLWithString:urlString];
+    NSURL *url = [TungCommonObjects urlFromString:urlString];
     NSString *fileName = [url lastPathComponent];
     NSString *fileType = [fileName pathExtension];
     //JPLog(@"play file of type: %@", fileType);
@@ -574,12 +572,13 @@ CGSize screenSize;
         if (_playQueue.count > 0) {
             
             // it's new, but something else is loaded
-            if (![[_playQueue objectAtIndex:0] isEqual:url]) {
+            NSString *queuedItem = [TungCommonObjects stringFromUrl:[_playQueue objectAtIndex:0]];
+            if (![queuedItem isEqualToString:urlString]) {
                 [self ejectCurrentEpisode];
                 if (timestamp) {
                     _playFromTimestamp = timestamp;
                 }
-                [_playQueue insertObject:url atIndex:0];
+                [_playQueue insertObject:urlString atIndex:0];
                 [self playQueuedPodcast];
             }
             // trying to queue playing episode
@@ -590,18 +589,18 @@ CGSize screenSize;
                 }
             }
         } else {
-            [_playQueue insertObject:url atIndex:0];
+            [_playQueue insertObject:urlString atIndex:0];
             [self playQueuedPodcast];
         }
     }
 }
 
 - (void) playUrl:(NSString *)urlString fromTimestamp:(NSString *)timestamp {
-    NSURL *url = [NSURL URLWithString:urlString];
     
     _playFromTimestamp = timestamp;
     
-    if (_playQueue.count > 0 && [[_playQueue objectAtIndex:0] isEqual:url]) {
+    NSString *queuedItem = [TungCommonObjects stringFromUrl:[_playQueue objectAtIndex:0]];
+    if (_playQueue.count > 0 && [queuedItem isEqualToString:urlString]) {
         // already listening
         float secs = [TungCommonObjects convertTimestampToSeconds:timestamp];
         CMTime time = CMTimeMake((secs * 100), 100);
@@ -628,7 +627,7 @@ CGSize screenSize;
         
         [self resetPlayer];
         
-        NSString *urlString = [NSString stringWithFormat:@"%@", [_playQueue objectAtIndex:0]];
+        NSString *urlString = [TungCommonObjects stringFromUrl:[_playQueue objectAtIndex:0]];
         
         JPLog(@"play url: %@", urlString);
         
@@ -678,7 +677,8 @@ CGSize screenSize;
         // not used: MPMediaItemPropertyAssetURL
         
         // set up new player item and player, observers
-        NSURL *urlToPlay = [self getEpisodeUrl:[_playQueue objectAtIndex:0]];
+        
+        NSURL *urlToPlay = [self getEpisodeUrl:[TungCommonObjects urlFromString:urlString]];
         AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
         [asset.resourceLoader setDelegate:self queue:dispatch_get_main_queue()];
         AVPlayerItem *playerItem = [AVPlayerItem playerItemWithAsset:asset];
@@ -787,7 +787,7 @@ CGSize screenSize;
 }
 
 - (void) ejectCurrentEpisode {
-    JPLog(@"ejecting current episode");
+    //NSLog(@"ejecting current episode");
     if (_playQueue.count > 0) {
         if ([self isPlaying]) [_player pause];
         [self removeNowPlayingStatusFromAllEpisodes];
@@ -827,7 +827,7 @@ CGSize screenSize;
     // play next episode in feed
     else {
         if (!_currentFeed) {
-            NSLog(@"current feed was not set");
+            JPLog(@"current feed was not set");
             _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO reachable:_connectionAvailable.boolValue]];
         }
         // first see if there is a newer one and if it has been listened to yet
@@ -840,7 +840,7 @@ CGSize screenSize;
                 //JPLog(@"newer episode hasn't been listened to yet, queue and play");
                 [self ejectCurrentEpisode];
                 _currentFeedIndex--;
-                [_playQueue insertObject:[NSURL URLWithString:epEntity.url] atIndex:0];
+                [_playQueue insertObject:epEntity.url atIndex:0];
                 [self playQueuedPodcast];
                 return;
             }
@@ -861,10 +861,11 @@ CGSize screenSize;
         [self ejectCurrentEpisode];
         _currentFeedIndex++;
         NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex];
-        NSURL *url = [NSURL URLWithString:[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"]];
-        [_playQueue insertObject:url atIndex:0];
- 
-        [self playQueuedPodcast];
+        NSString *urlString = [TungCommonObjects getUrlStringFromEpisodeDict:episodeDict];
+        if (urlString) {
+            [_playQueue insertObject:urlString atIndex:0];
+            [self playQueuedPodcast];
+        }
     } else {
         [self savePositionForNowPlayingAndSync:YES];
         [self setControlButtonStateToPlay];
@@ -882,10 +883,11 @@ CGSize screenSize;
         [self ejectCurrentEpisode];
         _currentFeedIndex--;
         NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex];
-        NSURL *url = [NSURL URLWithString:[[[episodeDict objectForKey:@"enclosure"] objectForKey:@"el:attributes"] objectForKey:@"url"]];
-        [_playQueue insertObject:url atIndex:0];
-        
-        [self playQueuedPodcast];
+        NSString *urlString = [TungCommonObjects getUrlStringFromEpisodeDict:episodeDict];
+        if (urlString) {
+        	[_playQueue insertObject:urlString atIndex:0];
+        	[self playQueuedPodcast];
+        }
     } else {
         [self savePositionForNowPlayingAndSync:YES];
         [self setControlButtonStateToPlay];
@@ -971,7 +973,8 @@ CGSize screenSize;
 - (void) reestablishPlayerItemAndReplace {
     JPLog(@"reestablish player item");
     CMTime currentTime = _player.currentTime;
-    NSURL *urlToPlay = [self getEpisodeUrl:[_playQueue objectAtIndex:0]];
+    NSURL *url = [TungCommonObjects urlFromString:[_playQueue objectAtIndex:0]];
+    NSURL *urlToPlay = [self getEpisodeUrl:url];
     AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
     AVPlayerItem *localPlayerItem = [[AVPlayerItem alloc] initWithAsset:asset];
     [_player replaceCurrentItemWithPlayerItem:localPlayerItem];
@@ -1325,7 +1328,7 @@ static NSString *episodeDirName = @"episodes";
     NSFileManager *fileManager = [NSFileManager defaultManager];
     
     // strip out query string
-    NSURL *url = [NSURL URLWithString:episodeEntity.url];
+    NSURL *url = [TungCommonObjects urlFromString:episodeEntity.url];
     NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrl:url];
     
     //NSString *episodeFilename = [[episodeEntity.url lastPathComponent] stringByRemovingPercentEncoding];
@@ -1427,7 +1430,7 @@ static NSString *episodeDirName = @"episodes";
         [self processPendingRequests];
         
         NSString *episodesDir = [TungCommonObjects getCachedEpisodesDirectoryPath];
-        NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrl:[_playQueue objectAtIndex:0]];
+        NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrl:[TungCommonObjects urlFromString:[_playQueue objectAtIndex:0]]];
         NSString *episodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
         NSError *error;
         if ([_trackData writeToFile:episodeFilepath options:0 error:&error]) {
@@ -1657,8 +1660,8 @@ UILabel *prototypeBadge;
 - (void) checkFeedsLastFetchedTime {
     SettingsEntity *settings = [TungCommonObjects settings];
     NSTimeInterval now_secs = [[NSDate date] timeIntervalSince1970];
-    // if feed hasn't been fetched in the last 5 minutes
-    if ((settings.feedLastFetched.doubleValue + 300) < now_secs) {
+    // if feed hasn't been fetched in the last hour
+    if ((settings.feedLastFetched.doubleValue + 3600) < now_secs) {
         _feedNeedsRefresh = [NSNumber numberWithBool:YES];
     }
     // if trending feed hasn't been fetched in the last hour
@@ -1858,24 +1861,9 @@ UILabel *prototypeBadge;
         episodeEntity.dataLength = [NSNumber numberWithDouble:[[[enclosureDict objectForKey:@"el:attributes"] objectForKey:@"length"] doubleValue]];
     }
     
-    NSString *url;
-    BOOL urlWasSet = NO;
-    if ([episodeDict objectForKey:@"url"]) {
-        url = [episodeDict objectForKey:@"url"];
-        urlWasSet = YES;
-    }
-    else if ([episodeDict objectForKey:@"enclosure"]) {
-        NSDictionary *enclosureDict = [TungCommonObjects getEnclosureDictForEpisode:episodeDict];
-        url = [[enclosureDict objectForKey:@"el:attributes"] objectForKey:@"url"];
-        urlWasSet = YES;
-    }
-    else if (!episodeEntity.url) {
-        //JPLog(@"episode dict missing url: %@", episodeDict);
-        url = @"";
-        urlWasSet = YES;
-    }
-    if (urlWasSet) {
-    	episodeEntity.url = url;
+    NSString *urlString = [TungCommonObjects getUrlStringFromEpisodeDict:episodeDict];
+    if (urlString) {
+    	episodeEntity.url = urlString;
     }
     if ([episodeDict objectForKey:@"trackProgress"]) {
         NSNumber *progress = [episodeDict objectForKey:@"trackProgress"];
@@ -1909,6 +1897,22 @@ UILabel *prototypeBadge;
             return enclosure;
         }
     } else {
+        return nil;
+    }
+}
+
++ (NSString *) getUrlStringFromEpisodeDict:(NSDictionary *)episodeDict {
+    NSString *urlString;
+    if ([episodeDict objectForKey:@"url"]) {
+        urlString = [episodeDict objectForKey:@"url"];
+        return urlString;
+    }
+    else if ([episodeDict objectForKey:@"enclosure"]) {
+        NSDictionary *enclosureDict = [TungCommonObjects getEnclosureDictForEpisode:episodeDict];
+        urlString = [[enclosureDict objectForKey:@"el:attributes"] objectForKey:@"url"];
+        return urlString;
+    }
+    else {
         return nil;
     }
 }
@@ -2404,7 +2408,7 @@ static NSArray *colors;
     switch (netStatus) {
         case NotReachable: {
             JPLog(@"Network not reachable");
-            NSLog(@"%@",[NSThread callStackSymbols]);
+            //NSLog(@"%@",[NSThread callStackSymbols]);
             _connectionAvailable = [NSNumber numberWithBool:NO];
              if (callback) callback(NO);
             break;
@@ -2600,7 +2604,7 @@ static NSArray *colors;
     NSString *email = (podcastEntity.email) ? podcastEntity.email : @"";
     NSString *website = (podcastEntity.website) ? podcastEntity.website : @"";
     
-    NSLog(@"Add or Update Podcast for entity: %@", podcastEntity.collectionName);
+    //NSLog(@"Add or Update Podcast for entity: %@", podcastEntity.collectionName);
     //NSLog(@"episode entity: %@", episodeEntity);
     NSMutableDictionary *params = [@{@"apiKey": [TungCommonObjects apiKey],
                                     @"collectionId": podcastEntity.collectionId,
@@ -4126,7 +4130,7 @@ static NSArray *colors;
                     
                     if ([responseDict objectForKey:@"error"]) {
                         JPLog(@"Error finding twitter friends (%@): %@", [responseDict objectForKey:@"twitterStatusCode"], [responseDict objectForKey:@"error"]);
-                        NSLog(@"responseDict: %@", responseDict);
+                        //NSLog(@"responseDict: %@", responseDict);
                         callback(NO, responseDict);
                     }
                     else if ([responseDict objectForKey:@"success"]) {
@@ -5348,5 +5352,29 @@ static NSDateFormatter *dayDateFormatter = nil;
     return components.URL;
 }
 
++ (NSURL *) urlFromString:(id)urlString {
+    
+    if ([urlString isKindOfClass:[NSURL class]]) {
+        NSURL *url = (NSURL *)urlString;
+        return url;
+    }
+    else {
+        NSString *uStr = (NSString *)urlString;
+        NSString *encodedUrlString = [uStr stringByAddingPercentEscapesUsingEncoding:NSUTF8StringEncoding];
+        NSURL *url = [NSURL URLWithString:encodedUrlString];
+        return url;
+    }
+}
+
++ (NSString *) stringFromUrl:(id)url {
+    if ([url isKindOfClass:[NSString class]]) {
+        NSString *urlString = (NSString *)url;
+        return urlString;
+    }
+    else {
+        NSURL *urlCast = (NSURL *)url;
+        return urlCast.absoluteString;
+    }
+}
 
 @end

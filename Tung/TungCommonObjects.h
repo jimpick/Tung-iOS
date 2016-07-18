@@ -139,6 +139,7 @@
 + (PodcastEntity *) getEntityForPodcast:(NSDictionary *)podcastDict save:(BOOL)save;
 + (EpisodeEntity *) getEntityForEpisode:(NSDictionary *)episodeDict withPodcastEntity:(PodcastEntity *)podcastEntity save:(BOOL)save;
 + (NSDictionary *) getEnclosureDictForEpisode:(NSDictionary *)episodeDict;
++ (NSString *) getUrlStringFromEpisodeDict:(NSDictionary *)episodeDict;
 + (NSString *) findEpisodeDescriptionWithDict:(NSDictionary *)episodeDict;
 + (NSDictionary *) entityToDict:(NSManagedObject *)entity;
 + (NSDate *) ISODateToNSDate: (NSString *)pubDate;
@@ -263,5 +264,7 @@
 + (NSString *) formatBytes:(NSNumber *)bytes;
 + (UIImage *) image:(UIImage *)img croppedAndScaledToSquareSizeWithDimension:(CGFloat)dimension;
 + (NSURL *) addReferrerToUrlString:(NSString *)urlString;
++ (NSURL *) urlFromString:(id)urlString;
++ (NSString *) stringFromUrl:(id)url;
 
 @end
