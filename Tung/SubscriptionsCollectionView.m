@@ -393,6 +393,18 @@ UILabel static *prototypeBadge;
         cell.badge.hidden = YES;
     }
     
+    // subs for screenshot
+    /*
+    int i = arc4random_uniform(5);
+    if (i > 0) {
+        cell.badge.text = [NSString stringWithFormat:@"%d", i];
+        cell.badge.hidden = NO;
+    }
+    else {
+        cell.badge.hidden = YES;
+    }
+    */
+    
     // adjust badge width if necessary
     if (!prototypeBadge) {
         prototypeBadge = [[UILabel alloc] init];

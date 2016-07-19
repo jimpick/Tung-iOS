@@ -279,25 +279,29 @@
     [postDeviceTokenRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:postDeviceTokenRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                //JPLog(@"%@", responseDict);
-                if ([responseDict objectForKey:@"error"]) {
-                    // session expired
-                    JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    //JPLog(@"%@", responseDict);
+                    if ([responseDict objectForKey:@"error"]) {
+                        // session expired
+                        JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);
+                    }
+                    if ([responseDict objectForKey:@"success"]) {
+                        JPLog(@"Successfully posted device token");
+                    }
                 }
-                if ([responseDict objectForKey:@"success"]) {
-                    JPLog(@"Successfully posted device token");
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error. HTML: %@", html);
                 }
-            }
-            else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error. HTML: %@", html);
-            }
-        });
+            });
+        }
+        else {
+            JPLog(@"connection error: %@", error.localizedDescription);
+        }
     }];
 }
 

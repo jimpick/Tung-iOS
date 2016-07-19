@@ -86,7 +86,7 @@
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_followingFeed.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_followingFeed.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraint]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_followingFeed.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_followingFeed.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_followingFeed.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_followingFeed.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
-    _followingFeed.view.hidden = NO;
+    _followingFeed.view.hidden = YES;
     
     // trending feed
     _trendingFeed = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
@@ -103,18 +103,6 @@
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_trendingFeed.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_trendingFeed.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_trendingFeed.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_trendingFeed.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     _trendingFeed.view.hidden = NO;
-    
-    [self switchFeeds:_switcher];
-    
-    //[TungCommonObjects clearTempDirectory]; // DEV only
-    
-    /* dev purposes - log out of fb
-    if ([FBSDKAccessToken currentAccessToken]) {
-        [[FBSDKLoginManager new] logOut];
-    } */
-    
-    //[TungCommonObjects checkForUserData]; // for debugging
-    //[TungCommonObjects checkForPodcastData]; // for debugging
     
     // first load
     _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES];

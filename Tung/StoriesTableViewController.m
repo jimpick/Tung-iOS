@@ -289,6 +289,7 @@
                         if (withCred) {
                             
                             JPLog(@"got stories AND session in %f seconds.", fabs(requestDuration));
+                            
                             _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                             
                             //NSLog(@"session id: %@", _tung.sessionId);
@@ -360,6 +361,7 @@
                             [self endRefreshingWithNewPosts:YES];
                             
                             if (newStories.count > 0) {
+                                
                                 _storiesArray = [self processStories:newStories];
                                 //NSLog(@"processed episode stories: %@", _storiesArray);
                                 _noResults = NO;
