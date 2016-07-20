@@ -288,7 +288,8 @@ static NSDateFormatter *airDateFormatter = nil;
     height += self.titleLabel.frame.size.height;
     height += self.subTitleLabel.frame.size.height; // label heights
     height += 10 + 62; // between label and sub btn, sub btn height
-    height += self.descriptionLabel.frame.size.height + 7; // top margin and desc label height
+    if (self.descriptionLabel.text.length)
+    	height += self.descriptionLabel.frame.size.height + 7; // top margin and desc label height
     //NSLog(@"-- FINAL HEIGHT: %f", height);
     
     if (!self.isConstrained) {

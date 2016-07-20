@@ -1278,7 +1278,7 @@ static CGRect buttonsScrollViewHomeRect;
 
     //JPLog(@"//// trim audio from %f to %f", startMarker, endMarker);
     // input    
-    NSURL *audioFileUrl = [_tung getEpisodeUrl:[TungCommonObjects urlFromString:[_tung.playQueue objectAtIndex:0]]];
+    NSURL *audioFileUrl = [_tung getEpisodeUrl:[_tung.playQueue objectAtIndex:0]];
     // test if input file has any bytes
     //NSData *audioURLData = [NSData dataWithContentsOfURL:audioFileUrl];
     //JPLog(@"//// audio file data length: %lu", (unsigned long)audioURLData.length);
@@ -1360,9 +1360,8 @@ static CGRect buttonsScrollViewHomeRect;
                 _recordButton.isRecording = NO;
                 [_recordButton setEnabled:NO];
                 [_tung playerPause];
-                //_recordingDuration = [_recordingDurationLabel.text substringFromIndex:1];
                 _recordingDuration = [NSString stringWithFormat:@"%02.0f", recordTime];
-                NSLog(@"stopped recording. duration: %@", _recordingDuration);
+                
                 [_buttonsScrollView setScrollEnabled:YES];
                 [self trimAudioFrom:_recordStartMarker to:_recordEndMarker];
             } else {

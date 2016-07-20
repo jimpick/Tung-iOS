@@ -93,13 +93,14 @@
 - (void) setControlButtonStateToFauxDisabled;
 - (void) setControlButtonStateToBuffering;
 - (void) removeNowPlayingStatusFromAllEpisodes;
-- (NSURL *) getEpisodeUrl:(NSURL *)url;
+- (NSURL *) getEpisodeUrl:(NSString *)urlString;
 - (void) reestablishPlayerItemAndReplace;
 
 // caching/saving episodes
 @property EpisodeEntity *episodeToSaveEntity;
 + (NSString *) getSavedEpisodesDirectoryPath;
 + (NSString *) getCachedEpisodesDirectoryPath;
++ (NSString *) getEpisodeFilenameFromUrlString:(NSString *)urlString;
 - (void) cacheNowPlayingEpisodeAndMoveToSaved:(BOOL)moveToSaved;
 - (void) queueEpisodeForDownload:(EpisodeEntity *)episodeEntity;
 - (void) cancelDownloadForEpisode:(EpisodeEntity *)episodeEntity;
@@ -110,7 +111,6 @@
 + (void) deleteCachedData;
 - (void) showSavedInfoAlertForEpisode:(EpisodeEntity *)episodeEntity;
 - (BOOL) moveToSavedOrQueueDownloadForEpisode:(EpisodeEntity *)episodeEntity;
-+ (NSString *) getEpisodeFilenameFromUrl:(NSURL *)url;
 
 // badges
 @property (strong, nonatomic) TungMiscView *subscriptionsBadge;

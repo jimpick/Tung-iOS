@@ -629,79 +629,91 @@ CGSize screenSize;
         
         NSString *urlString = [TungCommonObjects stringFromUrl:[_playQueue objectAtIndex:0]];
         
-        JPLog(@"play url: %@", urlString);
+        if (urlString.length) {
         
-        // assign now playing entity
-        AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
-        NSError *error = nil;
-        NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
-        NSPredicate *predicate = [NSPredicate predicateWithFormat: @"url == %@", urlString];
-        [request setPredicate:predicate];
-        NSArray *episodeResult = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
-        if (episodeResult.count > 0) {
-            //JPLog(@"found and assigned now playing entity");
-            _npEpisodeEntity = [episodeResult lastObject];
-        } else {
-            /* create entity - case is next episode in feed is played. Episode entity may not have been
-             created yet, but podcast entity would, so we get it from np episode entity. */
-            // look up podcast entity
-            //JPLog(@"creating new entity for now playing entity");
-            NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex];
-            PodcastEntity *npPodcastEntity = _npEpisodeEntity.podcast;
-            _npEpisodeEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:npPodcastEntity save:NO];
+            JPLog(@"play url: %@", urlString);
+            
+            // assign now playing entity
+            AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+            NSError *error = nil;
+            NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
+            NSPredicate *predicate = [NSPredicate predicateWithFormat: @"url == %@", urlString];
+            [request setPredicate:predicate];
+            NSArray *episodeResult = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
+            if (episodeResult.count > 0) {
+                //JPLog(@"found and assigned now playing entity");
+                _npEpisodeEntity = [episodeResult lastObject];
+            } else {
+                /* create entity - case is next episode in feed is played. Episode entity may not have been
+                 created yet, but podcast entity would, so we get it from np episode entity. */
+                // look up podcast entity
+                //JPLog(@"creating new entity for now playing entity");
+                NSDictionary *episodeDict = [_currentFeed objectAtIndex:_currentFeedIndex];
+                PodcastEntity *npPodcastEntity = _npEpisodeEntity.podcast;
+                _npEpisodeEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:npPodcastEntity save:NO];
+            }
+            // increment listen count if it isn't already playing
+            if (!_npEpisodeEntity.isNowPlaying.boolValue) {
+                _incPlayCountTimer = [NSTimer scheduledTimerWithTimeInterval:10.0 target:self selector:@selector(incrementPlayCountForNowPlaying) userInfo:nil repeats:NO];
+            }
+            
+            _npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:YES];
+            [TungCommonObjects saveContextWithReason:@"now playing changed"];
+            // find index of episode in current feed for prev/next track fns
+            _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO reachable:_connectionAvailable.boolValue]];
+            _currentFeedIndex = [TungCommonObjects getIndexOfEpisodeWithGUID:_npEpisodeEntity.guid inFeed:_currentFeed];
+            
+            //NSLog(@"now playing episode: %@", [TungCommonObjects entityToDict:_npEpisodeEntity]);
+            
+            // set now playing info center info
+            NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:_npEpisodeEntity.podcast];
+            UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
+            MPMediaItemArtwork *albumArt = [[MPMediaItemArtwork alloc] initWithImage:artImage];
+            [_trackInfo setObject:albumArt forKey:MPMediaItemPropertyArtwork];
+            [_trackInfo setObject:_npEpisodeEntity.title forKey:MPMediaItemPropertyTitle];
+            [_trackInfo setObject:_npEpisodeEntity.podcast.collectionName forKey:MPMediaItemPropertyArtist];
+            //[_trackInfo setObject:_npEpisodeEntity.podcast.collectionName forKey:MPMediaItemPropertyPodcastTitle];
+            //[_trackInfo setObject:_npEpisodeEntity.podcast.artistName forKey:MPMediaItemPropertyAlbumTitle];
+            [_trackInfo setObject:[NSNumber numberWithFloat:1.0] forKey:MPNowPlayingInfoPropertyPlaybackRate];
+            [_trackInfo setObject:_npEpisodeEntity.pubDate forKey:MPMediaItemPropertyReleaseDate];
+            // not used: MPMediaItemPropertyAssetURL
+            
+            // set up new player item and player, observers
+            
+            NSURL *urlToPlay = [self getEpisodeUrl:urlString];
+            if (urlToPlay) {
+                AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
+                [asset.resourceLoader setDelegate:self queue:dispatch_get_main_queue()];
+                AVPlayerItem *playerItem = [AVPlayerItem playerItemWithAsset:asset];
+                _player = [[AVPlayer alloc] initWithPlayerItem:playerItem];
+                // add observers
+                [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
+                [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
+                [_player addObserver:self forKeyPath:@"currentItem.duration" options:0 context:nil];
+        //        [_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
+        //        [_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
+                // Subscribe to AVPlayerItem's notifications
+                [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(completedPlayback) name:AVPlayerItemDidPlayToEndTimeNotification object:playerItem];
+                [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemPlaybackStalledNotification object:playerItem];
+                [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemFailedToPlayToEndTimeNotification object:playerItem];
+                
+                [self setControlButtonStateToPause];
+                
+                [_showBufferingTimer invalidate];
+                _showBufferingTimer = [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(setControlButtonStateToBuffering) userInfo:nil repeats:NO];
+                
+                NSNotification *nowPlayingDidChangeNotif = [NSNotification notificationWithName:@"nowPlayingDidChange" object:nil userInfo:nil];
+                [[NSNotificationCenter defaultCenter] postNotification:nowPlayingDidChangeNotif];
+            }
+            else {
+                JPLog(@"Error: Can't play because resource needs to be streamed and there is no connection");
+                [TungCommonObjects showNoConnectionAlert];
+            }
         }
-        // increment listen count if it isn't already playing
-        if (!_npEpisodeEntity.isNowPlaying.boolValue) {
-            _incPlayCountTimer = [NSTimer scheduledTimerWithTimeInterval:10.0 target:self selector:@selector(incrementPlayCountForNowPlaying) userInfo:nil repeats:NO];
+        else {
+            JPLog(@"Error: Empty url string passed to playQueuedPodcast");
+            [TungCommonObjects simpleErrorAlertWithMessage:@"Could not play - empty url"];
         }
-        
-        _npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:YES];
-        [TungCommonObjects saveContextWithReason:@"now playing changed"];
-        // find index of episode in current feed for prev/next track fns
-        _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO reachable:_connectionAvailable.boolValue]];
-        _currentFeedIndex = [TungCommonObjects getIndexOfEpisodeWithGUID:_npEpisodeEntity.guid inFeed:_currentFeed];
-        
-        //NSLog(@"now playing episode: %@", [TungCommonObjects entityToDict:_npEpisodeEntity]);
-        
-        // set now playing info center info
-        NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:_npEpisodeEntity.podcast];
-        UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
-        MPMediaItemArtwork *albumArt = [[MPMediaItemArtwork alloc] initWithImage:artImage];
-        [_trackInfo setObject:albumArt forKey:MPMediaItemPropertyArtwork];
-        [_trackInfo setObject:_npEpisodeEntity.title forKey:MPMediaItemPropertyTitle];
-        [_trackInfo setObject:_npEpisodeEntity.podcast.collectionName forKey:MPMediaItemPropertyArtist];
-        //[_trackInfo setObject:_npEpisodeEntity.podcast.collectionName forKey:MPMediaItemPropertyPodcastTitle];
-        //[_trackInfo setObject:_npEpisodeEntity.podcast.artistName forKey:MPMediaItemPropertyAlbumTitle];
-        [_trackInfo setObject:[NSNumber numberWithFloat:1.0] forKey:MPNowPlayingInfoPropertyPlaybackRate];
-        [_trackInfo setObject:_npEpisodeEntity.pubDate forKey:MPMediaItemPropertyReleaseDate];
-        // not used: MPMediaItemPropertyAssetURL
-        
-        // set up new player item and player, observers
-        
-        NSURL *urlToPlay = [self getEpisodeUrl:[TungCommonObjects urlFromString:urlString]];
-        AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
-        [asset.resourceLoader setDelegate:self queue:dispatch_get_main_queue()];
-        AVPlayerItem *playerItem = [AVPlayerItem playerItemWithAsset:asset];
-        _player = [[AVPlayer alloc] initWithPlayerItem:playerItem];
-        // add observers
-        [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
-        [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
-        [_player addObserver:self forKeyPath:@"currentItem.duration" options:0 context:nil];
-//        [_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
-//        [_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
-        // Subscribe to AVPlayerItem's notifications
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(completedPlayback) name:AVPlayerItemDidPlayToEndTimeNotification object:playerItem];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemPlaybackStalledNotification object:playerItem];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemFailedToPlayToEndTimeNotification object:playerItem];
-        
-        [self setControlButtonStateToPause];
-        
-        [_showBufferingTimer invalidate];
-        _showBufferingTimer = [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(setControlButtonStateToBuffering) userInfo:nil repeats:NO];
-        
-        NSNotification *nowPlayingDidChangeNotif = [NSNotification notificationWithName:@"nowPlayingDidChange" object:nil userInfo:nil];
-        [[NSNotificationCenter defaultCenter] postNotification:nowPlayingDidChangeNotif];
-        
     }
     //JPLog(@"play queue: %@", _playQueue);
 }
@@ -905,10 +917,7 @@ CGSize screenSize;
     
     [self resetPlayer];
     
-    NSString *urlString = _npEpisodeEntity.url;
-    [self queueAndPlaySelectedEpisode:urlString fromTimestamp:nil];
-    
-    
+    [self queueAndPlaySelectedEpisode:_npEpisodeEntity.url fromTimestamp:nil];
     
     UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Player Error" message:@"Attempting to recover playback." preferredStyle:UIAlertControllerStyleAlert];
     [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
@@ -916,17 +925,14 @@ CGSize screenSize;
 }
 
 // looks for local file, else returns url with custom scheme
-- (NSURL *) getEpisodeUrl:(NSURL *)url {
-    
+- (NSURL *) getEpisodeUrl:(NSString *)urlString {
+    //NSLog(@"getEpisodeUrl: %@", urlString);
     // first look for file in episode temp dir
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrl:url];
-    //JPLog(@"get episode url for file: %@", episodeFilename);
-    NSString *cachedEpisodesDir = [TungCommonObjects getCachedEpisodesDirectoryPath];
-    NSString *cachedEpisodeFilepath = [cachedEpisodesDir stringByAppendingPathComponent:episodeFilename];
-
+    NSString *cachedEpisodeFilepath = [TungCommonObjects getCachedFilepathForEpisodeUrlString:urlString];
+	//NSLog(@"check for cached episode with filepath: %@", cachedEpisodeFilepath);
     if ([fileManager fileExistsAtPath:cachedEpisodeFilepath]) {
-        //JPLog(@"^^^ will use local file in TEMP dir");
+        JPLog(@"^^^ will use local file in TEMP dir");
         _fileIsLocal = YES;
         _fileIsStreaming = NO;
         _fileWillBeCached = YES;
@@ -934,11 +940,10 @@ CGSize screenSize;
     }
     else {
         // look for file in saved episodes directory
-        NSString *savedEpisodesDir = [TungCommonObjects getSavedEpisodesDirectoryPath];
-        NSString *savedEpisodeFilepath = [savedEpisodesDir stringByAppendingPathComponent:episodeFilename];
-        
+        NSString *savedEpisodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeUrlString:urlString];
+        //NSLog(@"check for saved episode with filepath: %@", savedEpisodeFilepath);
         if ([fileManager fileExistsAtPath:savedEpisodeFilepath]) {
-            //JPLog(@"^^^ will use local file in SAVED dir");
+            JPLog(@"^^^ will use local file in SAVED dir");
             _fileIsLocal = YES;
             _fileIsStreaming = NO;
             _fileWillBeCached = YES;
@@ -949,6 +954,7 @@ CGSize screenSize;
             _fileIsLocal = NO;
             _fileIsStreaming = YES;
             
+            NSURL *url = [NSURL URLWithString:urlString];
             NSURLComponents *components = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
             // if episode has track position > 0.1, we do not use custom scheme,
             // because this way AVPlayer will start streaming from the timestamp
@@ -965,7 +971,12 @@ CGSize screenSize;
                 JPLog(@"^^^ will STREAM from url with custom scheme");
                 
             }
-            return [components URL];
+            if (_connectionAvailable.boolValue) {
+            	return [components URL];
+            }
+            else {
+                return nil;
+            }
         }
     }
 }
@@ -975,8 +986,7 @@ CGSize screenSize;
 - (void) reestablishPlayerItemAndReplace {
     JPLog(@"reestablish player item");
     CMTime currentTime = _player.currentTime;
-    NSURL *url = [TungCommonObjects urlFromString:[_playQueue objectAtIndex:0]];
-    NSURL *urlToPlay = [self getEpisodeUrl:url];
+    NSURL *urlToPlay = [self getEpisodeUrl:[_playQueue objectAtIndex:0]];
     AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
     AVPlayerItem *localPlayerItem = [[AVPlayerItem alloc] initWithAsset:asset];
     [_player replaceCurrentItemWithPlayerItem:localPlayerItem];
@@ -1059,6 +1069,34 @@ static NSString *episodeDirName = @"episodes";
     NSError *error;
     [fileManager createDirectoryAtPath:episodesDir withIntermediateDirectories:YES attributes:nil error:&error];
     return episodesDir;
+}
+
+// removes query string, percent encoding
++ (NSString *) getEpisodeFilenameFromUrlString:(NSString *)urlString {
+    
+    NSURL *url = [TungCommonObjects urlFromString:urlString];
+    NSURLComponents *urlComponents = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
+    urlComponents.query = nil;
+    NSString *urlStr = [urlComponents.string stringByRemovingPercentEncoding];
+    NSString *episodeFilename = [urlStr lastPathComponent];
+    //NSLog(@"get episode filename: %@", [episodeFilename stringByRemovingPercentEncoding]);
+    return episodeFilename;
+}
+
++ (NSString *) getSavedFilepathForEpisodeUrlString:(NSString *)urlString {
+    
+    NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrlString:urlString];
+    NSString *savedEpisodesDir = [TungCommonObjects getSavedEpisodesDirectoryPath];
+    NSString *savedEpisodeFilepath = [savedEpisodesDir stringByAppendingPathComponent:episodeFilename];
+    return savedEpisodeFilepath;
+}
+
++ (NSString *) getCachedFilepathForEpisodeUrlString:(NSString *)urlString {
+    
+    NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrlString:urlString];
+    NSString *savedEpisodesDir = [TungCommonObjects getCachedEpisodesDirectoryPath];
+    NSString *savedEpisodeFilepath = [savedEpisodesDir stringByAppendingPathComponent:episodeFilename];
+    return savedEpisodeFilepath;
 }
 
 // meant to minimize notification duplication, bc of unavoidable cases where multiple notifs get fired
@@ -1173,7 +1211,9 @@ static NSString *episodeDirName = @"episodes";
     [TungCommonObjects saveContextWithReason:@"new episode downloading"];
     [self queueSaveStatusDidChangeNotification];
     
-    NSURLRequest *request = [NSURLRequest requestWithURL:[NSURL URLWithString:episodeEntity.url]];
+    NSURL *url = [NSURL URLWithString:episodeEntity.url];
+    NSLog(@"init download connection with url: %@", url);
+    NSURLRequest *request = [NSURLRequest requestWithURL:url];
     _saveTrackConnection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
     [_saveTrackConnection setDelegateQueue:[NSOperationQueue mainQueue]];
     [_saveTrackConnection start];
@@ -1185,9 +1225,7 @@ static NSString *episodeDirName = @"episodes";
     if (epEntity) {
         
         NSFileManager *fileManager = [NSFileManager defaultManager];
-        NSString *episodeFilename = [epEntity.url lastPathComponent];
-        NSString *episodesDir = [TungCommonObjects getSavedEpisodesDirectoryPath];
-        NSString *episodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
+        NSString *episodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeUrlString:urlString];
         NSError *error;
         BOOL success = NO;
         if ([fileManager fileExistsAtPath:episodeFilepath]) {
@@ -1336,20 +1374,13 @@ static NSString *episodeDirName = @"episodes";
     // find in temp
     NSFileManager *fileManager = [NSFileManager defaultManager];
     
-    // strip out query string
-    NSURL *url = [TungCommonObjects urlFromString:episodeEntity.url];
-    NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrl:url];
-    
-    //NSString *episodeFilename = [[episodeEntity.url lastPathComponent] stringByRemovingPercentEncoding];
-    NSString *cachedEpisodesDir = [TungCommonObjects getCachedEpisodesDirectoryPath];
-    NSString *cachedEpisodeFilepath = [cachedEpisodesDir stringByAppendingPathComponent:episodeFilename];
+    NSString *cachedEpisodeFilepath = [TungCommonObjects getCachedFilepathForEpisodeUrlString:episodeEntity.url];
     //NSLog(@"move episode - path: %@", cachedEpisodeFilepath);
     
     BOOL result = NO;
     if ([fileManager fileExistsAtPath:cachedEpisodeFilepath]) {
         // save in docs directory
-        NSString *episodesDir = [TungCommonObjects getSavedEpisodesDirectoryPath];
-        NSString *savedEpisodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
+        NSString *savedEpisodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeUrlString:episodeEntity.url];
         NSError *error;
         // if somehow it was already saved, remove it or it will error
         [fileManager removeItemAtPath:savedEpisodeFilepath error:&error];
@@ -1375,32 +1406,22 @@ static NSString *episodeDirName = @"episodes";
     return result;
 }
 
-+ (NSString *) getEpisodeFilenameFromUrl:(NSURL *)url {
-    
-    NSURLComponents *urlComponents = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
-    urlComponents.query = nil;
-    NSString *episodeFilename = [[urlComponents.string lastPathComponent] stringByRemovingPercentEncoding];
-    //JPLog(@"get episode filename: %@", episodeFilename);
-    return episodeFilename;
-}
-
 
 #pragma mark - NSURLConnection delegate
 
 - (void)connection:(NSURLConnection *)connection didReceiveResponse:(NSURLResponse *)response
 {
+    //PLog(@"[NSURLConnectionDataDelegate] connection did receive response");
     if (connection == _trackDataConnection) {
-        //JPLog(@"[NSURLConnectionDataDelegate] connection did receive response");
         //NSLog(@"connection response: %@", response);
         
         // get data length from response header
-        //if (_npEpisodeEntity.dataLength.doubleValue == 0) {
         NSHTTPURLResponse *httpResponse = (NSHTTPURLResponse *) response;
         if ([[httpResponse allHeaderFields] objectForKey:@"Content-Length"]) {
             NSNumber *dataLength = [NSNumber numberWithDouble:[[[httpResponse allHeaderFields] objectForKey:@"Content-Length"] doubleValue]];
             _npEpisodeEntity.dataLength = dataLength;
+            //NSLog(@"episode size: %@", [TungCommonObjects formatBytes:dataLength]);
         }
-        //}
         _response = (NSHTTPURLResponse *)response;
         
         [self processPendingRequests];
@@ -1420,8 +1441,8 @@ static NSString *episodeDirName = @"episodes";
 
 - (void)connection:(NSURLConnection *)connection didReceiveData:(NSData *)data
 {
+    //JPLog(@"[NSURLConnectionDataDelegate] connection did receive data: %d", data.length);
     if (connection == _trackDataConnection) {
-        //JPLog(@"[NSURLConnectionDataDelegate] connection did receive data");
         [_trackData appendData:data];
         
         [self processPendingRequests];
@@ -1438,11 +1459,9 @@ static NSString *episodeDirName = @"episodes";
         //JPLog(@"[NSURLConnectionDataDelegate] connection did finish loading");
         [self processPendingRequests];
         
-        NSString *episodesDir = [TungCommonObjects getCachedEpisodesDirectoryPath];
-        NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrl:[TungCommonObjects urlFromString:[_playQueue objectAtIndex:0]]];
-        NSString *episodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
+        NSString *cachedEpisodeFilepath = [TungCommonObjects getCachedFilepathForEpisodeUrlString:[_playQueue objectAtIndex:0]];
         NSError *error;
-        if ([_trackData writeToFile:episodeFilepath options:0 error:&error]) {
+        if ([_trackData writeToFile:cachedEpisodeFilepath options:0 error:&error]) {
             
             _fileIsLocal = YES;
             //JPLog(@"-- saved podcast track in temp episode dir: %@", episodeFilepath);
@@ -1463,14 +1482,11 @@ static NSString *episodeDirName = @"episodes";
         // deduct bytes to save
         _bytesToSave -= _episodeToSaveEntity.dataLength.doubleValue;
         // save in docs directory
-        NSString *episodeFilename = [_episodeToSaveEntity.url lastPathComponent];
-        episodeFilename = [episodeFilename stringByRemovingPercentEncoding]; // is this necessary?
-        NSString *episodesDir = [TungCommonObjects getSavedEpisodesDirectoryPath];
-        NSString *episodeFilepath = [episodesDir stringByAppendingPathComponent:episodeFilename];
+        NSString *savedEpisodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeUrlString:_episodeToSaveEntity.url];
         NSError *error;
         
-        if ([_saveTrackData writeToFile:episodeFilepath options:0 error:&error]) {
-            //JPLog(@"-- saved podcast track");
+        if ([_saveTrackData writeToFile:savedEpisodeFilepath options:0 error:&error]) {
+            JPLog(@"-- saved podcast track");
             
             // save feed and art
             [TungCommonObjects savePodcastArtForEntity:_episodeToSaveEntity.podcast];
@@ -1519,6 +1535,18 @@ static NSString *episodeDirName = @"episodes";
             [self queueSaveStatusDidChangeNotification];
         }
     }
+}
+
+- (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
+    JPLog(@"track data connection failed: %@", error.localizedDescription);
+    
+    [self savePositionForNowPlayingAndSync:NO];
+    [self resetPlayer];
+    [self queueAndPlaySelectedEpisode:_npEpisodeEntity.url fromTimestamp:nil];
+    
+    UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Connection was lost" message:@"Attempting to recover playback." preferredStyle:UIAlertControllerStyleAlert];
+    [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+    [[TungCommonObjects activeViewController] presentViewController:errorAlert animated:YES completion:nil];
 }
 
 #pragma mark - AVURLAsset resource loading
@@ -1602,15 +1630,11 @@ static NSString *episodeDirName = @"episodes";
     // initiate connection only if we haven't already downloaded the file
     else if (_trackDataConnection == nil)
     {
-        NSURL *interceptedURL = [loadingRequest.request URL];
-        NSURLComponents *actualURLComponents = [[NSURLComponents alloc] initWithURL:interceptedURL resolvingAgainstBaseURL:NO];
-        // TODO: scheme may be https...
-        actualURLComponents.scheme = @"http";
-        
-        NSURLRequest *request = [NSURLRequest requestWithURL:[actualURLComponents URL]];
+        NSURL *url = [NSURL URLWithString:_npEpisodeEntity.url];
+        //NSLog(@"init track data connection with url: %@", url);
+        NSURLRequest *request = [NSURLRequest requestWithURL:url];
         _trackDataConnection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
         [_trackDataConnection setDelegateQueue:[NSOperationQueue mainQueue]];
-        
         [_trackDataConnection start];
     }
     
