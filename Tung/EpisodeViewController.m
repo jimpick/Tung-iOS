@@ -2094,9 +2094,6 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
                 }
             }];
         }
-        else {
-            NSLog(@"twitter session: %@", [Twitter sharedInstance].sessionStore.session);
-        }
     }
 }
 

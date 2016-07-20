@@ -69,8 +69,15 @@ NSDateFormatter *ISODateFormatter;
         
         //NSLog(@"logged in user: %@", _loggedInUser);
         
-        // refresh feed flag
+        // flags
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
+        _feedNeedsRefetch = [NSNumber numberWithBool:NO];
+        _profileFeedNeedsRefresh = [NSNumber numberWithBool:NO];
+        _profileFeedNeedsRefetch = [NSNumber numberWithBool:NO];
+        _profileNeedsRefresh = [NSNumber numberWithBool:NO];
+        _notificationsNeedRefresh = [NSNumber numberWithBool:NO];
+        _trendingFeedNeedsRefresh = [NSNumber numberWithBool:NO];
+        _trendingFeedNeedsRefetch = [NSNumber numberWithBool:NO];
         
         _connectionAvailable = [NSNumber numberWithBool:NO];
         
