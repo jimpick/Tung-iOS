@@ -15,6 +15,7 @@
 #import "CommentsTableViewController.h"
 #import "CommentAndPostView.h"
 #import "MainTabBarController.h"
+#import <CoreText/CoreText.h>
 
 #include <AudioToolbox/AudioToolbox.h>
 
@@ -342,10 +343,10 @@ UIActivityIndicatorView *backgroundSpinner;
 }
 
 - (void) prepareView {
-    if (_isNowPlayingView) {
+    if (_isNowPlayingView || _episodeEntity.isNowPlaying.boolValue) {
         [self updateTimeElapsedAndPosbar];
         [self beginOnEnterFrame];
-        if (!_tung.npViewSetupForCurrentEpisode) {
+        if (_isNowPlayingView && !_tung.npViewSetupForCurrentEpisode) {
             [self setUpViewForWhateversPlaying];
         }
     }
@@ -974,18 +975,24 @@ static CGRect buttonsScrollViewHomeRect;
     [extraButtonsSubView addConstraint:[NSLayoutConstraint constraintWithItem:_saveButton attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:extraButtonsSubView attribute:NSLayoutAttributeTrailing multiplier:.622 constant:1]];
     [extraButtonsSubView addConstraint:[NSLayoutConstraint constraintWithItem:_saveLabel attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:extraButtonsSubView attribute:NSLayoutAttributeTrailing multiplier:.622 constant:1]];
 
-    
     // record subview
     _recordingDurationLabel = [UILabel new];
     _recordingDurationLabel.translatesAutoresizingMaskIntoConstraints = NO;
-    NSArray *durationDisplaySettings = @[
-                                         @{ UIFontFeatureTypeIdentifierKey: @(6),
-                                            UIFontFeatureSelectorIdentifierKey: @(1)
+    NSArray *durationDisplaySettings = @[ // vertically center colon
+                                         @{ UIFontFeatureTypeIdentifierKey: @(35),
+                                            UIFontFeatureSelectorIdentifierKey: @(6)
                                             },
-                                         @{ UIFontFeatureTypeIdentifierKey: @(17),
-                                            UIFontFeatureSelectorIdentifierKey: @(1)
+                                         // open fours
+                                         @{ UIFontFeatureTypeIdentifierKey: @(35),
+                                            UIFontFeatureSelectorIdentifierKey: @(4)
                                             }];
-    UIFont *font = [UIFont fontWithName:@"HelveticaNeue-Thin" size:41];
+    UIFont *font = [UIFont systemFontOfSize:41 weight:UIFontWeightThin];
+    /* display font features
+    NSArray *features = CFBridgingRelease(CTFontCopyFeatures((__bridge CTFontRef)font));
+    if (features) {
+        NSLog(@"%@: %@", font.fontName, features);
+    }
+    */
     UIFontDescriptor *originalDescriptor = [font fontDescriptor];
     UIFontDescriptor *durationDescriptor = [originalDescriptor fontDescriptorByAddingAttributes: @{ UIFontDescriptorFeatureSettingsAttribute: durationDisplaySettings }];
     UIFont *durationFont = [UIFont fontWithDescriptor: durationDescriptor size:0.0];
@@ -1018,7 +1025,7 @@ static CGRect buttonsScrollViewHomeRect;
     [cancelClipButton addTarget:self action:@selector(cancelNewClip) forControlEvents:UIControlEventTouchUpInside];
     
     // distribute X positions
-    [recordSubView addConstraint:[NSLayoutConstraint constraintWithItem:_recordingDurationLabel attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:recordSubView attribute:NSLayoutAttributeTrailing multiplier:.1125 constant:1]];
+    [recordSubView addConstraint:[NSLayoutConstraint constraintWithItem:_recordingDurationLabel attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:recordSubView attribute:NSLayoutAttributeLeading multiplier:1 constant:15]];
     [recordSubView addConstraint:[NSLayoutConstraint constraintWithItem:_recordButton attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:recordSubView attribute:NSLayoutAttributeTrailing multiplier:.3438 constant:1]];
     [recordSubView addConstraint:[NSLayoutConstraint constraintWithItem:_playClipButton attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:recordSubView attribute:NSLayoutAttributeTrailing multiplier:.5656 constant:1]];
     [recordSubView addConstraint:[NSLayoutConstraint constraintWithItem:_clipOkayButton attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:recordSubView attribute:NSLayoutAttributeTrailing multiplier:.725 constant:1]];
@@ -1345,7 +1352,7 @@ static CGRect buttonsScrollViewHomeRect;
         }
         // stop recording
         else {
-            long recordTime = fabs([_recordStartTime timeIntervalSinceNow]);
+            float recordTime = fabs([_recordStartTime timeIntervalSinceNow]);
             if (recordTime >= MIN_RECORD_TIME) {
                 //JPLog(@"STOP recording *****");
                 _recordEndMarker = CMTimeGetSeconds(_tung.player.currentTime);
@@ -1353,8 +1360,9 @@ static CGRect buttonsScrollViewHomeRect;
                 _recordButton.isRecording = NO;
                 [_recordButton setEnabled:NO];
                 [_tung playerPause];
-                _recordingDuration = [_recordingDurationLabel.text substringFromIndex:1];
-                
+                //_recordingDuration = [_recordingDurationLabel.text substringFromIndex:1];
+                _recordingDuration = [NSString stringWithFormat:@"%02.0f", recordTime];
+                NSLog(@"stopped recording. duration: %@", _recordingDuration);
                 [_buttonsScrollView setScrollEnabled:YES];
                 [self trimAudioFrom:_recordStartMarker to:_recordEndMarker];
             } else {

@@ -517,10 +517,18 @@ static NSString *feedDictsDirName = @"feedDicts";
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
     NSURL *libraryDir = [folders objectAtIndex:0];
-    NSString *savedFeedsDir = [libraryDir.path stringByAppendingPathComponent:feedDictsDirName];
     NSError *error;
-    [fileManager createDirectoryAtPath:savedFeedsDir withIntermediateDirectories:YES attributes:nil error:&error];
-    return savedFeedsDir;
+    BOOL success = [libraryDir setResourceValue:[NSNumber numberWithBool:YES] forKey:NSURLIsExcludedFromBackupKey error:&error];
+    if (success) {
+        NSString *savedFeedsDir = [libraryDir.path stringByAppendingPathComponent:feedDictsDirName];
+        NSError *error;
+        [fileManager createDirectoryAtPath:savedFeedsDir withIntermediateDirectories:YES attributes:nil error:&error];
+        return savedFeedsDir;
+    }
+    else {
+        JPLog(@"error making folder excluded from backup: %@", error.localizedDescription);
+        return nil;
+    }
 }
 
 + (void) cacheFeed:(NSDictionary *)feed forEntity:(PodcastEntity *)entity {

@@ -83,7 +83,7 @@
         <!--Sign Up Nav Controller-->
         <scene sceneID="c86-TT-hy9">
             <objects>
-                <navigationController definesPresentationContext="YES" id="kAE-O5-7AT" customClass="SignUpNavController" sceneMemberID="viewController">
+                <navigationController extendedLayoutIncludesOpaqueBars="YES" definesPresentationContext="YES" id="kAE-O5-7AT" customClass="SignUpNavController" sceneMemberID="viewController">
                     <nil key="simulatedStatusBarMetrics"/>
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="fbB-Cq-srT">
                         <autoresizingMask key="autoresizingMask"/>
@@ -763,7 +763,7 @@
         <!--Tung Nav Controller-->
         <scene sceneID="J6T-ba-EU8">
             <objects>
-                <navigationController storyboardIdentifier="subscribeNavController" id="9hH-By-bgH" customClass="TungNavController" sceneMemberID="viewController">
+                <navigationController storyboardIdentifier="subscribeNavController" extendedLayoutIncludesOpaqueBars="YES" id="9hH-By-bgH" customClass="TungNavController" sceneMemberID="viewController">
                     <navigationBar key="navigationBar" contentMode="scaleToFill" id="UGh-w6-vae">
                         <rect key="frame" x="0.0" y="0.0" width="320" height="44"/>
                         <autoresizingMask key="autoresizingMask"/>

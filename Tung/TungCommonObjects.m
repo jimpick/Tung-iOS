@@ -189,8 +189,8 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    return @"https://api.tung.fm/";
-    //return @"https://staging-api.tung.fm/";
+    //return @"https://api.tung.fm/";
+    return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
@@ -473,7 +473,7 @@ CGSize screenSize;
         if (_totalSeconds == 0) [self determineTotalSeconds];
         if (!_shouldStayPaused) [self setControlButtonStateToPause];
     }
-    /*
+    
     if (object == _player && [keyPath isEqualToString:@"currentItem.loadedTimeRanges"]) {
         NSArray *timeRanges = (NSArray *)[change objectForKey:NSKeyValueChangeNewKey];
         if (timeRanges && [timeRanges count]) {
@@ -487,7 +487,7 @@ CGSize screenSize;
             JPLog(@"-- playback buffer empty");
             [self setControlButtonStateToBuffering];
         }
-    }*/
+    }
 }
 
 - (void) controlButtonTapped {
@@ -687,8 +687,8 @@ CGSize screenSize;
         [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
         [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
         [_player addObserver:self forKeyPath:@"currentItem.duration" options:0 context:nil];
-        //[_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
-        //[_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
+//        [_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
+//        [_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
         // Subscribe to AVPlayerItem's notifications
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(completedPlayback) name:AVPlayerItemDidPlayToEndTimeNotification object:playerItem];
         [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemPlaybackStalledNotification object:playerItem];
@@ -719,6 +719,8 @@ CGSize screenSize;
         [_player removeObserver:self forKeyPath:@"status"];
         [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
         [_player removeObserver:self forKeyPath:@"currentItem.duration"];
+//        [_player removeObserver:self forKeyPath:@"currentItem.playbackBufferEmpty"];
+//        [_player removeObserver:self forKeyPath:@"currentItem.loadedTimeRanges"];
         [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:_player.currentItem];
         [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemPlaybackStalledNotification object:_player.currentItem];
         [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemFailedToPlayToEndTimeNotification object:_player.currentItem];
@@ -1038,10 +1040,17 @@ static NSString *episodeDirName = @"episodes";
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSArray *folders = [fileManager URLsForDirectory:NSDocumentDirectory inDomains:NSUserDomainMask];
     NSURL *documentsDir = [folders objectAtIndex:0];
-    NSString *episodesDir = [documentsDir.path stringByAppendingPathComponent:episodeDirName];
     NSError *error;
-    [fileManager createDirectoryAtPath:episodesDir withIntermediateDirectories:YES attributes:nil error:&error];
-    return episodesDir;
+    BOOL success = [documentsDir setResourceValue:[NSNumber numberWithBool:YES] forKey:NSURLIsExcludedFromBackupKey error:&error];
+    if (success) {
+        NSString *episodesDir = [documentsDir.path stringByAppendingPathComponent:episodeDirName];
+        [fileManager createDirectoryAtPath:episodesDir withIntermediateDirectories:YES attributes:nil error:&error];
+        return episodesDir;
+    }
+    else {
+        JPLog(@"error making folder excluded from backup: %@", error.localizedDescription);
+        return nil;
+    }
 }
 + (NSString *) getCachedEpisodesDirectoryPath {
 
@@ -4515,10 +4524,18 @@ static NSArray *colors;
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
     NSURL *libraryDir = [folders objectAtIndex:0];
-    NSString *savedArtDir = [libraryDir.path stringByAppendingPathComponent:@"podcastArt"];
     NSError *error;
-    [fileManager createDirectoryAtPath:savedArtDir withIntermediateDirectories:YES attributes:nil error:&error];
-    return savedArtDir;
+    BOOL success = [libraryDir setResourceValue:[NSNumber numberWithBool:YES] forKey:NSURLIsExcludedFromBackupKey error:&error];
+    if (success) {
+        NSString *savedArtDir = [libraryDir.path stringByAppendingPathComponent:@"podcastArt"];
+        NSError *error;
+        [fileManager createDirectoryAtPath:savedArtDir withIntermediateDirectories:YES attributes:nil error:&error];
+        return savedArtDir;
+    }
+    else {
+        JPLog(@"error making folder excluded from backup: %@", error.localizedDescription);
+        return nil;
+    }
 }
 
 + (BOOL) savePodcastArtForEntity:(PodcastEntity *)podcastEntity {
