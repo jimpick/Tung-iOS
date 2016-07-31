@@ -166,7 +166,9 @@
                 // establish last seen notification time
                 _lastSeenNotification = _tung.loggedInUser.lastSeenNotification;
             }
-            [self refreshFeed];
+            if (!_doNotRequestImmediately.boolValue) {
+            	[self refreshFeed];
+            }
         }
     }
     else {
@@ -245,7 +247,7 @@
 }
 // refresh feed by checking or newer items or getting all items
 - (void) refreshFeed {
-    
+    NSLog(@"profile list for query: %@. \n%@", _queryType, [NSThread callStackSymbols]);
     // query users
     _feedRefreshed = YES;
     NSNumber *mostRecent;

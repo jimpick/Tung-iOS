@@ -171,6 +171,7 @@
         _notificationsView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
         _notificationsView.queryType = @"Notifications";
         _notificationsView.target_id = _tung.loggedInUser.tung_id;
+        _notificationsView.doNotRequestImmediately = [NSNumber numberWithBool:YES];
         _notificationsView.edgesForExtendedLayout = UIRectEdgeNone;
         _notificationsView.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
         [self addChildViewController:_notificationsView];
@@ -300,6 +301,9 @@ NSTimer *promptTimer;
         case 1: // show activity
             _storiesView.view.hidden = NO;
             _notificationsView.view.hidden = YES;
+            if (_tung.profileFeedNeedsRefresh.boolValue) {
+                [_storiesView refreshFeed];
+            }
             break;
         default: // show notifications
             _notificationsView.view.hidden = NO;
@@ -337,9 +341,7 @@ NSTimer *sessionCheckTimer;
                         if ([responseDict objectForKey:@"user"]) {
                             _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
                             [self updateUserFollowingCounts];
-                            if (_tung.profileFeedNeedsRefresh.boolValue) {
-                                [_storiesView refreshFeed];
-                            }
+                            [_notificationsView refreshFeed];
                         }
                     }
                 }];

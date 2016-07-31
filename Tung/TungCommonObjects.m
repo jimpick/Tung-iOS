@@ -196,8 +196,8 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    return @"https://api.tung.fm/";
-    //return @"https://staging-api.tung.fm/";
+    //return @"https://api.tung.fm/";
+    return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
@@ -3721,12 +3721,19 @@ static NSArray *colors;
 
 
 - (void) getProfileDataForUser:(NSString *)target_id withCallback:(void (^)(NSDictionary *jsonData))callback {
-    //JPLog(@"getting user profile data for id: %@", target_id);
+    JPLog(@"getting user profile data for id: %@", target_id);
     NSURL *getProfileDataRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/profile.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *getProfileDataRequest = [NSMutableURLRequest requestWithURL:getProfileDataRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [getProfileDataRequest setHTTPMethod:@"POST"];
-    NSDictionary *params = @{@"sessionId":_sessionId,
-                             @"target_user_id": target_id};
+    NSDictionary *params;
+    if (_sessionId.length) {
+    	params = @{@"sessionId":_sessionId,
+                   @"target_user_id": target_id};
+    } else {
+        params = @{@"tung_id": _loggedInUser.tung_id,
+                   @"token": _loggedInUser.token,
+                   @"target_user_id": target_id};
+    }
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [getProfileDataRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -3745,6 +3752,13 @@ static NSArray *colors;
                         }];
                     }
                     else {
+                        if ([responseDict objectForKey:@"sessionId"]) {
+                            _sessionId = [responseDict objectForKey:@"sessionId"];
+                            NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                            if (lastDataChange.doubleValue > _loggedInUser.lastDataChange.doubleValue) {
+                                [self restorePodcastDataSinceTime:_loggedInUser.lastDataChange];
+                            }
+                        }
                         callback(responseDict);
                     }
                 });

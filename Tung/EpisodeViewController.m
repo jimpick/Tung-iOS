@@ -489,7 +489,7 @@ NSTimer *markAsSeenTimer;
 #pragma mark - Handle notifications
 
 -(void) nowPlayingDidChange {
-    
+    //NSLog(@"now playing did change - %@", _episodeEntity.title);
     _commentAndPostView.commentTextView.text = @"";
     
     if (_isNowPlayingView) {

@@ -128,8 +128,9 @@
     [_tung setBadgeNumber:settings.numProfileNotifications forBadge:_tung.profileBadge];
     
     // initial view controller
-    self.selectedIndex = 0;
-    [self setSelectedViewController:self.viewControllers[0]];
+    int initialTab = 0;
+    self.selectedIndex = initialTab;
+    [self setSelectedViewController:self.viewControllers[initialTab]];
     
 }
 

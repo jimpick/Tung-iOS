@@ -428,7 +428,7 @@
         [params addEntriesFromDictionary:credParams];
     }
     
-    //NSLog(@"request for stories for single episode with params: %@", params);
+    //NSLog(@"request for stories with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [storyRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];

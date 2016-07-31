@@ -61,7 +61,7 @@
         NSDictionary *userInfo = launchOptions[UIApplicationLaunchOptionsRemoteNotificationKey];
         [self application:application didReceiveRemoteNotification:userInfo];
     }
-
+    
     //NSLog(@"application did finish launching with options");
     return YES;
 }

@@ -24,6 +24,7 @@
 @property (nonatomic, assign) BOOL queryExecuted;
 @property (strong, nonatomic) UINavigationController *navController;
 @property (strong, nonatomic) ProfileHeaderView *profileHeader;
+@property (strong, nonatomic) NSNumber *doNotRequestImmediately;
 
 @property UISearchController *searchController;
 
