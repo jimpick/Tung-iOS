@@ -93,19 +93,19 @@
 - (void) setControlButtonStateToFauxDisabled;
 - (void) setControlButtonStateToBuffering;
 - (void) removeNowPlayingStatusFromAllEpisodes;
-- (NSURL *) getEpisodeUrl:(NSString *)urlString;
+- (NSURL *) getStreamUrlForEpisodeEntity:(EpisodeEntity *)epEntity;
 - (void) reestablishPlayerItemAndReplace;
 
 // caching/saving episodes
 @property EpisodeEntity *episodeToSaveEntity;
 + (NSString *) getSavedEpisodesDirectoryPath;
 + (NSString *) getCachedEpisodesDirectoryPath;
-+ (NSString *) getEpisodeFilenameFromUrlString:(NSString *)urlString;
++ (NSString *) getEpisodeFilenameForEntity:(EpisodeEntity *)epEntity;
 - (void) cacheNowPlayingEpisodeAndMoveToSaved:(BOOL)moveToSaved;
 - (void) queueEpisodeForDownload:(EpisodeEntity *)episodeEntity;
 - (void) cancelDownloadForEpisode:(EpisodeEntity *)episodeEntity;
 - (void) downloadEpisode:(EpisodeEntity *)episodeEntity;
-- (void) deleteSavedEpisodeWithUrl:(NSString *)urlString confirm:(BOOL)confirm;
+- (void) deleteSavedEpisode:(EpisodeEntity *)epEntity confirm:(BOOL)confirm;
 - (void) deleteAllSavedEpisodes;
 + (void) deleteAllCachedEpisodes;
 + (void) deleteCachedData;

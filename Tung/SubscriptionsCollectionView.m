@@ -87,7 +87,7 @@ static NSString * const reuseIdentifier = @"artCell";
     */
     
     // get subscribed podcasts
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     _subscribedQuery = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
     //NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isSubscribed == %@", [NSNumber numberWithBool:YES]];
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSubscribed == YES"];

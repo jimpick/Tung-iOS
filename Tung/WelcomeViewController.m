@@ -64,7 +64,7 @@
      below check if any user data exists. in login functions, check if it's 
      the same and else, delete data.
      */
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     NSError *error = nil;
     NSFetchRequest *users = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
     NSArray *uResult = [appDelegate.managedObjectContext executeFetchRequest:users error:&error];
@@ -186,7 +186,7 @@
             JPLog(@"signed in as %@", [session userName]);
             
             if (_userDataExists) {
-                AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+                AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
                 error = nil;
                 NSFetchRequest *findUser = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
                 NSPredicate *predicate = [NSPredicate predicateWithFormat: @"twitter_id == %@", [session userID]];
@@ -309,7 +309,7 @@
                                      if ([FBSDKAccessToken currentAccessToken]) {
                                          
                                          if (_userDataExists) {
-                                             AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+                                             AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
                                              error = nil;
                                              NSFetchRequest *findUser = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
                                              NSPredicate *predicate = [NSPredicate predicateWithFormat: @"facebook_id == %@", [[FBSDKAccessToken currentAccessToken] userID]];

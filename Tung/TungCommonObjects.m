@@ -162,7 +162,7 @@ NSDateFormatter *ISODateFormatter;
         
         // all saved user data
         /*
-        AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+        AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
         NSError *error = nil;
         NSFetchRequest *users = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
         NSArray *uResult = [appDelegate.managedObjectContext executeFetchRequest:users error:&error];
@@ -196,8 +196,8 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    //return @"https://api.tung.fm/";
-    return @"https://staging-api.tung.fm/";
+    return @"https://api.tung.fm/";
+    //return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
@@ -220,7 +220,7 @@ CGSize screenSize;
 
 -(void) checkForNowPlaying {
     // find playing episode
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     NSFetchRequest *npRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
     NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isNowPlaying == YES"];
     [npRequest setPredicate:predicate];
@@ -638,10 +638,10 @@ CGSize screenSize;
         
         if (urlString.length) {
         
-            JPLog(@"play url: %@", urlString);
+            JPLog(@"play queued podcast: %@", urlString);
             
             // assign now playing entity
-            AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+            AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
             NSError *error = nil;
             NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
             NSPredicate *predicate = [NSPredicate predicateWithFormat: @"url == %@", urlString];
@@ -663,6 +663,8 @@ CGSize screenSize;
             if (!_npEpisodeEntity.isNowPlaying.boolValue) {
                 _incPlayCountTimer = [NSTimer scheduledTimerWithTimeInterval:10.0 target:self selector:@selector(incrementPlayCountForNowPlaying) userInfo:nil repeats:NO];
             }
+            
+            NSLog(@"sanitized guid: %@", [TungCommonObjects santizeGUID:_npEpisodeEntity.guid]);
             
             _npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:YES];
             [TungCommonObjects saveContextWithReason:@"now playing changed"];
@@ -687,7 +689,7 @@ CGSize screenSize;
             
             // set up new player item and player, observers
             
-            NSURL *urlToPlay = [self getEpisodeUrl:urlString];
+            NSURL *urlToPlay = [self getStreamUrlForEpisodeEntity:_npEpisodeEntity];
             if (urlToPlay) {
                 AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
                 [asset.resourceLoader setDelegate:self queue:dispatch_get_main_queue()];
@@ -821,7 +823,7 @@ CGSize screenSize;
 
 - (void) removeNowPlayingStatusFromAllEpisodes {
     // find playing episodes
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     NSFetchRequest *npRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
     NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isNowPlaying == YES"];
     [npRequest setPredicate:predicate];
@@ -932,11 +934,10 @@ CGSize screenSize;
 }
 
 // looks for local file, else returns url with custom scheme
-- (NSURL *) getEpisodeUrl:(NSString *)urlString {
-    //NSLog(@"getEpisodeUrl: %@", urlString);
+- (NSURL *) getStreamUrlForEpisodeEntity:(EpisodeEntity *)epEntity {
     // first look for file in episode temp dir
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSString *cachedEpisodeFilepath = [TungCommonObjects getCachedFilepathForEpisodeUrlString:urlString];
+    NSString *cachedEpisodeFilepath = [TungCommonObjects getCachedFilepathForEpisodeEntity:epEntity];
 	//NSLog(@"check for cached episode with filepath: %@", cachedEpisodeFilepath);
     if ([fileManager fileExistsAtPath:cachedEpisodeFilepath]) {
         JPLog(@"^^^ will use local file in TEMP dir");
@@ -947,7 +948,7 @@ CGSize screenSize;
     }
     else {
         // look for file in saved episodes directory
-        NSString *savedEpisodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeUrlString:urlString];
+        NSString *savedEpisodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeEntity:epEntity];
         //NSLog(@"check for saved episode with filepath: %@", savedEpisodeFilepath);
         if ([fileManager fileExistsAtPath:savedEpisodeFilepath]) {
             JPLog(@"^^^ will use local file in SAVED dir");
@@ -961,7 +962,7 @@ CGSize screenSize;
             _fileIsLocal = NO;
             _fileIsStreaming = YES;
             
-            NSURL *url = [NSURL URLWithString:urlString];
+            NSURL *url = [NSURL URLWithString:epEntity.url];
             NSURLComponents *components = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
             // if episode has track position > 0.1, we do not use custom scheme,
             // because this way AVPlayer will start streaming from the timestamp
@@ -993,7 +994,7 @@ CGSize screenSize;
 - (void) reestablishPlayerItemAndReplace {
     JPLog(@"reestablish player item");
     CMTime currentTime = _player.currentTime;
-    NSURL *urlToPlay = [self getEpisodeUrl:[_playQueue objectAtIndex:0]];
+    NSURL *urlToPlay = [self getStreamUrlForEpisodeEntity:_npEpisodeEntity];
     AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
     AVPlayerItem *localPlayerItem = [[AVPlayerItem alloc] initWithAsset:asset];
     [_player replaceCurrentItemWithPlayerItem:localPlayerItem];
@@ -1078,29 +1079,43 @@ static NSString *episodeDirName = @"episodes";
     return episodesDir;
 }
 
-// removes query string, percent encoding
-+ (NSString *) getEpisodeFilenameFromUrlString:(NSString *)urlString {
++ (NSString *) santizeGUID:(NSString *)guid {
     
-    NSURL *url = [TungCommonObjects urlFromString:urlString];
+    guid = [guid stringByRemovingPercentEncoding];
+    NSRegularExpression *regex = [NSRegularExpression regularExpressionWithPattern:@"([0-9A-Za-z\\-]+)" options:0 error:nil];
+    NSMutableArray *components = [NSMutableArray array];
+    [regex enumerateMatchesInString:guid options:0 range:NSMakeRange(0, guid.length) usingBlock:^(NSTextCheckingResult * _Nullable result, NSMatchingFlags flags, BOOL * _Nonnull stop) {
+        [components addObject:[guid substringWithRange:result.range]];
+    }];
+    NSString *result = [components componentsJoinedByString:@""];
+    return result;
+}
+
+// removes query string, percent encoding
++ (NSString *) getEpisodeFilenameForEntity:(EpisodeEntity *)epEntity {
+    
+    NSURL *url = [TungCommonObjects urlFromString:epEntity.url];
     NSURLComponents *urlComponents = [[NSURLComponents alloc] initWithURL:url resolvingAgainstBaseURL:NO];
     urlComponents.query = nil;
     NSString *urlStr = [urlComponents.string stringByRemovingPercentEncoding];
-    NSString *episodeFilename = [urlStr lastPathComponent];
-    //NSLog(@"get episode filename: %@", [episodeFilename stringByRemovingPercentEncoding]);
+    NSString *filename = [urlStr lastPathComponent];
+    NSString *extension = [filename pathExtension];
+    NSString *episodeFilename = [NSString stringWithFormat:@"%@-%@.%@", epEntity.collectionId, [TungCommonObjects santizeGUID:epEntity.guid], extension];
+    //NSLog(@"filename result: %@", episodeFilename);
     return episodeFilename;
 }
 
-+ (NSString *) getSavedFilepathForEpisodeUrlString:(NSString *)urlString {
++ (NSString *) getSavedFilepathForEpisodeEntity:(EpisodeEntity *)epEntity {
     
-    NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrlString:urlString];
+    NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameForEntity:epEntity];
     NSString *savedEpisodesDir = [TungCommonObjects getSavedEpisodesDirectoryPath];
     NSString *savedEpisodeFilepath = [savedEpisodesDir stringByAppendingPathComponent:episodeFilename];
     return savedEpisodeFilepath;
 }
 
-+ (NSString *) getCachedFilepathForEpisodeUrlString:(NSString *)urlString {
++ (NSString *) getCachedFilepathForEpisodeEntity:(EpisodeEntity *)epEntity {
     
-    NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameFromUrlString:urlString];
+    NSString *episodeFilename = [TungCommonObjects getEpisodeFilenameForEntity:epEntity];
     NSString *savedEpisodesDir = [TungCommonObjects getCachedEpisodesDirectoryPath];
     NSString *savedEpisodeFilepath = [savedEpisodesDir stringByAppendingPathComponent:episodeFilename];
     return savedEpisodeFilepath;
@@ -1226,49 +1241,45 @@ static NSString *episodeDirName = @"episodes";
     [_saveTrackConnection start];
 }
 
-- (void) deleteSavedEpisodeWithUrl:(NSString *)urlString confirm:(BOOL)confirm {
-    
-    EpisodeEntity *epEntity = [TungCommonObjects getEpisodeEntityFromUrlString:urlString];
-    if (epEntity) {
+- (void) deleteSavedEpisode:(EpisodeEntity *)epEntity confirm:(BOOL)confirm {
         
-        NSFileManager *fileManager = [NSFileManager defaultManager];
-        NSString *episodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeUrlString:urlString];
-        NSError *error;
-        BOOL success = NO;
-        if ([fileManager fileExistsAtPath:episodeFilepath]) {
-            success = [fileManager removeItemAtPath:episodeFilepath error:&error];
-            if (success) {
-                JPLog(@"successfully removed episode from saved");
-            } else {
-                JPLog(@"failed to remove episode: %@", error);
-            }
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *episodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeEntity:epEntity];
+    NSError *error;
+    BOOL success = NO;
+    if ([fileManager fileExistsAtPath:episodeFilepath]) {
+        success = [fileManager removeItemAtPath:episodeFilepath error:&error];
+        if (success) {
+            JPLog(@"successfully removed episode from saved");
+        } else {
+            JPLog(@"failed to remove episode: %@", error);
+        }
+    }
+    
+    if (success) {
+        // update entity
+        epEntity.isSaved = [NSNumber numberWithBool:NO];
+        [TungCommonObjects saveContextWithReason:@"deleted saved episode file"];
+        
+        [self queueSaveStatusDidChangeNotification];
+        
+        //JPLog(@"deleted episode with url: %@", urlString);
+        if (confirm) {
+            [TungCommonObjects showBannerAlertForText:@"Your saved copy of this episode has been deleted."];
         }
         
-        if (success) {
-            // update entity
-            epEntity.isSaved = [NSNumber numberWithBool:NO];
-            [TungCommonObjects saveContextWithReason:@"deleted saved episode file"];
-            
-            [self queueSaveStatusDidChangeNotification];
-            
-            //JPLog(@"deleted episode with url: %@", urlString);
-            if (confirm) {
-                [TungCommonObjects showBannerAlertForText:@"Your saved copy of this episode has been deleted."];
+        // safe to remove feed from saved?
+        BOOL safeToRemoveFeed = YES;
+        for (EpisodeEntity *ep in epEntity.podcast.episodes) {
+            if (ep.isSaved.boolValue) {
+                safeToRemoveFeed = NO;
+                break;
             }
-            
-            // safe to remove feed from saved?
-            BOOL safeToRemoveFeed = YES;
-            for (EpisodeEntity *ep in epEntity.podcast.episodes) {
-                if (ep.isSaved.boolValue) {
-                    safeToRemoveFeed = NO;
-                    break;
-                }
-            }
-            if (safeToRemoveFeed) {
-                [TungPodcast unsaveFeedForEntity:epEntity.podcast];
-                if (!epEntity.podcast.isSubscribed.boolValue) {
-                    [TungCommonObjects unsavePodcastArtForEntity:epEntity.podcast];
-                }
+        }
+        if (safeToRemoveFeed) {
+            [TungPodcast unsaveFeedForEntity:epEntity.podcast];
+            if (!epEntity.podcast.isSubscribed.boolValue) {
+                [TungCommonObjects unsavePodcastArtForEntity:epEntity.podcast];
             }
         }
     }
@@ -1277,7 +1288,7 @@ static NSString *episodeDirName = @"episodes";
 - (void) deleteAllSavedEpisodes {
     //JPLog(@"delete all saved episodes");
     // remove "isSaved" status from all entities
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     NSError *error = nil;
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
     NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isSaved == YES"];
@@ -1366,7 +1377,7 @@ static NSString *episodeDirName = @"episodes";
     
     UIAlertController *episodeSavedInfoAlert = [UIAlertController alertControllerWithTitle:@"Saved" message:[NSString stringWithFormat:@"This episode will be saved until\n%@", formattedDate] preferredStyle:UIAlertControllerStyleAlert];
     [episodeSavedInfoAlert addAction:[UIAlertAction actionWithTitle:@"Remove" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-        [self deleteSavedEpisodeWithUrl:episodeEntity.url confirm:YES];
+        [self deleteSavedEpisode:episodeEntity confirm:YES];
     }]];
     UIAlertAction *keepAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
     [episodeSavedInfoAlert addAction:keepAction];
@@ -1381,13 +1392,13 @@ static NSString *episodeDirName = @"episodes";
     // find in temp
     NSFileManager *fileManager = [NSFileManager defaultManager];
     
-    NSString *cachedEpisodeFilepath = [TungCommonObjects getCachedFilepathForEpisodeUrlString:episodeEntity.url];
+    NSString *cachedEpisodeFilepath = [TungCommonObjects getCachedFilepathForEpisodeEntity:episodeEntity];
     //NSLog(@"move episode - path: %@", cachedEpisodeFilepath);
     
     BOOL result = NO;
     if ([fileManager fileExistsAtPath:cachedEpisodeFilepath]) {
         // save in docs directory
-        NSString *savedEpisodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeUrlString:episodeEntity.url];
+        NSString *savedEpisodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeEntity:episodeEntity];
         NSError *error;
         // if somehow it was already saved, remove it or it will error
         [fileManager removeItemAtPath:savedEpisodeFilepath error:&error];
@@ -1466,7 +1477,7 @@ static NSString *episodeDirName = @"episodes";
         //JPLog(@"[NSURLConnectionDataDelegate] connection did finish loading");
         [self processPendingRequests];
         
-        NSString *cachedEpisodeFilepath = [TungCommonObjects getCachedFilepathForEpisodeUrlString:[_playQueue objectAtIndex:0]];
+        NSString *cachedEpisodeFilepath = [TungCommonObjects getCachedFilepathForEpisodeEntity:_npEpisodeEntity];
         NSError *error;
         if ([_trackData writeToFile:cachedEpisodeFilepath options:0 error:&error]) {
             
@@ -1489,7 +1500,7 @@ static NSString *episodeDirName = @"episodes";
         // deduct bytes to save
         _bytesToSave -= _episodeToSaveEntity.dataLength.doubleValue;
         // save in docs directory
-        NSString *savedEpisodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeUrlString:_episodeToSaveEntity.url];
+        NSString *savedEpisodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeEntity:_episodeToSaveEntity];
         NSError *error;
         
         if ([_saveTrackData writeToFile:savedEpisodeFilepath options:0 error:&error]) {
@@ -1713,7 +1724,7 @@ UILabel *prototypeBadge;
 #pragma mark - core data related
 
 + (BOOL) saveContextWithReason:(NSString*)reason {
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     // save
     
     BOOL saved = NO;
@@ -1743,7 +1754,7 @@ UILabel *prototypeBadge;
         return nil;
     }
     
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     PodcastEntity *podcastEntity;
     
     NSError *error = nil;
@@ -1843,7 +1854,7 @@ UILabel *prototypeBadge;
     }
     
     //JPLog(@"get episode entity for episode: %@", episodeDict);
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
 
     // get episode entity
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
@@ -2008,7 +2019,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 
 + (EpisodeEntity *) getEpisodeEntityFromEpisodeId:(NSString *)episodeId {
     
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     NSError *error = nil;
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
     NSPredicate *predicate = [NSPredicate predicateWithFormat: @"id == %@", episodeId];
@@ -2022,7 +2033,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 }
 + (EpisodeEntity *) getEpisodeEntityFromUrlString:(NSString *)urlString {
 
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     NSError *error = nil;
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
     NSPredicate *predicate = [NSPredicate predicateWithFormat: @"url == %@", urlString];
@@ -2052,7 +2063,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
     
     if (!userEntity) {
         //JPLog(@"no existing user entity, create new");
-        AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+        AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
         userEntity = [NSEntityDescription insertNewObjectForEntityForName:@"UserEntity" inManagedObjectContext:appDelegate.managedObjectContext];
     }
     userEntity.tung_id = tungId;
@@ -2093,7 +2104,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 
 + (UserEntity *) retrieveUserEntityForUserWithId:(NSString *)userId {
     //JPLog(@"retrieve user entity for user with id: %@", userId);
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     NSError *error = nil;
     NSFetchRequest *findUser = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
     NSPredicate *predicate = [NSPredicate predicateWithFormat: @"tung_id == %@", userId];
@@ -2110,7 +2121,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 
 + (UserEntity *) getLoggedInUser {
 
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     NSError *error = nil;
     NSFetchRequest *findLoggedInUser = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
     NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isLoggedInUser == YES"];
@@ -2127,7 +2138,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 
 + (SettingsEntity *) settings {
     
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     NSError *error = nil;
     NSFetchRequest *findSettings = [[NSFetchRequest alloc] initWithEntityName:@"SettingsEntity"];
     NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findSettings error:&error];
@@ -2144,7 +2155,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 // not used... only for debugging
 + (BOOL) checkForUserData {
     // Show user entities
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     NSError *error = nil;
     NSFetchRequest *findUsers = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
     NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:findUsers error:&error];
@@ -2166,7 +2177,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 
 // not used... only for debugging
 + (BOOL) checkForPodcastData {
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     
     // show episode entity data
     /*
@@ -2211,7 +2222,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
     
     //JPLog(@"remove podcast and episode data");
     
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     // delete episode entity data
     NSFetchRequest *eRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
     NSError *eError = nil;
@@ -2240,7 +2251,7 @@ static NSDateFormatter *ISODateInterpreter = nil;
 + (void) removeAllUserData {
     //JPLog(@"remove all user data");
     
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"UserEntity"];
     NSError *error = nil;
     NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];

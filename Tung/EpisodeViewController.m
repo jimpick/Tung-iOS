@@ -1278,7 +1278,7 @@ static CGRect buttonsScrollViewHomeRect;
 
     //JPLog(@"//// trim audio from %f to %f", startMarker, endMarker);
     // input    
-    NSURL *audioFileUrl = [_tung getEpisodeUrl:[_tung.playQueue objectAtIndex:0]];
+    NSURL *audioFileUrl = [_tung getStreamUrlForEpisodeEntity:_tung.npEpisodeEntity];
     // test if input file has any bytes
     //NSData *audioURLData = [NSData dataWithContentsOfURL:audioFileUrl];
     //JPLog(@"//// audio file data length: %lu", (unsigned long)audioURLData.length);

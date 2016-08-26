@@ -247,7 +247,7 @@
 }
 // refresh feed by checking or newer items or getting all items
 - (void) refreshFeed {
-    NSLog(@"profile list for query: %@. \n%@", _queryType, [NSThread callStackSymbols]);
+    //NSLog(@"profile list for query: %@. \n%@", _queryType, [NSThread callStackSymbols]);
     // query users
     _feedRefreshed = YES;
     NSNumber *mostRecent;

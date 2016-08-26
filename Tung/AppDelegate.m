@@ -71,7 +71,7 @@
 - (void) application:(UIApplication *)application performFetchWithCompletionHandler:(nonnull void (^)(UIBackgroundFetchResult))completionHandler {
     
     // get all subscribed podcasts and check for new episodes
-    AppDelegate *appDelegate =  [[UIApplication sharedApplication] delegate];
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSubscribed == YES"];
     request.predicate = predicate;
@@ -195,8 +195,9 @@
     }
     else if ([[notification userInfo] objectForKey:@"deleteEpisodeWithUrl"]) {
         NSString *urlString = [[notification userInfo] objectForKey:@"deleteEpisodeWithUrl"];
+        EpisodeEntity *epEntity = [TungCommonObjects getEpisodeEntityFromUrlString:urlString];
         //JPLog(@"received notification to delete episode with url: %@", urlString);
-        [_tung deleteSavedEpisodeWithUrl:urlString confirm:NO];
+        [_tung deleteSavedEpisode:epEntity confirm:NO];
     }
 }
 
