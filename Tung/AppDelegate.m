@@ -61,6 +61,11 @@
         NSDictionary *userInfo = launchOptions[UIApplicationLaunchOptionsRemoteNotificationKey];
         [self application:application didReceiveRemoteNotification:userInfo];
     }
+    // universal link
+    if (launchOptions[UIApplicationLaunchOptionsUserActivityTypeKey] != nil) {
+        NSUserActivity* userActivity = launchOptions[UIApplicationLaunchOptionsUserActivityTypeKey];
+        [self application:application continueUserActivity:userActivity restorationHandler:^(NSArray * _Nullable restorableObjects) {}];
+    }
     
     //NSLog(@"application did finish launching with options");
     return YES;
@@ -245,7 +250,7 @@
     if ([[userInfo objectForKey:@"aps"] objectForKey:@"openTabIndex"]) {
         NSNumber *tabIndex = [[userInfo objectForKey:@"aps"] objectForKey:@"openTabIndex"];
         // open tab if app isn't in foreground
-        if ([[UIApplication sharedApplication] applicationState] != UIApplicationStateActive) {
+        if ([application applicationState] != UIApplicationStateActive) {
         	[self switchTabBarSelectionToTabIndex:tabIndex.integerValue];
         }
         
@@ -368,6 +373,22 @@
             ];
 }
 
+#pragma mark - Universal Links
+
+
+- (BOOL) application:(UIApplication *)application continueUserActivity:(nonnull NSUserActivity *)userActivity restorationHandler:(nonnull void (^)(NSArray * _Nullable))restorationHandler {
+    
+    if (userActivity.webpageURL) {
+        
+        [self switchTabBarSelectionToTabIndex:0];
+        
+        NSNotification *universalLinkNotif = [NSNotification notificationWithName:@"receivedUniversalLink" object:nil userInfo:@{ @"pathComponents":userActivity.webpageURL.pathComponents }];
+        [[NSNotificationCenter defaultCenter] postNotification:universalLinkNotif];
+        
+    }
+    
+    return YES;
+}
 
 #pragma mark - Url scheme handling method
 

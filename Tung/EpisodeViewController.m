@@ -107,7 +107,7 @@ UIActivityIndicatorView *backgroundSpinner;
 
     
     // is this for now playing?
-    if (_episodeMiniDict || _episodeEntity) {
+    if (_episodeMiniDict || _episodeShortlink || _episodeEntity) {
         self.navigationItem.title = @"Episode";
         self.view.backgroundColor = [UIColor whiteColor];
     }
@@ -299,10 +299,9 @@ UIActivityIndicatorView *backgroundSpinner;
             [self setUpViewForEpisode:_episodeEntity];
         }
         // episode view pushed from StoriesTableViewController or notifications
-        else {
+        else if (_episodeMiniDict) {
             NSString *episodeId = [[_episodeMiniDict objectForKey:@"id"] objectForKey:@"$id"];
-            NSString *collectionId = [_episodeMiniDict objectForKey:@"collectionId"];
-            
+
             // check for episode entity
             _episodeEntity = [TungCommonObjects getEpisodeEntityFromEpisodeId:episodeId];
             
@@ -313,27 +312,40 @@ UIActivityIndicatorView *backgroundSpinner;
             else {
                 //NSLog(@"will set up view for episode mini dict then request episode data");
                 // no entity yet, request data
-                [_backgroundSpinner startAnimating];
                 [_headerView setUpHeaderViewForEpisodeMiniDict:_episodeMiniDict];
                 [_headerView sizeAndConstrainHeaderViewInViewController:self];
                 
-                [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
-                    [_backgroundSpinner stopAnimating];
-                    if (success) {
-                        NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
-                        NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
-                        PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
-                        _episodeEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:podcastEntity save:YES];
-                        
-                        [self setUpViewForEpisode:_episodeEntity];
-                    }
-                    else {
-                        [TungCommonObjects simpleErrorAlertWithMessage:responseDict[@"error"]];
-                    }
-                }];
+                [self getEpisodeInfoAndSetUpViewWithDict:_episodeMiniDict];
+                
             }
         }
+        else if (_episodeShortlink) {
+            
+            NSDictionary *dict = @{ @"shortlink":_episodeShortlink };
+            
+            [self getEpisodeInfoAndSetUpViewWithDict:dict];
+            
+        }
     }
+}
+
+- (void) getEpisodeInfoAndSetUpViewWithDict:(NSDictionary *)dict {
+    
+    [_backgroundSpinner startAnimating];
+    [TungCommonObjects requestEpisodeInfoWithDict:dict andCallback:^(BOOL success, NSDictionary *responseDict) {
+        [_backgroundSpinner stopAnimating];
+        if (success) {
+            NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
+            NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];
+            PodcastEntity *podcastEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:NO];
+            _episodeEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:podcastEntity save:YES];
+            
+            [self setUpViewForEpisode:_episodeEntity];
+        }
+        else {
+            [TungCommonObjects simpleErrorAlertWithMessage:responseDict[@"error"]];
+        }
+    }];
 }
 
 - (void) viewWillAppear:(BOOL)animated {

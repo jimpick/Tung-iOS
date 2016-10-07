@@ -19,6 +19,8 @@
 @property CGFloat screenWidth;
 @property CGFloat labelWidth;
 
+@property UILabel *prototypeLabel;
+
 @end
 
 @implementation CommentsTableViewController
@@ -46,6 +48,11 @@
     
     _screenWidth = [TungCommonObjects screenSize].width;
     _labelWidth = _screenWidth - 130 - 8; // right margin, left margin
+    
+    // for cell label creation
+    _prototypeLabel = [[UILabel alloc] init];
+    _prototypeLabel.font = [UIFont systemFontOfSize:15];
+    _prototypeLabel.numberOfLines = 0;
     
 }
 
@@ -225,18 +232,12 @@ static CGFloat commentBubbleMargins = 27;
 
 //- (void)tableView:(UITableView *)tableView didEndDisplayingCell:(UITableViewCell *)cell forRowAtIndexPath:(NSIndexPath *)indexPath
 
-UILabel *prototypeLabel;
 
 -(CGSize) getCommentSizeForIndexPath:(NSIndexPath *)indexPath {
     NSDictionary *commentDict = [NSDictionary dictionaryWithDictionary:[_commentsArray objectAtIndex:indexPath.row]];
-    if (!prototypeLabel) {
-        prototypeLabel = [[UILabel alloc] init];
-        prototypeLabel.font = [UIFont systemFontOfSize:15];
-        prototypeLabel.numberOfLines = 0;
-    }
     
-    prototypeLabel.text = [commentDict objectForKey:@"comment"];
-    CGSize labelSize = [prototypeLabel sizeThatFits:CGSizeMake(_labelWidth, 400)];
+    _prototypeLabel.text = [commentDict objectForKey:@"comment"];
+    CGSize labelSize = [_prototypeLabel sizeThatFits:CGSizeMake(_labelWidth, 400)];
     //JPLog(@"label size for row %ld: %@", (long)indexPath.row, NSStringFromCGSize(labelSize));
     return labelSize;
 }

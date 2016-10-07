@@ -13,6 +13,7 @@
 @implementation ProfileListCell
 
 - (void)awakeFromNib {
+    [super awakeFromNib];
     // Initialization code
     _tung = [TungCommonObjects establishTungObjects];
     

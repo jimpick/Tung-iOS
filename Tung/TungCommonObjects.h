@@ -32,7 +32,7 @@
 #import <FBSDKShareKit/FBSDKShareKit.h>
 
 // constants
-#define NUM_REQUIRED_FOLLOWS 5
+#define NUM_REQUIRED_FOLLOWS 2
 #define MAX_RECORD_TIME 29
 #define MIN_RECORD_TIME 2
 #define MAX_COMMENT_CHARS 220
@@ -184,9 +184,11 @@
 - (void) postClipWithComment:(NSString*)comment atTime:(NSString*)timestamp withDuration:(NSString *)duration onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) deleteStoryEventWithId:(NSString *)eventId withCallback:(void (^)(BOOL success))callback;
 - (void) flagCommentWithId:(NSString *)eventId;
-- (void) requestEpisodeInfoForId:(NSString *)episodeId andCollectionId:(NSString *)collectionId withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
++ (void) requestEpisodeInfoWithDict:(NSDictionary *)dict andCallback:(void (^)(BOOL success, NSDictionary *response))callback;
++ (void) requestPodcastInfoForCollectionId:(NSString *)collectionId withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
+
 // user requests
-- (void) getProfileDataForUser:(NSString *)target_id withCallback:(void (^)(NSDictionary *jsonData))callback;
+- (void) getProfileDataForUserWithId:(NSString *)target_id orUsername:(NSString *)username withCallback:(void (^)(NSDictionary *jsonData))callback;
 - (void) updateUserWithDictionary:(NSDictionary *)userInfo withCallback:(void (^)(NSDictionary *jsonData))callback;
 - (void) followUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
 - (void) unfollowUserWithId:(NSString *)target_id withCallback:(void (^)(BOOL success, NSDictionary *response))callback;

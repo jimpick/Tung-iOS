@@ -32,6 +32,8 @@
 @property BOOL animateEndRefresh;
 @property CGFloat screenWidth;
 @property NSNumber *page;
+@property UILabel *prototypeLabel;
+@property CGFloat labelWidth;
 
 @property (nonatomic, assign) CGFloat lastScrollViewOffset; // for determining scroll direction
 
@@ -100,6 +102,12 @@
     
     // for animating header height
     _lastScrollViewOffset = 0;
+    
+    // for cell label creation
+    _labelWidth = 0;
+    _prototypeLabel = [[UILabel alloc] init];
+    _prototypeLabel.font = [UIFont systemFontOfSize:15];
+    _prototypeLabel.numberOfLines = 0;
 
 }
 
@@ -111,6 +119,7 @@
         _contentOffsetSet = YES;
     }
     
+    // auto-get stories for episode if _episodeId is set
     if (_episodeId.length) {
         self.navigationItem.title = @"Episode";
         [self getStoriesForProfiledUserId:nil
@@ -899,8 +908,6 @@
 // Buhbie's comment:
 // ABCD
 
-UILabel *prototypeLabel;
-CGFloat labelWidth = 0;
 
 //-(CGFloat)tableView:(UITableView *)tableView estimatedHeightForRowAtIndexPath:(NSIndexPath *)indexPath {
 
@@ -925,16 +932,12 @@ CGFloat labelWidth = 0;
         if (_isForTrending) eventDictIndex--;
         NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:eventDictIndex]];
         if ([eventDict objectForKey:@"comment"] && [[eventDict objectForKey:@"comment"] length] > 0) {
-            if (!prototypeLabel) {
-                prototypeLabel = [[UILabel alloc] init];
-                prototypeLabel.font = [UIFont systemFontOfSize:15];
-                prototypeLabel.numberOfLines = 0;
+            
+            if (_labelWidth == 0) {
+                _labelWidth = _screenWidth -63 - 60;
             }
-            if (labelWidth == 0) {
-                labelWidth = _screenWidth -63 - 60;
-            }
-            prototypeLabel.text = [eventDict objectForKey:@"comment"];
-            CGSize labelSize = [prototypeLabel sizeThatFits:CGSizeMake(labelWidth, 400)];
+            _prototypeLabel.text = [eventDict objectForKey:@"comment"];
+            CGSize labelSize = [_prototypeLabel sizeThatFits:CGSizeMake(_labelWidth, 400)];
             CGFloat diff = labelSize.height - 18;
             return defaultEventCellHeight + diff;
         } else {
@@ -1425,8 +1428,12 @@ CGFloat labelWidth = 0;
         [_tung playUrl:epEntity.url fromTimestamp:timestamp];
     }
     else {
+        NSDictionary *params = @{
+                                 @"episodeId": episodeId,
+                                 @"collectionId": collectionId
+                                 };
         //NSLog(@"play from timestamp, fetch episode entity");
-        [_tung requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
+        [TungCommonObjects requestEpisodeInfoWithDict:params andCallback:^(BOOL success, NSDictionary *responseDict) {
             if (success) {
                 NSDictionary *episodeDict = [responseDict objectForKey:@"episode"];
                 NSDictionary *podcastDict = [responseDict objectForKey:@"podcast"];

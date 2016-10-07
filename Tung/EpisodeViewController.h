@@ -34,6 +34,7 @@
 @property (strong, nonatomic) EpisodeEntity *episodeEntity;
 @property (strong, nonatomic) NSString *focusedEventId;
 @property (strong, nonatomic) NSDictionary *episodeMiniDict;
+@property (strong, nonatomic) NSString *episodeShortlink;
 @property (strong, nonatomic) IBOutlet IconButton *skipAheadBtn;
 @property (strong, nonatomic) IBOutlet IconButton *skipBackBtn;
 

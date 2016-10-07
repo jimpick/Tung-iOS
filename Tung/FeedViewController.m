@@ -8,6 +8,9 @@
 
 #import "FeedViewController.h"
 #import "StoriesTableViewController.h"
+#import "EpisodeViewController.h"
+#import "PodcastViewController.h"
+#import "ProfileViewController.h"
 #import "IconButton.h"
 #import "FindFriendsTableViewController.h"
 #import "ProfileListTableViewController.h"
@@ -111,6 +114,8 @@
     // notifs
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
     
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleUniversalLink:) name:@"receivedUniversalLink" object:nil];
+    
 }
 
 - (void)didReceiveMemoryWarning {
@@ -156,6 +161,58 @@
     [self refreshActiveFeedAsNeeded];
     
 }
+
+- (void) handleUniversalLink:(NSNotification *)notification {
+    
+    NSArray *components = [[notification userInfo] objectForKey:@"pathComponents"];
+    //NSLog(@"handle universal link: %@", components);
+    
+    if ([components[1] isEqualToString:@"e"]) {
+        // episode
+        [self pushEpisodeViewForEpisodeShortlink:components[2]];
+    }
+    else if ([components[1] isEqualToString:@"p"]) {
+        // podcast
+        [self pushPodcastViewForId:components[2]];
+    }
+    else if ([components[1] isEqualToString:@"u"]) {
+        // user
+        [self pushProfileViewForUsername:components[2]];
+    }
+    
+}
+
+- (void) pushEpisodeViewForEpisodeShortlink:(NSString *)shortlink {
+    
+    EpisodeViewController *episodeView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"episodeView"];
+    episodeView.episodeShortlink = shortlink;
+    
+    [self.navigationController pushViewController:episodeView animated:YES];
+}
+
+- (void) pushPodcastViewForId:(NSString *)collectionId {
+    /*
+     	IN PROGRESS
+    */
+    
+    PodcastViewController *podcastView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"podcastView"];
+    //podcastView.podcastDict = [podcastDict mutableCopy];
+    [self.navigationController pushViewController:podcastView animated:YES];
+}
+
+- (void) pushProfileViewForUsername:(NSString *)username {
+    // push profile
+    if ([username isEqualToString:_tung.loggedInUser.username]) {
+        AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
+        [appDelegate switchTabBarSelectionToTabIndex:3];
+    }
+    else {
+        ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
+        profileView.profiledUsername = username;
+        [self.navigationController pushViewController:profileView animated:YES];
+    }
+}
+
 
 - (void) refreshActiveFeedAsNeeded {
     // trending feed

@@ -30,6 +30,7 @@
 
 @property BOOL isLoggedInUser;
 @property BOOL reachable;
+@property BOOL preparingView;
 
 // switcher
 @property UIToolbar *switcherBar;
@@ -37,7 +38,7 @@
 @property NSInteger switcherIndex;
 
 @property CGFloat screenWidth;
-
+@property NSTimer *promptTimer;
 
 @end
 
@@ -52,10 +53,12 @@
     
     _screenWidth = [TungCommonObjects screenSize].width;
     
+    _preparingView = NO;
+    
     // profiled user
-    if (!_profiledUserId) {
+    if (!_profiledUserId && !_profiledUsername) {
         _profiledUserId = _tung.loggedInUser.tung_id;
-        
+        _profiledUsername = @"";
         _isLoggedInUser = YES;
         self.navigationItem.title = @"My Profile";
         
@@ -74,11 +77,18 @@
         [findFriendsInner addTarget:self action:@selector(pushFindFriendsView) forControlEvents:UIControlEventTouchUpInside];
         self.navigationItem.leftBarButtonItem = [[UIBarButtonItem alloc] initWithCustomView:findFriendsInner];
         
-    } else {
+    }
+    else if (_profiledUserId) {
+        _profiledUsername = @"";
         self.navigationItem.title = @"Loading…";
-        // first if above determines if this is the profile page by checking if
-        // profiledUserId is set, but logged in user's id may still be pushed
         if ([_profiledUserId isEqualToString:_tung.loggedInUser.tung_id]) {
+            _isLoggedInUser = YES;
+        }
+    }
+    else if (_profiledUsername) {
+        _profiledUserId = @"";
+        self.navigationItem.title = @"Loading…";
+        if ([_profiledUsername isEqualToString:_tung.loggedInUser.username]) {
             _isLoggedInUser = YES;
         }
     }
@@ -149,9 +159,7 @@
     CGFloat bottomConstraint = -44;
     
     // for activity feed
-    _storiesView = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
-    _storiesView.profiledUserId = _profiledUserId;
-    
+    _storiesView = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];    
     _storiesView.edgesForExtendedLayout = UIRectEdgeNone;
     _storiesView.tableView.contentInset = UIEdgeInsetsMake(0, 0, -5, 0);
     [self addChildViewController:_storiesView];
@@ -197,16 +205,17 @@
     _tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
     
     // notifs
-    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(appDidBecomeActive) name:UIApplicationDidBecomeActiveNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(followingCountChanged:) name:@"followingCountChanged" object:nil];// respond to follow/unfollow events
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(minimizeProfileHeaderview) name:@"shouldMinimizeHeaderView" object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(maximizeProfileHeaderview) name:@"shouldMaximizeHeaderView" object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(respondToProfiledUserFollowChange:) name:@"profiledUserFollowChange" object:nil];
     
 }
-
-NSTimer *promptTimer;
-
+- (void) appDidBecomeActive {
+    //NSLog(@"responding to appDidBecomeActive");
+    [self prepareView];
+}
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     _tung.viewController = self;
@@ -224,63 +233,68 @@ NSTimer *promptTimer;
 - (void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     self.definesPresentationContext = NO;
-    [promptTimer invalidate];
+    [_promptTimer invalidate];
 }
 
 - (void) prepareView {
-    SettingsEntity *settings = [TungCommonObjects settings];
-    
-    // refresh based on flags
-    if (_isLoggedInUser) {
-        // profile header view and activity feed
-        if (_tung.profileFeedNeedsRefresh.boolValue && _tung.profileNeedsRefresh.boolValue) {
-            //JPLog(@"profile feed and data need refresh");
+    if (!_preparingView) {
+        _preparingView = YES;
+        SettingsEntity *settings = [TungCommonObjects settings];
+
+        // refresh based on flags
+        if (_isLoggedInUser) {
+            // profile header view and activity feed
+            if (_tung.profileFeedNeedsRefresh.boolValue && _tung.profileNeedsRefresh.boolValue) {
+                //JPLog(@"profile feed and data need refresh");
+                [self requestPageData];
+            }
+            else if (_tung.profileFeedNeedsRefetch.boolValue) {
+                [_storiesView refetchFeed];
+                _preparingView = NO;
+            }
+            else if (_tung.profileFeedNeedsRefresh.boolValue) {
+                //JPLog(@"profile feed needs refresh");
+                [_storiesView refreshFeed];
+                _preparingView = NO;
+            }
+            else if (_tung.profileNeedsRefresh.boolValue) {
+                //JPLog(@"profile data needs refresh");
+                [self refreshProfile];
+            }
+            // notifications
+            if (_tung.notificationsNeedRefresh.boolValue) {
+                //[_notificationsView.refreshControl beginRefreshing]; // doesn't seem to work
+                //[_notificationsView.tableView setContentOffset:CGPointMake(0, -_notificationsView.refreshControl.frame.size.height) animated:YES];
+                [_notificationsView refreshFeed];
+            }
+            // clear colored background on new notifications
+            else if (_notificationsView.profileArray.count > 0) {
+                [_notificationsView.tableView reloadData];
+            }
+            
+            // clear profile badge and adjust app badge
+            if (settings.numProfileNotifications.integerValue > 0) {
+                
+                NSInteger startingVal = settings.numProfileNotifications.integerValue;
+                if ([UIApplication sharedApplication].applicationIconBadgeNumber > 0) {
+                    [UIApplication sharedApplication].applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - settings.numProfileNotifications.integerValue;
+                }
+                settings.numProfileNotifications = [NSNumber numberWithInteger:0];
+                [_tung setBadgeNumber:[NSNumber numberWithInteger:0] forBadge:_tung.profileBadge];
+                [TungCommonObjects saveContextWithReason:@"adjust subscriptions badge number"];
+                // adjust app icon badge number
+                NSInteger newBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - startingVal;
+                newBadgeNumber = MAX(0, newBadgeNumber);
+                [[UIApplication sharedApplication] setApplicationIconBadgeNumber:newBadgeNumber];
+            }
+            
+        } else {
             [self requestPageData];
         }
-        else if (_tung.profileFeedNeedsRefetch.boolValue) {
-            [_storiesView refetchFeed];
+
+        if (!settings.hasSeenMentionsPrompt.boolValue && ![[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
+            _promptTimer = [NSTimer scheduledTimerWithTimeInterval:2 target:_tung selector:@selector(promptForNotificationsForMentions) userInfo:nil repeats:NO];
         }
-        else if (_tung.profileFeedNeedsRefresh.boolValue) {
-            //JPLog(@"profile feed needs refresh");
-            [_storiesView refreshFeed];
-        }
-        else if (_tung.profileNeedsRefresh.boolValue) {
-            //JPLog(@"profile data needs refresh");
-            [self refreshProfile];
-        }
-        // notifications
-        if (_tung.notificationsNeedRefresh.boolValue) {
-            //[_notificationsView.refreshControl beginRefreshing]; // doesn't seem to work
-            //[_notificationsView.tableView setContentOffset:CGPointMake(0, -_notificationsView.refreshControl.frame.size.height) animated:YES];
-            [_notificationsView refreshFeed];
-        }
-        // clear colored background on new notifications
-        else if (_notificationsView.profileArray.count > 0) {
-            [_notificationsView.tableView reloadData];
-        }
-        
-        // clear profile badge and adjust app badge
-        if (settings.numProfileNotifications.integerValue > 0) {
-            
-            NSInteger startingVal = settings.numProfileNotifications.integerValue;
-            if ([UIApplication sharedApplication].applicationIconBadgeNumber > 0) {
-                [UIApplication sharedApplication].applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - settings.numProfileNotifications.integerValue;
-            }
-            settings.numProfileNotifications = [NSNumber numberWithInteger:0];
-            [_tung setBadgeNumber:[NSNumber numberWithInteger:0] forBadge:_tung.profileBadge];
-            [TungCommonObjects saveContextWithReason:@"adjust subscriptions badge number"];
-            // adjust app icon badge number
-            NSInteger newBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber - startingVal;
-            newBadgeNumber = MAX(0, newBadgeNumber);
-            [[UIApplication sharedApplication] setApplicationIconBadgeNumber:newBadgeNumber];
-        }
-        
-    } else {
-        [self requestPageData];
-    }
-    
-    if (!settings.hasSeenMentionsPrompt.boolValue && ![[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
-        promptTimer = [NSTimer scheduledTimerWithTimeInterval:2 target:_tung selector:@selector(promptForNotificationsForMentions) userInfo:nil repeats:NO];
     }
 }
 
@@ -332,10 +346,13 @@ NSTimer *sessionCheckTimer;
         
             if (_isLoggedInUser) {
                 _profiledUserData = [[TungCommonObjects entityToDict:_tung.loggedInUser] mutableCopy];
+                // _profiledUserId may not be set if we used _profiledUsername
+                _profiledUserId = _tung.loggedInUser.tung_id;
+                _storiesView.profiledUserId = _profiledUserId;
                 //JPLog(@"Is logged in user: Has logged-in user data.");
                 [self setUpProfileHeaderViewForData];
                 // request profile just to get current follower/following counts
-                [_tung getProfileDataForUser:_tung.loggedInUser.tung_id withCallback:^(NSDictionary *jsonData) {
+                [_tung getProfileDataForUserWithId:_profiledUserId orUsername:_profiledUsername withCallback:^(NSDictionary *jsonData) {
                     if (jsonData != nil) {
                         NSDictionary *responseDict = jsonData;
                         if ([responseDict objectForKey:@"user"]) {
@@ -343,16 +360,24 @@ NSTimer *sessionCheckTimer;
                             [self updateUserFollowingCounts];
                             [_notificationsView refreshFeed];
                         }
+                        else if ([responseDict objectForKey:@"error"]) {
+                            [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                            JPLog(@"Error getting profile: %@", responseDict);
+                        }
                     }
                 }];
             }
             else {
                 
-                [_tung getProfileDataForUser:_profiledUserId withCallback:^(NSDictionary *jsonData) {
+                [_tung getProfileDataForUserWithId:_profiledUserId orUsername:_profiledUsername withCallback:^(NSDictionary *jsonData) {
+                    NSLog(@"get profile data with id: %@ or username: %@", _profiledUserId, _profiledUsername);
                     if (jsonData != nil) {
                         NSDictionary *responseDict = jsonData;
                         if ([responseDict objectForKey:@"user"]) {
                             _profiledUserData = [[responseDict objectForKey:@"user"] mutableCopy];
+                            // _profiledUserId may not be set if we used _profiledUsername
+                            _profiledUserId = [_profiledUserData objectForKey:@"tung_id"];
+                            _storiesView.profiledUserId = _profiledUserId;
                             //JPLog(@"profiled user data %@", _profiledUserData);
                             [self setUpProfileHeaderViewForData];
                             if (_tung.profileFeedNeedsRefresh.boolValue) {
@@ -361,7 +386,7 @@ NSTimer *sessionCheckTimer;
                         }
                         else if ([responseDict objectForKey:@"error"]) {
                             [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
-                            // TODO: user not found, if user was deleted
+                            JPLog(@"Error getting profile: %@", responseDict);
                         }
                     }
                 }];
@@ -375,7 +400,7 @@ NSTimer *sessionCheckTimer;
 }
 
 - (void) refreshProfile {
-    [_tung getProfileDataForUser:_profiledUserId withCallback:^(NSDictionary *jsonData) {
+    [_tung getProfileDataForUserWithId:_profiledUserId orUsername:_profiledUsername withCallback:^(NSDictionary *jsonData) {
         if (jsonData != nil) {
             NSDictionary *responseDict = jsonData;
             if ([responseDict objectForKey:@"user"]) {
@@ -475,6 +500,7 @@ NSTimer *sessionCheckTimer;
 
 - (void) updateUserFollowingCounts {
     
+    _preparingView = NO;
     // following
     NSString *followingString;
     if ([_profiledUserData objectForKey:@"followingCount"]) {

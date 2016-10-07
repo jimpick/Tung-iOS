@@ -12,6 +12,7 @@
 @interface ProfileViewController : UIViewController <UIScrollViewDelegate, UIWebViewDelegate>
 
 @property (strong, nonatomic) NSString *profiledUserId;
+@property (strong, nonatomic) NSString *profiledUsername;
 @property (strong, nonatomic) NSMutableDictionary *profiledUserData;
 
 

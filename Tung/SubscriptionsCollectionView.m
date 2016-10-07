@@ -26,6 +26,7 @@
 @property UIImageView *findPodcastsHere;
 @property BOOL fetched;
 @property BOOL isActiveView;
+@property NSTimer *promptTimer;
 
 @end
 
@@ -106,8 +107,6 @@ static NSString * const reuseIdentifier = @"artCell";
     [self.collectionView reloadData];
 }
 
-NSTimer *promptTimer;
-
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
@@ -140,7 +139,7 @@ NSTimer *promptTimer;
     id <NSFetchedResultsSectionInfo> sectionInfo = _resultsController.sections[0];
     // prompt for notifications delay
     if (sectionInfo.numberOfObjects > 0 && !settings.hasSeenNewEpisodesPrompt.boolValue && ![[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
-        promptTimer = [NSTimer scheduledTimerWithTimeInterval:2 target:_tung selector:@selector(promptForNotificationsForEpisodes) userInfo:nil repeats:NO];
+        _promptTimer = [NSTimer scheduledTimerWithTimeInterval:2 target:_tung selector:@selector(promptForNotificationsForEpisodes) userInfo:nil repeats:NO];
     }
     
 }
@@ -150,7 +149,7 @@ NSTimer *promptTimer;
 - (void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     _isActiveView = NO;
-    [promptTimer invalidate];
+    [_promptTimer invalidate];
     if (_editingNotifications) [self toggleEditNotifySettings];
 }
 

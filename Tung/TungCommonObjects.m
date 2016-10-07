@@ -3253,7 +3253,7 @@ static NSArray *colors;
 }
 
 - (void) incrementPlayCountForEpisode:(EpisodeEntity *)episodeEntity {
-    
+    NSLog(@"increment play count");
     NSURL *incrementCountRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/increment-listen-count.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *incrementCountRequest = [NSMutableURLRequest requestWithURL:incrementCountRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [incrementCountRequest setHTTPMethod:@"POST"];
@@ -3297,7 +3297,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        //JPLog(@"%@", responseDict);
+                        JPLog(@"%@", responseDict);
                         if (!episodeEntity.id) {
                             // save episode id and shortlink
                             NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -3631,19 +3631,15 @@ static NSArray *colors;
 }
 
 // for getting episode and podcast entities
--(void) requestEpisodeInfoForId:(NSString *)episodeId andCollectionId:(NSString *)collectionId withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
++ (void) requestEpisodeInfoWithDict:(NSDictionary *)dict andCallback:(void (^)(BOOL success, NSDictionary *response))callback {
     //JPLog(@"requesting episode info");
     //NSDate *requestStart = [NSDate date];
     NSURL *episodeInfoURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/episode-info.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *episodeInfoRequest = [NSMutableURLRequest requestWithURL:episodeInfoURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [episodeInfoRequest setHTTPMethod:@"POST"];
-    NSDictionary *params = @{
-                             @"sessionId": _sessionId,
-                             @"episodeId": episodeId,
-                             @"collectionId": collectionId
-                             };
+    
     //JPLog(@"request for episodeInfo with params: %@", params);
-    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:dict];
     [episodeInfoRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:episodeInfoRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
@@ -3653,17 +3649,8 @@ static NSArray *colors;
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
                     if ([responseDict objectForKey:@"error"]) {
-                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                            // get new session and re-request
-                            JPLog(@"SESSION EXPIRED");
-                            [self getSessionWithCallback:^{
-                                [self requestEpisodeInfoForId:episodeId andCollectionId:collectionId withCallback:callback];
-                            }];
-                        }
-                        else {
-                            JPLog(@"Error requesting episode info: %@", [responseDict objectForKey:@"error"]);
-                            callback(NO, responseDict);
-                        }
+                        JPLog(@"(json not nil, error nil) Error requesting episode info: %@", responseDict);
+                        callback(NO, responseDict);
                     }
                     else if ([responseDict objectForKey:@"success"]) {
                         //NSTimeInterval requestDuration = [requestStart timeIntervalSinceNow];
@@ -3673,13 +3660,13 @@ static NSArray *colors;
                 }
                 else if (error != nil) {
                     NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                    JPLog(@"Error requesting episode info. HTML: %@", html);
+                    JPLog(@"(error with json) Error requesting episode info. HTML: %@", html);
                     callback(NO, @{@"error": @"Unspecified error"});
                 }
             });
         }
         else {
-            JPLog(@"Error requesting episode info: %@", error.localizedDescription);
+            JPLog(@"(error not nil)Error requesting episode info: %@", error.localizedDescription);
             callback(NO, @{@"error": error.localizedDescription});
         }
     }];
@@ -3731,19 +3718,20 @@ static NSArray *colors;
  /////////////////////////////////*/
 
 
-- (void) getProfileDataForUser:(NSString *)target_id withCallback:(void (^)(NSDictionary *jsonData))callback {
-    JPLog(@"getting user profile data for id: %@", target_id);
+- (void) getProfileDataForUserWithId:(NSString *)target_id orUsername:(NSString *)username withCallback:(void (^)(NSDictionary *jsonData))callback {
     NSURL *getProfileDataRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/profile.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *getProfileDataRequest = [NSMutableURLRequest requestWithURL:getProfileDataRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [getProfileDataRequest setHTTPMethod:@"POST"];
     NSDictionary *params;
     if (_sessionId.length) {
     	params = @{@"sessionId":_sessionId,
-                   @"target_user_id": target_id};
+                   @"target_user_id": target_id,
+                   @"username": username};
     } else {
         params = @{@"tung_id": _loggedInUser.tung_id,
                    @"token": _loggedInUser.token,
-                   @"target_user_id": target_id};
+                   @"target_user_id": target_id,
+                   @"username": username};
     }
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [getProfileDataRequest setHTTPBody:serializedParams];
@@ -3753,14 +3741,18 @@ static NSArray *colors;
             id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
             if (jsonData != nil && error == nil) {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    
                     NSDictionary *responseDict = jsonData;
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self getProfileDataForUser:target_id withCallback:callback];
-                        }];
+                    if ([responseDict objectForKey:@"error"]) {
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self getProfileDataForUserWithId:target_id orUsername:username withCallback:callback];
+                            }];
+                        }
+                        else {
+                            callback(responseDict);
+                        }
                     }
                     else {
                         if ([responseDict objectForKey:@"sessionId"]) {
