@@ -15,6 +15,8 @@
 @interface PodcastViewController : UIViewController
 
 @property (strong, nonatomic) NSMutableDictionary *podcastDict;
+@property (strong, nonatomic) NSString *collectionId;
 @property (strong, nonatomic) NSString *focusedGUID;
+@property (strong, nonatomic) IBOutlet UIActivityIndicatorView *backgroundSpinner;
 
 @end

@@ -91,8 +91,6 @@ static NSString *kNewClipIntention = @"New clip";
 static NSString *kNewCommentIntention = @"New comment";
 static NSArray *playbackRateStrings;
 
-UIActivityIndicatorView *backgroundSpinner;
-
 - (void)viewDidLoad {
     [super viewDidLoad];
     
@@ -2288,9 +2286,11 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
 
 - (void) openShareSheetForEntity:(EpisodeEntity *)episodeEntity {
     
-    NSString *text = [NSString stringWithFormat:@"Listening to %@ on #tung: %@e/%@", episodeEntity.title, [TungCommonObjects tungSiteRootUrl], episodeEntity.shortlink];
+    //NSString *text = [NSString stringWithFormat:@"Listening to %@ on #tung: %@e/%@", episodeEntity.title, [TungCommonObjects tungSiteRootUrl], episodeEntity.shortlink];
     
-    UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[text] applicationActivities:nil];
+    NSURL *shareLink = [TungCommonObjects urlFromString:episodeEntity.shortlink];
+    
+    UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[shareLink] applicationActivities:nil];
     [self presentViewController:shareSheet animated:YES completion:nil];
 }
 

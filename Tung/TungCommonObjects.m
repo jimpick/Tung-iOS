@@ -3680,7 +3680,7 @@ static NSArray *colors;
     NSDictionary *params = @{
                              @"collectionId": collectionId
                              };
-    //JPLog(@"request for podcastInfo with params: %@", params);
+	JPLog(@"request for podcastInfo with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [podcastInfoRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];

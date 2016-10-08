@@ -42,19 +42,14 @@
     _podcast.navController = [self navigationController];
     //NSLog(@"podcast dict: %@", _podcastDict);
     
-    // get podcast entity
-    _podcastEntity = [TungCommonObjects getEntityForPodcast:_podcastDict save:NO];
-    
     // header view
     _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 160)];
-    [_headerView setUpHeaderViewWithBasicInfoForPodcast:_podcastEntity];
     [self.view addSubview:_headerView];
-    [_headerView sizeAndConstrainHeaderViewInViewController:self];
+    _headerView.hidden = YES;
     
     // add child table view controller
     _episodesView = [self.storyboard instantiateViewControllerWithIdentifier:@"episodesView"];
     _episodesView.edgesForExtendedLayout = UIRectEdgeNone;
-    _episodesView.podcastEntity = _podcastEntity; // for pushing episode view & track progress
     
     [self addChildViewController:_episodesView];
     [self.view addSubview:_episodesView.view];
@@ -68,6 +63,44 @@
 
     // respond when podcast art is updated
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refreshViewForArtChange:) name:@"podcastArtUpdated" object:nil];
+    
+    // get podcast entity
+    if (_podcastDict) {
+        
+        _podcastEntity = [TungCommonObjects getEntityForPodcast:_podcastDict save:NO];
+        
+        [_headerView setUpHeaderViewWithBasicInfoForPodcast:_podcastEntity];
+        [_headerView sizeAndConstrainHeaderViewInViewController:self];
+        _headerView.hidden = NO;
+        
+        _episodesView.podcastEntity = _podcastEntity; // for pushing episode view & track progress
+    }
+    else if (_collectionId) {
+        
+        [_backgroundSpinner startAnimating];
+        
+        [TungCommonObjects requestPodcastInfoForCollectionId:_collectionId withCallback:^(BOOL success, NSDictionary *responseDict) {
+            //NSLog(@"podcast response: %@", responseDict);
+            [_backgroundSpinner stopAnimating];
+            if (success) {
+                NSDictionary *podDict = [responseDict objectForKey:@"podcast"];
+                _podcastEntity = [TungCommonObjects getEntityForPodcast:podDict save:NO];
+                
+                [_headerView setUpHeaderViewWithBasicInfoForPodcast:_podcastEntity];
+                [_headerView sizeAndConstrainHeaderViewInViewController:self];
+                _headerView.hidden = NO;
+                
+                _episodesView.podcastEntity = _podcastEntity; // for pushing episode view & track progress
+                
+                // get feed
+                NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:NO reachable:_tung.connectionAvailable.boolValue];
+                [self setUpViewForDict:feedDict];
+            }
+            else {
+                [TungCommonObjects simpleErrorAlertWithMessage:responseDict[@"error"]];
+            }
+        }];
+    }
 }
 
 -(void) viewDidAppear:(BOOL)animated {
@@ -78,8 +111,11 @@
     // delay markNewEpisodesAsSeen
     [NSTimer scheduledTimerWithTimeInterval:1.5 target:_episodesView selector:@selector(markNewEpisodesAsSeen) userInfo:nil repeats:NO];
     
-    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:NO reachable:_tung.connectionAvailable.boolValue];
-    [self setUpViewForDict:feedDict];
+    if (_podcastDict) {
+        // get feed
+        NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:NO reachable:_tung.connectionAvailable.boolValue];
+        [self setUpViewForDict:feedDict];
+    }
 }
 
 - (void)didReceiveMemoryWarning {
