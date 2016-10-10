@@ -277,9 +277,7 @@
     [self.navigationItem setRightBarButtonItem:nil animated:YES];
     [self.navigationItem setLeftBarButtonItem:nil animated:YES];
     
-    
     [_podcast.searchController.searchBar becomeFirstResponder];
-    
 }
 
 -(void) dismissPodcastSearch {

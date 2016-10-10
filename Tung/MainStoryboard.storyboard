@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11201" systemVersion="15G1004" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" colorMatched="YES" initialViewController="V9Q-yt-wDy">
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.Storyboard.XIB" version="3.0" toolsVersion="11201" systemVersion="15G1004" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" colorMatched="YES" initialViewController="FaX-5F-FCL">
     <dependencies>
         <deployment identifier="iOS"/>
         <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="11161"/>
@@ -1069,6 +1069,63 @@
             </objects>
             <point key="canvasLocation" x="288" y="101"/>
         </scene>
+        <!--Table View Controller-->
+        <scene sceneID="FvV-Lh-E8E">
+            <objects>
+                <tableViewController storyboardIdentifier="searchTableViewController" automaticallyAdjustsScrollViewInsets="NO" id="FaX-5F-FCL" sceneMemberID="viewController">
+                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="44" sectionHeaderHeight="28" sectionFooterHeight="28" id="4WN-Kt-gNG">
+                        <rect key="frame" x="0.0" y="64" width="375" height="603"/>
+                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
+                        <color key="backgroundColor" white="1" alpha="1" colorSpace="calibratedWhite"/>
+                        <prototypes>
+                            <tableViewCell contentMode="scaleToFill" restorationIdentifier="PodcastResultCell" selectionStyle="default" indentationWidth="10" reuseIdentifier="PodcastResultCell" rowHeight="100" id="rSy-kI-CTx" customClass="PodcastResultCell">
+                                <rect key="frame" x="0.0" y="28" width="375" height="100"/>
+                                <autoresizingMask key="autoresizingMask"/>
+                                <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="rSy-kI-CTx" id="xAp-60-a68">
+                                    <frame key="frameInset" width="375" height="99"/>
+                                    <autoresizingMask key="autoresizingMask"/>
+                                    <subviews>
+                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Release date" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3Bu-R2-X6a">
+                                            <constraints>
+                                                <constraint firstAttribute="width" constant="150" id="zMI-Cm-MHf"/>
+                                            </constraints>
+                                            <fontDescription key="fontDescription" type="system" pointSize="10"/>
+                                            <color key="textColor" red="0.66666666669999997" green="0.66666666669999997" blue="0.66666666669999997" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                            <nil key="highlightedColor"/>
+                                        </label>
+                                        <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="DAC-0e-jCb">
+                                            <constraints>
+                                                <constraint firstAttribute="width" constant="82" id="2Yr-0G-9cH"/>
+                                                <constraint firstAttribute="height" constant="82" id="Jgn-2s-7MD"/>
+                                            </constraints>
+                                        </imageView>
+                                    </subviews>
+                                    <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                    <constraints>
+                                        <constraint firstItem="DAC-0e-jCb" firstAttribute="top" secondItem="xAp-60-a68" secondAttribute="top" constant="9" id="Dhm-4k-lth"/>
+                                        <constraint firstAttribute="trailing" secondItem="3Bu-R2-X6a" secondAttribute="trailing" constant="10" id="MN4-te-8Co"/>
+                                        <constraint firstAttribute="bottom" secondItem="3Bu-R2-X6a" secondAttribute="bottom" constant="6" id="cLW-6f-pJW"/>
+                                        <constraint firstItem="DAC-0e-jCb" firstAttribute="leading" secondItem="xAp-60-a68" secondAttribute="leading" constant="9" id="nU8-Bt-3qk"/>
+                                    </constraints>
+                                </tableViewCellContentView>
+                                <color key="backgroundColor" red="1" green="0.99997437" blue="0.99999129769999995" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                                <connections>
+                                    <outlet property="podcastArtImageView" destination="DAC-0e-jCb" id="Ksm-qH-MtA"/>
+                                    <outlet property="releaseDateLabel" destination="3Bu-R2-X6a" id="Rm0-wK-uFg"/>
+                                </connections>
+                            </tableViewCell>
+                        </prototypes>
+                        <connections>
+                            <outlet property="dataSource" destination="FaX-5F-FCL" id="5Pj-om-ZkD"/>
+                            <outlet property="delegate" destination="FaX-5F-FCL" id="1PC-pV-y3t"/>
+                        </connections>
+                    </tableView>
+                    <simulatedNavigationBarMetrics key="simulatedTopBarMetrics" translucent="NO" prompted="NO"/>
+                </tableViewController>
+                <placeholder placeholderIdentifier="IBFirstResponder" id="9VA-j6-nbF" userLabel="First Responder" sceneMemberID="firstResponder"/>
+            </objects>
+            <point key="canvasLocation" x="755" y="82"/>
+        </scene>
         <!--Tung Nav Controller-->
         <scene sceneID="UG4-En-PYC">
             <objects>
@@ -1202,63 +1259,6 @@
                 <placeholder placeholderIdentifier="IBFirstResponder" id="qYq-I6-wIs" userLabel="First Responder" sceneMemberID="firstResponder"/>
             </objects>
             <point key="canvasLocation" x="1728" y="869"/>
-        </scene>
-        <!--Table View Controller-->
-        <scene sceneID="5e7-Wc-JQf">
-            <objects>
-                <tableViewController storyboardIdentifier="searchTableViewController" extendedLayoutIncludesOpaqueBars="YES" providesPresentationContextTransitionStyle="YES" id="n5t-Us-mrw" sceneMemberID="viewController">
-                    <tableView key="view" clipsSubviews="YES" contentMode="scaleToFill" alwaysBounceVertical="YES" dataMode="prototypes" style="plain" separatorStyle="default" rowHeight="44" sectionHeaderHeight="22" sectionFooterHeight="22" id="2pk-vO-Ryg">
-                        <rect key="frame" x="0.0" y="0.0" width="375" height="667"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                        <prototypes>
-                            <tableViewCell contentMode="scaleToFill" restorationIdentifier="PodcastResultCell" selectionStyle="default" indentationWidth="10" reuseIdentifier="PodcastResultCell" rowHeight="100" id="HAf-oc-FWs" customClass="PodcastResultCell">
-                                <rect key="frame" x="0.0" y="42" width="375" height="100"/>
-                                <autoresizingMask key="autoresizingMask"/>
-                                <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="HAf-oc-FWs" id="1Yg-Iy-zVD">
-                                    <frame key="frameInset" width="375" height="100"/>
-                                    <autoresizingMask key="autoresizingMask"/>
-                                    <subviews>
-                                        <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Release date" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="khp-9t-OKa">
-                                            <constraints>
-                                                <constraint firstAttribute="width" constant="150" id="1bY-UC-amo"/>
-                                            </constraints>
-                                            <fontDescription key="fontDescription" type="system" pointSize="10"/>
-                                            <color key="textColor" red="0.66666666666666663" green="0.66666666666666663" blue="0.66666666666666663" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                            <nil key="highlightedColor"/>
-                                        </label>
-                                        <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="5Ww-Lc-5iP">
-                                            <constraints>
-                                                <constraint firstAttribute="width" constant="82" id="VjF-Mw-RPz"/>
-                                                <constraint firstAttribute="height" constant="82" id="pMD-Gx-lS4"/>
-                                            </constraints>
-                                        </imageView>
-                                    </subviews>
-                                    <color key="backgroundColor" red="1" green="1" blue="1" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                    <constraints>
-                                        <constraint firstAttribute="trailing" secondItem="khp-9t-OKa" secondAttribute="trailing" constant="10" id="A7T-Fl-yUx"/>
-                                        <constraint firstItem="5Ww-Lc-5iP" firstAttribute="leading" secondItem="1Yg-Iy-zVD" secondAttribute="leading" constant="9" id="Ad5-nF-K24"/>
-                                        <constraint firstItem="5Ww-Lc-5iP" firstAttribute="top" secondItem="1Yg-Iy-zVD" secondAttribute="top" constant="9" id="Hsu-d8-wiY"/>
-                                        <constraint firstAttribute="bottom" secondItem="khp-9t-OKa" secondAttribute="bottom" constant="6" id="iEQ-BM-4vL"/>
-                                    </constraints>
-                                </tableViewCellContentView>
-                                <color key="backgroundColor" red="1" green="0.99997437000274658" blue="0.99999129772186279" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
-                                <connections>
-                                    <outlet property="podcastArtImageView" destination="5Ww-Lc-5iP" id="mEi-fC-SSn"/>
-                                    <outlet property="releaseDateLabel" destination="khp-9t-OKa" id="Mtp-78-kHi"/>
-                                </connections>
-                            </tableViewCell>
-                        </prototypes>
-                        <connections>
-                            <outlet property="dataSource" destination="n5t-Us-mrw" id="h1e-qH-dX9"/>
-                            <outlet property="delegate" destination="n5t-Us-mrw" id="S3y-5B-pjX"/>
-                        </connections>
-                    </tableView>
-                    <navigationItem key="navigationItem" id="1y8-5V-aIk"/>
-                </tableViewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="xYW-mB-8lN" userLabel="First Responder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="734" y="101"/>
         </scene>
         <!--Podcast View Controller-->
         <scene sceneID="Cyv-n0-P7M">

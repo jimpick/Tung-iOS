@@ -176,6 +176,8 @@
         self.tableView.backgroundColor = [UIColor clearColor];
         self.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
         self.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero];
+        self.tableView.contentInset = UIEdgeInsetsMake(64, 0, 44, 0);
+        self.automaticallyAdjustsScrollViewInsets = NO;
         self.tableView.backgroundView = nil;
     }
 }
@@ -209,6 +211,9 @@
             if (success) {
                 self.tableView.backgroundView = nil;
                 NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
+                if ([platformFriendsCount integerValue] < 100) {
+                    _noMoreItemsToGet = YES;
+                }
                 NSArray *twitterFriends = [responseDict objectForKey:@"results"];
                 [self preloadAvatarsForArray:twitterFriends];
                 if ([platformFriendsCount integerValue] > 0) {
@@ -1082,7 +1087,7 @@
         float bottomOffset = scrollView.contentSize.height - scrollView.frame.size.height;
         if (scrollView.contentOffset.y >= bottomOffset) {
             // request more posts if they didn't reach the end
-            if (!_requestingMore && !_noMoreItemsToGet && _profileArray.count > 0) {
+            if ((_queryType || _socialPlatform) && !_requestingMore && !_noMoreItemsToGet && _profileArray.count > 0) {
                 _requestingMore = YES;
                 _loadMoreIndicator.alpha = 1;
                 [_loadMoreIndicator startAnimating];

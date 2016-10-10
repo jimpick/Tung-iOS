@@ -361,16 +361,27 @@
     [self saveContext];
 }
 
-#pragma mark - Facebook url handling
+#pragma mark - url handling
 
 - (BOOL)application:(UIApplication *)application openURL:(NSURL *)url sourceApplication:(NSString *)sourceApplication annotation:(id)annotation
 {
     //JPLog(@"fb open url: %@, source application: %@, annotation: %@", url, sourceApplication, annotation);
-    return [[FBSDKApplicationDelegate sharedInstance] application:application
+    if ([[url scheme] isEqualToString:@"fb823428404348902"]) {
+    
+    	return [[FBSDKApplicationDelegate sharedInstance] application:application
                                                           openURL:url
                                                 sourceApplication:sourceApplication
                                                        annotation:annotation
             ];
+    }
+    else {
+        [self switchTabBarSelectionToTabIndex:0];
+        
+        NSNotification *universalLinkNotif = [NSNotification notificationWithName:@"receivedUniversalLink" object:nil userInfo:@{ @"pathComponents":url.pathComponents }];
+        [[NSNotificationCenter defaultCenter] postNotification:universalLinkNotif];
+        
+        return YES;
+    }
 }
 
 #pragma mark - Universal Links

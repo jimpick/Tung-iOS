@@ -42,16 +42,16 @@
         _searchTableViewController.tableView.scrollsToTop = YES;
         _searchTableViewController.tableView.bounces = NO;
         _searchTableViewController.tableView.separatorInset = UIEdgeInsetsMake(0, 9, 0, 9);
-        _searchTableViewController.tableView.contentInset = UIEdgeInsetsMake(0, 0, 10, 0);
+        _searchTableViewController.tableView.contentInset = UIEdgeInsetsMake(64, 0, 10, 0);
         _searchTableViewController.tableView.backgroundColor = [UIColor clearColor];
         _searchTableViewController.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
         _searchTableViewController.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero];
-        //_searchTableViewController.definesPresentationContext = YES; // does nothing
-        
         
         _searchController = [[UISearchController alloc] initWithSearchResultsController:_searchTableViewController];
         _searchController.delegate = self;
         _searchController.hidesNavigationBarDuringPresentation = NO;
+        _searchController.definesPresentationContext = YES;
+        _searchController.automaticallyAdjustsScrollViewInsets = NO;
         
         _searchController.searchBar.delegate = self;
         _searchController.searchBar.searchBarStyle = UISearchBarStyleMinimal;
