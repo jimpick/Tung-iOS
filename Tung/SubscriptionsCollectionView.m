@@ -27,6 +27,7 @@
 @property BOOL fetched;
 @property BOOL isActiveView;
 @property NSTimer *promptTimer;
+@property NSIndexPath *selectedIndexPath;
 
 @end
 
@@ -100,6 +101,15 @@ static NSString * const reuseIdentifier = @"artCell";
     
     // notifs
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
+    
+    // re-ordering: long press recognizer
+    NSInteger majorVersion = [[NSProcessInfo processInfo] operatingSystemVersion].majorVersion;
+    if (majorVersion >= 9) {
+        UILongPressGestureRecognizer *longPressRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
+        longPressRecognizer.minimumPressDuration = 0.6; //seconds
+        longPressRecognizer.delegate = self;
+        [self.collectionView addGestureRecognizer:longPressRecognizer];
+    }
 }
 
 - (void) prepareView {
@@ -469,6 +479,27 @@ UILabel static *prototypeBadge;
     PodcastViewController *podcastView = [self.storyboard instantiateViewControllerWithIdentifier:@"podcastView"];
     podcastView.podcastDict = [podcastDict mutableCopy];
     [self.navigationController pushViewController:podcastView animated:YES];
+}
+
+- (void) handleLongPress:(UILongPressGestureRecognizer *)gesture {
+    switch (gesture.state) {
+        case UIGestureRecognizerStateBegan:
+            _selectedIndexPath = [self.collectionView indexPathForItemAtPoint:[gesture locationInView:self.view]];
+            break;
+        case UIGestureRecognizerStateChanged:
+            [self.collectionView updateInteractiveMovementTargetPosition:[gesture locationInView:self.view]];
+            break;
+        case UIGestureRecognizerStateEnded:
+            [self.collectionView endInteractiveMovement];
+            break;
+        default:
+            [self.collectionView cancelInteractiveMovement];
+            break;
+    }
+}
+
+- (void) collectionView:(UICollectionView *)collectionView moveItemAtIndexPath:(nonnull NSIndexPath *)sourceIndexPath toIndexPath:(nonnull NSIndexPath *)destinationIndexPath {
+    //NSLog(@"move item at path: %@ to path: %@", sourceIndexPath, destinationIndexPath);
 }
 
 /*

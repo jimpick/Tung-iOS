@@ -1082,7 +1082,7 @@
                                 <rect key="frame" x="0.0" y="28" width="375" height="100"/>
                                 <autoresizingMask key="autoresizingMask"/>
                                 <tableViewCellContentView key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" tableViewCell="rSy-kI-CTx" id="xAp-60-a68">
-                                    <frame key="frameInset" width="375" height="99"/>
+                                    <frame key="frameInset" width="375" height="100"/>
                                     <autoresizingMask key="autoresizingMask"/>
                                     <subviews>
                                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Release date" textAlignment="right" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="3Bu-R2-X6a">
@@ -1369,14 +1369,14 @@
                                     <constraint firstAttribute="trailing" secondItem="UEf-bs-Whp" secondAttribute="trailing" id="ICL-6k-H9X"/>
                                     <constraint firstItem="Erp-eo-HzV" firstAttribute="leading" secondItem="iFL-30-I6w" secondAttribute="leading" constant="15" id="ImQ-49-IuD"/>
                                     <constraint firstItem="Erp-eo-HzV" firstAttribute="top" secondItem="iFL-30-I6w" secondAttribute="top" constant="3" id="KP3-lo-jpd"/>
-                                    <constraint firstItem="3CZ-kK-RkQ" firstAttribute="leading" secondItem="iFL-30-I6w" secondAttribute="leading" constant="15" id="Qhs-rS-AAK"/>
+                                    <constraint firstItem="3CZ-kK-RkQ" firstAttribute="leading" secondItem="iFL-30-I6w" secondAttribute="leading" constant="27" id="Qhs-rS-AAK"/>
                                     <constraint firstAttribute="trailing" secondItem="RD4-Eq-fE3" secondAttribute="trailing" id="Rgl-yg-JnV"/>
-                                    <constraint firstAttribute="trailing" secondItem="Eec-U5-Ymg" secondAttribute="trailing" constant="15" id="XlR-G2-faa"/>
+                                    <constraint firstAttribute="trailing" secondItem="Eec-U5-Ymg" secondAttribute="trailing" constant="27" id="XlR-G2-faa"/>
                                     <constraint firstItem="IA2-qs-aia" firstAttribute="top" secondItem="iFL-30-I6w" secondAttribute="top" id="acu-Dp-ZX8"/>
-                                    <constraint firstItem="Eec-U5-Ymg" firstAttribute="leading" secondItem="iFL-30-I6w" secondAttribute="leading" constant="15" id="fZ6-rp-w4Q"/>
+                                    <constraint firstItem="Eec-U5-Ymg" firstAttribute="leading" secondItem="iFL-30-I6w" secondAttribute="leading" constant="27" id="fZ6-rp-w4Q"/>
                                     <constraint firstItem="UEf-bs-Whp" firstAttribute="top" secondItem="iFL-30-I6w" secondAttribute="top" constant="20" id="fpg-cp-JKv"/>
                                     <constraint firstAttribute="trailing" secondItem="IA2-qs-aia" secondAttribute="trailing" id="hdy-KG-Uwr"/>
-                                    <constraint firstAttribute="trailing" secondItem="3CZ-kK-RkQ" secondAttribute="trailing" constant="15" id="izH-b3-Q9y"/>
+                                    <constraint firstAttribute="trailing" secondItem="3CZ-kK-RkQ" secondAttribute="trailing" constant="27" id="izH-b3-Q9y"/>
                                     <constraint firstAttribute="centerX" secondItem="Erp-eo-HzV" secondAttribute="centerX" id="kg7-VU-OMY"/>
                                     <constraint firstAttribute="centerX" secondItem="qbb-m2-RZS" secondAttribute="centerX" id="nem-XL-SOE"/>
                                     <constraint firstAttribute="bottom" secondItem="SzR-2f-Vva" secondAttribute="bottom" constant="155" id="phi-pI-BEC"/>
