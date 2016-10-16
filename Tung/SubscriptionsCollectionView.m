@@ -11,11 +11,10 @@
 #import "SubscriptionViewCell.h"
 #import "PodcastViewController.h"
 
-@interface SubscriptionsCollectionView () <NSFetchedResultsControllerDelegate>
+@interface SubscriptionsCollectionView ()
 
-@property NSFetchedResultsController *resultsController;
 @property NSFetchRequest *subscribedQuery;
-@property TungPodcast *podcast;
+@property TungPodcast *tungPodcast;
 @property TungCommonObjects *tung;
 @property NSMutableArray *sectionChanges;
 @property NSMutableArray *itemChanges;
@@ -24,10 +23,9 @@
 @property UIBarButtonItem *editAlertsBarButtonItem;
 @property UILabel *noSubsLabel;
 @property UIImageView *findPodcastsHere;
-@property BOOL fetched;
-@property BOOL isActiveView;
 @property NSTimer *promptTimer;
 @property NSIndexPath *selectedIndexPath;
+@property NSArray *podcasts;
 
 @end
 
@@ -45,12 +43,12 @@ static NSString * const reuseIdentifier = @"artCell";
     self.navigationItem.leftBarButtonItem = _editAlertsBarButtonItem;
     
     _tung = [TungCommonObjects establishTungObjects];
-    _podcast = [TungPodcast new];
+    _tungPodcast = [TungPodcast new];
     
     // for search controller
     self.definesPresentationContext = YES;
-    _podcast.navController = [self navigationController];
-    _podcast.delegate = self;
+    _tungPodcast.navController = [self navigationController];
+    _tungPodcast.delegate = self;
     
     // set up collection view size based on screen size    
     CGFloat cellWidthAndHeight = ([TungCommonObjects screenSize].width - 2) / 3;
@@ -88,19 +86,20 @@ static NSString * const reuseIdentifier = @"artCell";
     self.collectionView.backgroundView.contentMode = UIViewContentModeTopRight;
     */
     
+    _podcasts = [NSArray array];
+    
     // get subscribed podcasts
-    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     _subscribedQuery = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
     //NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isSubscribed == %@", [NSNumber numberWithBool:YES]];
     NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSubscribed == YES"];
     _subscribedQuery.predicate = predicate;
     NSSortDescriptor *dateSort = [[NSSortDescriptor alloc] initWithKey:@"timeSubscribed" ascending:YES];
-    _subscribedQuery.sortDescriptors = @[dateSort];
-    _resultsController = [[NSFetchedResultsController alloc] initWithFetchRequest:_subscribedQuery managedObjectContext:appDelegate.managedObjectContext sectionNameKeyPath:nil cacheName:nil];
-    _resultsController.delegate = self;
+    NSSortDescriptor *orderSort = [[NSSortDescriptor alloc] initWithKey:@"sortOrder" ascending:YES];
+    _subscribedQuery.sortDescriptors = @[orderSort, dateSort];
     
     // notifs
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(performFetchAndReload) name:@"refreshSubscribeStatus" object:nil];
     
     // re-ordering: long press recognizer
     NSInteger majorVersion = [[NSProcessInfo processInfo] operatingSystemVersion].majorVersion;
@@ -119,8 +118,6 @@ static NSString * const reuseIdentifier = @"artCell";
 
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
-    
-    _isActiveView = YES;
     
     _tung.viewController = self;
     
@@ -141,24 +138,33 @@ static NSString * const reuseIdentifier = @"artCell";
     }
     
     // perform fetch
-    NSError *fetchingError;
-    [_resultsController performFetch:&fetchingError];
-    _fetched = YES;
-    [self.collectionView reloadData];
-    
-    id <NSFetchedResultsSectionInfo> sectionInfo = _resultsController.sections[0];
-    // prompt for notifications delay
-    if (sectionInfo.numberOfObjects > 0 && !settings.hasSeenNewEpisodesPrompt.boolValue && ![[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
-        _promptTimer = [NSTimer scheduledTimerWithTimeInterval:2 target:_tung selector:@selector(promptForNotificationsForEpisodes) userInfo:nil repeats:NO];
-    }
+    [self performFetchAndReload];
     
 }
 
+- (void) performFetchAndReload {
+    
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
+    NSError *error = nil;
+    _podcasts = [appDelegate.managedObjectContext executeFetchRequest:_subscribedQuery error:&error];
+    
+    [self.collectionView reloadData];
+    
+    if (_podcasts.count == 0) {
+        //_findPodcastsHere.hidden = NO;
+        self.collectionView.backgroundView = _noSubsLabel;
+        self.navigationItem.leftBarButtonItem = nil;
+    }
+    else {
+        //_findPodcastsHere.hidden = YES;
+        self.collectionView.backgroundView = nil;
+        self.navigationItem.leftBarButtonItem = _editAlertsBarButtonItem;
+    }
+}
 
 
 - (void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
-    _isActiveView = NO;
     [_promptTimer invalidate];
     if (_editingNotifications) [self toggleEditNotifySettings];
 }
@@ -166,8 +172,8 @@ static NSString * const reuseIdentifier = @"artCell";
 - (void) viewDidDisappear:(BOOL)animated {
     [super viewDidDisappear:animated];
     /*
-    if (_podcast.searchController.active) {
-        [_podcast.searchController setActive:NO];
+    if (_tungPodcast.searchController.active) {
+        [_tungPodcast.searchController setActive:NO];
         [self dismissPodcastSearch];
     }*/
 }
@@ -186,6 +192,7 @@ static NSString * const reuseIdentifier = @"artCell";
     	_editAlertsBarButtonItem.title = @"Alerts";
     }
     
+    // reloads with fade instead of instantly
     [self.collectionView performBatchUpdates:^{
     	[self.collectionView reloadSections:[NSIndexSet indexSetWithIndex:0]];
     } completion:nil];
@@ -219,7 +226,7 @@ static NSString * const reuseIdentifier = @"artCell";
          ];
     }
     
-    [_podcast.searchController setActive:YES];
+    [_tungPodcast.searchController setActive:YES];
     
     CATransition *animation = [CATransition animation];
     animation.duration = .4;
@@ -227,11 +234,11 @@ static NSString * const reuseIdentifier = @"artCell";
     animation.type = kCATransitionFade;
     [self.navigationController.navigationBar.layer addAnimation: animation forKey: @"revealSearch"];
     
-    self.navigationItem.titleView = _podcast.searchController.searchBar;
+    self.navigationItem.titleView = _tungPodcast.searchController.searchBar;
     [self.navigationItem setRightBarButtonItem:nil animated:YES];
     [self.navigationItem setLeftBarButtonItem:nil animated:YES];
     	
-    [_podcast.searchController.searchBar becomeFirstResponder];
+    [_tungPodcast.searchController.searchBar becomeFirstResponder];
     
 }
 
@@ -264,86 +271,6 @@ static NSString * const reuseIdentifier = @"artCell";
     // Dispose of any resources that can be recreated.
 }
 
-#pragma mark - NSFetchedResultsController delegate methods
-
-- (void) controllerWillChangeContent:(NSFetchedResultsController *)controller {
-    //JPLog(@"controller will change content");
-    _sectionChanges = [[NSMutableArray alloc] init];
-    _itemChanges = [[NSMutableArray alloc] init];
-}
-- (void) controller:(NSFetchedResultsController *)controller didChangeSection:(id<NSFetchedResultsSectionInfo>)sectionInfo atIndex:(NSUInteger)sectionIndex forChangeType:(NSFetchedResultsChangeType)type {
-    //JPLog(@"controller did change section");
-    
-    NSMutableDictionary *change = [[NSMutableDictionary alloc] init];
-    change[@(type)] = @(sectionIndex);
-    [_sectionChanges addObject:change];
-}
-- (void) controller:(NSFetchedResultsController *)controller didChangeObject:(id)anObject atIndexPath:(NSIndexPath *)indexPath forChangeType:(NSFetchedResultsChangeType)type newIndexPath:(NSIndexPath *)newIndexPath {
-    //NSLog(@"controller did change object");
-    
-    NSMutableDictionary *change = [[NSMutableDictionary alloc] init];
-    switch(type) {
-        case NSFetchedResultsChangeInsert:
-            change[@(type)] = newIndexPath;
-            break;
-        case NSFetchedResultsChangeDelete:
-            change[@(type)] = indexPath;
-            break;
-        case NSFetchedResultsChangeUpdate:
-            change[@(type)] = indexPath;
-            break;
-        case NSFetchedResultsChangeMove:
-            change[@(type)] = @[indexPath, newIndexPath];
-            break;
-    }
-    [_itemChanges addObject:change];
-}
-
-- (void) controllerDidChangeContent:(NSFetchedResultsController *)controller {
-    //NSLog(@"controller did change content");
-    if (_isActiveView) {
-        //NSLog(@"perform changes");
-        [self.collectionView performBatchUpdates:^{
-            for (NSDictionary *change in _sectionChanges) {
-                [change enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-                    NSFetchedResultsChangeType type = [key unsignedIntegerValue];
-                    switch(type) {
-                        case NSFetchedResultsChangeInsert:
-                            [self.collectionView insertSections:[NSIndexSet indexSetWithIndex:[obj unsignedIntegerValue]]];
-                            break;
-                        case NSFetchedResultsChangeDelete:
-                            [self.collectionView deleteSections:[NSIndexSet indexSetWithIndex:[obj unsignedIntegerValue]]];
-                            break;
-                        default:
-                            break;
-                    }
-                }];
-            }
-            for (NSDictionary *change in _itemChanges) {
-                [change enumerateKeysAndObjectsUsingBlock:^(id key, id obj, BOOL *stop) {
-                    NSFetchedResultsChangeType type = [key unsignedIntegerValue];
-                    switch(type) {
-                        case NSFetchedResultsChangeInsert:
-                            [self.collectionView insertItemsAtIndexPaths:@[obj]];
-                            break;
-                        case NSFetchedResultsChangeDelete:
-                            [self.collectionView deleteItemsAtIndexPaths:@[obj]];
-                            break;
-                        case NSFetchedResultsChangeUpdate:
-                            [self.collectionView reloadItemsAtIndexPaths:@[obj]];
-                            break;
-                        case NSFetchedResultsChangeMove:
-                            [self.collectionView moveItemAtIndexPath:obj[0] toIndexPath:obj[1]];
-                            break;
-                    }
-                }];
-            }
-        } completion:^(BOOL finished) {
-            _sectionChanges = nil;
-            _itemChanges = nil;
-        }];
-    }
-}
 
 #pragma mark <UICollectionViewDataSource>
 
@@ -353,22 +280,8 @@ static NSString * const reuseIdentifier = @"artCell";
 }
 
 - (NSInteger)collectionView:(UICollectionView *)collectionView numberOfItemsInSection:(NSInteger)section {
-    //JPLog(@"collection view number of items in section. fetched? %@", (_fetched) ? @"YES" : @"NO");
-
-    id <NSFetchedResultsSectionInfo> sectionInfo = _resultsController.sections[section];
-    if (sectionInfo.numberOfObjects == 0) {
-        if (_fetched) {
-            //_findPodcastsHere.hidden = NO;
-            self.collectionView.backgroundView = _noSubsLabel;
-            self.navigationItem.leftBarButtonItem = nil;
-        }
-    }
-    else {
-        //_findPodcastsHere.hidden = YES;
-        self.collectionView.backgroundView = nil;
-        self.navigationItem.leftBarButtonItem = _editAlertsBarButtonItem;
-    }
-    return sectionInfo.numberOfObjects;
+    
+    return _podcasts.count;
 }
 
 UILabel static *prototypeBadge;
@@ -377,8 +290,8 @@ UILabel static *prototypeBadge;
     
     SubscriptionViewCell *cell = [collectionView dequeueReusableCellWithReuseIdentifier:reuseIdentifier forIndexPath:indexPath];
     
-    PodcastEntity *podcastEntity = [_resultsController objectAtIndexPath:indexPath];
-    //JPLog(@"collection view cell for item at index path %ld - %@", (long)indexPath.row, podcastEntity.collectionName);
+    PodcastEntity *podcastEntity = [_podcasts objectAtIndex:indexPath.row];
+    //JPLog(@"collection view cell for item at index path %ld. sort order: %ld - %@", (long)indexPath.row, podcastEntity.sortOrder.integerValue, podcastEntity.collectionName);
     
     cell.collectionId = podcastEntity.collectionId;
     NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity];
@@ -432,7 +345,7 @@ UILabel static *prototypeBadge;
     [cell.badge setNeedsDisplay];
     
     // editing notification settings
-    cell.notifySwitch.onTintColor = podcastEntity.keyColor1;
+    cell.notifySwitch.onTintColor = (UIColor *)podcastEntity.keyColor1;
     cell.notifySwitch.on = podcastEntity.notifyOfNewEpisodes.boolValue;
     [cell.switchBkgdView.layer setCornerRadius:17];
     
@@ -469,8 +382,8 @@ UILabel static *prototypeBadge;
         return;
     }
     
+    PodcastEntity *podcastEntity = [_podcasts objectAtIndex:indexPath.row];
     
-    PodcastEntity *podcastEntity = [_resultsController objectAtIndexPath:indexPath];
     // entity -> dict
     NSDictionary *podcastDict = [TungCommonObjects entityToDict:podcastEntity];
     //NSLog(@"selected %@", podcastDict);
@@ -499,8 +412,38 @@ UILabel static *prototypeBadge;
 }
 
 - (void) collectionView:(UICollectionView *)collectionView moveItemAtIndexPath:(nonnull NSIndexPath *)sourceIndexPath toIndexPath:(nonnull NSIndexPath *)destinationIndexPath {
-    //NSLog(@"move item at path: %@ to path: %@", sourceIndexPath, destinationIndexPath);
+    
+    // set new order
+    
+    for (int i = 0; i < _podcasts.count; i++) {
+        PodcastEntity *podEntity = [_podcasts objectAtIndex:i];
+        //podEntity.sortOrder = [NSNumber numberWithInt:999]; // reset
+        
+        if (i < sourceIndexPath.row) {
+            if (i >= destinationIndexPath.row) {
+        		podEntity.sortOrder = [NSNumber numberWithInt:i + 1];
+        	}
+            else {
+                podEntity.sortOrder = [NSNumber numberWithInt:i];
+            }
+        }
+        else if (i > sourceIndexPath.row) {
+            if (i <= destinationIndexPath.row) {
+                podEntity.sortOrder = [NSNumber numberWithInt:i - 1];
+            }
+            else {
+                podEntity.sortOrder = [NSNumber numberWithInt:i];
+            }
+        }
+        else {
+            podEntity.sortOrder = [NSNumber numberWithInteger:destinationIndexPath.row];
+        }
+    }
+    [TungCommonObjects saveContextWithReason:@"updated sort order of subscribed podcasts"];
+    
+    [self performFetchAndReload];
 }
+
 
 /*
 // Uncomment these methods to specify if an action menu should be displayed for the specified item, and react to actions performed on the item

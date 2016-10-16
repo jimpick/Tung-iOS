@@ -25,7 +25,7 @@
 @interface EpisodeViewController ()
 
 @property (nonatomic, retain) TungCommonObjects *tung;
-@property (strong, nonatomic) TungPodcast *podcast;
+@property (strong, nonatomic) TungPodcast *tungPodcast;
 @property HeaderView *headerView;
 @property CADisplayLink *onEnterFrame;
 @property BOOL npControlsViewIsSetup;
@@ -97,7 +97,7 @@ static NSArray *playbackRateStrings;
     _isFirstAppearance = YES;
     
     _tung = [TungCommonObjects establishTungObjects];
-    _podcast = [TungPodcast new];
+    _tungPodcast = [TungPodcast new];
     
     _defaultHeaderHeight = 164;
     _commentAndPostViewHeight = 123;
@@ -189,8 +189,8 @@ static NSArray *playbackRateStrings;
     
     // for search controller
     self.definesPresentationContext = YES;
-    _podcast.navController = [self navigationController];
-    _podcast.delegate = self;
+    _tungPodcast.navController = [self navigationController];
+    _tungPodcast.delegate = self;
     
     // views
     _npControlsView.opacity = .4;
@@ -387,7 +387,7 @@ static NSArray *playbackRateStrings;
 
 - (void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
-    [_podcast.feedPreloadQueue cancelAllOperations];
+    [_tungPodcast.feedPreloadQueue cancelAllOperations];
     [_onEnterFrame invalidate];
     [markAsSeenTimer invalidate];
     
@@ -402,8 +402,8 @@ static NSArray *playbackRateStrings;
 - (void) viewDidDisappear:(BOOL)animated {
     [super viewDidDisappear:animated];
     /*
-    if (_isNowPlayingView && _podcast.searchController.active) {
-        [_podcast.searchController setActive:NO];
+    if (_isNowPlayingView && _tungPodcast.searchController.active) {
+        [_tungPodcast.searchController setActive:NO];
         [self dismissPodcastSearch];
     }*/
 }
@@ -463,7 +463,7 @@ NSTimer *markAsSeenTimer;
     // in case sharing in progress, don't animate share view
     _searchActive = YES;
     
-    [_podcast.searchController setActive:YES];
+    [_tungPodcast.searchController setActive:YES];
     
     CATransition *animation = [CATransition animation];
     animation.duration = .4;
@@ -471,11 +471,11 @@ NSTimer *markAsSeenTimer;
     animation.type = kCATransitionFade;
     [self.navigationController.navigationBar.layer addAnimation: animation forKey: @"revealSearch"];
     
-    self.navigationItem.titleView = _podcast.searchController.searchBar;
+    self.navigationItem.titleView = _tungPodcast.searchController.searchBar;
     [self.navigationItem setRightBarButtonItem:nil animated:YES];
     [self.navigationItem setLeftBarButtonItem:nil animated:YES];
     
-    [_podcast.searchController.searchBar becomeFirstResponder];
+    [_tungPodcast.searchController.searchBar becomeFirstResponder];
     
 }
 
@@ -644,7 +644,7 @@ NSTimer *markAsSeenTimer;
     // switcher
     _switcherBar.hidden = NO;
     [self switchToViewAtIndex:_switcherIndex];
-    _switcher.tintColor = episodeEntity.podcast.keyColor2;
+    _switcher.tintColor = (UIColor *)episodeEntity.podcast.keyColor2;
     
     _episodesView.tableView.backgroundView = nil;
     _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
@@ -807,7 +807,8 @@ NSTimer *markAsSeenTimer;
 // uses this view as its webview delegate
 - (void) loadDescriptionWebViewStringForEntity:(EpisodeEntity *)episodeEntity {
     // description style
-    NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:episodeEntity.podcast.keyColor1];
+    UIColor *keyColor1 = (UIColor *)episodeEntity.podcast.keyColor1;
+    NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:keyColor1];
     NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:4px 13px; color:#666; font: .9em/1.4em -apple-system, Helvetica; } a { color:%@; } img { max-width:100%%; height:auto; } .endOfFile { margin:40px auto 30px; clear:both; width:60px; height:auto; display:block }</style>\n", keyColor1HexString];
     // description script:
     NSString *scriptPath = [[NSBundle mainBundle] pathForResource:@"description" ofType:@"js"];
@@ -826,7 +827,7 @@ NSTimer *markAsSeenTimer;
 // pushes a new view which uses its own webview delegate
 - (void) pushPodcastDescription {
     
-    [_podcast pushPodcastDescriptionForEntity:_episodeEntity.podcast];
+    [_tungPodcast pushPodcastDescriptionForEntity:_episodeEntity.podcast];
 }
 
 #pragma mark Subscribing

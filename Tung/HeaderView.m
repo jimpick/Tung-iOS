@@ -94,7 +94,8 @@
     self.subscribeButton.hidden = YES;
     
     // colors
-    UIColor *lighterKeyColor = [TungCommonObjects lightenKeyColor:podcastEntity.keyColor1];
+    UIColor *keyColor1 = (UIColor *)podcastEntity.keyColor1;
+    UIColor *lighterKeyColor = [TungCommonObjects lightenKeyColor:keyColor1];
     self.view.backgroundColor = lighterKeyColor;
     
 }
@@ -128,8 +129,8 @@ static NSDateFormatter *airDateFormatter = nil;
         artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity];
         
         isSubscribed = podcastEntity.isSubscribed.boolValue;
-        keyColor1 = podcastEntity.keyColor1;
-        keyColor2 = podcastEntity.keyColor2;
+        keyColor1 = (UIColor *)podcastEntity.keyColor1;
+        keyColor2 = (UIColor *)podcastEntity.keyColor2;
         
     }
     else {
@@ -153,8 +154,8 @@ static NSDateFormatter *airDateFormatter = nil;
         
         isSubscribed = episodeEntity.podcast.isSubscribed.boolValue;
         
-        keyColor1 = episodeEntity.podcast.keyColor1;
-        keyColor2 = episodeEntity.podcast.keyColor2;
+        keyColor1 = (UIColor *)episodeEntity.podcast.keyColor1;
+        keyColor2 = (UIColor *)episodeEntity.podcast.keyColor2;
         
     }
     //NSLog(@"set up header view for %@", title);
@@ -320,11 +321,12 @@ static NSDateFormatter *airDateFormatter = nil;
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     _albumArt.image = artImage;
     // update key colors
-    _largeButton.color = podcastEntity.keyColor2;
+    _largeButton.color = (UIColor *)podcastEntity.keyColor2;
     [_largeButton setNeedsDisplay];
-    _subscribeButton.color = podcastEntity.keyColor2;
+    _subscribeButton.color = (UIColor *)podcastEntity.keyColor2;
     [_subscribeButton setNeedsDisplay];
-    UIColor *lighterKeyColor = [TungCommonObjects lightenKeyColor:podcastEntity.keyColor1];
+    
+    UIColor *lighterKeyColor = [TungCommonObjects lightenKeyColor:(UIColor *)podcastEntity.keyColor1];
     _view.backgroundColor = lighterKeyColor;
     [self setNeedsDisplay];
 }

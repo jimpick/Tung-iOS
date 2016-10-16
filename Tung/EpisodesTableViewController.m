@@ -254,7 +254,7 @@ static NSString *cellIdentifier = @"EpisodeCell";
     
     // title
     episodeCell.episodeTitle.text = [episodeDict objectForKey:@"title"];
-    UIColor *keyColor = _podcastEntity.keyColor1;
+    UIColor *keyColor = (UIColor *)_podcastEntity.keyColor1;
     episodeCell.episodeTitle.textColor = keyColor;
     // air date
     if (!airDateFormatter) {
@@ -306,7 +306,7 @@ static NSString *cellIdentifier = @"EpisodeCell";
     
     // episode Progress
     episodeCell.episodeProgress.type = kMiscViewTypeEpisodeProgress;
-    episodeCell.episodeProgress.color = _podcastEntity.keyColor2;
+    episodeCell.episodeProgress.color = (UIColor *)_podcastEntity.keyColor2;
     float position = 0;
     if ([episodeDict objectForKey:@"trackPosition"]) {
         NSNumber *nPosition = [episodeDict objectForKey:@"trackPosition"];

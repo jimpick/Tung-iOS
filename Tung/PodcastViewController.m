@@ -18,7 +18,7 @@
 @interface PodcastViewController ()
 
 @property (nonatomic, retain) TungCommonObjects *tung;
-@property (strong, nonatomic) TungPodcast *podcast;
+@property (strong, nonatomic) TungPodcast *tungPodcast;
 @property (strong, nonatomic) PodcastEntity *podcastEntity;
 @property HeaderView *headerView;
 @property EpisodesTableViewController *episodesView;
@@ -38,8 +38,8 @@
     self.navigationItem.title = @"Podcast";
     self.navigationItem.rightBarButtonItem = nil;
     
-    _podcast = [TungPodcast new];
-    _podcast.navController = [self navigationController];
+    _tungPodcast = [TungPodcast new];
+    _tungPodcast.navController = [self navigationController];
     //NSLog(@"podcast dict: %@", _podcastDict);
     
     // header view
@@ -253,7 +253,7 @@
 // pushes a new view which uses its own webview delegate
 - (void) pushPodcastDescription {
     
-    [_podcast pushPodcastDescriptionForEntity:_podcastEntity];
+    [_tungPodcast pushPodcastDescriptionForEntity:_podcastEntity];
 }
 
 #pragma mark Subscribing

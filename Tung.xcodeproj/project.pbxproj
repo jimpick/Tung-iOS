@@ -7,8 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		7D07B6E81BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D07B6E51BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m */; };
-		7D07B6E91BE4F657008F4CC7 /* SettingsEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D07B6E71BE4F657008F4CC7 /* SettingsEntity.m */; };
 		7D0964541AB0EE9800DBF295 /* prototype-screens-01.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D0964511AB0EE9800DBF295 /* prototype-screens-01.png */; };
 		7D0964551AB0EE9800DBF295 /* prototype-screens-02.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D0964521AB0EE9800DBF295 /* prototype-screens-02.png */; };
 		7D0964561AB0EE9800DBF295 /* prototype-screens-03.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D0964531AB0EE9800DBF295 /* prototype-screens-03.png */; };
@@ -91,10 +89,6 @@
 		7D61F94518A1EB2F00710CA7 /* InfoPlist.strings in Resources */ = {isa = PBXBuildFile; fileRef = 7D61F94318A1EB2F00710CA7 /* InfoPlist.strings */; };
 		7D61F94718A1EB2F00710CA7 /* TungTests.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D61F94618A1EB2F00710CA7 /* TungTests.m */; };
 		7D61F95118A1ED4700710CA7 /* MainStoryboard.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 7D61F95018A1ED4700710CA7 /* MainStoryboard.storyboard */; };
-		7D63675C1BEBC8E70040C52C /* UserEntity+CoreDataProperties.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6367591BEBC8E70040C52C /* UserEntity+CoreDataProperties.m */; };
-		7D63675D1BEBC8E70040C52C /* UserEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D63675B1BEBC8E70040C52C /* UserEntity.m */; };
-		7D6367621BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D63675F1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.m */; };
-		7D6367631BEBD5E40040C52C /* PodcastEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6367611BEBD5E40040C52C /* PodcastEntity.m */; };
 		7D63F80D1AF6CBA100765289 /* HeaderView.xib in Resources */ = {isa = PBXBuildFile; fileRef = 7D63F80C1AF6CBA100765289 /* HeaderView.xib */; };
 		7D63F8101AF6CBCC00765289 /* HeaderView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D63F80F1AF6CBCC00765289 /* HeaderView.m */; };
 		7D64376A1BAB58B800766BB4 /* IconView.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D6437691BAB58B800766BB4 /* IconView.m */; };
@@ -109,6 +103,10 @@
 		7D768CA0192EB20B000C8E3E /* TungCommonObjects.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D768C9F192EB20B000C8E3E /* TungCommonObjects.m */; };
 		7D76CADA1B6FE4550059279E /* description.js in Resources */ = {isa = PBXBuildFile; fileRef = 7D76CAD91B6FE4550059279E /* description.js */; };
 		7D76CADE1B700C8C0059279E /* tung-end-of-file.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D76CADD1B700C8C0059279E /* tung-end-of-file.png */; };
+		7D7C2D1C1DB4377800DD3DBD /* EpisodeEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D7C2D151DB4377800DD3DBD /* EpisodeEntity.m */; };
+		7D7C2D1D1DB4377800DD3DBD /* PodcastEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D7C2D171DB4377800DD3DBD /* PodcastEntity.m */; };
+		7D7C2D1E1DB4377800DD3DBD /* SettingsEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D7C2D191DB4377800DD3DBD /* SettingsEntity.m */; };
+		7D7C2D1F1DB4377800DD3DBD /* UserEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D7C2D1B1DB4377800DD3DBD /* UserEntity.m */; };
 		7D8228C81AFBE271004EB4B2 /* CircleButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 7D8228C71AFBE271004EB4B2 /* CircleButton.m */; };
 		7D87187718FE3141001E954A /* icon-facebook-off@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D87187318FE3141001E954A /* icon-facebook-off@2x.png */; };
 		7D87187818FE3141001E954A /* icon-facebook-on@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7D87187418FE3141001E954A /* icon-facebook-on@2x.png */; };
@@ -184,9 +182,7 @@
 		7DF8A8B518A2A277002332A1 /* AVFoundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 7DF8A8B418A2A277002332A1 /* AVFoundation.framework */; };
 		7DF8A8C218A2A62F002332A1 /* tungNavBarLogo@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DF8A8BF18A2A62F002332A1 /* tungNavBarLogo@2x.png */; };
 		7DF9823C1BB42B6A00D76B9F /* PillButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DF9823B1BB42B6A00D76B9F /* PillButton.m */; };
-		7DF997A71BC6F645004FD994 /* EpisodeEntity.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DF997A51BC6F645004FD994 /* EpisodeEntity.m */; };
 		7DF9F4AB1BDAAEB100D33FD6 /* SignUpButton.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DF9F4AA1BDAAEB100D33FD6 /* SignUpButton.m */; };
-		7DF9F4AE1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DF9F4AD1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.m */; };
 		7DFDAC371BD7413E002D9F7A /* CommentCellMine.m in Sources */ = {isa = PBXBuildFile; fileRef = 7DFDAC361BD7413E002D9F7A /* CommentCellMine.m */; };
 		7DFE85A1199AB143000379B6 /* btn-profile-plain-down@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DFE859F199AB143000379B6 /* btn-profile-plain-down@2x.png */; };
 		7DFE85A2199AB143000379B6 /* btn-profile-plain@2x.png in Resources */ = {isa = PBXBuildFile; fileRef = 7DFE85A0199AB143000379B6 /* btn-profile-plain@2x.png */; };
@@ -203,10 +199,6 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
-		7D07B6E41BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "SettingsEntity+CoreDataProperties.h"; sourceTree = "<group>"; };
-		7D07B6E51BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "SettingsEntity+CoreDataProperties.m"; sourceTree = "<group>"; };
-		7D07B6E61BE4F657008F4CC7 /* SettingsEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SettingsEntity.h; sourceTree = "<group>"; };
-		7D07B6E71BE4F657008F4CC7 /* SettingsEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SettingsEntity.m; sourceTree = "<group>"; };
 		7D0964511AB0EE9800DBF295 /* prototype-screens-01.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "prototype-screens-01.png"; sourceTree = "<group>"; };
 		7D0964521AB0EE9800DBF295 /* prototype-screens-02.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "prototype-screens-02.png"; sourceTree = "<group>"; };
 		7D0964531AB0EE9800DBF295 /* prototype-screens-03.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "prototype-screens-03.png"; sourceTree = "<group>"; };
@@ -319,14 +311,6 @@
 		7D61F94418A1EB2F00710CA7 /* en */ = {isa = PBXFileReference; lastKnownFileType = text.plist.strings; name = en; path = en.lproj/InfoPlist.strings; sourceTree = "<group>"; };
 		7D61F94618A1EB2F00710CA7 /* TungTests.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = TungTests.m; sourceTree = "<group>"; };
 		7D61F95018A1ED4700710CA7 /* MainStoryboard.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; path = MainStoryboard.storyboard; sourceTree = "<group>"; };
-		7D6367581BEBC8E70040C52C /* UserEntity+CoreDataProperties.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "UserEntity+CoreDataProperties.h"; sourceTree = "<group>"; };
-		7D6367591BEBC8E70040C52C /* UserEntity+CoreDataProperties.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "UserEntity+CoreDataProperties.m"; sourceTree = "<group>"; };
-		7D63675A1BEBC8E70040C52C /* UserEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UserEntity.h; sourceTree = "<group>"; };
-		7D63675B1BEBC8E70040C52C /* UserEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UserEntity.m; sourceTree = "<group>"; };
-		7D63675E1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "PodcastEntity+CoreDataProperties.h"; sourceTree = "<group>"; };
-		7D63675F1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "PodcastEntity+CoreDataProperties.m"; sourceTree = "<group>"; };
-		7D6367601BEBD5E40040C52C /* PodcastEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PodcastEntity.h; sourceTree = "<group>"; };
-		7D6367611BEBD5E40040C52C /* PodcastEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PodcastEntity.m; sourceTree = "<group>"; };
 		7D63F80C1AF6CBA100765289 /* HeaderView.xib */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.xib; path = HeaderView.xib; sourceTree = "<group>"; };
 		7D63F80E1AF6CBCC00765289 /* HeaderView.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = HeaderView.h; sourceTree = "<group>"; };
 		7D63F80F1AF6CBCC00765289 /* HeaderView.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = HeaderView.m; sourceTree = "<group>"; };
@@ -350,6 +334,15 @@
 		7D768C9F192EB20B000C8E3E /* TungCommonObjects.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = TungCommonObjects.m; sourceTree = "<group>"; };
 		7D76CAD91B6FE4550059279E /* description.js */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.javascript; name = description.js; path = images/description.js; sourceTree = "<group>"; };
 		7D76CADD1B700C8C0059279E /* tung-end-of-file.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tung-end-of-file.png"; sourceTree = "<group>"; };
+		7D7C2CFE1DB416A800DD3DBD /* TungDataModel 8.xcdatamodel */ = {isa = PBXFileReference; lastKnownFileType = wrapper.xcdatamodel; path = "TungDataModel 8.xcdatamodel"; sourceTree = "<group>"; };
+		7D7C2D141DB4377800DD3DBD /* EpisodeEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodeEntity.h; sourceTree = "<group>"; };
+		7D7C2D151DB4377800DD3DBD /* EpisodeEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodeEntity.m; sourceTree = "<group>"; };
+		7D7C2D161DB4377800DD3DBD /* PodcastEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PodcastEntity.h; sourceTree = "<group>"; };
+		7D7C2D171DB4377800DD3DBD /* PodcastEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PodcastEntity.m; sourceTree = "<group>"; };
+		7D7C2D181DB4377800DD3DBD /* SettingsEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SettingsEntity.h; sourceTree = "<group>"; };
+		7D7C2D191DB4377800DD3DBD /* SettingsEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SettingsEntity.m; sourceTree = "<group>"; };
+		7D7C2D1A1DB4377800DD3DBD /* UserEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = UserEntity.h; sourceTree = "<group>"; };
+		7D7C2D1B1DB4377800DD3DBD /* UserEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = UserEntity.m; sourceTree = "<group>"; };
 		7D80C77218E7727E00D1BB63 /* tung.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = tung.entitlements; sourceTree = "<group>"; };
 		7D8228C61AFBE271004EB4B2 /* CircleButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CircleButton.h; sourceTree = "<group>"; };
 		7D8228C71AFBE271004EB4B2 /* CircleButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CircleButton.m; sourceTree = "<group>"; };
@@ -455,12 +448,8 @@
 		7DF8A8BF18A2A62F002332A1 /* tungNavBarLogo@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "tungNavBarLogo@2x.png"; sourceTree = "<group>"; };
 		7DF9823A1BB42B5E00D76B9F /* PillButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = PillButton.h; sourceTree = "<group>"; };
 		7DF9823B1BB42B6A00D76B9F /* PillButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = PillButton.m; sourceTree = "<group>"; };
-		7DF997A41BC6F645004FD994 /* EpisodeEntity.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = EpisodeEntity.h; sourceTree = "<group>"; };
-		7DF997A51BC6F645004FD994 /* EpisodeEntity.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = EpisodeEntity.m; sourceTree = "<group>"; };
 		7DF9F4A91BDAAEB100D33FD6 /* SignUpButton.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = SignUpButton.h; sourceTree = "<group>"; };
 		7DF9F4AA1BDAAEB100D33FD6 /* SignUpButton.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = SignUpButton.m; sourceTree = "<group>"; };
-		7DF9F4AC1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = "EpisodeEntity+CoreDataProperties.h"; sourceTree = "<group>"; };
-		7DF9F4AD1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = "EpisodeEntity+CoreDataProperties.m"; sourceTree = "<group>"; };
 		7DFDAC351BD7412C002D9F7A /* CommentCellMine.h */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.h; path = CommentCellMine.h; sourceTree = "<group>"; };
 		7DFDAC361BD7413E002D9F7A /* CommentCellMine.m */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.c.objc; path = CommentCellMine.m; sourceTree = "<group>"; };
 		7DFE859F199AB143000379B6 /* btn-profile-plain-down@2x.png */ = {isa = PBXFileReference; lastKnownFileType = image.png; path = "btn-profile-plain-down@2x.png"; sourceTree = "<group>"; };
@@ -580,10 +569,8 @@
 				7D61889519F18FC600F414C2 /* EditProfileTableViewController.m */,
 				7DE99BD41ACE3F02007A154F /* EpisodeCell.h */,
 				7DE99BD51ACE3F02007A154F /* EpisodeCell.m */,
-				7DF997A41BC6F645004FD994 /* EpisodeEntity.h */,
-				7DF997A51BC6F645004FD994 /* EpisodeEntity.m */,
-				7DF9F4AC1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.h */,
-				7DF9F4AD1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.m */,
+				7D7C2D141DB4377800DD3DBD /* EpisodeEntity.h */,
+				7D7C2D151DB4377800DD3DBD /* EpisodeEntity.m */,
 				7D6D55E91B66A06000DFF759 /* EpisodesTableViewController.h */,
 				7D6D55EA1B66A06000DFF759 /* EpisodesTableViewController.m */,
 				7DA2124A1AFA8A7F00C619F9 /* EpisodeViewController.h */,
@@ -607,10 +594,8 @@
 				7D61F95018A1ED4700710CA7 /* MainStoryboard.storyboard */,
 				7D5BC1A51A546A61008C008D /* MainTabBarController.h */,
 				7D5BC1A61A546A61008C008D /* MainTabBarController.m */,
-				7D6367601BEBD5E40040C52C /* PodcastEntity.h */,
-				7D6367611BEBD5E40040C52C /* PodcastEntity.m */,
-				7D63675E1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.h */,
-				7D63675F1BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.m */,
+				7D7C2D161DB4377800DD3DBD /* PodcastEntity.h */,
+				7D7C2D171DB4377800DD3DBD /* PodcastEntity.m */,
 				7D4F35311AB894560090EE81 /* PodcastResultCell.h */,
 				7D4F35321AB894560090EE81 /* PodcastResultCell.m */,
 				7DC58A8C1AEFF125000DBAF8 /* PodcastViewController.h */,
@@ -626,10 +611,8 @@
 				7D12A4F81A01A08700A9A004 /* ProfileNavigationController.m */,
 				7DE094A11BC1D2F4005B596D /* ProfileViewController.h */,
 				7DE094A21BC1D2F4005B596D /* ProfileViewController.m */,
-				7D07B6E61BE4F657008F4CC7 /* SettingsEntity.h */,
-				7D07B6E71BE4F657008F4CC7 /* SettingsEntity.m */,
-				7D07B6E41BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.h */,
-				7D07B6E51BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m */,
+				7D7C2D181DB4377800DD3DBD /* SettingsEntity.h */,
+				7D7C2D191DB4377800DD3DBD /* SettingsEntity.m */,
 				7D1341E119251EB900B95C66 /* SignUpNavController.h */,
 				7D1341E219251EB900B95C66 /* SignUpNavController.m */,
 				7D4C79EE1BE0FC8A0061816B /* StoriesTableViewController.h */,
@@ -653,10 +636,8 @@
 				7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */,
 				7DA76A511B4F401500F1A9F4 /* TungNavController.h */,
 				7DA76A521B4F401500F1A9F4 /* TungNavController.m */,
-				7D63675A1BEBC8E70040C52C /* UserEntity.h */,
-				7D63675B1BEBC8E70040C52C /* UserEntity.m */,
-				7D6367581BEBC8E70040C52C /* UserEntity+CoreDataProperties.h */,
-				7D6367591BEBC8E70040C52C /* UserEntity+CoreDataProperties.m */,
+				7D7C2D1A1DB4377800DD3DBD /* UserEntity.h */,
+				7D7C2D1B1DB4377800DD3DBD /* UserEntity.m */,
 				7DB6A1B11BFE0F2B0057D337 /* WelcomePopupView.h */,
 				7DB6A1B21BFE0F2B0057D337 /* WelcomePopupView.m */,
 				7DB6A1B81BFE2E7C0057D337 /* WelcomePopupView.xib */,
@@ -1052,14 +1033,13 @@
 				7D61F92E18A1EB2F00710CA7 /* AppDelegate.m in Sources */,
 				7DDC9BED1B67DAB7005E4E52 /* DescriptionWebViewController.m in Sources */,
 				7D6D55EB1B66A06000DFF759 /* EpisodesTableViewController.m in Sources */,
-				7DF997A71BC6F645004FD994 /* EpisodeEntity.m in Sources */,
-				7DF9F4AE1BDB357100D33FD6 /* EpisodeEntity+CoreDataProperties.m in Sources */,
 				7D12A4ED1A01308700A9A004 /* IconButton.m in Sources */,
+				7D7C2D1C1DB4377800DD3DBD /* EpisodeEntity.m in Sources */,
 				7D5BC1A71A546A61008C008D /* MainTabBarController.m in Sources */,
+				7D7C2D1F1DB4377800DD3DBD /* UserEntity.m in Sources */,
 				7DA5ED4A1B548882007BD424 /* FXBlurView.m in Sources */,
 				7DDF1B9F1987F87A008CB927 /* AvatarContainerView.m in Sources */,
 				7DC58A8E1AEFF125000DBAF8 /* PodcastViewController.m in Sources */,
-				7D07B6E81BE4F657008F4CC7 /* SettingsEntity+CoreDataProperties.m in Sources */,
 				7DE4B1BE1B726D6C00C02BE2 /* CommentAndPostView.m in Sources */,
 				7D4F35331AB894560090EE81 /* PodcastResultCell.m in Sources */,
 				7D3B735A19227F92005413F1 /* WelcomeViewController.m in Sources */,
@@ -1078,27 +1058,24 @@
 				7D61889619F18FC600F414C2 /* EditProfileTableViewController.m in Sources */,
 				7DD84D371C6FEA8500D11E2E /* LogViewController.m in Sources */,
 				7D0FAA0C1C3DDA8300235A9A /* BannerAlert.m in Sources */,
-				7D63675D1BEBC8E70040C52C /* UserEntity.m in Sources */,
 				7D282C7C1AF29D3400495E74 /* TungPodcastStyleKit.m in Sources */,
 				7DA76A531B4F401500F1A9F4 /* TungNavController.m in Sources */,
 				7D4F35391AB89DDE0090EE81 /* CCLocalMaximum.m in Sources */,
-				7D07B6E91BE4F657008F4CC7 /* SettingsEntity.m in Sources */,
 				7D4B259A1A0AE6B20035FD35 /* ProfileListCell.m in Sources */,
 				7DE780971AE950F20081E28E /* JPXMLtoDictionary.m in Sources */,
 				7D4F35301AB7A2720090EE81 /* TungPodcast.m in Sources */,
-				7D63675C1BEBC8E70040C52C /* UserEntity+CoreDataProperties.m in Sources */,
 				7DF56650199D4B56003176C1 /* BrowserViewController.m in Sources */,
-				7D6367621BEBD5E40040C52C /* PodcastEntity+CoreDataProperties.m in Sources */,
 				7D1407791BBEB83500BD4F89 /* StoryFooterCell.m in Sources */,
-				7D6367631BEBD5E40040C52C /* PodcastEntity.m in Sources */,
 				7DE094A31BC1D2F4005B596D /* ProfileViewController.m in Sources */,
 				7D768CA0192EB20B000C8E3E /* TungCommonObjects.m in Sources */,
 				7DCAC60219FEF81A004B6182 /* FollowersCell.m in Sources */,
 				7D1341E9192530AC00B95C66 /* FinishSignUpController.m in Sources */,
 				7D14077C1BBEB86D00BD4F89 /* StoryHeaderCell.m in Sources */,
+				7D7C2D1D1DB4377800DD3DBD /* PodcastEntity.m in Sources */,
 				7DB6A1B31BFE0F2B0057D337 /* WelcomePopupView.m in Sources */,
 				7D670F301934EE7600239673 /* Reachability.m in Sources */,
 				7D63F8101AF6CBCC00765289 /* HeaderView.m in Sources */,
+				7D7C2D1E1DB4377800DD3DBD /* SettingsEntity.m in Sources */,
 				7DF9823C1BB42B6A00D76B9F /* PillButton.m in Sources */,
 				7D282C881AF2C89F00495E74 /* TungDataModel.xcdatamodeld in Sources */,
 				7D4F352D1AB797FF0090EE81 /* FeedViewController.m in Sources */,
@@ -1361,6 +1338,7 @@
 		7D282C861AF2C89F00495E74 /* TungDataModel.xcdatamodeld */ = {
 			isa = XCVersionGroup;
 			children = (
+				7D7C2CFE1DB416A800DD3DBD /* TungDataModel 8.xcdatamodel */,
 				7DB78EA11D3C265100C31ABD /* TungDataModel 7.xcdatamodel */,
 				7D64D04F1D106CF100560D4D /* TungDataModel 6.xcdatamodel */,
 				7DC90CD81CFE363A005E3185 /* TungDataModel 5.xcdatamodel */,
@@ -1369,7 +1347,7 @@
 				7DDD164E1C2DEDEE004D5193 /* TungDataModel 2.xcdatamodel */,
 				7D282C871AF2C89F00495E74 /* TungDataModel.xcdatamodel */,
 			);
-			currentVersion = 7DB78EA11D3C265100C31ABD /* TungDataModel 7.xcdatamodel */;
+			currentVersion = 7D7C2CFE1DB416A800DD3DBD /* TungDataModel 8.xcdatamodel */;
 			path = TungDataModel.xcdatamodeld;
 			sourceTree = "<group>";
 			versionGroupType = wrapper.xcdatamodel;

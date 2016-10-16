@@ -475,8 +475,10 @@ static NSString *cellIdentifier = @"PodcastResultCell";
 // pushes a new view with webview description of podcast
 - (void) pushPodcastDescriptionForEntity:(PodcastEntity *)podcastEntity {
     // podcast description style: DIFFERENT than above
-    NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:podcastEntity.keyColor1];
-    NSString *keyColor2HexString = [TungCommonObjects UIColorToHexString:podcastEntity.keyColor2];
+    UIColor *keyColor1 = (UIColor *)podcastEntity.keyColor1;
+    UIColor *keyColor2 = (UIColor *)podcastEntity.keyColor2;
+    NSString *keyColor1HexString = [TungCommonObjects UIColorToHexString:keyColor1];
+    NSString *keyColor2HexString = [TungCommonObjects UIColorToHexString:keyColor2];
     NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:0; color:#666; font: .9em/1.4em -apple-system, Helvetica; } a { color:%@; } img { max-width:100%%; height:auto; } .podcastArt { width:100%%; height:auto; display:block } .header { color:%@; font-weight:300; } div { padding:10px 13px 30px 13px; }</style>\n", keyColor1HexString, keyColor2HexString];
     // description script:
     NSString *scriptPath = [[NSBundle mainBundle] pathForResource:@"description" ofType:@"js"];

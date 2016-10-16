@@ -18,7 +18,7 @@
 @interface FeedViewController ()
 
 @property (nonatomic, retain) TungCommonObjects *tung;
-@property (strong, nonatomic) TungPodcast *podcast;
+@property (strong, nonatomic) TungPodcast *tungPodcast;
 @property (strong, nonatomic) UISegmentedControl *switcher;
 @property (strong, nonatomic) StoriesTableViewController *followingFeed;
 @property (strong, nonatomic) StoriesTableViewController *trendingFeed;
@@ -47,9 +47,9 @@
     _tung = [TungCommonObjects establishTungObjects];
     
     // for search controller
-    _podcast = [TungPodcast new];
-    _podcast.navController = [self navigationController];
-    _podcast.delegate = self;
+    _tungPodcast = [TungPodcast new];
+    _tungPodcast.navController = [self navigationController];
+    _tungPodcast.delegate = self;
     
     // find friends button
     IconButton *findFriendsInner = [[IconButton alloc] initWithFrame:CGRectMake(0, 0, 34, 34)];
@@ -141,15 +141,15 @@
 - (void) viewWillDisappear:(BOOL)animated {
     [super viewWillDisappear:animated];
     //self.navigationController.navigationBar.translucent = YES;
-    [_podcast.feedPreloadQueue cancelAllOperations];
+    [_tungPodcast.feedPreloadQueue cancelAllOperations];
     self.definesPresentationContext = NO;
 }
 
 - (void) viewDidDisappear:(BOOL)animated {
     [super viewDidDisappear:animated];
     /* ppl want what was there to remain
-    if (_podcast.searchController.active) {
-        [_podcast.searchController setActive:NO];
+    if (_tungPodcast.searchController.active) {
+        [_tungPodcast.searchController setActive:NO];
         [self dismissPodcastSearch];
     }*/
 }
@@ -265,7 +265,7 @@
 #pragma mark - tungObjects/tungPodcasts delegate methods
 
 - (void) initiatePodcastSearch {
-    [_podcast.searchController setActive:YES];
+    [_tungPodcast.searchController setActive:YES];
     
     CATransition *animation = [CATransition animation];
     animation.duration = .4;
@@ -273,11 +273,11 @@
     animation.type = kCATransitionFade;
     [self.navigationController.navigationBar.layer addAnimation: animation forKey: @"revealSearch"];
     
-    self.navigationItem.titleView = _podcast.searchController.searchBar;
+    self.navigationItem.titleView = _tungPodcast.searchController.searchBar;
     [self.navigationItem setRightBarButtonItem:nil animated:YES];
     [self.navigationItem setLeftBarButtonItem:nil animated:YES];
     
-    [_podcast.searchController.searchBar becomeFirstResponder];
+    [_tungPodcast.searchController.searchBar becomeFirstResponder];
 }
 
 -(void) dismissPodcastSearch {
