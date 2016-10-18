@@ -25,8 +25,8 @@ NSTimer *JPLogRecorder_saveLogTimer;
         
         NSString *logStatement = [NSString stringWithFormat:@"<%@:%@> %@", file, line, log];
         
-        // pass through to NSLog
-        NSLog(@"%@", logStatement);
+        // pass through to console
+		printf("%s\n", [logStatement UTF8String]);
         
         // add to front of logArray (with date) so it is in reverse chronological order
         NSMutableArray *logArray = [self logArray];

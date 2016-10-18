@@ -21,11 +21,13 @@
 @property UISearchController *searchController;
 @property BOOL editingNotifications;
 @property UIBarButtonItem *editAlertsBarButtonItem;
-@property UILabel *noSubsLabel;
+@property UIView *noSubsView;
 @property UIImageView *findPodcastsHere;
 @property NSTimer *promptTimer;
 @property NSIndexPath *selectedIndexPath;
 @property NSArray *podcasts;
+@property UIActivityIndicatorView *bkgdSpinner;
+@property BOOL needMediaLibPermission;
 
 @end
 
@@ -65,17 +67,37 @@ static NSString * const reuseIdentifier = @"artCell";
     self.collectionView.collectionViewLayout = flowLayout;
     self.collectionView.scrollEnabled = YES;
     self.collectionView.backgroundColor = [TungCommonObjects bkgdGrayColor];
-    // background view for no subscriptions
-    _noSubsLabel = [[UILabel alloc] init];
-    _noSubsLabel.text = @"You haven't subscribed to\nany podcasts yet";
-    _noSubsLabel.numberOfLines = 2;
-    _noSubsLabel.textColor = [UIColor grayColor];
-    _noSubsLabel.textAlignment = NSTextAlignmentCenter;
     
-    UIActivityIndicatorView *bkgdSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
-    bkgdSpinner.alpha = 1;
-    [bkgdSpinner startAnimating];
-    self.collectionView.backgroundView = bkgdSpinner;
+    // background view for no subscriptions
+    UILabel *noSubsLabel = [[UILabel alloc] init];
+    noSubsLabel.text = @"You haven't subscribed to\nany podcasts yet.";
+    noSubsLabel.numberOfLines = 2;
+    noSubsLabel.textColor = [UIColor grayColor];
+    noSubsLabel.textAlignment = NSTextAlignmentCenter;
+    CGFloat screenWidth = [TungCommonObjects screenSize].width;
+    CGSize labelSize = [noSubsLabel sizeThatFits:CGSizeMake(screenWidth, 400)];
+    CGRect labelRect = CGRectMake(0, 0, screenWidth, labelSize.height);
+    noSubsLabel.frame = labelRect;
+    CGFloat buttonHeight = 40;
+    UIButton *autoImportBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, labelSize.height, screenWidth, buttonHeight)];
+    [autoImportBtn setTitle:@"Import podcast subscriptions?" forState:UIControlStateNormal];
+    [autoImportBtn setTitleColor:[TungCommonObjects tungColor] forState:UIControlStateNormal];
+    [autoImportBtn addTarget:_tung action:@selector(promptAndRequestMediaLibraryAccess) forControlEvents:UIControlEventTouchUpInside];
+    _noSubsView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, labelSize.height + buttonHeight)];
+    [_noSubsView addSubview:noSubsLabel];
+    [_noSubsView addSubview:autoImportBtn];
+    _noSubsView.hidden = YES;
+    [self.view addSubview:_noSubsView];
+    _noSubsView.translatesAutoresizingMaskIntoConstraints = NO;
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_noSubsView attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeCenterX multiplier:1 constant:0]];
+    [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_noSubsView attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeCenterY multiplier:1 constant:0]];
+    [_noSubsView addConstraint:[NSLayoutConstraint constraintWithItem:_noSubsView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:screenWidth]];
+    [_noSubsView addConstraint:[NSLayoutConstraint constraintWithItem:_noSubsView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:labelSize.height + buttonHeight]];
+    
+    _bkgdSpinner = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];
+    _bkgdSpinner.alpha = 1;
+    [_bkgdSpinner startAnimating];
+    self.collectionView.backgroundView = _bkgdSpinner;
     //self.collectionView.backgroundView = _noSubsLabel;
     /*
     UIImage *findPodcastsImage = [UIImage imageNamed:@"find-podcasts-here.png"];
@@ -103,9 +125,10 @@ static NSString * const reuseIdentifier = @"artCell";
     
     // re-ordering: long press recognizer
     NSInteger majorVersion = [[NSProcessInfo processInfo] operatingSystemVersion].majorVersion;
+    
     if (majorVersion >= 9) {
         UILongPressGestureRecognizer *longPressRecognizer = [[UILongPressGestureRecognizer alloc] initWithTarget:self action:@selector(handleLongPress:)];
-        longPressRecognizer.minimumPressDuration = 0.6; //seconds
+        longPressRecognizer.minimumPressDuration = 0.5; //seconds
         longPressRecognizer.delegate = self;
         [self.collectionView addGestureRecognizer:longPressRecognizer];
     }
@@ -150,14 +173,15 @@ static NSString * const reuseIdentifier = @"artCell";
     
     [self.collectionView reloadData];
     
+    self.collectionView.backgroundView = nil;
     if (_podcasts.count == 0) {
         //_findPodcastsHere.hidden = NO;
-        self.collectionView.backgroundView = _noSubsLabel;
+        _noSubsView.hidden = NO;
         self.navigationItem.leftBarButtonItem = nil;
     }
     else {
         //_findPodcastsHere.hidden = YES;
-        self.collectionView.backgroundView = nil;
+        _noSubsView.hidden = YES;
         self.navigationItem.leftBarButtonItem = _editAlertsBarButtonItem;
     }
 }
@@ -177,7 +201,7 @@ static NSString * const reuseIdentifier = @"artCell";
         [self dismissPodcastSearch];
     }*/
 }
-                                             
+
 #pragma mark - Editing notification stuff
                                              
 - (void) toggleEditNotifySettings {

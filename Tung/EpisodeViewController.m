@@ -732,7 +732,7 @@ NSTimer *markAsSeenTimer;
                     [_headerView setUpLargeButtonForEpisode:nil orPodcast:_episodeEntity.podcast];
                     
                 } else {
-                    UIAlertController *poofAlert = [UIAlertController alertControllerWithTitle:@"Poof! 💭" message:@"The magic button will vanish for this podcast until the podcaster customizes it, or until you sign-out and sign-in again." preferredStyle:UIAlertControllerStyleAlert];
+                    UIAlertController *poofAlert = [UIAlertController alertControllerWithTitle:@"Poof! 💭" message:@"The magic button will vanish for this podcast until the podcaster customizes it." preferredStyle:UIAlertControllerStyleAlert];
                     [poofAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
                         _episodeEntity.podcast.hideMagicButton = [NSNumber numberWithBool:YES];
                         settings.hasSeenPoofAlert = [NSNumber numberWithBool:YES];
@@ -1241,7 +1241,9 @@ static CGRect buttonsScrollViewHomeRect;
         // @"https://itunes.apple.com/us/app/tung.fm/id932939338"
         [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"itms-apps://itunes.apple.com/app/id932939338"]];
     }]];
-    thanksAlert.preferredAction = [thanksAlert.actions objectAtIndex:1];
+    if ([TungCommonObjects iOSVersionFloat] >= 9.0) {
+    	thanksAlert.preferredAction = [thanksAlert.actions objectAtIndex:1];
+    }
     [self presentViewController:thanksAlert animated:YES completion:nil];
 }
 

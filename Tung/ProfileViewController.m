@@ -728,6 +728,9 @@ NSTimer *sessionCheckTimer;
         [TungCommonObjects deleteAllCachedEpisodes];
         [TungCommonObjects showBannerAlertForText:@"All cached episodes have been deleted."];
     }]];
+    [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Import podcast subscriptions" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [_tung promptAndRequestMediaLibraryAccess];
+    }]];
     /*
     [settingsSheet addAction:[UIAlertAction actionWithTitle:clearCachedDataOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [TungCommonObjects deleteCachedData];

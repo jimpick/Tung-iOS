@@ -16,6 +16,7 @@
 @property (nonatomic, assign) NSInteger downloadingEpisodeIndex;
 @property (strong, nonatomic) CADisplayLink *onEnterFrame;
 @property (strong, nonatomic) CircleButton *activeSaveBtn;
+@property NSDateFormatter *airDateFormatter;
 
 @end
 
@@ -42,6 +43,9 @@
     [self.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
     
     _downloadingEpisodeIndex = -1;
+    
+    _airDateFormatter = [[NSDateFormatter alloc] init];
+    [_airDateFormatter setDateFormat:@"MMM d, yyyy"];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveStatusChanged) name:@"saveStatusDidChange" object:nil];
     
@@ -239,30 +243,31 @@
     }
 }
 
-static NSDateFormatter *airDateFormatter = nil;
-static NSString *cellIdentifier = @"EpisodeCell";
-
 - (UITableViewCell *) tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     
-    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:cellIdentifier];
+    UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"EpisodeCell"];
     
     EpisodeCell *episodeCell = (EpisodeCell *)cell;
     
     // cell data
     NSDictionary *episodeDict = [NSDictionary dictionaryWithDictionary:[_episodeArray objectAtIndex:indexPath.row]];
     //NSLog(@"episode cell for row at index path, row: %ld", (long)indexPath.row);
+    //NSLog(@"episode: %@", [episodeDict allKeys]);
     
     // title
     episodeCell.episodeTitle.text = [episodeDict objectForKey:@"title"];
     UIColor *keyColor = (UIColor *)_podcastEntity.keyColor1;
     episodeCell.episodeTitle.textColor = keyColor;
-    // air date
-    if (!airDateFormatter) {
-        airDateFormatter = [[NSDateFormatter alloc] init];
-        [airDateFormatter setDateFormat:@"MMM d, yyyy"];
-    }
+    // air date & duration
     NSDate *pubDate = [episodeDict objectForKey:@"pubDate"];
-    episodeCell.airDate.text = [airDateFormatter stringFromDate:pubDate];
+    NSString *infoString;
+    if ([episodeDict objectForKey:@"itunes:duration"]) {
+        NSString *duration = [TungCommonObjects formatDurationFromString:[episodeDict objectForKey:@"itunes:duration"]];
+        infoString = [NSString stringWithFormat:@"%@  •  %@", [_airDateFormatter stringFromDate:pubDate], duration];
+    } else {
+        infoString = [_airDateFormatter stringFromDate:pubDate];
+    }
+    episodeCell.airDate.text = infoString;
     
     // now playing?
     episodeCell.iconView.backgroundColor = [UIColor clearColor];

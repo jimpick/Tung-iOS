@@ -266,7 +266,9 @@
                 
             }]];
             [unfollowConfirmAlert addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:nil]];
-            unfollowConfirmAlert.preferredAction = [unfollowConfirmAlert.actions objectAtIndex:1];
+            if ([TungCommonObjects iOSVersionFloat] >= 9.0) {
+            	unfollowConfirmAlert.preferredAction = [unfollowConfirmAlert.actions objectAtIndex:1];
+            }
             [self presentViewController:unfollowConfirmAlert animated:YES completion:nil];
 
         }

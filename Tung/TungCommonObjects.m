@@ -196,8 +196,8 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    return @"https://api.tung.fm/";
-    //return @"https://staging-api.tung.fm/";
+    //return @"https://api.tung.fm/";
+    return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
@@ -216,6 +216,20 @@ CGSize screenSize;
         topController = topController.presentedViewController;
     }
     return topController;
+}
+
+CGFloat versionFloat = 0.0;
++ (CGFloat) iOSVersionFloat {
+    if (versionFloat > 0.0) {
+        return versionFloat;
+    }
+    else {
+        NSInteger majorVersion = [[NSProcessInfo processInfo] operatingSystemVersion].majorVersion;
+        NSInteger minorVersion = [[NSProcessInfo processInfo] operatingSystemVersion].minorVersion;
+        NSString *version = [NSString stringWithFormat:@"%ld.%ld", (long)majorVersion, (long)minorVersion];
+        versionFloat = [version floatValue];
+        return versionFloat;
+    }
 }
 
 -(void) checkForNowPlaying {
@@ -1173,7 +1187,9 @@ static NSString *episodeDirName = @"episodes";
             [TungCommonObjects saveContextWithReason:@"settings changed"];
         }]];
         [episodeExpirationAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-        episodeExpirationAlert.preferredAction = [episodeExpirationAlert.actions objectAtIndex:1];
+        if ([TungCommonObjects iOSVersionFloat] >= 9.0) {
+        	episodeExpirationAlert.preferredAction = [episodeExpirationAlert.actions objectAtIndex:1];
+        }
         [_viewController presentViewController:episodeExpirationAlert animated:YES completion:nil];
         
     }
@@ -1381,7 +1397,9 @@ static NSString *episodeDirName = @"episodes";
     }]];
     UIAlertAction *keepAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
     [episodeSavedInfoAlert addAction:keepAction];
-    episodeSavedInfoAlert.preferredAction = keepAction;
+    if ([TungCommonObjects iOSVersionFloat] >= 9.0) {
+    	episodeSavedInfoAlert.preferredAction = keepAction;
+    }
     [_viewController presentViewController:episodeSavedInfoAlert animated:YES completion:nil];
 }
 
@@ -2742,13 +2760,17 @@ static NSArray *colors;
 // if a user deletes the app or signs out, they lose all their subscribe/recommend/progress data.
 // also syncs web data with app data
 - (void) restorePodcastDataSinceTime:(NSNumber *)time {
+    
+    if (time.integerValue == 0) {
+        [TungCommonObjects showBannerAlertForText:@"Restoring podcast data…"];
+    }
     NSURL *restoreRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/restore-podcast-data.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *restoreRequest = [NSMutableURLRequest requestWithURL:restoreRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [restoreRequest setHTTPMethod:@"POST"];
     NSDictionary *params = @{@"sessionId":_sessionId,
                              @"lastDataChange":[NSString stringWithFormat:@"%@", time]
                              };
-    JPLog(@"restore podcast data since %@ request", time);
+    JPLog(@"restore podcast data since %@", time);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [restoreRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -2886,61 +2908,66 @@ static NSArray *colors;
     [subscribeRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:subscribeRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                //JPLog(@"%@", responseDict);
-                if ([responseDict objectForKey:@"error"]) {
-                    // session expired
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self subscribeToPodcast:podcastEntity withButton:button];
-                        }];
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    //JPLog(@"%@", responseDict);
+                    if ([responseDict objectForKey:@"error"]) {
+                        // session expired
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self subscribeToPodcast:podcastEntity withButton:button];
+                            }];
+                        }
+                        // no podcast record
+                        else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
+                            __unsafe_unretained typeof(self) weakSelf = self;
+                            [TungCommonObjects addOrUpdatePodcast:podcastEntity orEpisode:nil withCallback:^ {
+                                [weakSelf subscribeToPodcast:podcastEntity withButton:button];
+                            }];
+                        }
+                        else {
+                            JPLog(@"Error subscribing to podcast: %@", [responseDict objectForKey:@"error"]);
+                            [button setEnabled:YES];
+                        }
                     }
-                    // no podcast record
-                    else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
-                        __unsafe_unretained typeof(self) weakSelf = self;
-                        [TungCommonObjects addOrUpdatePodcast:podcastEntity orEpisode:nil withCallback:^ {
-                            [weakSelf subscribeToPodcast:podcastEntity withButton:button];
-                        }];
-                    }
-                    else {
-                        JPLog(@"Error subscribing to podcast: %@", [responseDict objectForKey:@"error"]);
+                    // success
+                    else if ([responseDict objectForKey:@"success"]) {
                         [button setEnabled:YES];
+                        [TungCommonObjects savePodcastArtForEntity:podcastEntity];
+                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                        _loggedInUser.lastDataChange = lastDataChange;
+                        podcastEntity.timeSubscribed = lastDataChange;
+                        podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
+                        [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user, subscribe status changed"];
+                        // important: do not assign shortlink from subscribe story to episode entity
+                        // notification
+                        NSDictionary *userInfo = @{ @"collectionId": podcastEntity.collectionId };
+                        NSNotification *subscribeChangeNotif = [NSNotification notificationWithName:@"refreshSubscribeStatus" object:nil userInfo:userInfo];
+                        [[NSNotificationCenter defaultCenter] postNotification:subscribeChangeNotif];
                     }
                 }
-                // success
-                else if ([responseDict objectForKey:@"success"]) {
+                else {
                     [button setEnabled:YES];
-                    [TungCommonObjects savePodcastArtForEntity:podcastEntity];
-                    NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                    _loggedInUser.lastDataChange = lastDataChange;
-                    podcastEntity.timeSubscribed = lastDataChange;
-                    podcastEntity.isSubscribed = [NSNumber numberWithBool:YES];
-                    [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user, subscribe status changed"];
-                    // important: do not assign shortlink from subscribe story to episode entity
-                    // notification
-                    NSDictionary *userInfo = @{ @"collectionId": podcastEntity.collectionId };
-                    NSNotification *subscribeChangeNotif = [NSNotification notificationWithName:@"refreshSubscribeStatus" object:nil userInfo:userInfo];
-                    [[NSNotificationCenter defaultCenter] postNotification:subscribeChangeNotif];
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error. HTML: %@", html);
                 }
-            }
-            else {
-                
-                [button setEnabled:YES];
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error. HTML: %@", html);
-            }
-        });
+            });
+        }
+        else {
+            [button setEnabled:YES];
+            JPLog(@"Error unsubscribing from podcast: %@", error.localizedDescription);
+            [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+        }
     }];
 }
 
 - (void) unsubscribeFromPodcast:(PodcastEntity *)podcastEntity withButton:(CircleButton *)button {
-    //JPLog(@"unsubscribe request for podcast with id %@", podcastEntity.collectionId);
+    JPLog(@"unsubscribe request for podcast with id %@", podcastEntity.collectionId);
     [button setEnabled:NO];
     NSURL *unsubscribeFromPodcastRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/unsubscribe.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *unsubscribeFromPodcastRequest = [NSMutableURLRequest requestWithURL:unsubscribeFromPodcastRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
@@ -2951,54 +2978,60 @@ static NSArray *colors;
     [unsubscribeFromPodcastRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:unsubscribeFromPodcastRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-        error = nil;
-        id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-        dispatch_async(dispatch_get_main_queue(), ^{
-            if (jsonData != nil && error == nil) {
-                NSDictionary *responseDict = jsonData;
-                //JPLog(@"%@", responseDict);
-                if ([responseDict objectForKey:@"error"]) {
-                    // session expired
-                    if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
-                        // get new session and re-request
-                        JPLog(@"SESSION EXPIRED");
-                        [self getSessionWithCallback:^{
-                            [self unsubscribeFromPodcast:podcastEntity withButton:button];
-                        }];
+        if (error == nil) {
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    //JPLog(@"%@", responseDict);
+                    if ([responseDict objectForKey:@"error"]) {
+                        // session expired
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self unsubscribeFromPodcast:podcastEntity withButton:button];
+                            }];
+                        }
+                        // no podcast record
+                        else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
+                            __unsafe_unretained typeof(self) weakSelf = self;
+                            [TungCommonObjects addOrUpdatePodcast:podcastEntity orEpisode:nil withCallback:^ {
+                                [weakSelf unsubscribeFromPodcast:podcastEntity withButton:button];
+                            }];
+                        }
+                        else {
+                            JPLog(@"Error unsubscribing from podcast: %@", [responseDict objectForKey:@"error"]);
+                            [button setEnabled:YES];
+                        }
                     }
-                    // no podcast record
-                    else if ([[responseDict objectForKey:@"error"] isEqualToString:@"Need podcast info"]) {
-                        __unsafe_unretained typeof(self) weakSelf = self;
-                        [TungCommonObjects addOrUpdatePodcast:podcastEntity orEpisode:nil withCallback:^ {
-                            [weakSelf unsubscribeFromPodcast:podcastEntity withButton:button];
-                        }];
-                    }
-                    else {
-                        JPLog(@"Error unsubscribing from podcast: %@", [responseDict objectForKey:@"error"]);
+                    // success
+                    else if ([responseDict objectForKey:@"success"]) {
                         [button setEnabled:YES];
+                        [TungCommonObjects unsavePodcastArtForEntity:podcastEntity];
+                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                        _loggedInUser.lastDataChange = lastDataChange;
+                        podcastEntity.timeSubscribed = [NSNumber numberWithInt:0];
+                        podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
+                        [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user, subscribe status change"];
+                        // notification
+                        NSDictionary *userInfo = @{ @"collectionId": podcastEntity.collectionId };
+                        NSNotification *subscribeChangeNotif = [NSNotification notificationWithName:@"refreshSubscribeStatus" object:nil userInfo:userInfo];
+                        [[NSNotificationCenter defaultCenter] postNotification:subscribeChangeNotif];
                     }
                 }
-                // success
-                else if ([responseDict objectForKey:@"success"]) {
+                else {
                     [button setEnabled:YES];
-                    [TungCommonObjects unsavePodcastArtForEntity:podcastEntity];
-                    NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
-                    _loggedInUser.lastDataChange = lastDataChange;
-                    podcastEntity.timeSubscribed = [NSNumber numberWithInt:0];
-                    podcastEntity.isSubscribed = [NSNumber numberWithBool:NO];
-                    [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user, subscribe status change"];
-                    // notification
-                    NSDictionary *userInfo = @{ @"collectionId": podcastEntity.collectionId };
-                    NSNotification *subscribeChangeNotif = [NSNotification notificationWithName:@"refreshSubscribeStatus" object:nil userInfo:userInfo];
-                    [[NSNotificationCenter defaultCenter] postNotification:subscribeChangeNotif];
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error. HTML: %@", html);
                 }
-            }
-            else {
-                [button setEnabled:YES];
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"Error. HTML: %@", html);
-            }
-        });
+            });
+        }
+        else {
+            [button setEnabled:YES];
+            JPLog(@"Error unsubscribing from podcast: %@", error.localizedDescription);
+            [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+        }
     }];
 }
 
@@ -3678,9 +3711,9 @@ static NSArray *colors;
     NSMutableURLRequest *podcastInfoRequest = [NSMutableURLRequest requestWithURL:podcastInfoURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [podcastInfoRequest setHTTPMethod:@"POST"];
     NSDictionary *params = @{
-                             @"collectionId": collectionId
-                             };
-	JPLog(@"request for podcastInfo with params: %@", params);
+                              @"collectionId": collectionId
+                              };
+    JPLog(@"request for podcastInfo with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [podcastInfoRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -4112,6 +4145,182 @@ static NSArray *colors;
     [_viewController presentViewController:welcome animated:YES completion:^{}];
 }
 
+#pragma mark - Media Library / Auto-import
+
+- (void) promptAndRequestMediaLibraryAccess {
+    
+    UIAlertController *promptForMediaLibPermission = [UIAlertController alertControllerWithTitle:nil message:@"Tung can import your podcast subscriptions from the Apple Podcasts app. Would you like to continue?" preferredStyle:UIAlertControllerStyleAlert];
+    [promptForMediaLibPermission addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:nil]];
+    [promptForMediaLibPermission addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        
+        CGFloat version = [TungCommonObjects iOSVersionFloat];
+        if (version >= 9.3) {
+            [MPMediaLibrary requestAuthorization:^(MPMediaLibraryAuthorizationStatus status) {
+                switch (status) {
+                    case MPMediaLibraryAuthorizationStatusAuthorized:
+                        [self queryExistingPodcastSubscriptions];
+                        break;
+                    default:
+                        NSLog(@"Access to media library denied");
+                        break;
+                }
+            }];
+        }
+        else {
+            NSLog(@"did not need permission for media lib");
+            [self queryExistingPodcastSubscriptions];
+        }
+
+    }]];
+    if ([TungCommonObjects iOSVersionFloat] >= 9.0) {
+    	promptForMediaLibPermission.preferredAction = [promptForMediaLibPermission.actions objectAtIndex:1];
+    }
+    [[TungCommonObjects activeViewController] presentViewController:promptForMediaLibPermission animated:YES completion:nil];
+    
+}
+
+- (void) queryExistingPodcastSubscriptions {
+    
+    MPMediaQuery *existingSubs = [[MPMediaQuery alloc] init];
+    NSNumber *type = [NSNumber numberWithInteger:MPMediaTypePodcast];
+    MPMediaPropertyPredicate *podcastPredicate = [MPMediaPropertyPredicate predicateWithValue:type forProperty:MPMediaItemPropertyMediaType];
+    [existingSubs addFilterPredicate:podcastPredicate];
+    NSArray *pods = [existingSubs items];
+    NSLog(@"queried existing podcasts, found %lu", (unsigned long)pods.count);
+    
+    NSMutableArray *uniqueTitles = [NSMutableArray array];
+    for (MPMediaItem *pod in pods) {
+        if ([MPMediaItem canFilterByProperty:MPMediaItemPropertyPodcastPersistentID]) {
+            NSString *collectionName = [pod valueForProperty:MPMediaItemPropertyPodcastTitle];
+            if (![uniqueTitles containsObject:collectionName]) {
+                [uniqueTitles addObject:collectionName];
+            }
+            NSLog (@"- %@", collectionName);
+        }
+    }
+    if (uniqueTitles.count) {
+        [self bulkSubscribeToPodcastsWithTitles:uniqueTitles];
+    }
+    else {
+        UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"No subscriptions" message:@"It appears you haven't subscribed to any podcasts with the Apple Podcasts app. You can try again any time from Settings." preferredStyle:UIAlertControllerStyleAlert];
+        [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+        [[TungCommonObjects activeViewController] presentViewController:errorAlert animated:YES completion:nil];
+    }
+}
+
+- (void) bulkSubscribeToPodcastsWithTitles:(NSArray *)titles {
+    
+    if (_connectionAvailable.boolValue) {
+        
+        NSURL *bulkSubscribeURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/bulk-subscribe.php", [TungCommonObjects apiRootUrl]]];
+        NSMutableURLRequest *bulkSubscribeRequest = [NSMutableURLRequest requestWithURL:bulkSubscribeURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+        [bulkSubscribeRequest setHTTPMethod:@"POST"];
+        
+        NSDictionary *params = @{@"sessionId":_sessionId,
+                                 @"titles": [titles componentsJoinedByString:@"#,#"]
+                                 };
+        NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+        [bulkSubscribeRequest setHTTPBody:serializedParams];
+        NSOperationQueue *queue = [[NSOperationQueue alloc] init];
+        [NSURLConnection sendAsynchronousRequest:bulkSubscribeRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+            error = nil;
+            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                if (jsonData != nil && error == nil) {
+                    NSDictionary *responseDict = jsonData;
+                    JPLog(@"%@", responseDict);
+                    if ([responseDict objectForKey:@"error"]) {
+                        // session expired
+                        if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
+                            // get new session and re-request
+                            JPLog(@"SESSION EXPIRED");
+                            [self getSessionWithCallback:^{
+                                [self bulkSubscribeToPodcastsWithTitles:titles];
+                            }];
+                        }
+                        else {
+                            [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
+                        }
+                    }
+                    // success
+                    else if ([responseDict objectForKey:@"success"]) {
+                        
+                        NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
+                        _loggedInUser.lastDataChange = lastDataChange;
+                        
+                        NSArray *notFoundPodcasts = [responseDict objectForKey:@"not-found"];
+                        NSArray *podcasts = [responseDict objectForKey:@"podcasts"];
+                        NSMutableString *alertMessage = [NSMutableString string];
+                        NSMutableArray *alreadySubscribed = [NSMutableArray array];
+                        NSInteger importCount = 0;
+                        NSInteger maxTitleLength = 33;
+                        // podcasts found
+                        for (int i = 0; i < podcasts.count; i++) {
+                            
+                            NSDictionary *podDict = [podcasts objectAtIndex:i];
+                            PodcastEntity *podEntity = [TungCommonObjects getEntityForPodcast:podDict save:NO];
+                            NSString *titleForAlert = [TungCommonObjects truncateStringWithEllipsis:podEntity.collectionName toLength:maxTitleLength];
+                            // already subscribed?
+                            if (podEntity.isSubscribed.boolValue) {
+                                [alreadySubscribed addObject:titleForAlert];
+                            }
+                            else {
+                                podEntity.isSubscribed = [NSNumber numberWithBool:YES];
+                                podEntity.timeSubscribed = lastDataChange;
+                                [alertMessage appendFormat:@"- %@\n", titleForAlert];
+                                importCount++;
+                            }
+                        }
+                        // title
+                        NSString *alertTitle;
+                        if (importCount > 0) {
+                            NSString *podcastPlural = (importCount == 1) ? @"podcast" : @"podcasts";
+                            alertTitle = [NSString stringWithFormat:@"Successfully imported %ld %@", (long)importCount, podcastPlural];
+                        }
+                        else {
+                            alertTitle = @"No podcasts were imported";
+                        }
+                        // list already subscribed
+                        if (alreadySubscribed.count) {
+                            [alertMessage appendString:@"\nAlready subscribed:\n"];
+                            for (int i = 0; i < alreadySubscribed.count; i++) {
+                                [alertMessage appendFormat:@"- %@\n", [alreadySubscribed objectAtIndex:i]];
+                            }
+                        }
+                        // list not found
+                        if (notFoundPodcasts.count) {
+                            [alertMessage appendString:@"\nNot found:\n"];
+                            for (int i = 0; i < notFoundPodcasts.count; i++) {
+                                NSString *titleForAlert = [TungCommonObjects truncateStringWithEllipsis:[notFoundPodcasts objectAtIndex:i] toLength:maxTitleLength];
+                                [alertMessage appendFormat:@"- %@\n", titleForAlert];
+                            }
+                            [alertMessage appendString:@"You can add these any time by searching them."];
+                        }
+                        // save
+                        [TungCommonObjects saveContextWithReason:@"lastDataChange changed for logged in user, bulk subscribed"];
+                        
+                        // alert results
+                        UIAlertController *resultsAlert = [UIAlertController alertControllerWithTitle:alertTitle message:alertMessage preferredStyle:UIAlertControllerStyleAlert];
+                        [resultsAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+                        [[TungCommonObjects activeViewController] presentViewController:resultsAlert animated:YES completion:nil];
+                        
+                        NSNotification *subscribeChangeNotif = [NSNotification notificationWithName:@"refreshSubscribeStatus" object:nil userInfo:nil];
+                        [[NSNotificationCenter defaultCenter] postNotification:subscribeChangeNotif];
+                    }
+                }
+                else {
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"Error. HTML: %@", html);
+                    [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+                }
+            });
+        }];
+        
+    } else {
+        [TungCommonObjects showNoConnectionAlert];
+    }
+}
+
 #pragma mark - Twitter
 
 - (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback {
@@ -4386,7 +4595,9 @@ static NSArray *colors;
         [[UIApplication sharedApplication] registerForRemoteNotifications];
         [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
     }]];
-    notifPermissionAlert.preferredAction = [notifPermissionAlert.actions objectAtIndex:2];
+    if ([TungCommonObjects iOSVersionFloat] >= 9.0) {
+    	notifPermissionAlert.preferredAction = [notifPermissionAlert.actions objectAtIndex:2];
+    }
     [_viewController presentViewController:notifPermissionAlert animated:YES completion:nil];
 }
 
@@ -4407,7 +4618,9 @@ static NSArray *colors;
         [[UIApplication sharedApplication] registerForRemoteNotifications];
         [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
     }]];
-    notifPermissionAlert.preferredAction = [notifPermissionAlert.actions objectAtIndex:2];
+    if ([TungCommonObjects iOSVersionFloat] >= 9.0) {
+    	notifPermissionAlert.preferredAction = [notifPermissionAlert.actions objectAtIndex:2];
+    }
     [_viewController presentViewController:notifPermissionAlert animated:YES completion:nil];
 }
 
@@ -5439,6 +5652,15 @@ static NSDateFormatter *dayDateFormatter = nil;
     else {
         NSURL *urlCast = (NSURL *)url;
         return urlCast.absoluteString;
+    }
+}
+
++ (NSString *) truncateStringWithEllipsis:(NSString *)string toLength:(NSInteger)length {
+    if (string.length > length) {
+        return [NSString stringWithFormat:@"%@…", [string substringToIndex:length]];
+    }
+    else {
+        return string;
     }
 }
 

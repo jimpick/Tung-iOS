@@ -75,6 +75,7 @@
 + (NSString *) tungSiteRootUrl;
 + (NSString *) apiKey;
 + (UIViewController *) activeViewController;
++ (CGFloat) iOSVersionFloat;
 
 - (void) checkForNowPlaying;
 - (void) controlButtonTapped;
@@ -199,6 +200,11 @@
 - (void) resetPlayerAndQueue;
 - (void) signOut;
 
+// media library/auto-import
+- (void) promptAndRequestMediaLibraryAccess;
+- (void) queryExistingPodcastSubscriptions;
+- (void) bulkSubscribeToPodcastsWithTitles:(NSArray *)titles ;
+
 // twitter
 - (void) postTweetWithText:(NSString *)text andUrl:(NSString *)url;
 - (void) verifyCredWithTwitterOauthHeaders:(NSDictionary *)headers withCallback:(void (^)(BOOL success, NSDictionary *response))callback;
@@ -268,5 +274,6 @@
 + (NSURL *) addReferrerToUrlString:(NSString *)urlString;
 + (NSURL *) urlFromString:(id)urlString;
 + (NSString *) stringFromUrl:(id)url;
++ (NSString *) truncateStringWithEllipsis:(NSString *)string toLength:(NSInteger)length;
 
 @end
