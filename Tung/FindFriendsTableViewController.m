@@ -11,6 +11,7 @@
 #import "IconCell.h"
 #import "ProfileListTableViewController.h"
 #import "FinishSignUpController.h"
+#import "ProfileViewController.h"
 
 @interface FindFriendsTableViewController ()
 
@@ -513,6 +514,16 @@
                     [self pushFacebookFriends];
                 }];
             }
+        }
+    }
+    else {
+        if (!_profileData) {
+            NSDictionary *cellDict = [_suggestedUsersArray objectAtIndex:indexPath.row];
+            NSDictionary *userDict = [cellDict objectForKey:@"user"];
+            NSString *userId = [[userDict objectForKey:@"id"] objectForKey:@"$id"];
+            ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
+            profileView.profiledUserId = userId;
+            [self.navigationController pushViewController:profileView animated:YES];
         }
     }
 }

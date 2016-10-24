@@ -31,6 +31,7 @@
 @property BOOL isLoggedInUser;
 @property BOOL reachable;
 @property BOOL preparingView;
+@property BOOL needsToRequestFeed;
 
 // switcher
 @property UIToolbar *switcherBar;
@@ -113,6 +114,7 @@
     _profileHeader.largeAvatarView.borderColor = [UIColor whiteColor];
     _profileHeader.largeAvatarView.hidden = YES;
     _profileHeader.editFollowBtn.hidden = YES;
+    _profileHeader.shareProfileButton.hidden = YES;
     
     _profileHeader.basicInfoWebView.delegate = self;
     _profileHeader.bioWebView.delegate = self;
@@ -123,6 +125,11 @@
     
     [_profileHeader.followingCountBtn addTarget:self action:@selector(viewFollowing) forControlEvents:UIControlEventTouchUpInside];
     [_profileHeader.followerCountBtn addTarget:self action:@selector(viewFollowers) forControlEvents:UIControlEventTouchUpInside];
+    
+    _profileHeader.followsBackButton.type = kIconButtonTypeCheckmark;
+    _profileHeader.followsBackButton.hidden = YES;
+    _profileHeader.followsBackButton.color = [UIColor colorWithRed:0.0 green:0.0 blue:0.0 alpha:0.3];
+    [_profileHeader.followsBackButton addTarget:self action:@selector(showFollowsYouBanner) forControlEvents:UIControlEventTouchUpInside];
     
     // switcher bar
     _switcherBar = [[UIToolbar alloc] initWithFrame:CGRectMake(0, 0, self.view.bounds.size.width, 44)];
@@ -197,12 +204,15 @@
         _switcherIndex = 0;
         [_switcher setSelectedSegmentIndex:_switcherIndex];
         [self switchViews:_switcher];
+        
+        // get data in viewDidAppear
+        _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES];
+        _tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
+        _needsToRequestFeed = NO;
     }
-    
-    
-	// get data in viewDidAppear
-    _tung.profileNeedsRefresh = [NSNumber numberWithBool:YES];
-    _tung.profileFeedNeedsRefresh = [NSNumber numberWithBool:YES];
+    else {
+        _needsToRequestFeed = YES; // only used for non-logged in users
+    }
     
     // notifs
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(appDidBecomeActive) name:UIApplicationDidBecomeActiveNotification object:nil];
@@ -327,6 +337,10 @@
     _switcherIndex = switcher.selectedSegmentIndex;
 }
 
+- (void) showFollowsYouBanner {
+    [TungCommonObjects showBannerAlertForText:[NSString stringWithFormat:@"%@ follows you.", [_profiledUserData objectForKey:@"username"]]];
+}
+
 #pragma mark - specific to Profile View
 
 NSTimer *sessionCheckTimer;
@@ -370,7 +384,7 @@ NSTimer *sessionCheckTimer;
             else {
                 
                 [_tung getProfileDataForUserWithId:_profiledUserId orUsername:_profiledUsername withCallback:^(NSDictionary *jsonData) {
-                    NSLog(@"get profile data with id: %@ or username: %@", _profiledUserId, _profiledUsername);
+                    //NSLog(@"get profile data with id: %@ or username: %@", _profiledUserId, _profiledUsername);
                     if (jsonData != nil) {
                         NSDictionary *responseDict = jsonData;
                         if ([responseDict objectForKey:@"user"]) {
@@ -380,7 +394,8 @@ NSTimer *sessionCheckTimer;
                             _storiesView.profiledUserId = _profiledUserId;
                             //JPLog(@"profiled user data %@", _profiledUserData);
                             [self setUpProfileHeaderViewForData];
-                            if (_tung.profileFeedNeedsRefresh.boolValue) {
+                            if (_needsToRequestFeed) {
+                                _needsToRequestFeed = NO;
                                 [_storiesView refreshFeed];
                             }
                         }
@@ -413,6 +428,8 @@ NSTimer *sessionCheckTimer;
 }
 
 - (void) setUpProfileHeaderViewForData {
+    //JPLog(@"logged in user: %@", _tung.loggedInUser.tung_id);
+    //JPLog(@"profiled user data: %@", _profiledUserData);
     
     // navigation bar title
     if (_isLoggedInUser) {
@@ -426,8 +443,12 @@ NSTimer *sessionCheckTimer;
     
     _profileHeader.nameLabel.text = [_profiledUserData objectForKey:@"name"];
     // basic info web view
-    NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:0; color:white; font: .9em/1.4em -apple-system, Helvetica; } a { color:rgba(255,255,255,.6); } .name { font-size:1.1em; } .location { color:rgba(0,0,0,.4) } table { width:100%%; height:100%%; border-spacing:0; border-collapse:collapse; border:none; } td { text-align:center; vertical-align:middle; }</style>\n"];
-    NSString *basicInfoBody = [NSString stringWithFormat:@"<table><td><p><span class=\"name\">%@</span>", [_profiledUserData objectForKey:@"name"]];
+    float fontSize = 0.9;
+    if ([TungCommonObjects screenSize].width == 320) {
+        fontSize = 0.8;
+    }
+    NSString *style = [NSString stringWithFormat:@"<style type=\"text/css\">body { margin:0; color:white; font: %fem/1.4em -apple-system, Helvetica; } a { color:rgba(255,255,255,.6); } .name { font-size:1.1em; } .location { color:rgba(0,0,0,.4) } table { width:100%%; height:100%%; border-spacing:0; border-collapse:collapse; border:none; } td { text-align:center; vertical-align:middle; } p { width:100%%; align-self:center; margin:0; overflow:hidden; white-space:nowrap; text-overflow:ellipsis; text-align:center;</style>\n", fontSize];
+    NSString *basicInfoBody = [NSString stringWithFormat:@"<p><span class=\"name\">%@</span>", [_profiledUserData objectForKey:@"name"]];
     NSString *location = [_profiledUserData objectForKey:@"location"];
     if (location.length > 0) {
         basicInfoBody = [basicInfoBody stringByAppendingString:[NSString stringWithFormat:@"<br><span class=\"location\">%@</span>", location]];
@@ -437,7 +458,7 @@ NSTimer *sessionCheckTimer;
         NSString *displayUrl = [TungCommonObjects cleanURLStringFromString:url];
         basicInfoBody = [basicInfoBody stringByAppendingString:[NSString stringWithFormat:@"<br><a href=\"%@\">%@</a>", url, displayUrl]];
     }
-    basicInfoBody = [basicInfoBody stringByAppendingString:@"</p></td></table>"];
+    basicInfoBody = [basicInfoBody stringByAppendingString:@"</p>"];
     NSString *webViewString = [NSString stringWithFormat:@"%@%@", style, basicInfoBody];
     [_profileHeader.basicInfoWebView loadHTMLString:webViewString baseURL:[NSURL URLWithString:@"desc"]];
     
@@ -445,8 +466,7 @@ NSTimer *sessionCheckTimer;
     NSString *bio = [_profiledUserData objectForKey:@"bio"];
     if (bio.length > 0) {
         contentSize.width += contentSize.width;
-        NSString *bioBody = [NSString stringWithFormat:@"<table><td>%@", bio];
-        NSString *bioWebViewString = [NSString stringWithFormat:@"%@%@</td></table>", style, bioBody];
+        NSString *bioWebViewString = [NSString stringWithFormat:@"%@<table><td>%@</td></table>", style, bio];
         [_profileHeader.bioWebView loadHTMLString:bioWebViewString baseURL:[NSURL URLWithString:@"desc"]];
     }
     else {
@@ -462,8 +482,27 @@ NSTimer *sessionCheckTimer;
     _profileHeader.largeAvatarView.avatar = largeAvImage;
     [_profileHeader.largeAvatarView setNeedsDisplay];
     
-    [self updateUserFollowingCounts];
+    // share button
+    _profileHeader.shareProfileButton.type = kCircleTypeShareOnDark;
+    [_profileHeader.shareProfileButton setNeedsDisplay];
+    _profileHeader.shareProfileButton.hidden = NO;
+    [_profileHeader.shareProfileButton addTarget:self action:@selector(shareProfile) forControlEvents:UIControlEventTouchUpInside];
     
+    // follows back button
+    if ([_profiledUserData objectForKey:@"targetFollowsUser"]) {
+        NSNumber *targetFollowsUser = [_profiledUserData objectForKey:@"targetFollowsUser"];
+        if (targetFollowsUser.boolValue) {
+            _profileHeader.followsBackButton.hidden = NO;
+        }
+        else {
+            _profileHeader.followsBackButton.hidden = YES;
+        }
+    }
+    else {
+        _profileHeader.followsBackButton.hidden = YES;
+    }
+    
+    [self updateUserFollowingCounts];
     
     _profileHeader.scrollView.contentSize = contentSize;
     
@@ -496,6 +535,27 @@ NSTimer *sessionCheckTimer;
         [self updateUserFollowingCounts];
         
     }
+}
+
+- (void) shareProfile {
+    
+    NSString *profileUrlString = [NSString stringWithFormat:@"%@u/%@", [TungCommonObjects tungSiteRootUrl], [_profiledUserData objectForKey:@"username"]];
+    NSURL *profileUrl = [TungCommonObjects urlFromString:profileUrlString];
+    
+    UIAlertController *shareOptionSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
+    // share option
+    [shareOptionSheet addAction:[UIAlertAction actionWithTitle:@"Share profile" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[profileUrl] applicationActivities:nil];
+        [self presentViewController:shareSheet animated:YES completion:nil];
+        
+    }]];
+    // copy link option
+    [shareOptionSheet addAction:[UIAlertAction actionWithTitle:@"Copy profile link" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [[UIPasteboard generalPasteboard] setString:profileUrlString];
+    }]];
+    
+    [shareOptionSheet addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+    [self presentViewController:shareOptionSheet animated:YES completion:nil];
 }
 
 - (void) updateUserFollowingCounts {

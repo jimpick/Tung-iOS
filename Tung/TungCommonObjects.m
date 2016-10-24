@@ -3893,6 +3893,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
+                        //JPLog(@"follow result: %@", responseDict);
                         callback(YES, responseDict);
                     } else {
                         callback(NO, responseDict);
@@ -3943,6 +3944,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
+                        //JPLog(@"UN-follow result: %@", responseDict);
                         callback(YES, responseDict);
                     } else {
                         callback(NO, responseDict);

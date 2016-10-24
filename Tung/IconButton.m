@@ -45,6 +45,9 @@
             case kIconButtonTypeTungLogoType:
                 [TungPodcastStyleKit drawTungLogotypeWithFrame:rect color:_color];
                 break;
+            case kIconButtonTypeCheckmark:
+                [TungPodcastStyleKit drawCheckmarkIconWithFrame:rect color:_color];
+                break;
             default:
                 break;
         }

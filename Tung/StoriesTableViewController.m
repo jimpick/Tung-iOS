@@ -131,7 +131,7 @@
 }
 
 - (void) refreshFeed {
-    
+    //NSLog(@"%@",[NSThread callStackSymbols]);
     if (_tung.connectionAvailable.boolValue) {
     
         NSNumber *mostRecent = [NSNumber numberWithInt:0];

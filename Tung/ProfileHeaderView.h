@@ -9,6 +9,8 @@
 #import <UIKit/UIKit.h>
 #import "AvatarContainerView.h"
 #import "PillButton.h"
+#import "CircleButton.h"
+#import "IconButton.h"
 
 @interface ProfileHeaderView : UIView
 
@@ -19,6 +21,7 @@
 @property (strong, nonatomic) IBOutlet UILabel *followingLabel;
 @property (strong, nonatomic) IBOutlet PillButton *editFollowBtn;
 @property (strong, nonatomic) IBOutlet UILabel *nameLabel;
+@property (strong, nonatomic) IBOutlet CircleButton *shareProfileButton;
 
 @property (strong, nonatomic) IBOutlet UIScrollView *scrollView;
 @property (strong, nonatomic) IBOutlet UIPageControl *pageControl;
@@ -28,6 +31,7 @@
 @property (strong, nonatomic) IBOutlet UIView *scrollSubViewTwo;
 @property (strong, nonatomic) IBOutlet UIWebView *bioWebView;
 @property (strong, nonatomic) IBOutlet NSLayoutConstraint *followingViewHeightConstraint;
+@property (strong, nonatomic) IBOutlet IconButton *followsBackButton;
 
 @property (strong, nonatomic) IBOutlet NSLayoutConstraint *scrollSubView1Height;
 @property (strong, nonatomic) IBOutlet NSLayoutConstraint *scrollSubView2Height;

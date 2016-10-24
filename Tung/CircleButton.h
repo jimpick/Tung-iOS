@@ -13,6 +13,7 @@ typedef enum {
     kCircleTypeNewClip,
     kCircleTypeRecommend,
     kCircleTypeShare,
+    kCircleTypeShareOnDark,
     kCircleTypeWebsite,
     kCircleTypeRecord,
     kCircleTypePlayClip,

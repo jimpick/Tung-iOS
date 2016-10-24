@@ -32,6 +32,10 @@
                 [TungPodcastStyleKit drawShareButtonWithFrame:rect down:self.highlighted];
                 break;
                 
+            case kCircleTypeShareOnDark:
+                [TungPodcastStyleKit drawShareButtonOnDarkWithFrame:rect down:self.highlighted];
+                break;
+                
             case kCircleTypeWebsite:
                 [TungPodcastStyleKit drawWebsiteButtonWithFrame:rect down:self.highlighted disabled:!self.enabled];
                 break;
@@ -64,7 +68,7 @@
                 [TungPodcastStyleKit drawFacebookButtonWithFrame:rect on:_on down:self.highlighted];
                 break;
                 
-            case kCircleTypeTextButton:
+            case kCircleTypeTextButton: // used for Post button
                 [TungPodcastStyleKit drawPillTextbuttonWithFrame:rect down:self.highlighted disabled:!self.enabled buttonText:_buttonText];
                 break;
                 
