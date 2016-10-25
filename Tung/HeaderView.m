@@ -33,6 +33,7 @@
 }
 
 -(void) sizeAndSetTitleForText:(NSString *)titleText {
+    //NSLog(@"size and set title for text length: %lu", (unsigned long)titleText.length);
     if (titleText.length > 60) {
         self.titleLabel.font = [UIFont systemFontOfSize:15 weight:UIFontWeightLight];
     }
@@ -73,10 +74,13 @@
     self.largeButton.hidden = YES;
     self.subscribeButton.hidden = YES;
     
+    
+    [self adjustHeaderViewHeightForContent];
+    
 }
 
-// for info that is guaranteed, before feed is loaded
 -(void) setUpHeaderViewWithBasicInfoForPodcast:(PodcastEntity *)podcastEntity {
+    
     self.hidden = NO;
     self.clipsToBounds = YES;
     // text
@@ -98,11 +102,14 @@
     UIColor *lighterKeyColor = [TungCommonObjects lightenKeyColor:keyColor1];
     self.view.backgroundColor = lighterKeyColor;
     
+    
+    [self adjustHeaderViewHeightForContent];
+    
 }
 
 static NSDateFormatter *airDateFormatter = nil;
 
--(void) setUpHeaderViewForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity {
+- (void) setUpHeaderViewForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity {
 
     self.hidden = NO;
     self.clipsToBounds = YES;
@@ -181,6 +188,7 @@ static NSDateFormatter *airDateFormatter = nil;
     self.largeButton.color = keyColor2;
     [self setUpLargeButtonForEpisode:episodeEntity orPodcast:podcastEntity];
     
+    // title, subtitle, desc
     [self sizeAndSetTitleForText:title];
     self.subTitleLabel.text = subTitle;
     self.descriptionLabel.text = desc;
@@ -195,6 +203,9 @@ static NSDateFormatter *airDateFormatter = nil;
     self.subscribeButton.subscribed = isSubscribed;
     self.subscribeButton.hidden = NO;
     [self.subscribeButton setNeedsDisplay]; // re-display for color change or sub. status
+    
+    
+    [self adjustHeaderViewHeightForContent];
 }
 
 - (void) setUpLargeButtonForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity {
@@ -263,37 +274,12 @@ static NSDateFormatter *airDateFormatter = nil;
     }
 }
 
--(void) sizeAndConstrainHeaderViewInViewController:(UIViewController *)vc {
-    
-    //NSLog(@"size and constrain header view");
-    
-    // size labels
-    CGSize titleLabelSize = self.titleLabel.frame.size;
-    self.titleLabel.preferredMaxLayoutWidth = titleLabelSize.width;
-    [self.titleLabel sizeToFit];
-    //NSLog(@"-- header view title label size: %@", NSStringFromCGRect(self.titleLabel.frame));
-    
-    CGSize subTitleLabelSize = self.subTitleLabel.frame.size;
-    self.subTitleLabel.preferredMaxLayoutWidth = subTitleLabelSize.width;
-    [self.subTitleLabel sizeToFit];
-    //NSLog(@"-- subtitle label size: %@", NSStringFromCGRect(self.subTitleLabel.frame));
-    
-    CGFloat margin = 12;
-    CGFloat maxDescWidth = vc.view.frame.size.width - margin - margin;
-    self.descriptionLabel.preferredMaxLayoutWidth = maxDescWidth;
-    [self.descriptionLabel sizeToFit];
-    //NSLog(@"-- description label size: %@", NSStringFromCGRect(self.descriptionLabel.frame));
-    
-    // header height
-    float height = margin + margin; // top and bottom margin
-    height += self.titleLabel.frame.size.height;
-    height += self.subTitleLabel.frame.size.height; // label heights
-    height += 10 + 62; // between label and sub btn, sub btn height
-    if (self.descriptionLabel.text.length)
-    	height += self.descriptionLabel.frame.size.height + 7; // top margin and desc label height
-    //NSLog(@"-- FINAL HEIGHT: %f", height);
+- (void) constrainHeaderViewInViewController:(UIViewController *)vc {
     
     if (!self.isConstrained) {
+        
+        _viewController = vc;
+        
         CGFloat topConstraint = 0;
         if ([vc isKindOfClass:[EpisodeViewController class]]) topConstraint = 64;
         /* reason for using conditional top contstraint:
@@ -305,14 +291,51 @@ static NSDateFormatter *airDateFormatter = nil;
         [vc.view addConstraint:[NSLayoutConstraint constraintWithItem:self attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:vc.view attribute:NSLayoutAttributeTop multiplier:1 constant:topConstraint]];
         [vc.view addConstraint:[NSLayoutConstraint constraintWithItem:self attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:vc.view attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
         //[vc.view addConstraint:[NSLayoutConstraint constraintWithItem:self attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:vc.view attribute:NSLayoutAttributeTop multiplier:1 constant:0]];
-        self.heightConstraint = [NSLayoutConstraint constraintWithItem:self attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:height];
+        self.heightConstraint = [NSLayoutConstraint constraintWithItem:self attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:164];
         [vc.view addConstraint:[NSLayoutConstraint constraintWithItem:self attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:vc.view.frame.size.width]];
         [self addConstraint:self.heightConstraint];
         self.isConstrained = YES;
+        
+        [vc.view layoutIfNeeded];
     }
     
-    self.heightConstraint.constant = height;
-    [vc.view layoutIfNeeded];
+}
+
+- (void) adjustHeaderViewHeightForContent {
+    
+    if (self.isConstrained) {
+        
+        //NSLog(@"constrain header view");
+    
+        // size labels
+        CGSize titleLabelSize = self.titleLabel.frame.size;
+        self.titleLabel.preferredMaxLayoutWidth = titleLabelSize.width;
+        [self.titleLabel sizeToFit];
+        //NSLog(@"-- header view title label size: %@", NSStringFromCGRect(self.titleLabel.frame));
+        
+        CGSize subTitleLabelSize = self.subTitleLabel.frame.size;
+        self.subTitleLabel.preferredMaxLayoutWidth = subTitleLabelSize.width;
+        [self.subTitleLabel sizeToFit];
+        //NSLog(@"-- subtitle label size: %@", NSStringFromCGRect(self.subTitleLabel.frame));
+        
+        CGFloat margin = 12;
+        CGFloat maxDescWidth = [TungCommonObjects screenSize].width - margin - margin;
+        self.descriptionLabel.preferredMaxLayoutWidth = maxDescWidth;
+        [self.descriptionLabel sizeToFit];
+        //NSLog(@"-- description label size: %@", NSStringFromCGRect(self.descriptionLabel.frame));
+        
+        // header height
+        float height = margin + margin; // top and bottom margin
+        height += self.titleLabel.frame.size.height;
+        height += self.subTitleLabel.frame.size.height; // label heights
+        height += 10 + 62; // between label and sub btn, sub btn height
+        if (self.descriptionLabel.text.length)
+            height += self.descriptionLabel.frame.size.height + 7; // top margin and desc label height
+        //NSLog(@"-- FINAL HEIGHT: %f", height);
+        
+        self.heightConstraint.constant = height;
+        [_viewController.view layoutIfNeeded];
+    }
 }
 
 - (void) refreshHeaderViewForEntity:(PodcastEntity *)podcastEntity {

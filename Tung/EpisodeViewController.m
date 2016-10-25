@@ -199,6 +199,7 @@ static NSArray *playbackRateStrings;
     // header view
     _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 64, _screenSize.width, _defaultHeaderHeight)];
     [self.view insertSubview:_headerView belowSubview:_npControlsView];
+    [_headerView constrainHeaderViewInViewController:self];
     _headerView.hidden = YES;
     // respond when podcast art is updated
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refreshViewForArtChange:) name:@"podcastArtUpdated" object:nil];
@@ -308,10 +309,9 @@ static NSArray *playbackRateStrings;
                 [self setUpViewForEpisode:_episodeEntity];
             }
             else {
-                //NSLog(@"will set up view for episode mini dict then request episode data");
+                NSLog(@"will set up view for episode mini dict then request episode data");
                 // no entity yet, request data
                 [_headerView setUpHeaderViewForEpisodeMiniDict:_episodeMiniDict];
-                [_headerView sizeAndConstrainHeaderViewInViewController:self];
                 
                 [self getEpisodeInfoAndSetUpViewWithDict:_episodeMiniDict];
                 
@@ -623,11 +623,10 @@ NSTimer *markAsSeenTimer;
     // episodes and description
     NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:episodeEntity.podcast forceNewest:NO reachable:_tung.connectionAvailable.boolValue];
     
-    //NSLog(@"set up view for episode: %@", [TungCommonObjects entityToDict:episodeEntity]);
+    NSLog(@"set up view for episode");
     //NSLog(@"podcast: %@", [TungCommonObjects entityToDict:episodeEntity.podcast]);
     // set up header view
     [_headerView setUpHeaderViewForEpisode:episodeEntity orPodcast:nil];
-    [_headerView sizeAndConstrainHeaderViewInViewController:self];
     [_headerView.subscribeButton addTarget:self action:@selector(subscribeToPodcastViaSender:) forControlEvents:UIControlEventTouchUpInside];
     
     if (_isNowPlayingView) {
@@ -636,7 +635,6 @@ NSTimer *markAsSeenTimer;
     }
     
     [_headerView.largeButton addTarget:self action:@selector(largeButtonInHeaderTapped) forControlEvents:UIControlEventTouchUpInside];
-    
     [_headerView.podcastButton addTarget:self action:@selector(pushPodcastDescription) forControlEvents:UIControlEventTouchUpInside];
     
     [self refreshRecommendAndSubscribeStatus];
@@ -695,7 +693,7 @@ NSTimer *markAsSeenTimer;
 }
 
 - (void) refreshViewForArtChange:(NSNotification*)notification {
-    
+    NSLog(@"refresh view for art change");
     NSNumber *collectionId = [[notification userInfo] objectForKey:@"collectionId"];
     
     if (_episodeEntity && _episodeEntity.podcast.collectionId.doubleValue == collectionId.doubleValue) {

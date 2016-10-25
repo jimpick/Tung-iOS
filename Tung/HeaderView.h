@@ -24,12 +24,14 @@
 @property NSLayoutConstraint *heightConstraint;
 @property NSArray *keyColors;
 @property BOOL isConstrained;
+@property UIViewController *viewController;
 
 - (void) setUpHeaderViewWithBasicInfoForPodcast:(PodcastEntity *)podcastEntity;
 - (void) setUpHeaderViewForEpisodeMiniDict:(NSDictionary *)miniDict;
 - (void) setUpHeaderViewForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity;
 - (void) setUpLargeButtonForEpisode:(EpisodeEntity *)episodeEntity orPodcast:(PodcastEntity *)podcastEntity;
-- (void) sizeAndConstrainHeaderViewInViewController:(UIViewController *)vc;
+- (void) constrainHeaderViewInViewController:(UIViewController *)vc;
+- (void) adjustHeaderViewHeightForContent;
 - (NSString *) getSubtitleLabelTextForEntity:(EpisodeEntity *)episodeEntity;
 - (void) refreshHeaderViewForEntity:(PodcastEntity *)podcastEntity;
 

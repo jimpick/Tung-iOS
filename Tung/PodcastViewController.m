@@ -45,6 +45,7 @@
     // header view
     _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 0, self.view.frame.size.width, 160)];
     [self.view addSubview:_headerView];
+    [_headerView constrainHeaderViewInViewController:self];
     _headerView.hidden = YES;
     
     // add child table view controller
@@ -70,7 +71,6 @@
         _podcastEntity = [TungCommonObjects getEntityForPodcast:_podcastDict save:NO];
         
         [_headerView setUpHeaderViewWithBasicInfoForPodcast:_podcastEntity];
-        [_headerView sizeAndConstrainHeaderViewInViewController:self];
         _headerView.hidden = NO;
         
         _episodesView.podcastEntity = _podcastEntity; // for pushing episode view & track progress
@@ -87,7 +87,6 @@
                 _podcastEntity = [TungCommonObjects getEntityForPodcast:podDict save:NO];
                 
                 [_headerView setUpHeaderViewWithBasicInfoForPodcast:_podcastEntity];
-                [_headerView sizeAndConstrainHeaderViewInViewController:self];
                 _headerView.hidden = NO;
                 
                 _episodesView.podcastEntity = _podcastEntity; // for pushing episode view & track progress
@@ -181,7 +180,6 @@
     
     // header view
     [_headerView setUpHeaderViewForEpisode:nil orPodcast:_podcastEntity];
-    [_headerView sizeAndConstrainHeaderViewInViewController:self];
     [_headerView.subscribeButton addTarget:self action:@selector(subscribeToPodcastViaSender:) forControlEvents:UIControlEventTouchUpInside];
     [_headerView.podcastButton addTarget:self action:@selector(pushPodcastDescription) forControlEvents:UIControlEventTouchUpInside];
     [_headerView.largeButton addTarget:self action:@selector(largeButtonInHeaderTapped) forControlEvents:UIControlEventTouchUpInside];
