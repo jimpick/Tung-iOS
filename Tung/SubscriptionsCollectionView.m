@@ -13,7 +13,6 @@
 
 @interface SubscriptionsCollectionView ()
 
-@property NSFetchRequest *subscribedQuery;
 @property TungPodcast *tungPodcast;
 @property TungCommonObjects *tung;
 @property NSMutableArray *sectionChanges;
@@ -110,15 +109,6 @@ static NSString * const reuseIdentifier = @"artCell";
     
     _podcasts = [NSArray array];
     
-    // get subscribed podcasts
-    _subscribedQuery = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
-    //NSPredicate *predicate = [NSPredicate predicateWithFormat: @"isSubscribed == %@", [NSNumber numberWithBool:YES]];
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSubscribed == YES"];
-    _subscribedQuery.predicate = predicate;
-    NSSortDescriptor *dateSort = [[NSSortDescriptor alloc] initWithKey:@"timeSubscribed" ascending:YES];
-    NSSortDescriptor *orderSort = [[NSSortDescriptor alloc] initWithKey:@"sortOrder" ascending:YES];
-    _subscribedQuery.sortDescriptors = @[orderSort, dateSort];
-    
     // notifs
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(performFetchAndReload) name:@"refreshSubscribeStatus" object:nil];
@@ -167,9 +157,7 @@ static NSString * const reuseIdentifier = @"artCell";
 
 - (void) performFetchAndReload {
     
-    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
-    NSError *error = nil;
-    _podcasts = [appDelegate.managedObjectContext executeFetchRequest:_subscribedQuery error:&error];
+    _podcasts = [TungCommonObjects getAllSubscribedPodcasts];
     
     [self.collectionView reloadData];
     

@@ -66,25 +66,24 @@
         NSUserActivity* userActivity = launchOptions[UIApplicationLaunchOptionsUserActivityTypeKey];
         [self application:application continueUserActivity:userActivity restorationHandler:^(NSArray * _Nullable restorableObjects) {}];
     }
+    // force touch shortcut
+    if (launchOptions[UIApplicationLaunchOptionsShortcutItemKey] != nil) {
+        UIApplicationShortcutItem *shortcutItem = launchOptions[UIApplicationLaunchOptionsShortcutItemKey];
+        [self application:application performActionForShortcutItem:shortcutItem completionHandler:^(BOOL succeeded) {}];
+    }
+
     
     //NSLog(@"application did finish launching with options");
     return YES;
 }
+
 
 #pragma mark - Background fetch
 
 - (void) application:(UIApplication *)application performFetchWithCompletionHandler:(nonnull void (^)(UIBackgroundFetchResult))completionHandler {
     
     // get all subscribed podcasts and check for new episodes
-    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
-    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
-    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSubscribed == YES"];
-    request.predicate = predicate;
-    NSSortDescriptor *dateSort = [[NSSortDescriptor alloc] initWithKey:@"timeSubscribed" ascending:YES];
-    request.sortDescriptors = @[dateSort];
-    
-    NSError *error;
-    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
+    NSArray *result = [TungCommonObjects getAllSubscribedPodcasts];
     
     if (result.count > 0) {
         
@@ -113,8 +112,8 @@
                 NSInteger numNewEpisodes = podEntity.numNewEpisodes.integerValue;
                 BOOL newMostRecentSet = NO;
                 
-                for (int i = 0; i < episodes.count; i++) {
-                    NSDate *pubDate = [episodes[i] objectForKey:@"pubDate"];
+                for (int j = 0; j < episodes.count; j++) {
+                    NSDate *pubDate = [episodes[j] objectForKey:@"pubDate"];
                     // check if episode is newer than entity's mostRecentEpisodeDate
                     if ([mostRecentForCompare compare:pubDate] == NSOrderedAscending) {
                         numNewEpisodes++;
@@ -426,6 +425,80 @@
     }
     return dict;
 }
+
+#pragma mark - Shortcuts
+
+- (void)application:(UIApplication *)application performActionForShortcutItem:(UIApplicationShortcutItem *)shortcutItem completionHandler:(void (^)(BOOL))completionHandler {
+    
+    if ([shortcutItem.type isEqualToString:@"subscriptions"]) {
+        NSLog(@"open subscriptions from shortcut");
+        [self switchTabBarSelectionToTabIndex:2];
+    }
+    else if ([shortcutItem.type isEqualToString:@"playRandom"]) {
+        NSLog(@"play a random episode");
+        
+        [self switchTabBarSelectionToTabIndex:1];
+        
+        NSArray *result = [TungCommonObjects getAllSubscribedPodcasts];
+        
+        if (result.count > 0) {
+            NSMutableArray *newEpisodes = [NSMutableArray array];
+            
+            for (int i = 0; i < result.count; i++) {
+                PodcastEntity *podEntity = [result objectAtIndex:i];
+                NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:podEntity forceNewest:YES reachable:_tung.connectionAvailable.boolValue];
+                NSArray *episodes = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
+                
+                if (episodes.count > 0) {
+                    // only check the 10 most recent, or less
+                    u_long max = MIN(10, episodes.count);
+                    for (int j = 0; j < max; j++) {
+                        NSDictionary *episodeDict = [episodes objectAtIndex:j];
+                        if ([episodeDict objectForKey:@"trackPosition"]) {
+                            continue;
+                        }
+                        else {
+                            [newEpisodes addObject:@{
+                                                     @"episode": episodeDict,
+                                                     @"podcast": [TungCommonObjects entityToDict:podEntity]
+                                                     }];
+                        }
+                    }
+                }
+            }
+            
+            if (newEpisodes.count > 0) {
+            
+                JPLog(@"found %lu new episodes. drawing random number...", (unsigned long)newEpisodes.count);
+                NSUInteger i = arc4random_uniform(newEpisodes.count);
+                JPLog(@"drew %d", i);
+                
+                NSDictionary *chosenDict = [newEpisodes objectAtIndex:i];
+                PodcastEntity *podEntity = [TungCommonObjects getEntityForPodcast:[chosenDict objectForKey:@"podcast"] save:NO];
+                EpisodeEntity *episodeEntity = [TungCommonObjects getEntityForEpisode:[chosenDict objectForKey:@"episode"] withPodcastEntity:podEntity save:YES];
+                
+                NSDictionary *userInfo = @{ @"urlString": episodeEntity.url };
+                NSNotification *playEpisodeNotif = [NSNotification notificationWithName:@"playEpisode" object:nil userInfo:userInfo];
+                [[NSNotificationCenter defaultCenter] postNotification:playEpisodeNotif];
+                
+            }
+            else {
+                UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Just wow." message:@"You've achieved inbox zero for subscribed podcasts. No new episodes to listen to!" preferredStyle:UIAlertControllerStyleAlert];
+                [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+                [[TungCommonObjects activeViewController] presentViewController:errorAlert animated:YES completion:nil];
+            }
+        }
+        else {
+            
+            [self switchTabBarSelectionToTabIndex:2];
+            
+            UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"No subscribed podcasts" message:nil preferredStyle:UIAlertControllerStyleAlert];
+            [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+            [[TungCommonObjects activeViewController] presentViewController:errorAlert animated:YES completion:nil];
+        }
+    }
+}
+
 
 #pragma mark - Core Data stack
 

@@ -114,6 +114,9 @@ NSDateFormatter *ISODateFormatter;
         
         _episodeSaveQueue = [NSMutableArray array];
         _bytesToSave = 0;
+        
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handlePlayEpisode:) name:@"playEpisode" object:nil];
 
         /* show what's in saved episodes dir
         NSError *fError = nil;
@@ -196,8 +199,8 @@ CGSize screenSize;
 
 
 + (NSString *) apiRootUrl {
-    //return @"https://api.tung.fm/";
-    return @"https://staging-api.tung.fm/";
+    return @"https://api.tung.fm/";
+    //return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
@@ -263,6 +266,13 @@ CGFloat versionFloat = 0.0;
     _playQueue = [NSMutableArray array];
     [self setControlButtonStateToFauxDisabled];;
     
+}
+
+// play episodes from app delegate
+-(void) handlePlayEpisode:(NSNotification*)notification {
+    JPLog(@"handle Play Episode");
+    NSString *urlString = [[notification userInfo] objectForKey:@"urlString"];
+    [self queueAndPlaySelectedEpisode:urlString fromTimestamp:nil];
 }
 
 #pragma mark - Audio session delegate methods
@@ -2064,6 +2074,28 @@ static NSDateFormatter *ISODateInterpreter = nil;
     else {
         JPLog(@"ERROR: could not find episode entity for url: %@", urlString);
         return nil;
+    }
+}
+
++ (NSArray *) getAllSubscribedPodcasts {
+    
+    AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
+    NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
+    NSPredicate *predicate = [NSPredicate predicateWithFormat:@"isSubscribed == YES"];
+    request.predicate = predicate;
+    NSSortDescriptor *dateSort = [[NSSortDescriptor alloc] initWithKey:@"timeSubscribed" ascending:YES];
+    NSSortDescriptor *orderSort = [[NSSortDescriptor alloc] initWithKey:@"sortOrder" ascending:YES];
+    request.sortDescriptors = @[orderSort, dateSort];
+    
+    NSError *error;
+    NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
+    
+    if (!error) {
+        return result;
+    }
+    else {
+        JPLog(@"Error getting subscribed podcasts: %@", error.localizedDescription);
+        return [NSArray array];
     }
 }
 
@@ -4230,7 +4262,7 @@ static NSArray *colors;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
-                    JPLog(@"%@", responseDict);
+                    //JPLog(@"%@", responseDict);
                     if ([responseDict objectForKey:@"error"]) {
                         // session expired
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {

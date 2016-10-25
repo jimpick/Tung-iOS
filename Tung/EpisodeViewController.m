@@ -783,6 +783,8 @@ NSTimer *markAsSeenTimer;
     }
 }
 
+
+
 #pragma mark Comments view
 
 - (void) refreshComments:(BOOL)fullRefresh {

@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>tung beta</string>
+	<string>tung</string>
 	<key>CFBundleExecutable</key>
 	<string>${EXECUTABLE_NAME}</string>
 	<key>CFBundleIdentifier</key>
@@ -104,5 +104,28 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<true/>
+	<key>UIApplicationShortcutItems</key>
+	<array>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>subscriptions</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Subscriptions</string>
+			<key>UIApplicationShortcutItemIconFile</key>
+			<string>SubscribeIcon</string>
+			<key></key>
+			<string></string>
+		</dict>
+		<dict>
+			<key>UIApplicationShortcutItemType</key>
+			<string>playRandom</string>
+			<key>UIApplicationShortcutItemTitle</key>
+			<string>Play random</string>
+			<key>UIApplicationShortcutItemIconType</key>
+			<string>UIApplicationShortcutIconTypePlay</string>
+			<key>UIApplicationShortcutItemSubtitle</key>
+			<string>from new episodes</string>
+		</dict>
+	</array>
 </dict>
 </plist>

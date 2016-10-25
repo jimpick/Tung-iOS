@@ -146,6 +146,7 @@
 + (NSDate *) ISODateToNSDate: (NSString *)pubDate;
 + (EpisodeEntity *) getEpisodeEntityFromEpisodeId:(NSString *)episodeId;
 + (EpisodeEntity *) getEpisodeEntityFromUrlString:(NSString *)urlString;
++ (NSArray *) getAllSubscribedPodcasts;
 + (UserEntity *) saveUserWithDict:(NSDictionary *)userDict isLoggedInUser:(BOOL)isLoggedInUser;
 + (UserEntity *) retrieveUserEntityForUserWithId:(NSString *)userId;
 + (UserEntity *) getLoggedInUser;
