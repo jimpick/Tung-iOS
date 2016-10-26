@@ -12,6 +12,12 @@
 #import "TungPodcast.h"
 #import "MainTabBarController.h"
 
+@interface AppDelegate ()
+
+@property UIApplicationShortcutItem *shortcutItem;
+
+@end
+
 @implementation AppDelegate
 
 @synthesize managedObjectContext = _managedObjectContext;
@@ -66,12 +72,14 @@
         NSUserActivity* userActivity = launchOptions[UIApplicationLaunchOptionsUserActivityTypeKey];
         [self application:application continueUserActivity:userActivity restorationHandler:^(NSArray * _Nullable restorableObjects) {}];
     }
-    // force touch shortcut
-    if (launchOptions[UIApplicationLaunchOptionsShortcutItemKey] != nil) {
-        UIApplicationShortcutItem *shortcutItem = launchOptions[UIApplicationLaunchOptionsShortcutItemKey];
-        [self application:application performActionForShortcutItem:shortcutItem completionHandler:^(BOOL succeeded) {}];
+    if ([TungCommonObjects iOSVersionFloat] >= 9.0) {
+        // force touch shortcut
+        if (launchOptions[UIApplicationLaunchOptionsShortcutItemKey] != nil) {
+            JPLog(@"did finish launching - with shortcut item");
+            _shortcutItem = launchOptions[UIApplicationLaunchOptionsShortcutItemKey];
+            return NO;
+        }
     }
-
     
     //NSLog(@"application did finish launching with options");
     return YES;
@@ -94,45 +102,51 @@
         for (int i = 0; i < result.count; i++) {
             PodcastEntity *podEntity = [result objectAtIndex:i];
             NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:podEntity forceNewest:YES reachable:_tung.connectionAvailable.boolValue];
-            NSArray *episodes = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
+            NSError *feedError;
+            NSArray *episodes = [TungPodcast extractFeedArrayFromFeedDict:feedDict error:&feedError];
             
-            //NSLog(@"PODCAST: %@", podEntity.collectionName);
-            
-            // check if mostRecentEpisodeDate is established
-            if (!podEntity.mostRecentEpisodeDate && episodes.count > 0) {
-                //NSLog(@"- did not have mostRecentEpisodeDate established yet.");
-                NSDate *mostRecent = [episodes[0] objectForKey:@"pubDate"];
-                podEntity.mostRecentEpisodeDate = mostRecent;
-                podEntity.mostRecentSeenEpisodeDate = mostRecent;
-                [TungCommonObjects saveContextWithReason:@"updated most recent episode date for podcast entity"];
+            if (!feedError) {
+                //NSLog(@"PODCAST: %@", podEntity.collectionName);
+                
+                // check if mostRecentEpisodeDate is established
+                if (!podEntity.mostRecentEpisodeDate && episodes.count > 0) {
+                    //NSLog(@"- did not have mostRecentEpisodeDate established yet.");
+                    NSDate *mostRecent = [episodes[0] objectForKey:@"pubDate"];
+                    podEntity.mostRecentEpisodeDate = mostRecent;
+                    podEntity.mostRecentSeenEpisodeDate = mostRecent;
+                    [TungCommonObjects saveContextWithReason:@"updated most recent episode date for podcast entity"];
+                }
+                else {
+                    //NSLog(@"- mostRecentEpisodeDate: %@", podEntity.mostRecentEpisodeDate);
+                    NSDate *mostRecentForCompare = podEntity.mostRecentEpisodeDate;
+                    NSInteger numNewEpisodes = podEntity.numNewEpisodes.integerValue;
+                    BOOL newMostRecentSet = NO;
+                    
+                    for (int j = 0; j < episodes.count; j++) {
+                        NSDate *pubDate = [episodes[j] objectForKey:@"pubDate"];
+                        // check if episode is newer than entity's mostRecentEpisodeDate
+                        if ([mostRecentForCompare compare:pubDate] == NSOrderedAscending) {
+                            numNewEpisodes++;
+                            // set most recent episode date
+                            if (!newMostRecentSet) {
+                                podEntity.mostRecentEpisodeDate = pubDate;
+                                newMostRecentSet = YES;
+                                podcastsWithNewEpisodes++;
+                                if (podEntity.notifyOfNewEpisodes.boolValue) {
+                                    [podcastsWithNewEpisodesNotify addObject:podEntity.collectionName];
+                                }
+                            }
+                        } else {
+                            break;
+                        }
+                    }
+                    if (numNewEpisodes > 1) newEpisodesPlural = YES;
+                    podEntity.numNewEpisodes = [NSNumber numberWithInteger:numNewEpisodes];
+                    [TungCommonObjects saveContextWithReason:@"updated most recent episode date for podcast entity"];
+                }
             }
             else {
-                //NSLog(@"- mostRecentEpisodeDate: %@", podEntity.mostRecentEpisodeDate);
-                NSDate *mostRecentForCompare = podEntity.mostRecentEpisodeDate;
-                NSInteger numNewEpisodes = podEntity.numNewEpisodes.integerValue;
-                BOOL newMostRecentSet = NO;
-                
-                for (int j = 0; j < episodes.count; j++) {
-                    NSDate *pubDate = [episodes[j] objectForKey:@"pubDate"];
-                    // check if episode is newer than entity's mostRecentEpisodeDate
-                    if ([mostRecentForCompare compare:pubDate] == NSOrderedAscending) {
-                        numNewEpisodes++;
-                        // set most recent episode date
-                        if (!newMostRecentSet) {
-                            podEntity.mostRecentEpisodeDate = pubDate;
-                            newMostRecentSet = YES;
-                            podcastsWithNewEpisodes++;
-                            if (podEntity.notifyOfNewEpisodes.boolValue) {
-                                [podcastsWithNewEpisodesNotify addObject:podEntity.collectionName];
-                            }
-                        }
-                    } else {
-                        break;
-                    }
-                }
-                if (numNewEpisodes > 1) newEpisodesPlural = YES;
-                podEntity.numNewEpisodes = [NSNumber numberWithInteger:numNewEpisodes];
-                [TungCommonObjects saveContextWithReason:@"updated most recent episode date for podcast entity"];
+                JPLog(@"Feed error: %@", feedError.localizedDescription);
             }
         }
         //NSLog(@"background fetch result: NEW episodes");
@@ -344,12 +358,17 @@
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
 
-    //JPLog(@"Application did become active");
+    JPLog(@"Application did become active");
     [_tung checkForNowPlaying];
     // check reachability
     [_tung checkReachabilityWithCallback:nil];
-    // if feed hasn't been fetched in the last 5 minutes
+    // determine if stories feeds need to be fetched
     [_tung checkFeedsLastFetchedTime];
+    
+    if (_shortcutItem) {
+    	[self application:application performActionForShortcutItem:_shortcutItem completionHandler:^(BOOL succeeded) {}];
+        _shortcutItem = nil;
+    }
     
 }
 
@@ -430,12 +449,22 @@
 
 - (void)application:(UIApplication *)application performActionForShortcutItem:(UIApplicationShortcutItem *)shortcutItem completionHandler:(void (^)(BOOL))completionHandler {
     
+    JPLog(@"perform action for shortcut item");
+    
     if ([shortcutItem.type isEqualToString:@"subscriptions"]) {
-        NSLog(@"open subscriptions from shortcut");
+        JPLog(@"open subscriptions from shortcut");
+        
         [self switchTabBarSelectionToTabIndex:2];
+        completionHandler(YES);
+    }
+    else if ([shortcutItem.type isEqualToString:@"profile"]) {
+        JPLog(@"open profile from shortcut");
+        
+        [self switchTabBarSelectionToTabIndex:3];
+        completionHandler(YES);
     }
     else if ([shortcutItem.type isEqualToString:@"playRandom"]) {
-        NSLog(@"play a random episode");
+        JPLog(@"play a random episode");
         
         [self switchTabBarSelectionToTabIndex:1];
         
@@ -446,15 +475,17 @@
             
             for (int i = 0; i < result.count; i++) {
                 PodcastEntity *podEntity = [result objectAtIndex:i];
-                NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:podEntity forceNewest:YES reachable:_tung.connectionAvailable.boolValue];
-                NSArray *episodes = [TungPodcast extractFeedArrayFromFeedDict:feedDict];
+                NSDictionary *feedDict = [TungPodcast retrieveCachedFeedForPodcastEntity:podEntity];
+                NSError *feedError;
+                NSArray *episodes = [TungPodcast extractFeedArrayFromFeedDict:feedDict error:&feedError];
                 
-                if (episodes.count > 0) {
+                if (!feedError) {
                     // only check the 10 most recent, or less
-                    u_long max = MIN(10, episodes.count);
-                    for (int j = 0; j < max; j++) {
+                    NSInteger max = MIN(10, episodes.count);
+                    for (NSInteger j = 0; j < max; j++) {
                         NSDictionary *episodeDict = [episodes objectAtIndex:j];
-                        if ([episodeDict objectForKey:@"trackPosition"]) {
+                        EpisodeEntity *epEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:podEntity save:NO];
+                        if (epEntity.trackProgress.floatValue > 0.0) {
                             continue;
                         }
                         else {
@@ -470,16 +501,14 @@
             if (newEpisodes.count > 0) {
             
                 JPLog(@"found %lu new episodes. drawing random number...", (unsigned long)newEpisodes.count);
-                NSUInteger i = arc4random_uniform(newEpisodes.count);
+                NSInteger i = arc4random_uniform((uint32_t) newEpisodes.count);
                 JPLog(@"drew %d", i);
                 
                 NSDictionary *chosenDict = [newEpisodes objectAtIndex:i];
                 PodcastEntity *podEntity = [TungCommonObjects getEntityForPodcast:[chosenDict objectForKey:@"podcast"] save:NO];
                 EpisodeEntity *episodeEntity = [TungCommonObjects getEntityForEpisode:[chosenDict objectForKey:@"episode"] withPodcastEntity:podEntity save:YES];
                 
-                NSDictionary *userInfo = @{ @"urlString": episodeEntity.url };
-                NSNotification *playEpisodeNotif = [NSNotification notificationWithName:@"playEpisode" object:nil userInfo:userInfo];
-                [[NSNotificationCenter defaultCenter] postNotification:playEpisodeNotif];
+                [_tung queueAndPlaySelectedEpisode:episodeEntity.url fromTimestamp:nil];
                 
             }
             else {
@@ -496,6 +525,7 @@
             [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
             [[TungCommonObjects activeViewController] presentViewController:errorAlert animated:YES completion:nil];
         }
+        completionHandler(YES);
     }
 }
 

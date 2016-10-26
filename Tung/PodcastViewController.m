@@ -145,12 +145,18 @@
 // for refreshControl
 - (void) getNewestFeed {
     NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:YES reachable:_tung.connectionAvailable.boolValue];
-    _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
-    [_episodesView assignSavedPropertiesToEpisodeArray];
+    NSError *feedError;
+    _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict error:&feedError] mutableCopy];
     
     [_episodesView.refreshControl endRefreshing];
     
-    [_episodesView.tableView reloadData];
+    if (!feedError ) {
+        [_episodesView assignSavedPropertiesToEpisodeArray];
+        [_episodesView.tableView reloadData];
+    }
+    else {
+        [TungCommonObjects simpleErrorAlertWithMessage:feedError.localizedDescription];
+    }
     
 }
 
@@ -159,12 +165,13 @@
     _episodesView.tableView.backgroundView = nil;
     
     //NSLog(@"got feed. podcast dict: %@", [TungCommonObjects entityToDict:_podcastEntity]);
-    
-    _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:dict] mutableCopy];
-    if ([[_episodesView.episodeArray objectAtIndex:0] objectForKey:@"error"]) {
+    NSError *feedError;
+    _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:dict error:&feedError] mutableCopy];
+    if (feedError) {
         [_episodesView.refreshControl endRefreshing];
-        [TungCommonObjects simpleErrorAlertWithMessage:[[_episodesView.episodeArray objectAtIndex:0] objectForKey:@"error"]];
-    } else {
+        [TungCommonObjects simpleErrorAlertWithMessage:feedError.localizedDescription];
+    }
+    else {
     	[_episodesView assignSavedPropertiesToEpisodeArray];
         // find focused indexPath if focused GUID
         if (_focusedGUID) {

@@ -596,6 +596,38 @@ static NSString *feedDictsDirName = @"feedDicts";
     }
 }
 
+
+// gets whatever is saved or cached, which may be nil
++ (NSDictionary*) retrieveCachedFeedForPodcastEntity:(PodcastEntity *)entity {
+    // pull feed dict from cache
+    NSString *feedDir = [NSTemporaryDirectory() stringByAppendingPathComponent:feedDictsDirName];
+    NSError *error;
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    [fileManager createDirectoryAtPath:feedDir withIntermediateDirectories:YES attributes:nil error:&error];
+    NSString *feedFileName = [NSString stringWithFormat:@"%@.txt", entity.collectionId];
+    NSString *feedFilePath = [feedDir stringByAppendingPathComponent:feedFileName];
+    
+    if ([fileManager fileExistsAtPath:feedFilePath]) {
+        NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:feedFilePath];
+        //JPLog(@"- - - retrieved cached feed dict");
+        return dict;
+    }
+    else {
+        // look for saved feed dict
+        NSString *savedFeedPath = [[self getSavedFeedsDirectoryPath] stringByAppendingPathComponent:feedFileName];
+        if ([fileManager fileExistsAtPath:savedFeedPath]) {
+            
+            NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:savedFeedPath];
+            return dict;
+        }
+        else {
+            // no file in saved or temp. fetch feed
+            //JPLog(@"- - - feedLastCached present but no feed. refetch");
+            return nil;
+        }
+    }
+}
+
 // Will retrieve a cached feed no older than a day, if reachable, else refetches. Caches feed.
 + (NSDictionary*) retrieveAndCacheFeedForPodcastEntity:(PodcastEntity *)entity forceNewest:(BOOL)forceNewest reachable:(BOOL)reachable {
     NSDictionary *feedDict;
@@ -618,45 +650,19 @@ static NSString *feedDictsDirName = @"feedDicts";
         }
         else {
             // pull feed dict from cache
-            NSString *feedDir = [NSTemporaryDirectory() stringByAppendingPathComponent:feedDictsDirName];
-            NSError *error;
-            NSFileManager *fileManager = [NSFileManager defaultManager];
-            [fileManager createDirectoryAtPath:feedDir withIntermediateDirectories:YES attributes:nil error:&error];
-            NSString *feedFileName = [NSString stringWithFormat:@"%@.txt", entity.collectionId];
-            NSString *feedFilePath = [feedDir stringByAppendingPathComponent:feedFileName];
-            
-            if ([fileManager fileExistsAtPath:feedFilePath]) {
-            	NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:feedFilePath];
-                //JPLog(@"- - - retrieved cached feed dict");
-                return dict;
-            }
-            else {
-                // look for saved feed dict
-                NSString *savedFeedPath = [[self getSavedFeedsDirectoryPath] stringByAppendingPathComponent:feedFileName];
-                if ([fileManager fileExistsAtPath:savedFeedPath]) {
-                    
-                    NSDictionary *dict = [[NSDictionary alloc] initWithContentsOfFile:savedFeedPath];
-                    if (dict) {
-                        //JPLog(@"- - - retrieved SAVED feed dict");
-                        return dict;
-                    } else {
-                        // no file in saved or temp. fetch feed
-                        //JPLog(@"- - - saved dict missing, fetch feed");
-                        feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
-                    }
-                }
-                else {
-                    // no file in saved or temp. fetch feed
-                    //JPLog(@"- - - feedLastCached present but no feed. refetch");
-                    feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
-                }
-            }
+            feedDict = [self retrieveCachedFeedForPodcastEntity:entity];
         }
     }
-    else if (reachable) {
-        // need to request new
-        //JPLog(@"- - - fetch feed");
-        feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
+    
+    // need to request new
+    if (!feedDict) {
+        if (reachable) {
+            //JPLog(@"- - - fetch feed");
+            feedDict = [self requestAndConvertPodcastFeedDataWithFeedUrl:entity.feedUrl];
+        }
+        else {
+            return @{ @"error": @"Could not get podcast feed because nothing is cached and no connection is available" };
+        }
     }
     
     if (feedDict && feedDict[@"channel"]) {
@@ -785,7 +791,7 @@ static NSString *feedDictsDirName = @"feedDicts";
 }
 
 // get an episode array from a feed dict. First line of defense against bad feeds
-+ (NSArray *) extractFeedArrayFromFeedDict:(NSDictionary *)feedDict {
++ (NSArray *) extractFeedArrayFromFeedDict:(NSDictionary *)feedDict error:(NSError **)error {
     
     if (feedDict) {
         if ([feedDict objectForKey:@"channel"]) {
@@ -794,17 +800,48 @@ static NSString *feedDictsDirName = @"feedDicts";
                 if ([item isKindOfClass:[NSArray class]]) {
                     NSArray *array = item;
                     return array;
-                } else {
+                }
+                else {
                     return @[item];
                 }
-            } else {
-                return @[@{@"error": @"Bad feed: No items"}];
             }
-        } else {
-            return @[@{@"error": @"Bad feed: No channel node"}];
+            else {
+                NSString *errorDescription = @"Bad feed: No items";
+                NSDictionary *errorDictionary = @{ NSLocalizedDescriptionKey : errorDescription,
+                                                   NSUnderlyingErrorKey : errorDescription,
+                                                   NSFilePathErrorKey : errorDescription };
+                *error = [[NSError alloc] initWithDomain:NSURLErrorDomain code:0 userInfo:errorDictionary];
+                
+                return nil;
+            }
         }
-    } else {
-        return @[@{@"error": @"Empty feed"}];
+        else if ([feedDict objectForKey:@"error"]) {
+            NSString *errorDescription = [feedDict objectForKey:@"error"];
+            NSDictionary *errorDictionary = @{ NSLocalizedDescriptionKey : errorDescription,
+                                               NSUnderlyingErrorKey : errorDescription,
+                                               NSFilePathErrorKey : errorDescription };
+            *error = [[NSError alloc] initWithDomain:NSURLErrorDomain code:0 userInfo:errorDictionary];
+            
+            return nil;
+        }
+        else {
+            NSString *errorDescription = @"Bad feed: No channel node";
+            NSDictionary *errorDictionary = @{ NSLocalizedDescriptionKey : errorDescription,
+                                               NSUnderlyingErrorKey : errorDescription,
+                                               NSFilePathErrorKey : errorDescription };
+            *error = [[NSError alloc] initWithDomain:NSURLErrorDomain code:0 userInfo:errorDictionary];
+            
+            return nil;
+        }
+    }
+    else {
+        NSString *errorDescription = @"No feed";
+        NSDictionary *errorDictionary = @{ NSLocalizedDescriptionKey : errorDescription,
+                                           NSUnderlyingErrorKey : errorDescription,
+                                           NSFilePathErrorKey : errorDescription };
+        *error = [[NSError alloc] initWithDomain:NSURLErrorDomain code:0 userInfo:errorDictionary];
+        
+        return nil;
     }
 }
 

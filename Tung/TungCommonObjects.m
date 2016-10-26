@@ -114,9 +114,7 @@ NSDateFormatter *ISODateFormatter;
         
         _episodeSaveQueue = [NSMutableArray array];
         _bytesToSave = 0;
-        
-        
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handlePlayEpisode:) name:@"playEpisode" object:nil];
+
 
         /* show what's in saved episodes dir
         NSError *fError = nil;
@@ -266,13 +264,6 @@ CGFloat versionFloat = 0.0;
     _playQueue = [NSMutableArray array];
     [self setControlButtonStateToFauxDisabled];;
     
-}
-
-// play episodes from app delegate
--(void) handlePlayEpisode:(NSNotification*)notification {
-    JPLog(@"handle Play Episode");
-    NSString *urlString = [[notification userInfo] objectForKey:@"urlString"];
-    [self queueAndPlaySelectedEpisode:urlString fromTimestamp:nil];
 }
 
 #pragma mark - Audio session delegate methods
@@ -693,8 +684,7 @@ CGFloat versionFloat = 0.0;
             _npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:YES];
             [TungCommonObjects saveContextWithReason:@"now playing changed"];
             // find index of episode in current feed for prev/next track fns
-            _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO reachable:_connectionAvailable.boolValue]];
-            _currentFeedIndex = [TungCommonObjects getIndexOfEpisodeWithGUID:_npEpisodeEntity.guid inFeed:_currentFeed];
+            _currentFeed = [self getFeedOfNowPlayingEpisodeAndSetCurrentFeedIndex];
             
             //NSLog(@"now playing episode: %@", [TungCommonObjects entityToDict:_npEpisodeEntity]);
             
@@ -749,6 +739,26 @@ CGFloat versionFloat = 0.0;
         }
     }
     //JPLog(@"play queue: %@", _playQueue);
+}
+
+- (NSArray *) getFeedOfNowPlayingEpisodeAndSetCurrentFeedIndex {
+    
+    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO reachable:_connectionAvailable.boolValue];
+    NSError *feedError;
+    NSArray *feed = [TungPodcast extractFeedArrayFromFeedDict:feedDict error:&feedError];
+    _currentFeedIndex = 0; // default
+    if (!feedError) {
+        _currentFeedIndex = [TungCommonObjects getIndexOfEpisodeWithGUID:_npEpisodeEntity.guid inFeed:feed];
+        return feed;
+    }
+    else {
+        NSString *errorString = [NSString stringWithFormat:@"Error with Now Playing episode's feed: %@", feedError.localizedDescription];
+        [TungCommonObjects simpleErrorAlertWithMessage:errorString];
+        JPLog(@"now playing feed error: %@", errorString);
+        
+        return @[];
+    }
+    
 }
 
 // removes observers, releases player related properties
@@ -874,8 +884,7 @@ CGFloat versionFloat = 0.0;
     // play next episode in feed
     else {
         if (!_currentFeed) {
-            JPLog(@"current feed was not set");
-            _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO reachable:_connectionAvailable.boolValue]];
+            _currentFeed = [self getFeedOfNowPlayingEpisodeAndSetCurrentFeedIndex];
         }
         // first see if there is a newer one and if it has been listened to yet
         if (_currentFeedIndex - 1 > -1) {
@@ -900,7 +909,7 @@ CGFloat versionFloat = 0.0;
 - (void) playNextOlderEpisodeInFeed {
     
     if (!_currentFeed) {
-    	_currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO reachable:_connectionAvailable.boolValue]];
+    	_currentFeed = [self getFeedOfNowPlayingEpisodeAndSetCurrentFeedIndex];
     }
 
     if (_currentFeedIndex + 1 < _currentFeed.count) {
@@ -922,7 +931,7 @@ CGFloat versionFloat = 0.0;
 - (void) playNextNewerEpisodeInFeed {
     
     if (!_currentFeed) {
-        _currentFeed = [TungPodcast extractFeedArrayFromFeedDict:[TungPodcast retrieveAndCacheFeedForPodcastEntity:_npEpisodeEntity.podcast forceNewest:NO reachable:_connectionAvailable.boolValue]];
+        _currentFeed = [self getFeedOfNowPlayingEpisodeAndSetCurrentFeedIndex];
     }
     
     if (_currentFeedIndex - 1 >= 0) {

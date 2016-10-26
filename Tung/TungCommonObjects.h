@@ -96,6 +96,7 @@
 - (void) removeNowPlayingStatusFromAllEpisodes;
 - (NSURL *) getStreamUrlForEpisodeEntity:(EpisodeEntity *)epEntity;
 - (void) reestablishPlayerItemAndReplace;
+- (NSArray *) getFeedOfNowPlayingEpisodeAndSetCurrentFeedIndex;
 
 // caching/saving episodes
 @property EpisodeEntity *episodeToSaveEntity;

@@ -645,11 +645,13 @@ NSTimer *markAsSeenTimer;
     _switcher.tintColor = (UIColor *)episodeEntity.podcast.keyColor2;
     
     _episodesView.tableView.backgroundView = nil;
-    _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
-    if ([[_episodesView.episodeArray objectAtIndex:0] objectForKey:@"error"]) {
+    NSError *feedError;
+    _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict error:&feedError] mutableCopy];
+    if (feedError) {
         [_episodesView.refreshControl endRefreshing];
-        [TungCommonObjects simpleErrorAlertWithMessage:[[_episodesView.episodeArray objectAtIndex:0] objectForKey:@"error"]];
-    } else {
+        [TungCommonObjects simpleErrorAlertWithMessage:feedError.localizedDescription];
+    }
+    else {
         [_episodesView assignSavedPropertiesToEpisodeArray];
         _episodesView.podcastEntity = episodeEntity.podcast;
         [_episodesView.tableView reloadData];

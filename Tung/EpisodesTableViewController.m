@@ -76,12 +76,17 @@
     if (_tung.connectionAvailable.boolValue) {
         
         NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:YES reachable:_tung.connectionAvailable.boolValue];
-        _episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict] mutableCopy];
-        [self assignSavedPropertiesToEpisodeArray];
+        NSError *feedError;
+        _episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict error:&feedError] mutableCopy];
         
         [self.refreshControl endRefreshing];
-        
-    	[self.tableView reloadData];
+        if (!feedError) {
+            [self assignSavedPropertiesToEpisodeArray];
+            [self.tableView reloadData];
+        }
+        else {
+            [TungCommonObjects simpleErrorAlertWithMessage:feedError.localizedDescription];
+        }
     }
     else {
         [self.refreshControl endRefreshing];
