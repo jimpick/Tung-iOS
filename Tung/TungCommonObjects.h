@@ -156,6 +156,7 @@
 + (SettingsEntity *) settings;
 
 // colors
++ (NSArray *) extractColorsFromImage:(UIImage *)image;
 + (NSArray *) determineKeyColorsFromImage:(UIImage *)image;
 + (UIColor *) lightenKeyColor:(UIColor *)keyColor;
 + (UIColor *) darkenKeyColor:(UIColor *)keyColor;

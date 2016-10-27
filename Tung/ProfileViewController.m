@@ -343,23 +343,17 @@
 
 #pragma mark - specific to Profile View
 
-NSTimer *sessionCheckTimer;
 
 - (void) requestPageData {
     
-    // make sure session id is set, in case user switched to this view really fast
-    if (_tung.sessionId.length == 0) {
-        [sessionCheckTimer invalidate];
-        sessionCheckTimer = [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(requestPageData) userInfo:nil repeats:NO];
-        return;
-    }
-    [sessionCheckTimer invalidate];
-    sessionCheckTimer = nil;
     [_tung checkReachabilityWithCallback:^(BOOL reachable) {
         if (reachable) {
         
             if (_isLoggedInUser) {
                 _profiledUserData = [[TungCommonObjects entityToDict:_tung.loggedInUser] mutableCopy];
+                if (![_profiledUserData objectForKey:@"username"]) {
+                    [TungCommonObjects simpleErrorAlertWithMessage:@"user dict empty"];
+                }
                 // _profiledUserId may not be set if we used _profiledUsername
                 _profiledUserId = _tung.loggedInUser.tung_id;
                 _storiesView.profiledUserId = _profiledUserId;

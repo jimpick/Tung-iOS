@@ -42,7 +42,7 @@
         _searchTableViewController.tableView.scrollsToTop = YES;
         _searchTableViewController.tableView.bounces = NO;
         _searchTableViewController.tableView.separatorInset = UIEdgeInsetsMake(0, 9, 0, 9);
-        _searchTableViewController.tableView.contentInset = UIEdgeInsetsMake(64, 0, 10, 0);
+        _searchTableViewController.tableView.contentInset = UIEdgeInsetsMake(64, 0, 44, 0);
         _searchTableViewController.tableView.backgroundColor = [UIColor clearColor];
         _searchTableViewController.tableView.tableFooterView = [[UIView alloc] initWithFrame:CGRectZero];
         _searchTableViewController.tableView.tableHeaderView = [[UIView alloc] initWithFrame:CGRectZero];
@@ -170,7 +170,7 @@
     NSString *encodedTerm = [searchTerm stringByReplacingOccurrencesOfString:@" " withString:@"+"];
     NSDictionary *params = @{ @"media": @"podcast",
                               @"term": encodedTerm,
-                              @"limit": @"25",
+                              @"limit": @"35",
                               @"explicit": @"Yes" };
     
     NSString *itunesURL = @"https://itunes.apple.com/search";
@@ -355,16 +355,17 @@ static NSString *cellIdentifier = @"PodcastResultCell";
     if (![podcastCell.podcastTitle isDescendantOfView:podcastCell]) [podcastCell addSubview:podcastCell.podcastTitle];
     if (![podcastCell.podcastArtist isDescendantOfView:podcastCell]) [podcastCell addSubview:podcastCell.podcastArtist];
     
-    // find key color
-    NSArray *keyColors = [TungCommonObjects determineKeyColorsFromImage:artImage];
     /* for testing key colors
+    NSArray *colors = [TungCommonObjects extractColorsFromImage:artImage];
     int x = 90;
-    for (int i = 0; i < keyColors.count; i++) {
+    for (int i = 0; i < colors.count; i++) {
         UIView *view = [[UIView alloc] initWithFrame:CGRectMake(x, 60, 40, 35)];
-        view.backgroundColor = keyColors[i];
+        view.backgroundColor = colors[i];
         [podcastCell addSubview:view];
         x +=40;
     };*/
+    // find key color
+    NSArray *keyColors = [TungCommonObjects determineKeyColorsFromImage:artImage];
     UIColor *keyColor1 = [keyColors objectAtIndex:0];
     UIColor *keyColor2 = [keyColors objectAtIndex:1];
     //NSLog(@"key color 1 hex: %@", [TungCommonObjects UIColorToHexString:keyColor1]);

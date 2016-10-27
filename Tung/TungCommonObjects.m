@@ -60,6 +60,17 @@ NSDateFormatter *ISODateFormatter;
     return tungObjects;
 }
 
++ (NSString *) apiRootUrl {
+    //return @"https://api.tung.fm/";
+    return @"https://staging-api.tung.fm/";
+}
+
++ (NSString *) tungSiteRootUrl {
+    
+    return @"https://tung.fm/";
+    //return @"https://staging.tung.fm/";
+}
+
 - (id)init {
     if (self = [super init]) {
         
@@ -193,18 +204,6 @@ CGSize screenSize;
         screenSize = [[UIScreen mainScreen] bounds].size;
         return screenSize;
     }
-}
-
-
-+ (NSString *) apiRootUrl {
-    return @"https://api.tung.fm/";
-    //return @"https://staging-api.tung.fm/";
-}
-
-+ (NSString *) tungSiteRootUrl {
-    
-    return @"https://tung.fm/";
-    //return @"https://staging.tung.fm/";
 }
 
 + (NSString *) apiKey {
@@ -2341,10 +2340,15 @@ static NSArray *colors;
     return [colors objectAtIndex:highestIndex];
 }
 
-+ (NSArray *) determineKeyColorsFromImage:(UIImage *)image {
++ (NSArray *) extractColorsFromImage:(UIImage *)image {
     
     if (!colorCube) colorCube = [[CCColorCube alloc] init];
-    NSArray *keyColors = [colorCube extractColorsFromImage:image flags:CCAvoidWhite+CCAvoidBlack count:6];
+    return [colorCube extractColorsFromImage:image flags:CCAvoidWhite+CCAvoidBlack count:6];
+}
+
++ (NSArray *) determineKeyColorsFromImage:(UIImage *)image {
+    
+    NSArray *keyColors = [self extractColorsFromImage:image];
     UIColor *keyColor1 = [UIColor colorWithRed:0.45 green:0.45 blue:0.45 alpha:1];// default
     UIColor *keyColor2 = [self tungColor];// default
     if (keyColors.count > 0) {
@@ -2382,25 +2386,43 @@ static NSArray *colors;
             
             NSString *dominantColor = [self determineDominantColorFromRGB:@[[NSNumber numberWithFloat:R], [NSNumber numberWithFloat:G], [NSNumber numberWithFloat:B]]];
             
-            //NSLog(@"- color %d - dominant: %@, saturation: %f, luminance: %f, RGB: %f - %f - %f", i, dominantColor, saturation, luminance, R, G, B);
+            //NSLog(@"- color %d - dominant: %@, saturation: %f, luminance: %f, sum: %f, RGB: %f - %f - %f", i, dominantColor, saturation, luminance, sum, R, G, B);
             
             // requirements only for 1st key color
             if (keyColor1Index < 0) {
                 // test for not gray
                 if (saturation < 0.09) continue;
-                // test for too dark
-                if (R < 0.44 && G < 0.44 && B < 0.44) continue;
-                // test for too dark blue
-                if (R < 0.1 && G < 0.45 && B < 0.75) continue;
-                // test for dark purple
-                if (R < 0.4 && G < 0.4 && B < 0.6) continue;
+                // test for too dark green
+                if (R < 0.01 && G < 0.55 && B < 0.01) continue;
+                // test for dark blue/purple
+                if (R < 0.4 && G < 0.4 && B < 0.75) continue;
                 // test for dark red/brown
                 if (R < 0.7 && G < 0.3 && B < 0.3) continue;
             }
-            // test for too light
+            // test for too light overall
             if (R > 0.6 && G > 0.6 && B > 0.6) continue;
-            // test for too bright yellow / green
-            if (R > 0.55 && G > 0.65) continue;
+            // test for too bright green
+            if (R > 0.63 && G > 0.75 && B > 0.1) continue;
+            // test too bright yellow
+            if (R > 0.95 && G > 0.65) continue;
+            // test for retina blasting G
+            if (G > 0.9) continue;
+            // test for too light blue
+            if (R > 0.5 && G > 0.75 && B > 0.85) continue;
+            /* 
+            COLOR TEST - perform after each edit
+             - search hospital records, should get nice pink
+             - search joe rogan, should get nice orange
+             - search dalrymple report, should get lighter orange
+             - search tim ferriss, should get nice flesh color
+             - search quad talk, should get medium green
+             - search dork forest, should get medium green
+             - search planet money, should get planet money green
+             - search startup, should get royal blue
+             - search less than or equal,
+             - search flash forward, should get medium purple
+             - search relay fm, check results (variety of colors)
+             */
 
 
             if (keyColor1Index < 0) {
@@ -2409,6 +2431,7 @@ static NSArray *colors;
                 keyColor1DominantColor = dominantColor;
             }
             else if (keyColor2Index < 0) {
+                // ensure different dominant color in 2nd key color
                 NSString *keyColor2DominantColor = dominantColor;
                 if ([keyColor1DominantColor isEqualToString:keyColor2DominantColor]) {
                     continue;
@@ -2427,7 +2450,7 @@ static NSArray *colors;
         if (keyColor2Index > -1) keyColor2 = [keyColors objectAtIndex:keyColor2Index];
         if (keyColor1Index > -1 && keyColor2Index == -1) keyColor2 = [keyColors objectAtIndex:keyColor1Index];
     }
-    //return keyColors; // for testing key colors
+    
     return @[keyColor1, keyColor2];
     
 }

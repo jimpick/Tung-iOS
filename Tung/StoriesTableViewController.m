@@ -303,7 +303,7 @@
                             _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                             
                             //NSLog(@"session id: %@", _tung.sessionId);
-                            NSLog(@"user: %@", [responseDict objectForKey:@"user"]);
+                            //NSLog(@"user: %@", [responseDict objectForKey:@"user"]);
                             _tung.connectionAvailable = [NSNumber numberWithBool:YES];
                             // check if data needs syncing
                             NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
