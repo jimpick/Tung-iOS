@@ -242,7 +242,8 @@
     NSMutableDictionary *postParams = [@{@"sessionId": _tung.sessionId} mutableCopy];
     if (withCred) {
         NSDictionary *credParams = @{@"tung_id": _tung.loggedInUser.tung_id,
-                                     @"token": _tung.loggedInUser.token
+                                     @"token": _tung.loggedInUser.token,
+                                     @"iOS_version": [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"]
                                      };
         [postParams addEntriesFromDictionary:credParams];
     }
@@ -302,7 +303,7 @@
                             _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                             
                             //NSLog(@"session id: %@", _tung.sessionId);
-                            //NSLog(@"user: %@", [responseDict objectForKey:@"user"]);
+                            NSLog(@"user: %@", [responseDict objectForKey:@"user"]);
                             _tung.connectionAvailable = [NSNumber numberWithBool:YES];
                             // check if data needs syncing
                             NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
@@ -432,7 +433,8 @@
                              } mutableCopy];
     if (withCred) {
         NSDictionary *credParams = @{@"tung_id": _tung.loggedInUser.tung_id,
-                                     @"token": _tung.loggedInUser.token
+                                     @"token": _tung.loggedInUser.token,
+                                     @"iOS_version": [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"]
                                      };
         [params addEntriesFromDictionary:credParams];
     }

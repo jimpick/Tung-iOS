@@ -2563,7 +2563,8 @@ static NSArray *colors;
     NSMutableURLRequest *getSessionRequest = [NSMutableURLRequest requestWithURL:getSessionRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [getSessionRequest setHTTPMethod:@"POST"];
     NSDictionary *cred = @{@"tung_id": _loggedInUser.tung_id,
-                           @"token": _loggedInUser.token
+                           @"token": _loggedInUser.token,
+                           @"iOS_version": [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"]
                            };
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:cred];
     [getSessionRequest setHTTPBody:serializedParams];
@@ -3804,6 +3805,7 @@ static NSArray *colors;
     } else {
         params = @{@"tung_id": _loggedInUser.tung_id,
                    @"token": _loggedInUser.token,
+                   @"iOS_version": [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"],
                    @"target_user_id": target_id,
                    @"username": username};
     }
@@ -4371,8 +4373,9 @@ static NSArray *colors;
     NSURL *verifyCredRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/twitter-signin.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *verifyCredRequest = [NSMutableURLRequest requestWithURL:verifyCredRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [verifyCredRequest setHTTPMethod:@"POST"];
-    
-    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:headers];
+    NSMutableDictionary *params = [NSMutableDictionary dictionaryWithDictionary:headers];
+    [params setObject:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] forKey:@"iOS_version"];
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [verifyCredRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
     [NSURLConnection sendAsynchronousRequest:verifyCredRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
@@ -4516,7 +4519,8 @@ static NSArray *colors;
     NSURL *verifyCredRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@app/facebook-signin.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *verifyCredRequest = [NSMutableURLRequest requestWithURL:verifyCredRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [verifyCredRequest setHTTPMethod:@"POST"];
-    NSDictionary *params = @{ @"accessToken": token };
+    NSDictionary *params = @{ @"accessToken": token,
+                              @"iOS_version": [[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"]};
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [verifyCredRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
