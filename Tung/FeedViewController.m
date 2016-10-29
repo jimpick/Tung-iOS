@@ -61,6 +61,7 @@
     
     // Following feed
     _followingFeed = [self.storyboard instantiateViewControllerWithIdentifier:@"storiesTableView"];
+    _followingFeed.isForFollowing = YES;
     //_followingFeed.edgesForExtendedLayout = UIRectEdgeNone; // seems to not do anything
     [self addChildViewController:_followingFeed];
     _followingFeed.navController = [self navigationController];

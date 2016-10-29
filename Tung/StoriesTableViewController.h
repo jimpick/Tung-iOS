@@ -22,6 +22,7 @@
 @property (strong, nonatomic) NSString *profiledUserId;
 @property (strong, nonatomic) NSString *episodeId;
 @property (nonatomic, assign) BOOL isForTrending;
+@property (nonatomic, assign) BOOL isForFollowing;
 
 // request flags
 @property (nonatomic, assign) BOOL requestingMore;

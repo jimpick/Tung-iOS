@@ -10,14 +10,9 @@
 #import "SuggestedUserCell.h"
 #import "IconCell.h"
 #import "ProfileListTableViewController.h"
-#import "FinishSignUpController.h"
 #import "ProfileViewController.h"
 
 @interface FindFriendsTableViewController ()
-
-@property NSMutableArray *usersToFollow;
-@property UILabel *subtitleLabel;
-@property BOOL okayToProceed;
 
 // for search
 @property ProfileListTableViewController *profileSearchView;
@@ -31,59 +26,14 @@
     
     _tung = [TungCommonObjects establishTungObjects];
     
-    if (_profileData) { // onboarding
-        
-        // title and subtitle
-        UILabel *titleLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-        //titleLabel.backgroundColor = [UIColor clearColor];
-        titleLabel.textColor = [TungCommonObjects tungColor];
-        titleLabel.font = [UIFont boldSystemFontOfSize:20];
-        titleLabel.text = [NSString stringWithFormat:@"Follow %d", NUM_REQUIRED_FOLLOWS];
-        
-        [titleLabel sizeToFit];
-        
-        _subtitleLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 22, 0, 0)];
-        //subTitleLabel.backgroundColor = [UIColor clearColor];
-        _subtitleLabel.textColor = [UIColor grayColor];
-        _subtitleLabel.font = [UIFont systemFontOfSize:12];
-        _subtitleLabel.text = [NSString stringWithFormat:@"%d remaining", NUM_REQUIRED_FOLLOWS];
-        [_subtitleLabel sizeToFit];
-        
-        UIView *twoLineTitleView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, MAX(_subtitleLabel.frame.size.width, titleLabel.frame.size.width), 30)];
-        [twoLineTitleView addSubview:titleLabel];
-        [twoLineTitleView addSubview:_subtitleLabel];
-        
-        float widthDiff = _subtitleLabel.frame.size.width - titleLabel.frame.size.width;
-        
-        if (widthDiff > 0) {
-            CGRect frame = titleLabel.frame;
-            frame.origin.x = widthDiff / 2;
-            titleLabel.frame = CGRectIntegral(frame);
-        } else {
-            CGRect frame = _subtitleLabel.frame;
-            frame.origin.x = fabsf(widthDiff) / 2;
-            _subtitleLabel.frame = CGRectIntegral(frame);
-        }
-        
-        self.navigationItem.titleView = twoLineTitleView;
-        
-        // right bar button item
-        self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Next" style:UIBarButtonItemStyleDone target:self action:@selector(proceedToNextView)];
-        
-        
-        self.tableView.allowsSelection = NO;
-    }
-    else {
-        //self.navigationItem.title = @"Find friends";
-        
-        _profileSearchView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
-        _profileSearchView.navController = [self navigationController];
-        _profileSearchView.profileArray = [NSMutableArray array];
-        
-        [_profileSearchView initSearchController];
-        self.navigationItem.titleView = _profileSearchView.searchController.searchBar;
-        [self.navigationItem setRightBarButtonItem:nil animated:NO];
-    }
+    _profileSearchView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
+    _profileSearchView.navController = [self navigationController];
+    _profileSearchView.profileArray = [NSMutableArray array];
+    
+    [_profileSearchView initSearchController];
+    self.navigationItem.titleView = _profileSearchView.searchController.searchBar;
+    [self.navigationItem setRightBarButtonItem:nil animated:NO];
+
     
     self.definesPresentationContext = YES;
     
@@ -102,8 +52,6 @@
     self.tableView.contentInset = UIEdgeInsetsMake(0, 0, 0, 0);
     self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
     
-    _usersToFollow = [NSMutableArray array];
-    
     if (!_suggestedUsersArray) {
         // get users
         [_tung getSuggestedUsersWithCallback:^(BOOL success, NSDictionary *response) {
@@ -114,10 +62,6 @@
                 [_tung preloadAlbumArtForSuggestedUsers:_suggestedUsersArray];
                 [self.tableView reloadData];
                 
-                if (_profileData) { // if onboarding
-                	// see if user should proceed to platform friends or finish
-                	[self checkForPlatformFriends];
-                }
             }
             else {
                 // other error - alert user
@@ -128,12 +72,7 @@
     else {
         [self preloadImages];
     }
-    // if onboarding
-    if (_profileData) {
-        // see if user should proceed to platform friends or finish
-        [self checkForPlatformFriends];
-        
-    }
+
 }
 
 - (void) viewWillAppear:(BOOL)animated {
@@ -165,11 +104,7 @@
 }
 - (BOOL)prefersStatusBarHidden
 {
-    if (_profileData) {
-    	return YES;
-    } else {
-        return NO;
-    }
+    return NO;
 }
 
 - (void) preloadImages {
@@ -211,139 +146,69 @@
 - (void) followingChanged:(NSNotification*)notification {
     
     PillButton *btn = [[notification userInfo] objectForKey:@"sender"];
-    
-    if (_profileData) { // onboarding
+
+    if ([[notification userInfo] objectForKey:@"unfollowedUser"]) {
         
-        if ([[notification userInfo] objectForKey:@"unfollowedUser"]) {
-            // unfollow
-            [_usersToFollow removeObject:[[notification userInfo] objectForKey:@"unfollowedUser"]];
+        UIAlertController *unfollowConfirmAlert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:@"Unfollow @%@?", [[notification userInfo] objectForKey:@"username"]] message:nil preferredStyle:UIAlertControllerStyleAlert];
+        [unfollowConfirmAlert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            
             btn.on = NO;
             [btn setNeedsDisplay];
-        }
-        if ([[notification userInfo] objectForKey:@"followedUser"]) {
-            // follow
-            NSString *userId = [[notification userInfo] objectForKey:@"followedUser"];
-            if (![_usersToFollow containsObject:userId]) {
-                [_usersToFollow addObject:userId];
-            }
-        }
-        // update subtitle
-        NSInteger result = NUM_REQUIRED_FOLLOWS - _usersToFollow.count;
-        if (result <= 0) {
-            _okayToProceed = YES;
-        } else {
-            _okayToProceed = NO;
-        }
-        if (_okayToProceed) {
-        	_subtitleLabel.text = @"Good to go!";
-        } else {
-            _subtitleLabel.text = [NSString stringWithFormat:@"%ld remaining", (long)result];
-        }
-    }
-    else {
-        
-        if ([[notification userInfo] objectForKey:@"unfollowedUser"]) {
-            
-            UIAlertController *unfollowConfirmAlert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:@"Unfollow @%@?", [[notification userInfo] objectForKey:@"username"]] message:nil preferredStyle:UIAlertControllerStyleAlert];
-            [unfollowConfirmAlert addAction:[UIAlertAction actionWithTitle:@"Yes" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-                
-                btn.on = NO;
-                [btn setNeedsDisplay];
-                NSString *userId = [[notification userInfo] objectForKey:@"unfollowedUser"];
-                // unfollow
-                [_tung unfollowUserWithId:userId withCallback:^(BOOL success, NSDictionary *response) {
-                    if (success) {
-                        if (![response objectForKey:@"userNotFollowing"]) {
-                            _tung.feedNeedsRefetch = [NSNumber numberWithBool:YES]; // following changed
-                            NSNotification *followingCountChangedNotif = [NSNotification notificationWithName:@"followingCountChanged" object:nil userInfo:response];
-                            [[NSNotificationCenter defaultCenter] postNotification:followingCountChangedNotif];
-                        }
-                    }
-                    else {
-                        btn.on = YES;
-                        [btn setNeedsDisplay];
-                    }
-                }];
-                
-            }]];
-            [unfollowConfirmAlert addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:nil]];
-            if ([TungCommonObjects iOSVersionFloat] >= 9.0) {
-            	unfollowConfirmAlert.preferredAction = [unfollowConfirmAlert.actions objectAtIndex:1];
-            }
-            [self presentViewController:unfollowConfirmAlert animated:YES completion:nil];
-
-        }
-        if ([[notification userInfo] objectForKey:@"followedUser"]) {
-            NSString *userId = [[notification userInfo] objectForKey:@"followedUser"];
-            // follow
-            [_tung followUserWithId:userId withCallback:^(BOOL success, NSDictionary *response) {
+            NSString *userId = [[notification userInfo] objectForKey:@"unfollowedUser"];
+            // unfollow
+            [_tung unfollowUserWithId:userId withCallback:^(BOOL success, NSDictionary *response) {
                 if (success) {
-                    NSLog(@"successfully followed user from friends");
-                    if (![response objectForKey:@"userAlreadyFollowing"]) {
-                        _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES]; // following changed
+                    if (![response objectForKey:@"userNotFollowing"]) {
+                        _tung.feedNeedsRefetch = [NSNumber numberWithBool:YES]; // following changed
                         NSNotification *followingCountChangedNotif = [NSNotification notificationWithName:@"followingCountChanged" object:nil userInfo:response];
                         [[NSNotificationCenter defaultCenter] postNotification:followingCountChangedNotif];
                     }
                 }
                 else {
-                    btn.on = NO;
+                    btn.on = YES;
                     [btn setNeedsDisplay];
                 }
             }];
+            
+        }]];
+        [unfollowConfirmAlert addAction:[UIAlertAction actionWithTitle:@"No" style:UIAlertActionStyleDefault handler:nil]];
+        if ([TungCommonObjects iOSVersionFloat] >= 9.0) {
+            unfollowConfirmAlert.preferredAction = [unfollowConfirmAlert.actions objectAtIndex:1];
         }
-    }
-}
+        [self presentViewController:unfollowConfirmAlert animated:YES completion:nil];
 
-// see if user has any friends on tung from the service they signed up with.
-- (void) checkForPlatformFriends {
-    
-    if ([_profileData objectForKey:@"twitter_id"]) {
-        
-        [_tung findTwitterFriendsWithPage:[NSNumber numberWithInt:0] andCallback:^(BOOL success, NSDictionary *responseDict) {
+    }
+    if ([[notification userInfo] objectForKey:@"followedUser"]) {
+        NSString *userId = [[notification userInfo] objectForKey:@"followedUser"];
+        // follow
+        [_tung followUserWithId:userId withCallback:^(BOOL success, NSDictionary *response) {
             if (success) {
-                //NSLog(@"responseDict: %@", responseDict);
-                NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
-                if ([platformFriendsCount integerValue] > 0) {
-                    [_profileData setObject:[responseDict objectForKey:@"results"] forKey:@"twitterFriends"];
+                NSLog(@"successfully followed user from friends");
+                if (![response objectForKey:@"userAlreadyFollowing"]) {
+                    _tung.feedNeedsRefresh = [NSNumber numberWithBool:YES]; // following changed
+                    NSNotification *followingCountChangedNotif = [NSNotification notificationWithName:@"followingCountChanged" object:nil userInfo:response];
+                    [[NSNotificationCenter defaultCenter] postNotification:followingCountChangedNotif];
                 }
             }
+            else {
+                btn.on = NO;
+                [btn setNeedsDisplay];
+            }
         }];
-        
     }
-    else if ([_profileData objectForKey:@"facebook_id"]) {
-
-        
-        if ([FBSDKAccessToken currentAccessToken]) {
-            
-            NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
-            [_tung findFacebookFriendsWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {
-                //NSLog(@"responseDict: %@", responseDict);
-                NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
-                if ([platformFriendsCount integerValue] > 0) {
-                    [_profileData setObject:[responseDict objectForKey:@"results"] forKey:@"facebookFriends"];
-                }
-                
-            }];
-        }
-    }
-    
 }
 
 #pragma mark - Table view data source
 
 - (NSInteger)numberOfSectionsInTableView:(UITableView *)tableView {
-    if (_profileData) {
-    	return 1;
-    } else {
-        return 2;
-    }
+    return 2;
 }
 
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section {
-    if (section == 0 && !_profileData) {
+    if (section == 0) {
         return 2;
     }
-    else if ((section == 0 && _profileData) || section == 1) {
+    else if (section == 1) {
     	return _suggestedUsersArray.count;
     }
     else {
@@ -355,7 +220,7 @@
 - (UITableViewCell *)tableView:(UITableView *)tableView cellForRowAtIndexPath:(NSIndexPath *)indexPath {
     UITableViewCell *cell;
     
-    if (indexPath.section == 0 && !_profileData) {
+    if (indexPath.section == 0) {
         
         cell = [tableView dequeueReusableCellWithIdentifier:@"IconCell" forIndexPath:indexPath];
         IconCell *iCell = (IconCell *)cell;
@@ -371,7 +236,7 @@
             iCell.titleLabel.text = @"Find Facebook friends";
         }
     }
-    else if ((indexPath.section == 0 && _profileData) || indexPath.section == 1) {
+    else if (indexPath.section == 1) {
 
         //NSLog(@"suggested user cell for index: %lu", (unsigned long)indexPath.row);
         cell = [tableView dequeueReusableCellWithIdentifier:@"SuggestedUserCell" forIndexPath:indexPath];
@@ -382,15 +247,7 @@
         NSMutableDictionary *userDict = [NSMutableDictionary dictionaryWithDictionary:[cellDict objectForKey:@"user"]];
         suCell.userId = [[userDict objectForKey:@"id"] objectForKey:@"$id"];
         suCell.username = [userDict objectForKey:@"username"];
-        if (_profileData) {
-            NSNumber *userFollows;
-            if ([_usersToFollow containsObject:suCell.userId]) {
-                userFollows = [NSNumber numberWithBool:YES];
-            } else {
-                userFollows = [NSNumber numberWithBool:NO];
-            }
-            [userDict setObject:userFollows forKey:@"userFollows"];
-        }
+
         NSArray *podcasts = [cellDict objectForKey:@"podcasts"];
         
         // avatar
@@ -410,7 +267,7 @@
         suCell.subLabel.text = [userDict objectForKey:@"name"];
         
         // follow button
-        if (!_profileData && [_tung.loggedInUser.tung_id isEqualToString:[[userDict objectForKey:@"id"] objectForKey:@"$id"]]) {
+        if ([_tung.loggedInUser.tung_id isEqualToString:[[userDict objectForKey:@"id"] objectForKey:@"$id"]]) {
             suCell.followBtn.hidden = YES;
             suCell.youLabel.hidden = NO;
         }
@@ -462,25 +319,28 @@
 
 - (NSString *)tableView:(UITableView *)tableView titleForHeaderInSection:(NSInteger)section {
     
-    if (section == 0 && !_profileData) {
+    if (section == 0) {
         return @"Find Friends";
     }
-    else if (section == 1 && !_profileData) {
+    else if (section == 1) {
         return @"Suggested Users";
     }
     else {
-        return [NSString stringWithFormat:@"Follow %d suggested users", NUM_REQUIRED_FOLLOWS];
+        return nil;
     }
 }
 
 #pragma mark - Table view delegate methods
 
 -(CGFloat)tableView:(UITableView *)tableView heightForRowAtIndexPath:(NSIndexPath *)indexPath {
-    if (indexPath.section == 0 && !_profileData) {
+    if (indexPath.section == 0) {
         return 60;
     }
-    else {
+    else if (indexPath.section == 1) {
     	return 176;
+    }
+    else {
+        return 0;
     }
 }
 
@@ -489,7 +349,7 @@
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     if (indexPath.section == 0) {
-        if (!_profileData && indexPath.row == 0) {
+        if (indexPath.row == 0) {
             // Twitter
             if ([Twitter sharedInstance].sessionStore.session) {
                 
@@ -503,7 +363,7 @@
                 }];
             }
         }
-        else if (!_profileData && indexPath.row == 1) {
+        else if (indexPath.row == 1) {
             // Facebook
             if ([FBSDKAccessToken currentAccessToken]) {
                 
@@ -517,14 +377,12 @@
         }
     }
     else {
-        if (!_profileData) {
-            NSDictionary *cellDict = [_suggestedUsersArray objectAtIndex:indexPath.row];
-            NSDictionary *userDict = [cellDict objectForKey:@"user"];
-            NSString *userId = [[userDict objectForKey:@"id"] objectForKey:@"$id"];
-            ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
-            profileView.profiledUserId = userId;
-            [self.navigationController pushViewController:profileView animated:YES];
-        }
+        NSDictionary *cellDict = [_suggestedUsersArray objectAtIndex:indexPath.row];
+        NSDictionary *userDict = [cellDict objectForKey:@"user"];
+        NSString *userId = [[userDict objectForKey:@"id"] objectForKey:@"$id"];
+        ProfileViewController *profileView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"profileView"];
+        profileView.profiledUserId = userId;
+        [self.navigationController pushViewController:profileView animated:YES];
     }
 }
 
@@ -538,36 +396,6 @@
     ProfileListTableViewController *facebookFriendsView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
     facebookFriendsView.queryType = @"Facebook";
     [self.navigationController pushViewController:facebookFriendsView animated:YES];
-}
-
-
-- (void) proceedToNextView {
-    
-    if (_okayToProceed) {
-        
-        if ([_profileData objectForKey:@"twitterFriends"] || [_profileData objectForKey:@"facebookFriends"]) {
-            // platform friends
-            ProfileListTableViewController *profileListView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
-            profileListView.profileData = _profileData;
-            profileListView.usersToFollow = _usersToFollow;
-            [self.navigationController pushViewController:profileListView animated:YES];
-        }
-        else {
-            // finish sign-up
-            FinishSignUpController *finishView = [self.storyboard instantiateViewControllerWithIdentifier:@"finishSignup"];
-            finishView.profileData = _profileData;
-            finishView.usersToFollow = _usersToFollow;
-            [self.navigationController pushViewController:finishView animated:YES];
-        }
-    }
-    else {
-        // user needs to follow at least X people
-        UIAlertController *followMoreAlert = [UIAlertController alertControllerWithTitle:[NSString stringWithFormat:@"Follow %d", NUM_REQUIRED_FOLLOWS] message:[NSString stringWithFormat:@"Please follow at least %d accounts by tapping the \"Follow\" buttons before proceeding.", NUM_REQUIRED_FOLLOWS] preferredStyle:UIAlertControllerStyleAlert];
-        [followMoreAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
-        [self presentViewController:followMoreAlert animated:YES completion:nil];
-        
-    }
-    
 }
 
 #pragma mark - Navigation

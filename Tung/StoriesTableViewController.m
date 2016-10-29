@@ -34,6 +34,7 @@
 @property NSNumber *page;
 @property UILabel *prototypeLabel;
 @property CGFloat labelWidth;
+@property UIView *noFollowsView;
 
 @property (nonatomic, assign) CGFloat lastScrollViewOffset; // for determining scroll direction
 
@@ -108,6 +109,35 @@
     _prototypeLabel = [[UILabel alloc] init];
     _prototypeLabel.font = [UIFont systemFontOfSize:15];
     _prototypeLabel.numberOfLines = 0;
+    
+    if (_isForFollowing) {
+        // background view for no follows
+        UILabel *noFollowsLabel = [[UILabel alloc] init];
+        noFollowsLabel.text = @"You haven't followed anyone yet.";
+        noFollowsLabel.numberOfLines = 2;
+        noFollowsLabel.textColor = [UIColor grayColor];
+        noFollowsLabel.textAlignment = NSTextAlignmentCenter;
+        CGFloat screenWidth = [TungCommonObjects screenSize].width;
+        CGSize labelSize = [noFollowsLabel sizeThatFits:CGSizeMake(screenWidth, 400)];
+        CGRect labelRect = CGRectMake(0, 0, screenWidth, labelSize.height);
+        noFollowsLabel.frame = labelRect;
+        CGFloat buttonHeight = 40;
+        UIButton *findFriendsBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, labelSize.height, screenWidth, buttonHeight)];
+        [findFriendsBtn setTitle:@"Find friends on Tung" forState:UIControlStateNormal];
+        [findFriendsBtn setTitleColor:[TungCommonObjects tungColor] forState:UIControlStateNormal];
+        // TODO: add method to notify parent VC to push fiend friends view
+        [findFriendsBtn addTarget:self action:@selector(pushFindFriendsView) forControlEvents:UIControlEventTouchUpInside];
+        _noFollowsView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, labelSize.height + buttonHeight)];
+        [_noFollowsView addSubview:noFollowsLabel];
+        [_noFollowsView addSubview:findFriendsBtn];
+        _noFollowsView.hidden = YES;
+        [self.view addSubview:_noFollowsView];
+        _noFollowsView.translatesAutoresizingMaskIntoConstraints = NO;
+        [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeCenterX multiplier:1 constant:0]];
+        [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeCenterY multiplier:1 constant:0]];
+        [_noFollowsView addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:screenWidth]];
+        [_noFollowsView addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:labelSize.height + buttonHeight]];
+    }
 
 }
 
@@ -287,12 +317,14 @@
                         
                         // set feedLastFetched date (seconds)
                         SettingsEntity *settings = [TungCommonObjects settings];
-                        if (trending) {
+                        if (_isForTrending) {
                         	settings.trendingFeedLastFetched = [NSNumber numberWithDouble:[[NSDate date] timeIntervalSince1970]];
                             _tung.trendingFeedNeedsRefresh = [NSNumber numberWithBool:NO];
-                        } else {
+                        }
+                        else if (_isForFollowing) {
                             settings.feedLastFetched = [NSNumber numberWithDouble:[[NSDate date] timeIntervalSince1970]];
                             _tung.feedNeedsRefresh = [NSNumber numberWithBool:NO];
+                            
                         }
                         [TungCommonObjects saveContextWithReason:@"set feedLastFetched"];
                         
@@ -380,12 +412,22 @@
                             }
                             [self.tableView reloadData];
                             
-                            // welcome tutorial
-                            SettingsEntity *settings = [TungCommonObjects settings];
-                            if (!settings.hasSeenWelcomePopup.boolValue) {
-                                [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(showWelcomePopup) userInfo:nil repeats:NO];
+                            if (_isForTrending) {
+                                // welcome tutorial
+                                SettingsEntity *settings = [TungCommonObjects settings];
+                                if (!settings.hasSeenWelcomePopup.boolValue) {
+                                    [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(showWelcomePopup) userInfo:nil repeats:NO];
+                                }
                             }
                             
+                        }
+                        if (_isForFollowing) {
+                            if ([responseDict objectForKey:@"follows_no_one"] && _noResults) {
+                                _noFollowsView.hidden = NO;
+                            }
+                            else {
+                                _noFollowsView.hidden = YES;
+                            }
                         }
                         
                     });

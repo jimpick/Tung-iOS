@@ -13,6 +13,5 @@
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (strong, nonatomic) NSArray *suggestedUsersArray;
-@property (strong, nonatomic) NSMutableDictionary *profileData;
 
 @end

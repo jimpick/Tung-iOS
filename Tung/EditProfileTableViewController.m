@@ -11,6 +11,8 @@
 #import <Social/Social.h>
 #import <FacebookSDK/FacebookSDK.h>
 #import "AppDelegate.h"
+#import "FinishSignUpController.h"
+#import "ProfileListTableViewController.h"
 
 #define MAX_BIO_CHARS 160
 
@@ -35,6 +37,7 @@
 @property BOOL formIsForSignup;
 @property BOOL formIsPristine;
 @property BOOL usernameCheckUnderway;
+@property BOOL checkedForPlatformFriends;
 @property NSArray *suggestedUsersArray;
 
 @end
@@ -57,23 +60,14 @@ static UIImage *iconRedX;
     if ([_purpose isEqualToString:@"signup"]) {
         // signup
         _formIsForSignup = YES;
+        _checkedForPlatformFriends = NO;
         self.navigationItem.titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"tungNavBarLogo.png"]];
         self.navigationItem.rightBarButtonItem.title = @"Next";
         _refreshAvatarBtn.hidden = YES;
         [self createAvatarSizesAndSetAvatarWithCallback:nil];
         
-        // preload suggested users
-        if (!_suggestedUsersArray) {
-            //NSLog(@"get suggested users");
-            [_tung getSuggestedUsersWithCallback:^(BOOL success, NSDictionary *response) {
-                if (success) {
-                    _suggestedUsersArray = [response objectForKey:@"success"];
-                    [_tung preloadAlbumArtForSuggestedUsers:_suggestedUsersArray];
-                }
-            }];
-        }
-        
-    } else {
+    }
+    else {
         // edit profile
         self.navigationItem.title = @"Edit Profile";
         _refreshAvatarBtn.hidden = NO;
@@ -235,6 +229,9 @@ static UIImage *iconRedX;
     _activeFieldIndex = 0;
     if (_formIsForSignup) {
     	[[_fields objectAtIndex:_activeFieldIndex] becomeFirstResponder];
+        
+        // preload platform friends for next page
+        if (!_checkedForPlatformFriends) [self checkForPlatformFriends];
     }
 }
 
@@ -274,16 +271,44 @@ static UIImage *iconRedX;
     } else {
         [[_fields objectAtIndex:_activeFieldIndex] resignFirstResponder];
         if (_formIsForSignup) {
-            [self performSegueWithIdentifier:@"proceedToSuggestedUsers" sender:self];
-        } else {
+            
+            [self setProfileDataWithFormValues];
+            
+            //[self performSegueWithIdentifier:@"proceedToSuggestedUsers" sender:self];
+            if ([_profileData objectForKey:@"twitterFriends"] || [_profileData objectForKey:@"facebookFriends"]) {
+                // platform friends
+                ProfileListTableViewController *profileListView = [self.storyboard instantiateViewControllerWithIdentifier:@"profileListView"];
+                profileListView.profileData = _profileData;
+                [self.navigationController pushViewController:profileListView animated:YES];
+            }
+            else {
+                // finish sign-up
+                FinishSignUpController *finishView = [self.storyboard instantiateViewControllerWithIdentifier:@"finishSignup"];
+                finishView.profileData = _profileData;
+                [self.navigationController pushViewController:finishView animated:YES];
+            }
+        }
+        else {
             if (_formIsPristine) {
                 [self dismissViewControllerAnimated:YES completion:nil];
-            } else {
+            }
+            else {
             	[self updateProfileData];
             }
         }
     }
 }
+
+- (void) setProfileDataWithFormValues {
+    // update profileData with user inputted values
+    [_profileData setValue:_field_username.text forKey:@"username"];
+    [_profileData setValue:_field_name.text forKey:@"name"];
+    [_profileData setValue:_field_email.text forKey:@"email"];
+    [_profileData setValue:_field_location.text forKey:@"location"];
+    [_profileData setValue:_field_bio.text forKey:@"bio"];
+    [_profileData setValue:_field_url.text forKey:@"url"];
+}
+
 - (void) adjustRightBarButtonForFormState {
     
     if (_formIsForSignup) return;
@@ -294,6 +319,44 @@ static UIImage *iconRedX;
         self.navigationItem.rightBarButtonItem.title = @"Save";
     }
 }
+
+// see if user has any friends on tung from the service they signed up with.
+- (void) checkForPlatformFriends {
+    
+    _checkedForPlatformFriends = YES;
+    
+    if ([_profileData objectForKey:@"twitter_id"]) {
+        
+        [_tung findTwitterFriendsWithPage:[NSNumber numberWithInt:0] andCallback:^(BOOL success, NSDictionary *responseDict) {
+            if (success) {
+                //NSLog(@"responseDict: %@", responseDict);
+                NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
+                if ([platformFriendsCount integerValue] > 0) {
+                    [_profileData setObject:[responseDict objectForKey:@"results"] forKey:@"twitterFriends"];
+                }
+            }
+        }];
+        
+    }
+    else if ([_profileData objectForKey:@"facebook_id"]) {
+        
+        
+        if ([FBSDKAccessToken currentAccessToken]) {
+            
+            NSString *tokenString = [[FBSDKAccessToken currentAccessToken] tokenString];
+            [_tung findFacebookFriendsWithFacebookAccessToken:tokenString withCallback:^(BOOL success, NSDictionary *responseDict) {
+                //NSLog(@"responseDict: %@", responseDict);
+                NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
+                if ([platformFriendsCount integerValue] > 0) {
+                    [_profileData setObject:[responseDict objectForKey:@"results"] forKey:@"facebookFriends"];
+                }
+                
+            }];
+        }
+    }
+    
+}
+
 
 #pragma mark - Update request
 
@@ -314,13 +377,8 @@ static UIImage *iconRedX;
     [_tung updateUserWithDictionary:updates withCallback:^(NSDictionary *responseDict) {
         if ([responseDict objectForKey:@"success"]) {
             self.navigationItem.title = @"Saved";
-            // update profileData with user inputted values
-            [_profileData setValue:_field_name.text forKey:@"name"];
-            [_profileData setValue:_field_username.text forKey:@"username"];
-            [_profileData setValue:_field_location.text forKey:@"location"];
-            [_profileData setValue:_field_bio.text forKey:@"bio"];
-            [_profileData setValue:_field_url.text forKey:@"url"];
-            [_profileData setValue:_field_email.text forKey:@"email"];
+            
+            [self setProfileDataWithFormValues];
             
             [TungCommonObjects saveUserWithDict:_profileData isLoggedInUser:YES];
             
@@ -927,23 +985,6 @@ static UIImage *iconRedX;
 
 #pragma mark - navigation
 
-- (void)prepareForSegue:(UIStoryboardSegue *)segue sender:(id)sender {
-    
-    UIViewController *destination = segue.destinationViewController;
-    
-    if ([[segue identifier] isEqualToString:@"proceedToSuggestedUsers"]) {
-        // update profileData with user inputted values
-        [_profileData setValue:_field_username.text forKey:@"username"];
-        [_profileData setValue:_field_name.text forKey:@"name"];
-        [_profileData setValue:_field_email.text forKey:@"email"];
-        [_profileData setValue:_field_location.text forKey:@"location"];
-        [_profileData setValue:_field_bio.text forKey:@"bio"];
-        [_profileData setValue:_field_url.text forKey:@"url"];
-        // set value
-        [destination setValue:_profileData forKey:@"profileData"];
-        [destination setValue:_suggestedUsersArray forKey:@"suggestedUsersArray"];
-    }
-}
 
 - (IBAction)unwindToSignUp:(UIStoryboardSegue*)sender
 {

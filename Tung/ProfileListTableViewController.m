@@ -56,10 +56,12 @@
     self.navigationItem.backBarButtonItem.title = @"Back";
     
     // onboarding: platform friends
-    if (_profileData && _usersToFollow) {
+    if (_profileData) {
         
         _forOnboarding = YES;
         _socialPlatform = YES;
+        
+        _usersToFollow = [NSMutableArray array];
         
         self.navigationItem.rightBarButtonItem = [[UIBarButtonItem alloc] initWithTitle:@"Next" style:UIBarButtonItemStyleDone target:self action:@selector(finishSignUp)];
         self.tableView.allowsSelection = NO;
@@ -101,7 +103,9 @@
         self.tableView.separatorInset = UIEdgeInsetsMake(0, 12, 0, 12);
         
         if ([_queryType isEqualToString:@"Twitter"]) {
+            
             _socialPlatform = YES;
+            
             _navTitle = @"Twitter Friends";
             [self.navigationController.navigationBar setTitleTextAttributes:@{ NSForegroundColorAttributeName:[TungCommonObjects twitterColor] }];
             _page = [NSNumber numberWithInt:0];
