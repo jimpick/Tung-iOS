@@ -69,12 +69,10 @@
         if ([_profileData objectForKey:@"twitterFriends"]) {
             _queryType = @"Twitter";
             _profileArray = [NSMutableArray arrayWithArray:[_profileData objectForKey:@"twitterFriends"]];
-            [_profileData removeObjectForKey:@"twitterFriends"];
         }
         else if ([_profileData objectForKey:@"facebookFriends"]) {
             _queryType = @"Facebook";
             _profileArray = [NSMutableArray arrayWithArray:[_profileData objectForKey:@"facebookFriends"]];
-            [_profileData removeObjectForKey:@"facebookFriends"];
         }
         [self preloadAvatarsForArray:_profileArray];
         // load up usersToFollow with profileArray ids
@@ -114,6 +112,9 @@
                 // _profileArray will have been set above
                 self.tableView.backgroundView = nil;
                 [self.tableView reloadData];
+                if ([_profileData objectForKey:@"twitterFriends"]) {
+                    _page = [NSNumber numberWithInt:1];
+                }
             }
             else {
                 // assumes that user is already logged into twitter
@@ -212,12 +213,15 @@
     // each request returns up to 100 profiles... make sure we need to
     if (_profileArray.count == 0 || _profileArray.count == _page.integerValue * 100) {
         [_tung findTwitterFriendsWithPage:_page andCallback:^(BOOL success, NSDictionary *responseDict) {
+            
             if (success) {
+                
                 self.tableView.backgroundView = nil;
                 NSNumber *platformFriendsCount = [responseDict objectForKey:@"resultsCount"];
                 if ([platformFriendsCount integerValue] < 100) {
                     _noMoreItemsToGet = YES;
                 }
+                
                 NSArray *twitterFriends = [responseDict objectForKey:@"results"];
                 [self preloadAvatarsForArray:twitterFriends];
                 if ([platformFriendsCount integerValue] > 0) {
@@ -246,12 +250,17 @@
                     }
                 }
                 [self.tableView reloadData];
+                // increment page
                 _page = [NSNumber numberWithInteger:_page.integerValue + 1];
             }
             else {
                 [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
             }
         }];
+    }
+    else {
+        _noMoreItemsToGet = YES;
+        [self.tableView reloadData];
     }
 }
 // refresh feed by checking or newer items or getting all items
@@ -522,7 +531,7 @@
 }
 
 - (void) followingChanged:(NSNotification*)notification {
-    
+    //NSLog(@"following changed. for onboarding: %@, %@", (_forOnboarding) ? @"YES" : @"NO", [notification userInfo]);
     PillButton *btn = [[notification userInfo] objectForKey:@"sender"];
     
     if (_forOnboarding) {
@@ -1094,10 +1103,13 @@
         if (scrollView.contentOffset.y >= bottomOffset) {
             // request more posts if they didn't reach the end
             if ((_queryType || _socialPlatform) && !_requestingMore && !_noMoreItemsToGet && _profileArray.count > 0) {
-                _requestingMore = YES;
-                _loadMoreIndicator.alpha = 1;
-                [_loadMoreIndicator startAnimating];
+                
                 if (!_socialPlatform && _queryType) {
+                    
+                    _requestingMore = YES;
+                    _loadMoreIndicator.alpha = 1;
+                    [_loadMoreIndicator startAnimating];
+                    
                     NSNumber *oldest = [[_profileArray objectAtIndex:_profileArray.count-1] objectForKey:@"time_secs"];
                     [self requestProfileListWithQuery:_queryType
                                                    forTarget:_target_id
@@ -1107,6 +1119,11 @@
                 else if (_socialPlatform) {
                     // only happens if there are > 100 users on tung that user follows on fb/twitter
                     if ([_queryType isEqualToString:@"Twitter"]) {
+                        
+                        _requestingMore = YES;
+                        _loadMoreIndicator.alpha = 1;
+                        [_loadMoreIndicator startAnimating];
+                        
                         [self getNextPageOfTwitterFriends];
                     }
                 }

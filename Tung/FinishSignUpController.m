@@ -57,7 +57,8 @@
 
 - (void) viewWillAppear:(BOOL)animated {
     
-    self.activityIndicator.alpha = 0;
+    _activityIndicator.alpha = 0;
+    _activityIndicator.hidesWhenStopped = YES;
     self.navigationController.navigationBar.topItem.title = @"Back";
 }
 
@@ -74,8 +75,8 @@
 
 - (IBAction)signUp:(id)sender {
     // spin
-    self.activityIndicator.alpha = 1;
-    [self.activityIndicator startAnimating];
+    _activityIndicator.alpha = 1;
+    [_activityIndicator startAnimating];
     
     // create request object
     NSURL *registerURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@users/register.php", [TungCommonObjects apiRootUrl]]];
@@ -88,10 +89,20 @@
     // add post body
     NSMutableData *body = [NSMutableData data];
     [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    // key value pairs
+    // don't send huge list of platform friends
+    if ([_profileData objectForKey:@"twitterFriends"]) {
+        [_profileData removeObjectForKey:@"twitterFriends"];
+    }
+    else if ([_profileData objectForKey:@"facebookFriends"]) {
+        [_profileData removeObjectForKey:@"facebookFriends"];
+    }
+    // post data
     [_profileData setObject:@"iOS" forKey:@"source"];
-    [_profileData setObject:[_usersToFollow componentsJoinedByString:@","] forKey:@"usersToFollow"];
+    if (_usersToFollow.count) {
+    	[_profileData setObject:[_usersToFollow componentsJoinedByString:@","] forKey:@"usersToFollow"];
+    }
     [body appendData:[TungCommonObjects generateBodyFromDictionary:_profileData withBoundary:boundary]];
+    //JPLog(@"post _profileData: %@", _profileData);
     
     // large avatar
     [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"large_avatar\"; filename=\"%@\"\r\n", [_profileData objectForKey:@"largeAvatarFilename"]] dataUsingEncoding:NSUTF8StringEncoding]];
@@ -124,6 +135,7 @@
         	id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
         	if (jsonData != nil && error == nil) {
                 dispatch_async(dispatch_get_main_queue(), ^{
+                    [_activityIndicator stopAnimating];
                     NSDictionary *responseDict = jsonData;
                     // errors?
                     if ([responseDict objectForKey:@"error"]) {
@@ -152,7 +164,10 @@
             // errors
             else if (error != nil) {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    JPLog(@"Error: %@", error);
+                    [_activityIndicator stopAnimating];
+                    
+                    JPLog(@"Error registering: %@", error.localizedDescription);
+                    [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
                     NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
                     JPLog(@"HTML: %@", html);
                 });
@@ -161,8 +176,9 @@
         else {
             // errors
             dispatch_async(dispatch_get_main_queue(), ^{
-                JPLog(@"Error registering... told user to try again later.");
-                [TungCommonObjects simpleErrorAlertWithMessage:@"Error registering. Please try again later."];
+                [_activityIndicator stopAnimating];
+                JPLog(@"Error registering: %@", error.localizedDescription);
+                [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
             });
         }
         
@@ -194,7 +210,7 @@
     	[destination setValue:self.registrationErrors forKey:@"registrationErrors"];
     }
     if ([[segue identifier] isEqualToString:@"presentTerms"]) {
-        [destination setValue:[NSURL URLWithString:@"https://tung.fm/tos"] forKey:@"urlToNavigateTo"];
+        [destination setValue:[NSURL URLWithString:@"https://tung.fm/tos"] forKey:@"urlStringToNavigateTo"];
     }
 }
 

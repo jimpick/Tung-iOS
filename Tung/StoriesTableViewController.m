@@ -110,34 +110,6 @@
     _prototypeLabel.font = [UIFont systemFontOfSize:15];
     _prototypeLabel.numberOfLines = 0;
     
-    if (_isForFollowing) {
-        // background view for no follows
-        UILabel *noFollowsLabel = [[UILabel alloc] init];
-        noFollowsLabel.text = @"You haven't followed anyone yet.";
-        noFollowsLabel.numberOfLines = 2;
-        noFollowsLabel.textColor = [UIColor grayColor];
-        noFollowsLabel.textAlignment = NSTextAlignmentCenter;
-        CGFloat screenWidth = [TungCommonObjects screenSize].width;
-        CGSize labelSize = [noFollowsLabel sizeThatFits:CGSizeMake(screenWidth, 400)];
-        CGRect labelRect = CGRectMake(0, 0, screenWidth, labelSize.height);
-        noFollowsLabel.frame = labelRect;
-        CGFloat buttonHeight = 40;
-        UIButton *findFriendsBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, labelSize.height, screenWidth, buttonHeight)];
-        [findFriendsBtn setTitle:@"Find friends on Tung" forState:UIControlStateNormal];
-        [findFriendsBtn setTitleColor:[TungCommonObjects tungColor] forState:UIControlStateNormal];
-        // TODO: add method to notify parent VC to push fiend friends view
-        [findFriendsBtn addTarget:self action:@selector(pushFindFriendsView) forControlEvents:UIControlEventTouchUpInside];
-        _noFollowsView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, labelSize.height + buttonHeight)];
-        [_noFollowsView addSubview:noFollowsLabel];
-        [_noFollowsView addSubview:findFriendsBtn];
-        _noFollowsView.hidden = YES;
-        [self.view addSubview:_noFollowsView];
-        _noFollowsView.translatesAutoresizingMaskIntoConstraints = NO;
-        [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeCenterX multiplier:1 constant:0]];
-        [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeCenterY multiplier:1 constant:0]];
-        [_noFollowsView addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:screenWidth]];
-        [_noFollowsView addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:labelSize.height + buttonHeight]];
-    }
 
 }
 
@@ -157,6 +129,35 @@
                                 newerThan:[NSNumber numberWithInt:0]
                               orOlderThan:[NSNumber numberWithInt:0]
                                  withCred:NO];
+    }
+    else if (_isForFollowing && !_noFollowsView) {
+        
+        NSLog(@"--- add noFollowsView ---");
+        // background view for no follows
+        UILabel *noFollowsLabel = [[UILabel alloc] init];
+        noFollowsLabel.text = @"You haven't followed anyone yet.";
+        noFollowsLabel.numberOfLines = 2;
+        noFollowsLabel.textColor = [UIColor grayColor];
+        noFollowsLabel.textAlignment = NSTextAlignmentCenter;
+        CGFloat screenWidth = [TungCommonObjects screenSize].width;
+        CGSize labelSize = [noFollowsLabel sizeThatFits:CGSizeMake(screenWidth, 400)];
+        CGRect labelRect = CGRectMake(0, 0, screenWidth, labelSize.height);
+        noFollowsLabel.frame = labelRect;
+        CGFloat buttonHeight = 40;
+        UIButton *findFriendsBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, labelSize.height, screenWidth, buttonHeight)];
+        [findFriendsBtn setTitle:@"Find friends on Tung" forState:UIControlStateNormal];
+        [findFriendsBtn setTitleColor:[TungCommonObjects tungColor] forState:UIControlStateNormal];
+        [findFriendsBtn addTarget:self action:@selector(shouldPushFindFriendsView) forControlEvents:UIControlEventTouchUpInside];
+        _noFollowsView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, labelSize.height + buttonHeight)];
+        [_noFollowsView addSubview:noFollowsLabel];
+        [_noFollowsView addSubview:findFriendsBtn];
+        _noFollowsView.hidden = YES;
+        [self.view addSubview:_noFollowsView];
+        _noFollowsView.translatesAutoresizingMaskIntoConstraints = NO;
+        [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeCenterX multiplier:1 constant:0]];
+        [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeCenterY multiplier:1 constant:0]];
+        [_noFollowsView addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:screenWidth]];
+        [_noFollowsView addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:labelSize.height + buttonHeight]];
     }
 }
 
@@ -244,6 +245,12 @@
 
     
     [_navController pushViewController:episodeView animated:YES];
+}
+
+- (void) shouldPushFindFriendsView {
+    
+    NSNotification *pushFindFriendsNotif = [NSNotification notificationWithName:@"shouldPushFindFriends" object:nil userInfo:nil];
+    [[NSNotificationCenter defaultCenter] postNotification:pushFindFriendsNotif];
 }
 
 #pragma mark - Requests
@@ -334,7 +341,7 @@
                             
                             _tung.sessionId = [responseDict objectForKey:@"sessionId"];
                             
-                            //NSLog(@"session id: %@", _tung.sessionId);
+                            NSLog(@"session id: %@", _tung.sessionId);
                             //NSLog(@"user: %@", [responseDict objectForKey:@"user"]);
                             _tung.connectionAvailable = [NSNumber numberWithBool:YES];
                             // check if data needs syncing
@@ -408,6 +415,7 @@
                                 //NSLog(@"processed episode stories: %@", _storiesArray);
                                 _noResults = NO;
                             } else {
+                                _storiesArray = [NSMutableArray array];
                                 _noResults = YES;
                             }
                             [self.tableView reloadData];
@@ -421,6 +429,7 @@
                             }
                             
                         }
+                        
                         if (_isForFollowing) {
                             if ([responseDict objectForKey:@"follows_no_one"] && _noResults) {
                                 _noFollowsView.hidden = NO;
@@ -1022,11 +1031,16 @@
             return noMoreLabel;
         }
         else if (_noResults) {
-            UILabel *noResultsLabel = [[UILabel alloc] init];
-            noResultsLabel.text = @"No activity yet.";
-            noResultsLabel.textColor = [UIColor grayColor];
-            noResultsLabel.textAlignment = NSTextAlignmentCenter;
-            return noResultsLabel;
+            if (_isForFollowing) {
+                return nil;
+            }
+            else {
+                UILabel *noResultsLabel = [[UILabel alloc] init];
+                noResultsLabel.text = @"No activity yet.";
+                noResultsLabel.textColor = [UIColor grayColor];
+                noResultsLabel.textAlignment = NSTextAlignmentCenter;
+                return noResultsLabel;
+            }
         }
         else {
             _loadMoreIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleGray];

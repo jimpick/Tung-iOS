@@ -61,8 +61,8 @@ NSDateFormatter *ISODateFormatter;
 }
 
 + (NSString *) apiRootUrl {
-    return @"https://api.tung.fm/";
-    //return @"https://staging-api.tung.fm/";
+    //return @"https://api.tung.fm/";
+    return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
@@ -78,7 +78,7 @@ NSDateFormatter *ISODateFormatter;
         
         _loggedInUser = [TungCommonObjects getLoggedInUser];
         
-        //NSLog(@"logged in user: %@", _loggedInUser);
+        //NSLog(@"logged in user: %@", [TungCommonObjects entityToDict:_loggedInUser]);
         
         // flags
         _feedNeedsRefresh = [NSNumber numberWithBool:NO];
@@ -4481,6 +4481,7 @@ static NSArray *colors;
         }
         else {
             JPLog(@"Error finding twitter friends: %@", error.localizedDescription);
+            callback(NO, @{@"error": error.localizedDescription});
         }
     }];
 }

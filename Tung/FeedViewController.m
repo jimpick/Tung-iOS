@@ -114,8 +114,8 @@
     
     // notifs
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
-    
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(handleUniversalLink:) name:@"receivedUniversalLink" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(pushFindFriendsView) name:@"shouldPushFindFriends" object:nil];
     
 }
 

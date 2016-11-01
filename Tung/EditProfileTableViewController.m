@@ -37,7 +37,6 @@
 @property BOOL formIsForSignup;
 @property BOOL formIsPristine;
 @property BOOL usernameCheckUnderway;
-@property BOOL checkedForPlatformFriends;
 @property NSArray *suggestedUsersArray;
 
 @end
@@ -60,7 +59,6 @@ static UIImage *iconRedX;
     if ([_purpose isEqualToString:@"signup"]) {
         // signup
         _formIsForSignup = YES;
-        _checkedForPlatformFriends = NO;
         self.navigationItem.titleView = [[UIImageView alloc] initWithImage:[UIImage imageNamed:@"tungNavBarLogo.png"]];
         self.navigationItem.rightBarButtonItem.title = @"Next";
         _refreshAvatarBtn.hidden = YES;
@@ -231,7 +229,7 @@ static UIImage *iconRedX;
     	[[_fields objectAtIndex:_activeFieldIndex] becomeFirstResponder];
         
         // preload platform friends for next page
-        if (!_checkedForPlatformFriends) [self checkForPlatformFriends];
+        if (![_profileData objectForKey:@"twitterFriends"] && ![_profileData objectForKey:@"facebookFriends"]) [self checkForPlatformFriends];
     }
 }
 
@@ -322,8 +320,6 @@ static UIImage *iconRedX;
 
 // see if user has any friends on tung from the service they signed up with.
 - (void) checkForPlatformFriends {
-    
-    _checkedForPlatformFriends = YES;
     
     if ([_profileData objectForKey:@"twitter_id"]) {
         
@@ -760,7 +756,7 @@ static UIImage *iconRedX;
             [_fieldErrors removeObjectForKey:@"username"];
             // check availability
             [_usernameCheckTimer invalidate];
-            _usernameCheckTimer = [NSTimer scheduledTimerWithTimeInterval:0.5 target:self selector:@selector(checkUsernameAvailability) userInfo:nil repeats:NO];
+            _usernameCheckTimer = [NSTimer scheduledTimerWithTimeInterval:1.0 target:self selector:@selector(checkUsernameAvailability) userInfo:nil repeats:NO];
             return YES;
         } else {
             // invalid
