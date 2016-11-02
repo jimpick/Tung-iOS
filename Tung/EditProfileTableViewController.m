@@ -783,23 +783,29 @@ static UIImage *iconRedX;
         [checkUsernameRequest setHTTPMethod:@"GET"];
         NSOperationQueue *queue = [[NSOperationQueue alloc] init];
         [NSURLConnection sendAsynchronousRequest:checkUsernameRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
-            error = nil;
-            id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
-            if (jsonData != nil && error == nil) {
+            if (error == nil) {
+                id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
+                if (jsonData != nil && error == nil) {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        _usernameCheckUnderway = NO;
+                        NSDictionary *responseDict = jsonData;
+                        //JPLog(@"responseDict: %@", responseDict);
+                        id usernameExistsId = [responseDict objectForKey:@"username_exists"];
+                        BOOL usernameExists = [usernameExistsId boolValue];
+                        if (usernameExists) {
+                                if (_activeFieldIndex == 0) _validationIndicator.image = iconRedX;
+                                [_fieldErrors setObject:[NSString stringWithFormat:@"The username \"%@\" is taken", _field_username.text] forKey:@"username"];
+                        }
+                    });
+                } else {
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        _usernameCheckUnderway = NO;
+                    });
+                }
+            }
+            else {
                 dispatch_async(dispatch_get_main_queue(), ^{
-                    _usernameCheckUnderway = NO;
-                    NSDictionary *responseDict = jsonData;
-                    //JPLog(@"responseDict: %@", responseDict);
-                    id usernameExistsId = [responseDict objectForKey:@"username_exists"];
-                    BOOL usernameExists = [usernameExistsId boolValue];
-                    if (usernameExists) {
-                            if (_activeFieldIndex == 0) _validationIndicator.image = iconRedX;
-                            [_fieldErrors setObject:[NSString stringWithFormat:@"The username \"%@\" is taken", _field_username.text] forKey:@"username"];
-                    }
-                });
-            } else {
-                dispatch_async(dispatch_get_main_queue(), ^{
-                	_usernameCheckUnderway = NO;
+                    [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
                 });
             }
         }];

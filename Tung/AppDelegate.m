@@ -95,29 +95,48 @@
     
     if (result.count > 0) {
         
+        NSLog(@"user has %lu subscribed podcasts.", (unsigned long)result.count);
+        
+        NSOperationQueue *fetchingQueue = [[NSOperationQueue alloc] init];
+        fetchingQueue.maxConcurrentOperationCount = 3;
+        
+        // pull feeds for all subscribed podcasts
+        for (int i = 0; i < result.count; i++) {
+            PodcastEntity *podEntity = [result objectAtIndex:i];
+            [fetchingQueue addOperationWithBlock:^{
+            	[TungPodcast retrieveAndCacheFeedForPodcastEntity:podEntity forceNewest:YES reachable:_tung.connectionAvailable.boolValue];
+            }];
+        }
+        
+        // wait until all feeds have been refreshed...
+        [fetchingQueue waitUntilAllOperationsAreFinished];
+        
+        NSLog(@"fetching complete");
+        
         NSInteger podcastsWithNewEpisodes = 0;
         NSMutableArray *podcastsWithNewEpisodesNotify = [NSMutableArray array];
         BOOL newEpisodesPlural = NO; // used for forming string of new episode(s) alert
-    	
+            
         for (int i = 0; i < result.count; i++) {
+            
             PodcastEntity *podEntity = [result objectAtIndex:i];
-            NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:podEntity forceNewest:YES reachable:_tung.connectionAvailable.boolValue];
+            NSDictionary *feedDict = [TungPodcast retrieveCachedFeedForPodcastEntity:podEntity];
             NSError *feedError;
             NSArray *episodes = [TungPodcast extractFeedArrayFromFeedDict:feedDict error:&feedError];
             
             if (!feedError) {
-                //NSLog(@"PODCAST: %@", podEntity.collectionName);
+                NSLog(@"PODCAST: %@", podEntity.collectionName);
                 
                 // check if mostRecentEpisodeDate is established
                 if (!podEntity.mostRecentEpisodeDate && episodes.count > 0) {
-                    //NSLog(@"- did not have mostRecentEpisodeDate established yet.");
+                    NSLog(@"- did not have mostRecentEpisodeDate established yet.");
                     NSDate *mostRecent = [episodes[0] objectForKey:@"pubDate"];
                     podEntity.mostRecentEpisodeDate = mostRecent;
                     podEntity.mostRecentSeenEpisodeDate = mostRecent;
                     [TungCommonObjects saveContextWithReason:@"updated most recent episode date for podcast entity"];
                 }
                 else {
-                    //NSLog(@"- mostRecentEpisodeDate: %@", podEntity.mostRecentEpisodeDate);
+                    NSLog(@"- mostRecentEpisodeDate: %@", podEntity.mostRecentEpisodeDate);
                     NSDate *mostRecentForCompare = podEntity.mostRecentEpisodeDate;
                     NSInteger numNewEpisodes = podEntity.numNewEpisodes.integerValue;
                     BOOL newMostRecentSet = NO;
@@ -149,8 +168,8 @@
                 JPLog(@"Feed error: %@", feedError.localizedDescription);
             }
         }
-        //NSLog(@"background fetch result: NEW episodes");
-        //NSLog(@"podcasts with new episodes: %@", podcastsWithNewEpisodes);
+        
+        NSLog(@"podcasts with new episodes: %ld", (long)podcastsWithNewEpisodes);
         if (podcastsWithNewEpisodes > 0) {
             
             // update number of subscribed podcasts with new episodes
@@ -185,11 +204,11 @@
                 _notif.applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber + podcastsWithNewEpisodesNotify.count;
                 [[UIApplication sharedApplication] scheduleLocalNotification:_notif];
             }
-            //NSLog(@"background fetch result: NEW episodes");
+            NSLog(@"background fetch result: NEW episodes");
             completionHandler(UIBackgroundFetchResultNewData);
         }
         else {
-            //NSLog(@"background fetch result: NO new episodes");
+            NSLog(@"background fetch result: NO new episodes");
             completionHandler(UIBackgroundFetchResultNoData);
         }
     }
@@ -215,7 +234,9 @@
         NSString *urlString = [[notification userInfo] objectForKey:@"deleteEpisodeWithUrl"];
         EpisodeEntity *epEntity = [TungCommonObjects getEpisodeEntityFromUrlString:urlString];
         //JPLog(@"received notification to delete episode with url: %@", urlString);
-        [_tung deleteSavedEpisode:epEntity confirm:NO];
+        if (epEntity) {
+        	[_tung deleteSavedEpisode:epEntity confirm:NO];
+        }
     }
 }
 
@@ -358,7 +379,7 @@
 - (void)applicationDidBecomeActive:(UIApplication *)application
 {
 
-    JPLog(@"Application did become active");
+    //JPLog(@"Application did become active");
     [_tung checkForNowPlaying];
     // check reachability
     [_tung checkReachabilityWithCallback:nil];
@@ -468,63 +489,8 @@
         
         [self switchTabBarSelectionToTabIndex:1];
         
-        NSArray *result = [TungCommonObjects getAllSubscribedPodcasts];
+        [_tung playRandomEpisode];
         
-        if (result.count > 0) {
-            NSMutableArray *newEpisodes = [NSMutableArray array];
-            
-            for (int i = 0; i < result.count; i++) {
-                PodcastEntity *podEntity = [result objectAtIndex:i];
-                NSDictionary *feedDict = [TungPodcast retrieveCachedFeedForPodcastEntity:podEntity];
-                NSError *feedError;
-                NSArray *episodes = [TungPodcast extractFeedArrayFromFeedDict:feedDict error:&feedError];
-                
-                if (!feedError) {
-                    // only check the 10 most recent, or less
-                    NSInteger max = MIN(10, episodes.count);
-                    for (NSInteger j = 0; j < max; j++) {
-                        NSDictionary *episodeDict = [episodes objectAtIndex:j];
-                        EpisodeEntity *epEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:podEntity save:NO];
-                        if (epEntity.trackProgress.floatValue > 0.0) {
-                            continue;
-                        }
-                        else {
-                            [newEpisodes addObject:@{
-                                                     @"episode": episodeDict,
-                                                     @"podcast": [TungCommonObjects entityToDict:podEntity]
-                                                     }];
-                        }
-                    }
-                }
-            }
-            
-            if (newEpisodes.count > 0) {
-            
-                JPLog(@"found %lu new episodes. drawing random number...", (unsigned long)newEpisodes.count);
-                NSInteger i = arc4random_uniform((uint32_t) newEpisodes.count);
-                JPLog(@"drew %d", i);
-                
-                NSDictionary *chosenDict = [newEpisodes objectAtIndex:i];
-                PodcastEntity *podEntity = [TungCommonObjects getEntityForPodcast:[chosenDict objectForKey:@"podcast"] save:NO];
-                EpisodeEntity *episodeEntity = [TungCommonObjects getEntityForEpisode:[chosenDict objectForKey:@"episode"] withPodcastEntity:podEntity save:YES];
-                
-                [_tung queueAndPlaySelectedEpisode:episodeEntity.url fromTimestamp:nil];
-                
-            }
-            else {
-                UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Just wow." message:@"You've achieved inbox zero for subscribed podcasts. No new episodes to listen to!" preferredStyle:UIAlertControllerStyleAlert];
-                [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
-                [[TungCommonObjects activeViewController] presentViewController:errorAlert animated:YES completion:nil];
-            }
-        }
-        else {
-            
-            [self switchTabBarSelectionToTabIndex:2];
-            
-            UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"No subscribed podcasts" message:nil preferredStyle:UIAlertControllerStyleAlert];
-            [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
-            [[TungCommonObjects activeViewController] presentViewController:errorAlert animated:YES completion:nil];
-        }
         completionHandler(YES);
     }
 }

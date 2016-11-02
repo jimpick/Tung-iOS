@@ -58,7 +58,7 @@
 @property EpisodesTableViewController *episodesView;
 @property CommentsTableViewController *commentsView;
 @property AVAudioPlayer *audioPlayer;
-@property UILabel *nothingPlayingLabel;
+@property UIView *nothingPlayingView;
 @property NSString *urlStringToPass;
 @property BOOL lockPosbar;
 @property BOOL posbarIsBeingDragged;
@@ -82,6 +82,7 @@
 
 - (void) switchViews:(id)sender;
 - (void) switchToViewAtIndex:(NSInteger)index;
+- (void) initiatePodcastSearch;
 
 @end
 
@@ -132,11 +133,42 @@ static NSArray *playbackRateStrings;
         self.view.backgroundColor = [TungCommonObjects bkgdGrayColor];
         
         // nothing playing?
-        CGRect labelFrame = CGRectMake((_screenSize.width - 320)/2, (_screenSize.height - 64)/2, 320, 20);
-        _nothingPlayingLabel = [[UILabel alloc] initWithFrame:labelFrame];
-        _nothingPlayingLabel.text = @"Nothing is currently playing";
-        _nothingPlayingLabel.textColor = [UIColor grayColor];
-        _nothingPlayingLabel.textAlignment = NSTextAlignmentCenter;
+        UILabel *nothingPlayingLabel = [[UILabel alloc] init];
+        nothingPlayingLabel.text = @"Nothing is currently playing.";
+        nothingPlayingLabel.numberOfLines = 2;
+        nothingPlayingLabel.textColor = [UIColor grayColor];
+        nothingPlayingLabel.textAlignment = NSTextAlignmentCenter;
+        CGFloat screenWidth = [TungCommonObjects screenSize].width;
+        CGSize labelSize = [nothingPlayingLabel sizeThatFits:CGSizeMake(screenWidth, 400)];
+        CGRect labelRect = CGRectMake(0, 0, screenWidth, labelSize.height);
+        nothingPlayingLabel.frame = labelRect;
+        
+        CGFloat buttonHeight = 40;
+        float yPos = labelSize.height + 10;
+        UIButton *playRandomBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, yPos, screenWidth, buttonHeight)];
+        [playRandomBtn setTitle:@"Play a random episode" forState:UIControlStateNormal];
+        [playRandomBtn setTitleColor:[TungCommonObjects tungColor] forState:UIControlStateNormal];
+        [playRandomBtn addTarget:_tung action:@selector(playRandomEpisode) forControlEvents:UIControlEventTouchUpInside];
+        
+        yPos += buttonHeight;
+        UIButton *searchPodcastsBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, yPos, screenWidth, buttonHeight)];
+        [searchPodcastsBtn setTitle:@"Search podcasts" forState:UIControlStateNormal];
+        [searchPodcastsBtn setTitleColor:[TungCommonObjects tungColor] forState:UIControlStateNormal];
+        [searchPodcastsBtn addTarget:self action:@selector(initiatePodcastSearch) forControlEvents:UIControlEventTouchUpInside];
+        
+        yPos += buttonHeight;
+        _nothingPlayingView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, yPos)];
+        [_nothingPlayingView addSubview:nothingPlayingLabel];
+        [_nothingPlayingView addSubview:playRandomBtn];
+        [_nothingPlayingView addSubview:searchPodcastsBtn];
+        _nothingPlayingView.hidden = YES;
+        [self.view addSubview:_nothingPlayingView];
+        _nothingPlayingView.translatesAutoresizingMaskIntoConstraints = NO;
+        [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_nothingPlayingView attribute:NSLayoutAttributeCenterX relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeCenterX multiplier:1 constant:0]];
+        [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_nothingPlayingView attribute:NSLayoutAttributeCenterY relatedBy:NSLayoutRelationEqual toItem:self.view attribute:NSLayoutAttributeCenterY multiplier:1 constant:0]];
+        [_nothingPlayingView addConstraint:[NSLayoutConstraint constraintWithItem:_nothingPlayingView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:screenWidth]];
+        [_nothingPlayingView addConstraint:[NSLayoutConstraint constraintWithItem:_nothingPlayingView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:yPos]];
+
     }
     
     // now playing controls
@@ -374,12 +406,12 @@ static NSArray *playbackRateStrings;
     // set up views
     if (_isNowPlayingView) {
         
-        if (_episodeEntity.isNowPlaying.boolValue && _npControlsBottomLayoutConstraint.constant < npControls_closedConstraint) {
+        if (_episodeEntity && _episodeEntity.isNowPlaying.boolValue && _npControlsBottomLayoutConstraint.constant < npControls_closedConstraint) {
             [NSTimer scheduledTimerWithTimeInterval:.2 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
         }
         
     }
-    else if (_episodeEntity.isNowPlaying.boolValue && _npControlsBottomLayoutConstraint.constant < npControls_closedConstraint) {
+    else if (_episodeEntity && _episodeEntity.isNowPlaying.boolValue && _npControlsBottomLayoutConstraint.constant < npControls_closedConstraint) {
         [NSTimer scheduledTimerWithTimeInterval:.2 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
     }
     
@@ -460,6 +492,7 @@ NSTimer *markAsSeenTimer;
 
 - (void) initiatePodcastSearch {
     
+    NSLog(@"initiate podcast search");
     // in case sharing in progress, don't animate share view
     _searchActive = YES;
     
@@ -548,7 +581,7 @@ NSTimer *markAsSeenTimer;
 - (void) refreshSubscribeStatus:(NSNotification *) notification {
     NSNumber *collectionId = [[notification userInfo] objectForKey:@"collectionId"];
     
-    if ([collectionId isEqualToNumber:_episodeEntity.podcast.collectionId]) {
+    if (_episodeEntity && [collectionId isEqualToNumber:_episodeEntity.podcast.collectionId]) {
         _headerView.subscribeButton.subscribed = _episodeEntity.podcast.isSubscribed.boolValue;
         [_headerView.subscribeButton setNeedsDisplay];
     }
@@ -564,13 +597,12 @@ NSTimer *markAsSeenTimer;
     _totalTimeSet = NO;
         
     if (_tung.npEpisodeEntity && _tung.npEpisodeEntity.title) {
+        _episodeEntity = _tung.npEpisodeEntity;
         
         self.view.backgroundColor = [UIColor whiteColor];
         // initialize views
         //JPLog(@"setup view for now playing: %@", _tung.npEpisodeEntity.title);
-        if ([_nothingPlayingLabel isDescendantOfView:self.view]) {
-            [_nothingPlayingLabel removeFromSuperview];
-        }
+        _nothingPlayingView.hidden = YES;
         
         [self setUpViewForEpisode:_tung.npEpisodeEntity];
         
@@ -592,7 +624,7 @@ NSTimer *markAsSeenTimer;
 // show "nothing playing" label, etc.
 - (void) setUpViewForNothingPlaying {
     
-    if (![_nothingPlayingLabel isDescendantOfView:self.view]) [self.view addSubview:_nothingPlayingLabel];
+    _nothingPlayingView.hidden = NO;
     _headerView.hidden = YES;
     _timeElapsedLabel.hidden = YES;
     _skipAheadBtn.hidden = YES;
@@ -610,6 +642,10 @@ NSTimer *markAsSeenTimer;
 }
 
 - (void) setUpViewForEpisode:(EpisodeEntity *)episodeEntity {
+    
+    if (_isNowPlayingView && _npControlsBottomLayoutConstraint.constant == npControls_hiddenConstraint) {
+        [self revealNowPlayingControls];
+    }
     
     // COMMENTS
     [_tung checkReachabilityWithCallback:^(BOOL reachable) {
@@ -2291,9 +2327,10 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
 
 - (void) openShareSheetForEntity:(EpisodeEntity *)episodeEntity {
     
-    //NSString *text = [NSString stringWithFormat:@"Listening to %@ on #tung: %@e/%@", episodeEntity.title, [TungCommonObjects tungSiteRootUrl], episodeEntity.shortlink];
+    NSString *link = [NSString stringWithFormat:@"%@e/%@", [TungCommonObjects tungSiteRootUrl], episodeEntity.shortlink];
+    NSLog(@"shortlink: %@", episodeEntity.shortlink);
     
-    NSURL *shareLink = [TungCommonObjects urlFromString:episodeEntity.shortlink];
+    NSURL *shareLink = [TungCommonObjects urlFromString:link];
     
     UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[shareLink] applicationActivities:nil];
     [self presentViewController:shareSheet animated:YES completion:nil];

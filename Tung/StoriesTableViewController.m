@@ -132,7 +132,6 @@
     }
     else if (_isForFollowing && !_noFollowsView) {
         
-        NSLog(@"--- add noFollowsView ---");
         // background view for no follows
         UILabel *noFollowsLabel = [[UILabel alloc] init];
         noFollowsLabel.text = @"You haven't followed anyone yet.";
@@ -412,7 +411,7 @@
                             if (newStories.count > 0) {
                                 
                                 _storiesArray = [self processStories:newStories];
-                                //NSLog(@"processed episode stories: %@", _storiesArray);
+                                //JPLog(@"processed episode stories: %@", _storiesArray);
                                 _noResults = NO;
                             } else {
                                 _storiesArray = [NSMutableArray array];
@@ -599,7 +598,7 @@
                             
                             if (newStories.count > 0) {
                                 _storiesArray = [self processStories:newStories];
-                                //NSLog(@"processed episode stories: %@", _storiesArray);
+                                //JPLog(@"processed episode stories: %@", _storiesArray);
                                 _noResults = NO;
                             } else {
                                 _noResults = YES;
@@ -1359,7 +1358,7 @@
             
             // story event
             NSInteger eventDictIndex = indexPath.row;
-            if (_isForTrending) eventDictIndex--;
+            if (_isForTrending) eventDictIndex--; // decrement index for stat row
             NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:eventDictIndex]];
             NSString *timestamp = [eventDict objectForKey:@"timestamp"];
             NSString *playFromString = [NSString stringWithFormat:@"Play from %@", timestamp];
@@ -1376,7 +1375,7 @@
                 copyLinkOption = @"Copy link to clip";
                 NSString *clipShortlink = [eventDict objectForKey:@"shortlink"];
                 shareLink = [NSString stringWithFormat:@"%@c/%@", [TungCommonObjects tungSiteRootUrl], clipShortlink];
-                shareText = [NSString stringWithFormat:@"Here's a clip from %@: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+                shareText = [NSString stringWithFormat:@"Here's a clip from \"%@\": %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
                 NSString *comment = [eventDict objectForKey:@"comment"];
                 if (isLoggedInUser) {
                     if (comment.length > 0) {
@@ -1396,8 +1395,13 @@
                 shareable = YES;
                 shareItemOption = @"Share this comment";
                 copyLinkOption = @"Copy link to comment";
-                shareLink = [headerDict objectForKey:@"storyLink"];
-                shareText = [self getShareTextForStoryWithDict:headerDict];
+                shareLink = [NSString stringWithFormat:@"%@#%@", [headerDict objectForKey:@"episodeLink"], [eventDict objectForKey:@"shortlink"]];
+                if (isLoggedInUser) {
+                    shareText = [NSString stringWithFormat:@"Check out my comment on \"%@\" - %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+                }
+                else {
+                    shareText = [NSString stringWithFormat:@"Check out this comment on \"%@\" - %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+                }
                 if (isLoggedInUser) {
                     destructiveOption = @"Delete this comment";
                 } else {
@@ -1551,8 +1555,10 @@
     UIAlertController *optionSheet = [UIAlertController alertControllerWithTitle:nil message:nil preferredStyle:UIAlertControllerStyleActionSheet];
     // share option
     [optionSheet addAction:[UIAlertAction actionWithTitle:@"Share episode" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        NSString *episodeShareText = [self getShareTextForEpisodeWithDict:headerDict];
-        UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[episodeShareText] applicationActivities:nil];
+        
+        NSString *shareLink = [headerDict objectForKey:@"episodeLink"];
+        NSString *shareText = [NSString stringWithFormat:@"Check out \"%@\" on #tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+        UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[shareText] applicationActivities:nil];
         [self presentViewController:shareSheet animated:YES completion:nil];
     }]];
     // copy link
@@ -1564,8 +1570,16 @@
     // share interaction if it's a single user story
     if ([headerDict objectForKey:@"storyLink"]) {
         [optionSheet addAction:[UIAlertAction actionWithTitle:@"Share this interaction" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            NSString *storyShareText = [self getShareTextForStoryWithDict:headerDict];
-            UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[storyShareText] applicationActivities:nil];
+            
+            NSString *shareLink = [headerDict objectForKey:@"storyLink"];
+            NSString *shareText;
+            NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
+            if ([uid isEqualToString:_tung.loggedInUser.tung_id]) {
+                shareText = [NSString stringWithFormat:@"I listened to \"%@\" on #tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+            } else {
+                shareText = [NSString stringWithFormat:@"%@ listened to \"%@\" on #tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
+            }
+            UIActivityViewController *shareSheet = [[UIActivityViewController alloc] initWithActivityItems:@[shareText] applicationActivities:nil];
             [self presentViewController:shareSheet animated:YES completion:nil];
         }]];
         // copy link for interaction
@@ -1585,26 +1599,6 @@
     [self presentViewController:optionSheet animated:YES completion:nil];
 }
 
-- (NSString *) getShareTextForStoryWithDict:(NSDictionary *)headerDict {
-    if ([headerDict objectForKey:@"user"]) {
-        NSString *shareLink = [headerDict objectForKey:@"storyLink"];
-        NSString *shareText;
-        NSString *uid = [[[headerDict objectForKey:@"user"] objectForKey:@"id"] objectForKey:@"$id"];
-        if ([uid isEqualToString:_tung.loggedInUser.tung_id]) {
-            shareText = [NSString stringWithFormat:@"I listened to %@ on #tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
-        } else {
-            shareText = [NSString stringWithFormat:@"%@ listened to %@ on #tung: %@", [[headerDict objectForKey:@"user"] objectForKey:@"username"], [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
-        }
-        return shareText;
-    } else {
-        return nil;
-    }
-}
-- (NSString *) getShareTextForEpisodeWithDict:(NSDictionary *)headerDict {
-    NSString *shareLink = [headerDict objectForKey:@"episodeLink"];
-    NSString *shareText = [NSString stringWithFormat:@"Check out %@ on #tung: %@", [[headerDict objectForKey:@"episode"] objectForKey:@"title"], shareLink];
-    return shareText;
-}
 
 #pragma mark - Feed cell controls
 
