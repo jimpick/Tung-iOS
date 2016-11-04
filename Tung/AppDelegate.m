@@ -95,7 +95,7 @@
     
     if (result.count > 0) {
         
-        NSLog(@"user has %lu subscribed podcasts.", (unsigned long)result.count);
+        //NSLog(@"BACKGROUND FETCH. user has %lu subscribed podcasts.", (unsigned long)result.count);
         
         NSOperationQueue *fetchingQueue = [[NSOperationQueue alloc] init];
         fetchingQueue.maxConcurrentOperationCount = 3;
@@ -111,7 +111,7 @@
         // wait until all feeds have been refreshed...
         [fetchingQueue waitUntilAllOperationsAreFinished];
         
-        NSLog(@"fetching complete");
+        //NSLog(@"fetching complete");
         
         NSInteger podcastsWithNewEpisodes = 0;
         NSMutableArray *podcastsWithNewEpisodesNotify = [NSMutableArray array];
@@ -125,18 +125,18 @@
             NSArray *episodes = [TungPodcast extractFeedArrayFromFeedDict:feedDict error:&feedError];
             
             if (!feedError) {
-                NSLog(@"PODCAST: %@", podEntity.collectionName);
+                //NSLog(@"PODCAST: %@", podEntity.collectionName);
                 
                 // check if mostRecentEpisodeDate is established
                 if (!podEntity.mostRecentEpisodeDate && episodes.count > 0) {
-                    NSLog(@"- did not have mostRecentEpisodeDate established yet.");
+                    //NSLog(@"- did not have mostRecentEpisodeDate established yet.");
                     NSDate *mostRecent = [episodes[0] objectForKey:@"pubDate"];
                     podEntity.mostRecentEpisodeDate = mostRecent;
                     podEntity.mostRecentSeenEpisodeDate = mostRecent;
                     [TungCommonObjects saveContextWithReason:@"updated most recent episode date for podcast entity"];
                 }
                 else {
-                    NSLog(@"- mostRecentEpisodeDate: %@", podEntity.mostRecentEpisodeDate);
+                    //NSLog(@"- mostRecentEpisodeDate: %@", podEntity.mostRecentEpisodeDate);
                     NSDate *mostRecentForCompare = podEntity.mostRecentEpisodeDate;
                     NSInteger numNewEpisodes = podEntity.numNewEpisodes.integerValue;
                     BOOL newMostRecentSet = NO;
@@ -169,7 +169,7 @@
             }
         }
         
-        NSLog(@"podcasts with new episodes: %ld", (long)podcastsWithNewEpisodes);
+        //NSLog(@"podcasts with new episodes: %ld", (long)podcastsWithNewEpisodes);
         if (podcastsWithNewEpisodes > 0) {
             
             // update number of subscribed podcasts with new episodes
@@ -204,11 +204,11 @@
                 _notif.applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber + podcastsWithNewEpisodesNotify.count;
                 [[UIApplication sharedApplication] scheduleLocalNotification:_notif];
             }
-            NSLog(@"background fetch result: NEW episodes");
+            //NSLog(@"background fetch result: NEW episodes");
             completionHandler(UIBackgroundFetchResultNewData);
         }
         else {
-            NSLog(@"background fetch result: NO new episodes");
+            //NSLog(@"background fetch result: NO new episodes");
             completionHandler(UIBackgroundFetchResultNoData);
         }
     }

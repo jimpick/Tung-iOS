@@ -451,10 +451,11 @@
                 JPLog(@"HTML: %@", html);
             }
         }
-        // connection error
+        // error
         else {
             dispatch_async(dispatch_get_main_queue(), ^{
-                
+                // fail silently
+                JPLog(@"Error getting feed: %@", error.localizedDescription);
                 [self endRefreshing];
             });
         }

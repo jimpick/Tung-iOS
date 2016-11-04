@@ -61,8 +61,8 @@ NSDateFormatter *ISODateFormatter;
 }
 
 + (NSString *) apiRootUrl {
-    //return @"https://api.tung.fm/";
-    return @"https://staging-api.tung.fm/";
+    return @"https://api.tung.fm/";
+    //return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
@@ -3269,7 +3269,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        JPLog(@"successfully recommended episode");
+                        //JPLog(@"successfully recommended episode: %@", responseDict);
                         if (!episodeEntity.id) {
                             // save episode id and shortlink
                             NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -3338,7 +3338,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        //NSLog(@"unrecommend response: %@", responseDict);
+                        //JPLog(@"unrecommend response: %@", responseDict);
                         episodeEntity.isRecommended = [NSNumber numberWithBool:NO];
                         NSNumber *lastDataChange = [responseDict objectForKey:@"lastDataChange"];
                         _loggedInUser.lastDataChange = lastDataChange;
@@ -3427,7 +3427,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        //JPLog(@"%@", responseDict);
+                        //JPLog(@"save progress response %@", responseDict);
                         if (!episodeEntity.id) {
                             // save episode id and shortlink
                             NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -3457,6 +3457,11 @@ static NSArray *colors;
 }
 
 - (void) incrementPlayCountForEpisode:(EpisodeEntity *)episodeEntity {
+    
+    if (!_connectionAvailable.boolValue) {
+        return;
+    }
+    
     NSLog(@"increment play count");
     NSURL *incrementCountRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/increment-listen-count.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *incrementCountRequest = [NSMutableURLRequest requestWithURL:incrementCountRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
@@ -3464,12 +3469,14 @@ static NSArray *colors;
     
     NSDictionary *params;
     if (episodeEntity.id) {
-        params = @{@"apiKey": [TungCommonObjects apiKey],
+        params = @{@"sessionId":_sessionId,
+                   @"apiKey": [TungCommonObjects apiKey],
                    @"collectionId": episodeEntity.collectionId,
                    @"episodeId": episodeEntity.id,
                    };
     } else {
-        params = @{@"apiKey": [TungCommonObjects apiKey],
+        params = @{@"sessionId":_sessionId,
+                   @"apiKey": [TungCommonObjects apiKey],
                    @"collectionId": episodeEntity.collectionId,
                    @"GUID": episodeEntity.guid,
                    @"episodeUrl": episodeEntity.url,
@@ -3501,7 +3508,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        JPLog(@"%@", responseDict);
+                        //JPLog(@"increment play count: %@", responseDict);
                         if (!episodeEntity.id) {
                             // save episode id and shortlink
                             NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -3585,7 +3592,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        JPLog(@"successfully posted comment");
+                        //JPLog(@"successfully posted comment: %@", responseDict);
                         if (!episodeEntity.id) {
                             // save episode id and shortlink
                             NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -3699,7 +3706,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        //JPLog(@"successfully posted clip");
+                        //JPLog(@"successfully posted clip: %@", responseDict);
                         if (!episodeEntity.id) {
                             // save episode id and shortlink
                             NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -3755,13 +3762,13 @@ static NSArray *colors;
                             }];
                         }
                         else {
-                            JPLog(@"Error deleting story event: %@", [responseDict objectForKey:@"error"]);
+                            JPLog(@"Error deleting story event: %@", responseDict);
                             [TungCommonObjects simpleErrorAlertWithMessage:[responseDict objectForKey:@"error"]];
                             callback(NO);
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        JPLog(@"successfully deleted story event");
+                        //JPLog(@"successfully deleted story event: %@", responseDict);
                         callback(YES);
                     }
                 }
@@ -3815,7 +3822,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        JPLog(@"successfully flagged comment");
+                        //JPLog(@"successfully flagged comment");
                         UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Successfully flagged" message:@"This comment will be moderated. Thank you for your feedback." preferredStyle:UIAlertControllerStyleAlert];
                         [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
                         [_viewController presentViewController:alert animated:YES completion:nil];
@@ -5186,7 +5193,7 @@ static NSArray *colors;
 // artwork from feed link is processed and uploaded in addOrUpdatePodcast: method called in this method
 + (void) replaceCachedPodcastArtForEntity:(PodcastEntity *)entity withNewArt:(NSString *)newArtUrlString {
     
-    //NSLog(@"replace cached podcast art for entity with new url: %@, and old url: %@", newArtUrlString, entity.artworkUrl);
+    NSLog(@"replace cached podcast art for entity with new url: %@, and old url: %@", newArtUrlString, entity.artworkUrl);
     // remove old
 	BOOL artWasSaved = [self unsavePodcastArtForEntity:entity];
     NSFileManager *fileManager = [NSFileManager defaultManager];

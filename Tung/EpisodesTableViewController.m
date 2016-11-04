@@ -79,7 +79,8 @@
         NSError *feedError;
         _episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict error:&feedError] mutableCopy];
         
-        [self.refreshControl endRefreshing];
+        [NSTimer scheduledTimerWithTimeInterval:1 target:self selector:@selector(endRefreshing) userInfo:nil repeats:NO];
+        
         if (!feedError) {
             [self assignSavedPropertiesToEpisodeArray];
             [self.tableView reloadData];
@@ -93,6 +94,12 @@
         [TungCommonObjects showNoConnectionAlert];
     }
     
+}
+
+// for calling on delay
+- (void) endRefreshing {
+    NSLog(@"end refreshing");
+    [self.refreshControl endRefreshing];
 }
 
 - (void) assignSavedPropertiesToEpisodeArray {

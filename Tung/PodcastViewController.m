@@ -142,24 +142,6 @@
     }
 }
 
-// for refreshControl
-- (void) getNewestFeed {
-    NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:_podcastEntity forceNewest:YES reachable:_tung.connectionAvailable.boolValue];
-    NSError *feedError;
-    _episodesView.episodeArray = [[TungPodcast extractFeedArrayFromFeedDict:feedDict error:&feedError] mutableCopy];
-    
-    [_episodesView.refreshControl endRefreshing];
-    
-    if (!feedError ) {
-        [_episodesView assignSavedPropertiesToEpisodeArray];
-        [_episodesView.tableView reloadData];
-    }
-    else {
-        [TungCommonObjects simpleErrorAlertWithMessage:feedError.localizedDescription];
-    }
-    
-}
-
 - (void) setUpViewForDict:(NSDictionary *)dict {
     // remove spinner
     _episodesView.tableView.backgroundView = nil;

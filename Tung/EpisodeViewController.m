@@ -144,13 +144,7 @@ static NSArray *playbackRateStrings;
         nothingPlayingLabel.frame = labelRect;
         
         CGFloat buttonHeight = 40;
-        float yPos = labelSize.height + 10;
-        UIButton *playRandomBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, yPos, screenWidth, buttonHeight)];
-        [playRandomBtn setTitle:@"Play a random episode" forState:UIControlStateNormal];
-        [playRandomBtn setTitleColor:[TungCommonObjects tungColor] forState:UIControlStateNormal];
-        [playRandomBtn addTarget:_tung action:@selector(playRandomEpisode) forControlEvents:UIControlEventTouchUpInside];
-        
-        yPos += buttonHeight;
+        float yPos = labelSize.height;
         UIButton *searchPodcastsBtn = [[UIButton alloc] initWithFrame:CGRectMake(0, yPos, screenWidth, buttonHeight)];
         [searchPodcastsBtn setTitle:@"Search podcasts" forState:UIControlStateNormal];
         [searchPodcastsBtn setTitleColor:[TungCommonObjects tungColor] forState:UIControlStateNormal];
@@ -159,7 +153,6 @@ static NSArray *playbackRateStrings;
         yPos += buttonHeight;
         _nothingPlayingView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, screenWidth, yPos)];
         [_nothingPlayingView addSubview:nothingPlayingLabel];
-        [_nothingPlayingView addSubview:playRandomBtn];
         [_nothingPlayingView addSubview:searchPodcastsBtn];
         _nothingPlayingView.hidden = YES;
         [self.view addSubview:_nothingPlayingView];
@@ -341,7 +334,7 @@ static NSArray *playbackRateStrings;
                 [self setUpViewForEpisode:_episodeEntity];
             }
             else {
-                NSLog(@"will set up view for episode mini dict then request episode data");
+                //NSLog(@"will set up view for episode mini dict then request episode data");
                 // no entity yet, request data
                 [_headerView setUpHeaderViewForEpisodeMiniDict:_episodeMiniDict];
                 
@@ -407,12 +400,12 @@ static NSArray *playbackRateStrings;
     if (_isNowPlayingView) {
         
         if (_episodeEntity && _episodeEntity.isNowPlaying.boolValue && _npControlsBottomLayoutConstraint.constant < npControls_closedConstraint) {
-            [NSTimer scheduledTimerWithTimeInterval:.2 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
+            [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
         }
         
     }
     else if (_episodeEntity && _episodeEntity.isNowPlaying.boolValue && _npControlsBottomLayoutConstraint.constant < npControls_closedConstraint) {
-        [NSTimer scheduledTimerWithTimeInterval:.2 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
+        [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
     }
     
 }
@@ -492,7 +485,7 @@ NSTimer *markAsSeenTimer;
 
 - (void) initiatePodcastSearch {
     
-    NSLog(@"initiate podcast search");
+    //NSLog(@"initiate podcast search");
     // in case sharing in progress, don't animate share view
     _searchActive = YES;
     
@@ -643,8 +636,8 @@ NSTimer *markAsSeenTimer;
 
 - (void) setUpViewForEpisode:(EpisodeEntity *)episodeEntity {
     
-    if (_isNowPlayingView && _npControlsBottomLayoutConstraint.constant == npControls_hiddenConstraint) {
-        [self revealNowPlayingControls];
+    if (_isNowPlayingView && _npControlsBottomLayoutConstraint.constant < npControls_closedConstraint) {
+        [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
     }
     
     // COMMENTS
@@ -659,7 +652,7 @@ NSTimer *markAsSeenTimer;
     // episodes and description
     NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:episodeEntity.podcast forceNewest:NO reachable:_tung.connectionAvailable.boolValue];
     
-    NSLog(@"set up view for episode");
+    //NSLog(@"set up view for episode");
     //NSLog(@"podcast: %@", [TungCommonObjects entityToDict:episodeEntity.podcast]);
     // set up header view
     [_headerView setUpHeaderViewForEpisode:episodeEntity orPodcast:nil];
@@ -1275,12 +1268,15 @@ static CGRect buttonsScrollViewHomeRect;
 - (void) tungButtonTapped {
     UIAlertController *thanksAlert = [UIAlertController alertControllerWithTitle:@"Thanks for using Tung!" message:@"Hope you're enjoying it 😎" preferredStyle:UIAlertControllerStyleAlert];
     [thanksAlert addAction:[UIAlertAction actionWithTitle:@"Dismiss" style:UIAlertActionStyleDefault handler:nil]];
+    [thanksAlert addAction:[UIAlertAction actionWithTitle:@"Play random episode" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [_tung playRandomEpisode];
+    }]];
     [thanksAlert addAction:[UIAlertAction actionWithTitle:@"Rate Tung" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         // @"https://itunes.apple.com/us/app/tung.fm/id932939338"
         [[UIApplication sharedApplication] openURL:[NSURL URLWithString:@"itms-apps://itunes.apple.com/app/id932939338"]];
     }]];
     if ([TungCommonObjects iOSVersionFloat] >= 9.0) {
-    	thanksAlert.preferredAction = [thanksAlert.actions objectAtIndex:1];
+    	thanksAlert.preferredAction = [thanksAlert.actions objectAtIndex:2];
     }
     [self presentViewController:thanksAlert animated:YES completion:nil];
 }
@@ -1638,6 +1634,7 @@ static CGRect buttonsScrollViewHomeRect;
 // show comment and post view with keyboard for sharing or new comment
 - (void) toggleNewComment {
     
+    // NOTE: it will appear nothing is happening unless you enable software keyboard (cmd+K)
     if (_keyboardActive) {
         [_commentAndPostView.commentTextView resignFirstResponder];
     } else {

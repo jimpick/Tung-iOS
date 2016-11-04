@@ -133,24 +133,11 @@
         NSURL *url = [TungCommonObjects addReferrerToUrlString:_urlStringToNavigateTo];
         [[UIApplication sharedApplication] openURL:url];
     }]];
-    [actionSheet addAction:[UIAlertAction actionWithTitle:@"Options..." style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        [self openInOptions];
-    }]];
     [actionSheet addAction:[UIAlertAction actionWithTitle:@"Copy URL" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         NSString *urlString = self.webView.request.URL.absoluteString;
         [[UIPasteboard generalPasteboard] setString:urlString];
     }]];
     [self presentViewController:actionSheet animated:YES completion:nil];
-}
-
-
--(void) openInOptions {
-    
-    NSURL *url = [TungCommonObjects addReferrerToUrlString:_urlStringToNavigateTo];
-    _documentController = [UIDocumentInteractionController interactionControllerWithURL:url];
-    _documentController.UTI = @"public.url";
-    [_documentController presentOpenInMenuFromRect:CGRectZero inView:self.view animated:YES];
-
 }
 
 

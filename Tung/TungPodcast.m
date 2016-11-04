@@ -785,7 +785,7 @@ static NSString *feedDictsDirName = @"feedDicts";
 
 // get raw feed and return converted data.
 + (NSDictionary *) requestAndConvertPodcastFeedDataWithFeedUrl:(NSString *)feedUrl {
-    
+    //JPLog(@"request newest feed");
     NSData *feedData = [NSData dataWithContentsOfURL:[NSURL URLWithString: feedUrl]];
     JPXMLtoDictionary *xmlToDict = [[JPXMLtoDictionary alloc] init];
     return [xmlToDict xmlDataToDictionary:feedData];

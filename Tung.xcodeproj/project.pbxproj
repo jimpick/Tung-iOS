@@ -857,6 +857,7 @@
 				TargetAttributes = {
 					7D61F91718A1EB2F00710CA7 = {
 						DevelopmentTeam = WF44QBL7YT;
+						ProvisioningStyle = Manual;
 						SystemCapabilities = {
 							com.apple.BackgroundModes = {
 								enabled = 1;
@@ -1217,7 +1218,8 @@
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_ENTITLEMENTS = Tung/tung.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				DEVELOPMENT_TEAM = WF44QBL7YT;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
@@ -1228,9 +1230,10 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
 				PRODUCT_NAME = tung;
-				PROVISIONING_PROFILE = "";
+				PROVISIONING_PROFILE = "a7189f8f-9e8c-43f8-b466-7e569cfdffeb";
+				PROVISIONING_PROFILE_SPECIFIER = "App Store Distribution";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -1243,6 +1246,7 @@
 				CODE_SIGN_ENTITLEMENTS = Tung/tung.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				DEVELOPMENT_TEAM = WF44QBL7YT;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)",
@@ -1253,9 +1257,10 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
 				PRODUCT_NAME = tung;
-				PROVISIONING_PROFILE = "";
+				PROVISIONING_PROFILE = "a7189f8f-9e8c-43f8-b466-7e569cfdffeb";
+				PROVISIONING_PROFILE_SPECIFIER = "App Store Distribution";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
