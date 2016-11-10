@@ -1218,7 +1218,7 @@
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_ENTITLEMENTS = Tung/tung.entitlements;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
-				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
 				DEVELOPMENT_TEAM = WF44QBL7YT;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
@@ -1232,8 +1232,8 @@
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
 				PRODUCT_NAME = tung;
-				PROVISIONING_PROFILE = "a7189f8f-9e8c-43f8-b466-7e569cfdffeb";
-				PROVISIONING_PROFILE_SPECIFIER = "App Store Distribution";
+				PROVISIONING_PROFILE = "1a34a89c-3c59-4bfe-bec9-6cc9d5032cbe";
+				PROVISIONING_PROFILE_SPECIFIER = "Tung development profile";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -1259,8 +1259,8 @@
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
 				PRODUCT_NAME = tung;
-				PROVISIONING_PROFILE = "a7189f8f-9e8c-43f8-b466-7e569cfdffeb";
-				PROVISIONING_PROFILE_SPECIFIER = "App Store Distribution";
+				PROVISIONING_PROFILE = "9514c09e-ceb7-44cd-8f53-120cbbe06f94";
+				PROVISIONING_PROFILE_SPECIFIER = "Tung Distribution profile";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;

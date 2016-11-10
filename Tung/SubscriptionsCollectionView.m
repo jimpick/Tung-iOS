@@ -129,6 +129,11 @@ static NSString * const reuseIdentifier = @"artCell";
     [self.collectionView reloadData];
 }
 
+-(void) viewWillAppear:(BOOL)animated {
+    self.navigationController.navigationBar.translucent = NO;
+    self.definesPresentationContext = YES;
+}
+
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
@@ -179,6 +184,7 @@ static NSString * const reuseIdentifier = @"artCell";
     [super viewWillDisappear:animated];
     [_promptTimer invalidate];
     if (_editingNotifications) [self toggleEditNotifySettings];
+    self.definesPresentationContext = NO;
 }
 
 - (void) viewDidDisappear:(BOOL)animated {

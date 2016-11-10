@@ -1833,21 +1833,39 @@ UILabel *prototypeBadge;
 
 #pragma mark - core data related
 
+NSTimer *tungSaveDebouncer;
+NSMutableArray *tungSaveReasons;
 + (BOOL) saveContextWithReason:(NSString*)reason {
+    
+    if (!tungSaveReasons) {
+        tungSaveReasons = [NSMutableArray array];
+    }
+    [tungSaveReasons addObject:reason];
+    
+    [tungSaveDebouncer invalidate];
+    tungSaveDebouncer = [NSTimer scheduledTimerWithTimeInterval:0.25f target:self selector:@selector(saveContext) userInfo:nil repeats:NO];
+    
+    return YES;
+}
+
++ (BOOL) saveContext {
     AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     // save
     
+    NSString *reasons = [tungSaveReasons componentsJoinedByString:@", \n"];
+    tungSaveReasons = [NSMutableArray array];
     BOOL saved = NO;
     if ([appDelegate.managedObjectContext hasChanges]) {
         NSError *savingError;
-    	saved = [appDelegate.managedObjectContext save:&savingError];
+        saved = [appDelegate.managedObjectContext save:&savingError];
         if (saved) {
-            //JPLog(@"SAVE CONTEXT: %@ :: Successfully saved", reason);
+            //JPLog(@"SAVE CONTEXT: %@ :: Successfully saved", reasons);
+            
         } else {
-            JPLog(@"SAVE CONTEXT ERROR: %@ :: REASON: %@", savingError, reason);
+            JPLog(@"SAVE CONTEXT ERROR: %@ :: REASON: %@", savingError, reasons);
         }
     } else {
-        JPLog(@"SAVE CONTEXT: %@ :: Did not save, no changes", reason);
+        JPLog(@"SAVE CONTEXT: %@ :: Did not save, no changes", reasons);
     }
     return saved;
 }
@@ -2312,34 +2330,34 @@ static NSDateFormatter *ISODateInterpreter = nil;
     AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     
     // show episode entity data
-    /*
     JPLog(@"episode entity data");
     NSFetchRequest *eRequest = [[NSFetchRequest alloc] initWithEntityName:@"EpisodeEntity"];
     NSError *eError = nil;
     NSArray *eResult = [appDelegate.managedObjectContext executeFetchRequest:eRequest error:&eError];
     if (eResult.count > 0) {
+        
+        JPLog(@"found %d episode entities.\n\n", eResult.count);
         for (int i = 0; i < eResult.count; i++) {
             EpisodeEntity *episodeEntity = [eResult objectAtIndex:i];
             JPLog(@"episode at index: %d", i);
             // entity -> dict
-            NSArray *ekeys = [[[episodeEntity entity] attributesByName] allKeys];
-            NSDictionary *eDict = [episodeEntity dictionaryWithValuesForKeys:ekeys];
+            NSDictionary *eDict = [TungCommonObjects entityToDict:episodeEntity];
             JPLog(@"%@", eDict);
         }
     }
-     */
-    
+
+    // podcast entity data
     NSFetchRequest *request = [[NSFetchRequest alloc] initWithEntityName:@"PodcastEntity"];
     NSError *error;
     NSArray *result = [appDelegate.managedObjectContext executeFetchRequest:request error:&error];
     if (result.count > 0) {
         
+        JPLog(@"found %d podcast entities.\n\n", result.count);
         for (int i = 0; i < result.count; i++) {
             PodcastEntity *podcastEntity = [result objectAtIndex:i];
             JPLog(@"podcast at index: %d", i);
             // entity -> dict
-            NSArray *keys = [[[podcastEntity entity] attributesByName] allKeys];
-            NSDictionary *podcastDict = [podcastEntity dictionaryWithValuesForKeys:keys];
+            NSDictionary *podcastDict = [TungCommonObjects entityToDict:podcastEntity];
             JPLog(@"%@", podcastDict);
         }
         
@@ -2476,7 +2494,7 @@ static NSArray *colors;
             // test for too light overall
             if (R > 0.6 && G > 0.6 && B > 0.6) continue;
             // test for too bright green
-            if (R > 0.63 && G > 0.75 && B > 0.1) continue;
+            if (R > 0.53 && G > 0.75 && B > 0.1) continue;
             // test too bright yellow
             if (R > 0.95 && G > 0.65) continue;
             // test for retina blasting G
@@ -2486,7 +2504,7 @@ static NSArray *colors;
             /* 
             COLOR TEST - perform after each edit
              - search hospital records, should get nice pink
-             - search joe rogan, should get nice orange
+             - search joe rogan, should get rusty orange
              - search dalrymple report, should get lighter orange
              - search tim ferriss, should get nice flesh color
              - search quad talk, should get medium green

@@ -126,15 +126,13 @@
 
 -(void) viewWillAppear:(BOOL)animated {
     self.navigationController.navigationBar.translucent = NO;
-    
-    _tung.viewController = self;
     self.definesPresentationContext = YES;
-	
 }
 
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
+    _tung.viewController = self;
     [self prepareView];
         
 }

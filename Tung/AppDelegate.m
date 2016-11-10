@@ -125,7 +125,7 @@
             NSArray *episodes = [TungPodcast extractFeedArrayFromFeedDict:feedDict error:&feedError];
             
             if (!feedError) {
-                //NSLog(@"PODCAST: %@", podEntity.collectionName);
+            	//NSLog(@"PODCAST: %@", podEntity.collectionName);
                 
                 // check if mostRecentEpisodeDate is established
                 if (!podEntity.mostRecentEpisodeDate && episodes.count > 0) {
@@ -204,11 +204,11 @@
                 _notif.applicationIconBadgeNumber = [UIApplication sharedApplication].applicationIconBadgeNumber + podcastsWithNewEpisodesNotify.count;
                 [[UIApplication sharedApplication] scheduleLocalNotification:_notif];
             }
-            //NSLog(@"background fetch result: NEW episodes");
+            JPLog(@"performed background fetch. NEW episodes found");
             completionHandler(UIBackgroundFetchResultNewData);
         }
         else {
-            //NSLog(@"background fetch result: NO new episodes");
+            JPLog(@"performed background fetch. NO new episodes");
             completionHandler(UIBackgroundFetchResultNoData);
         }
     }

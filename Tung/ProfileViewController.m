@@ -774,6 +774,10 @@
     }*/
     
     UIAlertController *settingsSheet = [UIAlertController alertControllerWithTitle:nil message:[NSString stringWithFormat:@"You are running v %@ (%@) of tung.", version, build] preferredStyle:UIAlertControllerStyleActionSheet];
+    
+    [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Import podcast subscriptions" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+        [_tung promptAndRequestMediaLibraryAccess];
+    }]];
     [settingsSheet addAction:[UIAlertAction actionWithTitle:clearSavedEpisodesOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [_tung deleteAllSavedEpisodes];
         [TungCommonObjects showBannerAlertForText:@"All saved episodes have been deleted."];
@@ -781,9 +785,6 @@
     [settingsSheet addAction:[UIAlertAction actionWithTitle:clearCachedEpisodesOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
         [TungCommonObjects deleteAllCachedEpisodes];
         [TungCommonObjects showBannerAlertForText:@"All cached episodes have been deleted."];
-    }]];
-    [settingsSheet addAction:[UIAlertAction actionWithTitle:@"Import podcast subscriptions" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        [_tung promptAndRequestMediaLibraryAccess];
     }]];
     /*
     [settingsSheet addAction:[UIAlertAction actionWithTitle:clearCachedDataOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
