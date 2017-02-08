@@ -469,6 +469,10 @@
                          orOlderThan:(NSNumber *)beforeTime
                             withCred:(BOOL)withCred {
     
+    if (!_tung.loggedInUser.tung_id) {
+        return;
+    }
+    
     NSURL *storyURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/feed.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *storyRequest = [NSMutableURLRequest requestWithURL:storyURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [storyRequest setHTTPMethod:@"POST"];

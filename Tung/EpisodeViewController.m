@@ -2129,6 +2129,8 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
     btn.on = !btn.on;
     [btn setNeedsDisplay];
     
+    _tung.sessionId = @""; // kill session for debug
+    
     if (btn.on) {
         if (![Twitter sharedInstance].sessionStore.session) {
             if (_keyboardActive) {

@@ -28,6 +28,10 @@
 @property (strong, nonatomic) NSArray *inactiveButtonImages;
 @property (strong, nonatomic) NSArray *innerButtons;
 
+#if __IPHONE_OS_VERSION_MAX_ALLOWED >= __IPHONE_10_0
+@property UIImpactFeedbackGenerator *haptic;
+#endif
+
 @end
 
 @implementation MainTabBarController
@@ -96,6 +100,7 @@
     [_tung.btn_player setImage:[UIImage imageNamed:@"btn-player-play.png"] forState:UIControlStateNormal];
     [_tung.btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
     [_tung.btn_player setContentMode:UIViewContentModeCenter];
+    [_tung.btn_player addTarget:self action:@selector(controlButtonDown) forControlEvents:UIControlEventTouchDown];
     [_tung.btn_player addTarget:_tung action:@selector(controlButtonTapped) forControlEvents:UIControlEventTouchUpInside];
     // buffering indicator
     _tung.btnActivityIndicator = [[UIActivityIndicatorView alloc] initWithActivityIndicatorStyle:UIActivityIndicatorViewStyleWhiteLarge];
@@ -132,6 +137,19 @@
     self.selectedIndex = initialTab;
     [self setSelectedViewController:self.viewControllers[initialTab]];
     
+    // haptic
+    if ([TungCommonObjects iOSVersionFloat] >= 10.0) {
+        _haptic = [[UIImpactFeedbackGenerator alloc] initWithStyle:UIImpactFeedbackStyleLight];
+        [_haptic prepare];
+    }
+    
+}
+
+- (void) controlButtonDown {
+    // haptic
+    if ([TungCommonObjects iOSVersionFloat] >= 10.0) {
+        [_haptic impactOccurred];
+    }
 }
 
 -(UIButton *) generateTabBarInnerButtonWithIndex:(NSUInteger)index {

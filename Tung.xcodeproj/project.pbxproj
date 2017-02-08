@@ -1232,8 +1232,8 @@
 				ONLY_ACTIVE_ARCH = NO;
 				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
 				PRODUCT_NAME = tung;
-				PROVISIONING_PROFILE = "1a34a89c-3c59-4bfe-bec9-6cc9d5032cbe";
-				PROVISIONING_PROFILE_SPECIFIER = "Tung development profile";
+				PROVISIONING_PROFILE = "c1f3e2f6-68ac-4809-a303-b1e7f91e807d";
+				PROVISIONING_PROFILE_SPECIFIER = "Tung Development Profile";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -1244,7 +1244,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_LAUNCHIMAGE_NAME = LaunchImage;
 				CODE_SIGN_ENTITLEMENTS = Tung/tung.entitlements;
-				CODE_SIGN_IDENTITY = "iPhone Developer";
+				CODE_SIGN_IDENTITY = "iPhone Distribution: Inorganik Produce, Inc. (WF44QBL7YT)";
 				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
 				DEVELOPMENT_TEAM = WF44QBL7YT;
 				FRAMEWORK_SEARCH_PATHS = (

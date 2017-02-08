@@ -16,6 +16,11 @@
 #import "BannerAlert.h"
 #import <MobileCoreServices/MobileCoreServices.h> // for AVURLAsset resource loading
 
+
+// toggle betweent PROD and STAGING
+#define IS_PROD_ENV NO
+
+
 @interface TungCommonObjects()
 
 // Private properties and methods
@@ -61,14 +66,17 @@ NSDateFormatter *ISODateFormatter;
 }
 
 + (NSString *) apiRootUrl {
-    return @"https://api.tung.fm/";
-    //return @"https://staging-api.tung.fm/";
+    if (IS_PROD_ENV)
+    	return @"https://api.tung.fm/";
+	else
+    	return @"https://staging-api.tung.fm/";
 }
 
 + (NSString *) tungSiteRootUrl {
-    
-    return @"https://tung.fm/";
-    //return @"https://staging.tung.fm/";
+    if (IS_PROD_ENV)
+    	return @"https://tung.fm/";
+    else
+    	return @"https://staging.tung.fm/";
 }
 
 - (id)init {
@@ -515,6 +523,7 @@ CGFloat versionFloat = 0.0;
     if (_btnActivityIndicator.isAnimating) return;
     
     if (_playQueue.count > 0) {
+        
         if (_player) {
             if ([self isPlaying]) {
                 [self playerPause];
@@ -2439,6 +2448,22 @@ static NSArray *colors;
 }
 
 + (NSArray *) determineKeyColorsFromImage:(UIImage *)image {
+    /*
+     IMPORTANT: make sure this stays in sync with php equivalent on server: "filterKeyColors()"
+     ALSO: run color test after each edit:
+     
+     - search hospital records, should get nice pink
+     - search joe rogan, should get rusty orange
+     - search dalrymple report, should get lighter orange
+     - search tim ferriss, should get nice flesh color
+     - search quad talk, should get medium green
+     - search dork forest, should get medium green
+     - search planet money, should get planet money green
+     - search startup, should get royal blue
+     - search less than or equal,
+     - search flash forward, should get medium purple
+     - search relay fm, check results (variety of colors)
+     */
     
     NSArray *keyColors = [self extractColorsFromImage:image];
     UIColor *keyColor1 = [UIColor colorWithRed:0.45 green:0.45 blue:0.45 alpha:1];// default
@@ -2501,20 +2526,6 @@ static NSArray *colors;
             if (G > 0.9) continue;
             // test for too light blue
             if (R > 0.5 && G > 0.75 && B > 0.85) continue;
-            /* 
-            COLOR TEST - perform after each edit
-             - search hospital records, should get nice pink
-             - search joe rogan, should get rusty orange
-             - search dalrymple report, should get lighter orange
-             - search tim ferriss, should get nice flesh color
-             - search quad talk, should get medium green
-             - search dork forest, should get medium green
-             - search planet money, should get planet money green
-             - search startup, should get royal blue
-             - search less than or equal,
-             - search flash forward, should get medium purple
-             - search relay fm, check results (variety of colors)
-             */
 
 
             if (keyColor1Index < 0) {
@@ -2830,7 +2841,7 @@ static NSArray *colors;
     NSString *email = (podcastEntity.email) ? podcastEntity.email : @"";
     NSString *website = (podcastEntity.website) ? podcastEntity.website : @"";
     
-    //NSLog(@"Add or Update Podcast for entity: %@", podcastEntity.collectionName);
+    NSLog(@"Add or Update Podcast for entity: %@", podcastEntity.collectionName);
     //NSLog(@"episode entity: %@", episodeEntity);
     NSMutableDictionary *params = [@{@"apiKey": [TungCommonObjects apiKey],
                                     @"collectionId": podcastEntity.collectionId,
@@ -2885,7 +2896,7 @@ static NSArray *colors;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
-                    //JPLog(@"%@", responseDict);
+                    JPLog(@"%@", responseDict);
                     if ([responseDict objectForKey:@"error"]) {
                         JPLog(@"Error adding or updating podcast: %@", [responseDict objectForKey:@"error"]);
                     }
@@ -3502,7 +3513,7 @@ static NSArray *colors;
                    @"episodeTitle": episodeEntity.title
                    };
     }
-    //NSLog(@"increment play count request with params: %@", params);
+    NSLog(@"increment play count request with params: %@", params);
     
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [incrementCountRequest setHTTPBody:serializedParams];
@@ -3526,7 +3537,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        //JPLog(@"increment play count: %@", responseDict);
+                        JPLog(@"increment play count: %@", responseDict);
                         if (!episodeEntity.id) {
                             // save episode id and shortlink
                             NSString *episodeId = [responseDict objectForKey:@"episodeId"];
@@ -3550,7 +3561,7 @@ static NSArray *colors;
 
 // COMMENTS AND CLIPS
 - (void) postComment:(NSString*)comment atTime:(NSString*)timestamp onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback  {
-    //JPLog(@"post comment request");
+    JPLog(@"post comment request");
     NSURL *postCommentRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/new-comment.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *postCommentRequest = [NSMutableURLRequest requestWithURL:postCommentRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [postCommentRequest setHTTPMethod:@"POST"];
@@ -3587,7 +3598,7 @@ static NSArray *colors;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
-                    //JPLog(@"%@", responseDict);
+                    JPLog(@"post comment response: %@", responseDict);
                     if ([responseDict objectForKey:@"error"]) {
                         // session expired
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {

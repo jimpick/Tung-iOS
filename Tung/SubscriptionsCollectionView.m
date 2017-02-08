@@ -164,6 +164,18 @@ static NSString * const reuseIdentifier = @"artCell";
     
     _podcasts = [TungCommonObjects getAllSubscribedPodcasts];
     
+    if (_podcasts.count > 0) {
+        
+        JPLog(@"found %d subscribed podcasts.\n\n", _podcasts.count);
+        for (int i = 0; i < _podcasts.count; i++) {
+            PodcastEntity *podEntity = [_podcasts objectAtIndex:i];
+            JPLog(@"podcast at index: %d", i);
+            // entity -> dict
+            NSDictionary *pDict = [TungCommonObjects entityToDict:podEntity];
+            JPLog(@"%@", pDict);
+        }
+    }
+    
     [self.collectionView reloadData];
     
     self.collectionView.backgroundView = nil;

@@ -137,6 +137,7 @@
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [_activityIndicator stopAnimating];
                     NSDictionary *responseDict = jsonData;
+                    JPLog(@"registration response: %@", responseDict);
                     // errors?
                     if ([responseDict objectForKey:@"error"]) {
                     
