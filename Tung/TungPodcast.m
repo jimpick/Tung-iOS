@@ -292,7 +292,7 @@ static NSString *cellIdentifier = @"PodcastResultCell";
     
     // art
     NSString *artUrlString = [podcastDict objectForKey:@"artworkUrl600"];
-    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString andCollectionId:[podcastDict objectForKey:@"collectionId"]];
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString andCollectionId:[podcastDict objectForKey:@"collectionId"] defaultSize:NO];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     podcastCell.podcastArtImageView.image = artImage;
     
@@ -465,7 +465,7 @@ static NSString *cellIdentifier = @"PodcastResultCell";
         [preloadQueue addOperationWithBlock:^{
             NSString *artURLString = [[itemArrayCopy objectAtIndex:i] objectForKey:@"artworkUrl600"];
             NSNumber *collectionId = [[itemArrayCopy objectAtIndex:i] objectForKey:@"collectionId"];
-            [TungCommonObjects retrievePodcastArtDataWithUrlString:artURLString andCollectionId:collectionId];
+            [TungCommonObjects retrievePodcastArtDataWithUrlString:artURLString andCollectionId:collectionId defaultSize:NO];
             //NSLog(@"preload art for %@: %@", [[itemArrayCopy objectAtIndex:i] objectForKey:@"collectionName"], artURLString);
         }];
     }
@@ -486,7 +486,7 @@ static NSString *cellIdentifier = @"PodcastResultCell";
     NSURL *scriptUrl = [NSURL fileURLWithPath:scriptPath];
     NSString *script = [NSString stringWithFormat:@"<script type=\"text/javascript\" src=\"%@\"></script>\n", scriptUrl.path];
     // album art
-    NSString *podcastArtPath = [TungCommonObjects getPodcastArtPathWithUrlString:podcastEntity.artworkUrl andCollectionId:podcastEntity.collectionId];
+    NSString *podcastArtPath = [TungCommonObjects getPodcastArtPathForEntity:podcastEntity defaultSize:NO];
     NSURL *podcastArtUrl = [NSURL fileURLWithPath:podcastArtPath];
     NSString *podcastArtImg = [NSString stringWithFormat:@"<img class=\"podcastArt\" src=\"%@\">", podcastArtUrl];
     // description

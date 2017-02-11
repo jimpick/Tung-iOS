@@ -124,7 +124,7 @@
         }];
         NSArray *podcasts = [dict objectForKey:@"podcasts"];
         for (int j = 0; j < podcasts.count; j++) {
-            NSString *podcastArtUrlString = [[podcasts objectAtIndex:j] objectForKey:@"artworkUrlSSL"];
+            NSString *podcastArtUrlString = [[podcasts objectAtIndex:j] objectForKey:@"artworkUrlSSL_sm"];
             [artworkUrls addObject:podcastArtUrlString];
         }
     }
@@ -138,7 +138,7 @@
             
             NSString *podcastArtUrlString = [dedupedArtUrls objectAtIndex:j];
             //NSLog(@"preload artwork: %@", podcastArtUrlString);
-            [TungCommonObjects retrievePodcastArtDataWithSSLUrlString:podcastArtUrlString];
+            [TungCommonObjects retrieveDefaultSizePodcastArtDataWithUrlString:podcastArtUrlString];
         }];
     }
 }
@@ -300,9 +300,8 @@
         CGRect imageViewRect = CGRectMake(margin, 0, 68, 68);
         CGSize contentSize = CGSizeMake(0, imageViewRect.size.height);
         for (int i = 0; i < podcasts.count; i++) {
-            NSString *podcastArtUrlString = [[podcasts objectAtIndex:i] objectForKey:@"artworkUrlSSL"];
-            NSNumber *podcastId = [[podcasts objectAtIndex:i] objectForKey:@"_id"];
-            NSData *imgData = [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastArtUrlString andCollectionId:podcastId];
+            NSString *podcastArtUrlString = [[podcasts objectAtIndex:i] objectForKey:@"artworkUrlSSL_sm"];
+            NSData *imgData = [TungCommonObjects retrieveDefaultSizePodcastArtDataWithUrlString:podcastArtUrlString];
             UIImageView *imgView = [[UIImageView alloc] initWithFrame:imageViewRect];
             imgView.image = [UIImage imageWithData:imgData];
             [suCell.scrollView addSubview:imgView];

@@ -445,10 +445,10 @@
             else if (error != nil) {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self endRefreshing];
+                    JPLog(@"Error: %@", error.localizedDescription);
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"HTML: %@", html);
                 });
-                JPLog(@"Error: %@", error.localizedDescription);
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"HTML: %@", html);
             }
         }
         // error
@@ -619,16 +619,15 @@
             else if (error != nil) {
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self endRefreshing];
+                    JPLog(@"Error: %@", error.localizedDescription);
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"HTML: %@", html);
                 });
-                JPLog(@"Error: %@", error.localizedDescription);
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"HTML: %@", html);
             }
         }
         // connection error
         else {
             dispatch_async(dispatch_get_main_queue(), ^{
-                
                 [self endRefreshing];
             });
         }
@@ -706,9 +705,8 @@
             NSString *avatarURLString = [[headerDict objectForKey:@"user"] objectForKey:@"small_av_url"];
             [TungCommonObjects retrieveSmallAvatarDataWithUrlString:avatarURLString];
             // album art
-            NSString *artURLString = [[headerDict objectForKey:@"episode"] objectForKey:@"artworkUrlSSL"];
-            NSNumber *collectionId = [[headerDict objectForKey:@"episode"] objectForKey:@"collectionId"];
-            [TungCommonObjects retrievePodcastArtDataWithUrlString:artURLString andCollectionId:collectionId];
+            NSString *artURLString = [[headerDict objectForKey:@"episode"] objectForKey:@"artworkUrlSSL_sm"];
+            [TungCommonObjects retrieveDefaultSizePodcastArtDataWithUrlString:artURLString];
         }];
         
         int eventLimit = 25;
@@ -1138,9 +1136,8 @@
     [headerCell.avatarContainerView setNeedsDisplay];
     
     // album art
-    NSString *artUrlString = [episodeMiniDict objectForKey:@"artworkUrlSSL"];
-    NSNumber *collectionId = [episodeMiniDict objectForKey:@"collectionId"];
-    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString andCollectionId:collectionId];
+    NSString *artUrlString = [episodeMiniDict objectForKey:@"artworkUrlSSL_sm"];
+    NSData *artImageData = [TungCommonObjects retrieveDefaultSizePodcastArtDataWithUrlString:artUrlString];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     headerCell.albumArt.image = artImage;
     

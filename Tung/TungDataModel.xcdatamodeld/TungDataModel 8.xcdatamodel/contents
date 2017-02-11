@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="11232" systemVersion="15G1004" minimumToolsVersion="Xcode 4.3" sourceLanguage="Objective-C" userDefinedModelVersionIdentifier="2.0">
+<model type="com.apple.IDECoreDataModeler.DataModel" documentVersion="1.0" lastSavedToolsVersion="11759" systemVersion="16C67" minimumToolsVersion="Xcode 4.3" sourceLanguage="Objective-C" userDefinedModelVersionIdentifier="2.0">
     <entity name="EpisodeEntity" representedClassName="EpisodeEntity" syncable="YES" codeGenerationType="category">
         <attribute name="collectionId" attributeType="Double" defaultValueString="0.0" usesScalarValueType="NO" syncable="YES"/>
         <attribute name="dataLength" attributeType="Double" defaultValueString="0.0" usesScalarValueType="NO" syncable="YES"/>
@@ -26,6 +26,7 @@
         <attribute name="artistName" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="artworkUrl" optional="YES" attributeType="String" elementID="artworkUrl600" syncable="YES"/>
         <attribute name="artworkUrlSSL" optional="YES" attributeType="String" syncable="YES"/>
+        <attribute name="artworkUrlSSL_sm" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="buttonLink" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="buttonSubtitle" optional="YES" attributeType="String" syncable="YES"/>
         <attribute name="buttonText" optional="YES" attributeType="String" syncable="YES"/>
@@ -81,7 +82,7 @@
     </entity>
     <elements>
         <element name="EpisodeEntity" positionX="-18" positionY="27" width="128" height="345"/>
-        <element name="PodcastEntity" positionX="-45" positionY="0" width="128" height="435"/>
+        <element name="PodcastEntity" positionX="-45" positionY="0" width="128" height="450"/>
         <element name="SettingsEntity" positionX="-27" positionY="153" width="128" height="180"/>
         <element name="UserEntity" positionX="-27" positionY="126" width="128" height="285"/>
     </elements>

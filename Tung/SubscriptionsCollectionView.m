@@ -164,8 +164,8 @@ static NSString * const reuseIdentifier = @"artCell";
     
     _podcasts = [TungCommonObjects getAllSubscribedPodcasts];
     
+    /* log subscribed podcasts
     if (_podcasts.count > 0) {
-        
         JPLog(@"found %d subscribed podcasts.\n\n", _podcasts.count);
         for (int i = 0; i < _podcasts.count; i++) {
             PodcastEntity *podEntity = [_podcasts objectAtIndex:i];
@@ -174,7 +174,7 @@ static NSString * const reuseIdentifier = @"artCell";
             NSDictionary *pDict = [TungCommonObjects entityToDict:podEntity];
             JPLog(@"%@", pDict);
         }
-    }
+    }*/
     
     [self.collectionView reloadData];
     
@@ -324,7 +324,7 @@ UILabel static *prototypeBadge;
     //JPLog(@"collection view cell for item at index path %ld. sort order: %ld - %@", (long)indexPath.row, podcastEntity.sortOrder.integerValue, podcastEntity.collectionName);
     
     cell.collectionId = podcastEntity.collectionId;
-    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity];
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity defaultSize:YES];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     
     // podcast art

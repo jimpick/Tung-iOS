@@ -233,18 +233,17 @@
 + (NSData*) retrieveSmallAvatarDataWithUrlString:(NSString *)urlString;
 + (void) replaceCachedSmallAvatarWithDataAtUrlString:(NSString *)urlString;
 + (NSData*) retrieveAudioClipDataWithUrlString:(NSString *)urlString;
-+ (NSString *) getCachedPodcastArtDirectoryPath;
-+ (NSString *) getCachedEpisodeArtDirectoryPath;
-+ (NSString *) getSavedPodcastArtDirectoryPath;
++ (NSString *) getCachedPodcastArtDirectoryPathForDefaultSize:(BOOL)small;
++ (NSString *) getSavedPodcastArtDirectoryPathForDefaultSize:(BOOL)small;
 + (BOOL) savePodcastArtForEntity:(PodcastEntity *)podcastEntity;
 + (BOOL) unsavePodcastArtForEntity:(PodcastEntity *)podcastEntity;
-+ (NSData *) retrievePodcastArtDataForEntity:(PodcastEntity *)entity;
-+ (NSData *) retrievePodcastArtDataWithSSLUrlString:(NSString *)urlString;
-+ (NSData *) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
-+ (NSData *) downloadAndCachePodcastArtForUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
++ (NSData *) retrievePodcastArtDataForEntity:(PodcastEntity *)entity defaultSize:(BOOL)small;
++ (NSData *) retrieveDefaultSizePodcastArtDataWithUrlString:(NSString *)urlString;
++ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId defaultSize:(BOOL)small;
++ (NSData *) downloadAndCachePodcastArtForUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId defaultSize:(BOOL)small;
 + (NSData *) processPodcastArtForEntity:(PodcastEntity *)entity;
 + (void) replaceCachedPodcastArtForEntity:(PodcastEntity *)entity withNewArt:(NSString *)newArtUrlString;
-+ (NSString *) getPodcastArtPathWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId;
++ (NSString *) getPodcastArtPathForEntity:(PodcastEntity *)podcastEntity defaultSize:(BOOL)small;
 + (NSURL *) getClipFileURL;
 
 // keychain

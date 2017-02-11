@@ -54,6 +54,9 @@
 
 @implementation TungCommonObjects
 
+static int DEFAULT_ART_DIMENSION = 200;
+static int LARGE_ART_DIMENSION = 600;
+
 NSDateFormatter *ISODateFormatter;
 
 + (id)establishTungObjects {
@@ -697,7 +700,7 @@ CGFloat versionFloat = 0.0;
             //NSLog(@"now playing episode: %@", [TungCommonObjects entityToDict:_npEpisodeEntity]);
             
             // set now playing info center info
-            NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:_npEpisodeEntity.podcast];
+            NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:_npEpisodeEntity.podcast defaultSize:NO];
             UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
             MPMediaItemArtwork *albumArt = [[MPMediaItemArtwork alloc] initWithImage:artImage];
             [_trackInfo setObject:albumArt forKey:MPMediaItemPropertyArtwork];
@@ -1953,12 +1956,16 @@ NSMutableArray *tungSaveReasons;
         podcastEntity.artworkUrl = podcastDict[@"artworkUrl"];
     }
     // artworkUrlSSL temporarily stores artworkUrl600 for display before feed is loaded,
-    // if no artworkUrlSSL already exists. then it is overridden by actual SSL art
+    // if no artworkUrlSSL already exists. then it is overwritten by actual SSL art
     if (podcastDict[@"artworkUrlSSL"] && [podcastDict[@"artworkUrlSSL"] isKindOfClass:[NSString class]]) {
         podcastEntity.artworkUrlSSL = podcastDict[@"artworkUrlSSL"];
     }
     else if (!podcastEntity.artworkUrlSSL && podcastDict[@"artworkUrl600"] && [podcastDict[@"artworkUrl600"] isKindOfClass:[NSString class]]) {
         podcastEntity.artworkUrlSSL = podcastDict[@"artworkUrl600"];
+    }
+    // small SSL art
+    if (podcastDict[@"artworkUrlSSL_sm"] && [podcastDict[@"artworkUrlSSL_sm"] isKindOfClass:[NSString class]]) {
+        podcastEntity.artworkUrlSSL_sm = podcastDict[@"artworkUrlSSL_sm"];
     }
     // subscribed?
     if ([podcastDict objectForKey:@"isSubscribed"]) {
@@ -2834,14 +2841,14 @@ static NSArray *colors;
         return;
     }
     
-    NSURL *addEpisodeRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/add-or-update-podcast.php", [TungCommonObjects apiRootUrl]]];
-    NSMutableURLRequest *addEpisodeRequest = [NSMutableURLRequest requestWithURL:addEpisodeRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
-    [addEpisodeRequest setHTTPMethod:@"POST"];
+    NSURL *addPodOrEpisodeRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/add-or-update-podcast.php", [TungCommonObjects apiRootUrl]]];
+    NSMutableURLRequest *addPodOrEpisodeRequest = [NSMutableURLRequest requestWithURL:addPodOrEpisodeRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
+    [addPodOrEpisodeRequest setHTTPMethod:@"POST"];
     // optional params
     NSString *email = (podcastEntity.email) ? podcastEntity.email : @"";
     NSString *website = (podcastEntity.website) ? podcastEntity.website : @"";
     
-    NSLog(@"Add or Update Podcast for entity: %@", podcastEntity.collectionName);
+    JPLog(@"Add or Update Podcast for entity: %@", podcastEntity.collectionName);
     //NSLog(@"episode entity: %@", episodeEntity);
     NSMutableDictionary *params = [@{@"apiKey": [TungCommonObjects apiKey],
                                     @"collectionId": podcastEntity.collectionId,
@@ -2864,46 +2871,27 @@ static NSArray *colors;
         [params addEntriesFromDictionary:episodeParams];
     }
     
-    // add content type
-    NSString *boundary = [TungCommonObjects generateHash];
-    NSString *contentType = [NSString stringWithFormat:@"multipart/form-data; boundary=%@", boundary];
-    [addEpisodeRequest addValue:contentType forHTTPHeaderField:@"Content-Type"];
-    // add post body
-    NSMutableData *body = [NSMutableData data];
-    [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    // key value pairs
-    [body appendData:[TungCommonObjects generateBodyFromDictionary:params withBoundary:boundary]];
-    
-    // podcast art
-    [body appendData:[[NSString stringWithFormat:@"Content-Disposition: form-data; name=\"podcastArt\"; filename=\"%@\"\r\n", @"art.jpg"] dataUsingEncoding:NSUTF8StringEncoding]];
-    [body appendData:[@"Content-Type: image/jpeg\r\n\r\n" dataUsingEncoding:NSUTF8StringEncoding]];
-    NSData *podcastArtData = [self processPodcastArtForEntity:podcastEntity];
-    [body appendData:podcastArtData];
-    [body appendData:[[NSString stringWithFormat:@"\r\n--%@\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    
-    // end of body
-    [body appendData:[[NSString stringWithFormat:@"--%@--\r\n", boundary] dataUsingEncoding:NSUTF8StringEncoding]];
-    
-    [addEpisodeRequest setHTTPBody:body];
-    // set the content-length
-    NSString *postLength = [NSString stringWithFormat:@"%lu", (unsigned long)[body length]];
-    [addEpisodeRequest setValue:postLength forHTTPHeaderField:@"Content-Length"];
+    NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
+    [addPodOrEpisodeRequest setHTTPBody:serializedParams];
     
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
-    [NSURLConnection sendAsynchronousRequest:addEpisodeRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
+    [NSURLConnection sendAsynchronousRequest:addPodOrEpisodeRequest queue:queue completionHandler:^(NSURLResponse *response, NSData *data, NSError *error) {
         if (error == nil) {
             id jsonData = [NSJSONSerialization JSONObjectWithData:data options:NSJSONReadingAllowFragments error:&error];
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
-                    JPLog(@"%@", responseDict);
+                    JPLog(@"add or update response: %@", responseDict);
+                    
                     if ([responseDict objectForKey:@"error"]) {
                         JPLog(@"Error adding or updating podcast: %@", [responseDict objectForKey:@"error"]);
                     }
                     else if ([responseDict objectForKey:@"success"]) {
                         //NSLog(@"successfully added or updated podcast/episode. %@", responseDict);
                         NSString *artworkUrlSSL = [responseDict objectForKey:@"artworkUrlSSL"];
+                        NSString *artworkUrlSSL_sm = [responseDict objectForKey:@"artworkUrlSSL_sm"];
                         podcastEntity.artworkUrlSSL = artworkUrlSSL;
+                        podcastEntity.artworkUrlSSL_sm = artworkUrlSSL_sm;
                         
                         if (episodeEntity) {
                             // save episode id and shortlink
@@ -2912,7 +2900,7 @@ static NSArray *colors;
                             episodeEntity.id = episodeId;
                             episodeEntity.shortlink = shortlink;
                         }
-                        [TungCommonObjects saveContextWithReason:@"got podcast artwork SSL url and/or episode shortlink and id"];
+                        [TungCommonObjects saveContextWithReason:@"got podcast artwork SSL urls and/or episode shortlink and id"];
                         
                         if (callback) callback();
                     }
@@ -3156,9 +3144,11 @@ static NSArray *colors;
             });
         }
         else {
-            [button setEnabled:YES];
-            JPLog(@"Error unsubscribing from podcast: %@", error.localizedDescription);
-            [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [button setEnabled:YES];
+                JPLog(@"Error unsubscribing from podcast: %@", error.localizedDescription);
+                [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+            });
         }
     }];
 }
@@ -3228,9 +3218,11 @@ static NSArray *colors;
             });
         }
         else {
-            [button setEnabled:YES];
-            JPLog(@"Error unsubscribing from podcast: %@", error.localizedDescription);
-            [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                [button setEnabled:YES];
+                JPLog(@"Error unsubscribing from podcast: %@", error.localizedDescription);
+                [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+            });
         }
     }];
 }
@@ -3324,9 +3316,11 @@ static NSArray *colors;
             });
         }
         else {
-            JPLog(@"Error recommending episode: %@", error.localizedDescription);
-            [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
-            callback(NO);
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error recommending episode: %@", error.localizedDescription);
+                [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+                callback(NO);
+            });
         }
     }];
 }
@@ -3387,9 +3381,11 @@ static NSArray *colors;
             });
         }
         else {
-            JPLog(@"Error un-recommending episode: %@", error.localizedDescription);
-            [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
-            callback(NO);
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error un-recommending episode: %@", error.localizedDescription);
+                [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+                callback(NO);
+            });
         }
     }];
 }
@@ -3476,7 +3472,9 @@ static NSArray *colors;
             });
         }
         else {
-            JPLog(@"Error syncing progress: %@", error.localizedDescription);
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error syncing progress: %@", error.localizedDescription);
+            });
         }
     }];
 }
@@ -3554,7 +3552,9 @@ static NSArray *colors;
             });
         }
         else {
-            JPLog(@"Error incrementing play count: %@", error.localizedDescription);
+            dispatch_async(dispatch_get_main_queue(), ^{
+            	JPLog(@"Error incrementing play count: %@", error.localizedDescription);
+            });
         }
     }];
 }
@@ -3636,15 +3636,19 @@ static NSArray *colors;
                     }
                 }
                 else {
-                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                    JPLog(@"Error. HTML: %@", html);
-                    callback(NO, @{@"error": @"Unspecified error"});
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                        JPLog(@"Error. HTML: %@", html);
+                        callback(NO, @{@"error": @"Unspecified error"});
+                    });
                 }
             });
         }
         else {
-            JPLog(@"Error posting comment: %@", error.localizedDescription);
-            callback(NO, @{@"error": error.localizedDescription});
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error posting comment: %@", error.localizedDescription);
+                callback(NO, @{@"error": error.localizedDescription});
+            });
         }
     }];
 }
@@ -3750,15 +3754,19 @@ static NSArray *colors;
                     }
                 }
                 else {
-                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                    JPLog(@"Error. HTML: %@", html);
-                    callback(NO, @{@"error": @"Unspecified error"});
+                    dispatch_async(dispatch_get_main_queue(), ^{
+                        NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                        JPLog(@"Error. HTML: %@", html);
+                        callback(NO, @{@"error": @"Unspecified error"});
+                    });
                 }
             });
         }
         else {
-            JPLog(@"Error posting clip: %@", error.localizedDescription);
-            callback(NO, @{@"error": error.localizedDescription});
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error posting clip: %@", error.localizedDescription);
+                callback(NO, @{@"error": error.localizedDescription});
+            });
         }
     }];
 }
@@ -3809,9 +3817,11 @@ static NSArray *colors;
             });
         }
         else {
-            JPLog(@"Error deleting story event: %@", error.localizedDescription);
-            [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
-            callback(NO);
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error deleting story event: %@", error.localizedDescription);
+                [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+                callback(NO);
+            });
         }
     }];
 }
@@ -3864,8 +3874,10 @@ static NSArray *colors;
             });
         }
         else {
-            JPLog(@"Error flagging comment: %@", error.localizedDescription);
-            [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error flagging comment: %@", error.localizedDescription);
+                [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+            });
         }
     }];
 }
@@ -3906,8 +3918,10 @@ static NSArray *colors;
             });
         }
         else {
-            JPLog(@"(error not nil)Error requesting episode info: %@", error.localizedDescription);
-            callback(NO, @{@"error": error.localizedDescription});
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"(error not nil)Error requesting episode info: %@", error.localizedDescription);
+                callback(NO, @{@"error": error.localizedDescription});
+            });
         }
     }];
 }
@@ -3947,8 +3961,10 @@ static NSArray *colors;
             });
         }
         else {
-            JPLog(@"Error requesting podcast info: %@", error.localizedDescription);
-            callback(NO, @{@"error": error.localizedDescription});
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error requesting podcast info: %@", error.localizedDescription);
+                callback(NO, @{@"error": error.localizedDescription});
+            });
         }
     }];
 }
@@ -4008,14 +4024,18 @@ static NSArray *colors;
                 });
             }
             else {
-                NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
-                JPLog(@"HTML: %@", html);
+                dispatch_async(dispatch_get_main_queue(), ^{
+                    NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
+                    JPLog(@"HTML: %@", html);
+                });
             }
             
         }
         else {
-            JPLog(@"Error getting profile: %@", error.localizedDescription);
-            [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error getting profile: %@", error.localizedDescription);
+                [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+            });
         }
     }];
 }
@@ -4065,8 +4085,10 @@ static NSArray *colors;
             });
         }
         else {
-            JPLog(@"Error updating user: %@", error.localizedDescription);
-            [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error updating user: %@", error.localizedDescription);
+                [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+            });
         }
     }];
 }
@@ -4116,8 +4138,10 @@ static NSArray *colors;
             });
         }
         else {
-            JPLog(@"Error following user: %@", error.localizedDescription);
-            callback(NO, @{@"error": error.localizedDescription });
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error following user: %@", error.localizedDescription);
+                callback(NO, @{@"error": error.localizedDescription });
+            });
         }
     }];
     
@@ -4167,8 +4191,10 @@ static NSArray *colors;
             });
         }
         else {
-            JPLog(@"Error un-following user: %@", error.localizedDescription);
-            callback(NO, @{@"error": error.localizedDescription });
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error un-following user: %@", error.localizedDescription);
+                callback(NO, @{@"error": error.localizedDescription });
+            });
         }
     }];
 }
@@ -4226,7 +4252,6 @@ static NSArray *colors;
         // connection error
         else {
             dispatch_async(dispatch_get_main_queue(), ^{
-                
                 callback(NO, @{@"error": error.localizedDescription});
             });
         }
@@ -4247,9 +4272,8 @@ static NSArray *colors;
             // preload avatar and album art
             [preloadQueue addOperationWithBlock:^{
                 
-                NSString *podcastArtUrlString = [[podcasts objectAtIndex:j] objectForKey:@"artworkUrlSSL"];
-                NSNumber *podcastId = [[podcasts objectAtIndex:j] objectForKey:@"_id"];
-                [TungCommonObjects retrievePodcastArtDataWithUrlString:podcastArtUrlString andCollectionId:podcastId];
+                NSString *podcastArtUrlString = [[podcasts objectAtIndex:j] objectForKey:@"artworkUrlSSL_sm"];
+                [TungCommonObjects retrieveDefaultSizePodcastArtDataWithUrlString:podcastArtUrlString];
             }];
         }
     }
@@ -4296,8 +4320,10 @@ static NSArray *colors;
             });
         }
         else {
-            JPLog(@"Error inviting friends: %@", error.localizedDescription);
-            [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+            dispatch_async(dispatch_get_main_queue(), ^{
+                JPLog(@"Error inviting friends: %@", error.localizedDescription);
+                [TungCommonObjects simpleErrorAlertWithMessage:error.localizedDescription];
+            });
         }
     }];
 }
@@ -4910,6 +4936,8 @@ static NSArray *colors;
 
 #pragma mark - Caching
 
+// AVATARS
+
 + (NSData*) retrieveLargeAvatarDataWithUrlString:(NSString *)urlString {
     
     NSString *largeAvatarsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"largeAvatars"];
@@ -4989,6 +5017,8 @@ static NSArray *colors;
     }
 }
 
+// CLIPS
+
 + (NSData*) retrieveAudioClipDataWithUrlString:(NSString *)urlString {
     
     NSString *audioClipsDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"audioClips"];
@@ -5009,33 +5039,28 @@ static NSArray *colors;
     return nil;
 }
 
-+ (NSString *) getCachedPodcastArtDirectoryPath {
+// PODCAST ART
+
++ (NSString *) getCachedPodcastArtDirectoryPathForDefaultSize:(BOOL)small {
     
-    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"podcastArt"];
+    NSString *folderName = (small) ? @"podcastArt" : @"podcastArtLarge";
+    NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:folderName];
     NSError *error;
     [[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error];
     return podcastArtDir;
     
 }
 
-+ (NSString *) getCachedEpisodeArtDirectoryPath {
++ (NSString *) getSavedPodcastArtDirectoryPathForDefaultSize:(BOOL)small {
     
-    NSString *episodeArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:@"episodeArt"];
-    NSError *error;
-    [[NSFileManager defaultManager] createDirectoryAtPath:episodeArtDir withIntermediateDirectories:YES attributes:nil error:&error];
-    return episodeArtDir;
-    
-}
-
-+ (NSString *) getSavedPodcastArtDirectoryPath {
-    
+    NSString *folderName = (small) ? @"podcastArt" : @"podcastArtLarge";
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
     NSURL *libraryDir = [folders objectAtIndex:0];
     NSError *error;
     BOOL success = [libraryDir setResourceValue:[NSNumber numberWithBool:YES] forKey:NSURLIsExcludedFromBackupKey error:&error];
     if (success) {
-        NSString *savedArtDir = [libraryDir.path stringByAppendingPathComponent:@"podcastArt"];
+        NSString *savedArtDir = [libraryDir.path stringByAppendingPathComponent:folderName];
         NSError *error;
         [fileManager createDirectoryAtPath:savedArtDir withIntermediateDirectories:YES attributes:nil error:&error];
         return savedArtDir;
@@ -5046,14 +5071,16 @@ static NSArray *colors;
     }
 }
 
+// art is saved for downloaded and subscribed podcasts, to ensure offline availability
 + (BOOL) savePodcastArtForEntity:(PodcastEntity *)podcastEntity {
+    NSString *urlString = (podcastEntity.artworkUrlSSL_sm && podcastEntity.artworkUrlSSL_sm.length) ? podcastEntity.artworkUrlSSL_sm : podcastEntity.artworkUrl;
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSString *extension = [[podcastEntity.artworkUrl lastPathComponent] pathExtension];
+    NSString *extension = [[urlString lastPathComponent] pathExtension];
     if (!extension) extension = @"jpg";
     NSString *artFilename = [NSString stringWithFormat:@"%@.%@", podcastEntity.collectionId, extension];
     
-    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
-    NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPathForDefaultSize:YES] stringByAppendingPathComponent:artFilename];
+    NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPathForDefaultSize:YES] stringByAppendingPathComponent:artFilename];
     NSError *error;
     
     if ([fileManager fileExistsAtPath:artFilepath]) {
@@ -5062,19 +5089,20 @@ static NSArray *colors;
         return [fileManager moveItemAtPath:artFilepath toPath:savedArtPath error:&error];
     }
     else {
-        NSData *artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:podcastEntity.artworkUrl]];
+        NSData *artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:urlString]];
         return [artImageData writeToFile:savedArtPath atomically:YES];
     }
 }
 
 + (BOOL) unsavePodcastArtForEntity:(PodcastEntity *)podcastEntity {
+    NSString *urlString = (podcastEntity.artworkUrlSSL_sm && podcastEntity.artworkUrlSSL_sm.length) ? podcastEntity.artworkUrlSSL_sm : podcastEntity.artworkUrl;
     NSFileManager *fileManager = [NSFileManager defaultManager];
-    NSString *extension = [[podcastEntity.artworkUrl lastPathComponent] pathExtension];
+    NSString *extension = [[urlString lastPathComponent] pathExtension];
     if (!extension) extension = @"jpg";
     NSString *artFilename = [NSString stringWithFormat:@"%@.%@", podcastEntity.collectionId, extension];
     
-    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
-    NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPathForDefaultSize:YES] stringByAppendingPathComponent:artFilename];
+    NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPathForDefaultSize:YES] stringByAppendingPathComponent:artFilename];
     NSError *error;
     // remove from saved if it's there
     if ([fileManager fileExistsAtPath:savedArtPath]) {
@@ -5088,14 +5116,19 @@ static NSArray *colors;
 }
 
 // chooses url to pass to retrievePodcastArtDataWithUrlString: andCollectionId: method
-+ (NSData *) retrievePodcastArtDataForEntity:(PodcastEntity *)entity {
-    if (entity.artworkUrlSSL) {
-        //JPLog(@"retrieve art with SSL url: %@", entity.artworkUrlSSL);
-        return [self retrievePodcastArtDataWithUrlString:entity.artworkUrlSSL andCollectionId:entity.collectionId];
++ (NSData *) retrievePodcastArtDataForEntity:(PodcastEntity *)entity defaultSize:(BOOL)small {
+    if (entity.artworkUrlSSL || entity.artworkUrlSSL_sm) {
+        if (entity.artworkUrlSSL_sm && small) {
+            return [self retrievePodcastArtDataWithUrlString:entity.artworkUrlSSL_sm andCollectionId:entity.collectionId defaultSize:small];
+        }
+        else {
+        	//JPLog(@"retrieve art with SSL url: %@", entity.artworkUrlSSL);
+        	return [self retrievePodcastArtDataWithUrlString:entity.artworkUrlSSL andCollectionId:entity.collectionId defaultSize:small];
+        }
     }
     else if (entity.artworkUrl) {
         //JPLog(@"retrieve art with art url: %@", entity.artworkUrl);
-        return [self retrievePodcastArtDataWithUrlString:entity.artworkUrl andCollectionId:entity.collectionId];
+        return [self retrievePodcastArtDataWithUrlString:entity.artworkUrl andCollectionId:entity.collectionId defaultSize:small];
     }
     else {
         //JPLog(@"Error retrieving podcast art: no urls available for entity");
@@ -5103,14 +5136,18 @@ static NSArray *colors;
     }
 }
 
-// convenience method, since id is known for SSL art.
-// MUST be SSL art. DO NOT USE for PodcastViewCtrl header where artworkUrl600 may be
-// temporarily stored under entity's artworkUrlSSL property
-+ (NSData *) retrievePodcastArtDataWithSSLUrlString:(NSString *)urlString {
+/*	For the specific case of needing podcast art but not having a reference 
+ 	to the podcast entity, but cdn SSL link is guaranteed.
+ 	DO NOT USE for PodcastViewCtrl header where artworkUrl600 may be
+	temporarily stored under entity's artworkUrlSSL property
+	because this caches the art under whatever filename is in the url.
+	Art should only be cached only under the collectionId
+ */
++ (NSData *) retrieveDefaultSizePodcastArtDataWithUrlString:(NSString *)urlString {
     
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSString *artFilename = [urlString lastPathComponent];
-    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPathForDefaultSize:YES] stringByAppendingPathComponent:artFilename];
     // check for cached art data
     NSData *artImageData;
     if ([fileManager fileExistsAtPath:artFilepath]) {
@@ -5118,7 +5155,7 @@ static NSArray *colors;
     }
     else {
         // look for saved art data
-        NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+        NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPathForDefaultSize:YES] stringByAppendingPathComponent:artFilename];
         if ([fileManager fileExistsAtPath:savedArtPath]) {
             artImageData = [NSData dataWithContentsOfFile:savedArtPath];
         }
@@ -5132,7 +5169,7 @@ static NSArray *colors;
 }
 
 // for podcast art url from feed, stores SSL (tung CDN) art and feed url art agnostically
-+ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId {
++ (NSData*) retrievePodcastArtDataWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId defaultSize:(BOOL)small {
     
     if (!urlString || !collectionId) {
         JPLog(@"Cannot retrieve podcast art: Missing url string or collection ID");
@@ -5143,7 +5180,7 @@ static NSArray *colors;
     NSString *extension = [[urlString lastPathComponent] pathExtension];
     if (!extension) extension = @"jpg";
     NSString *artFilename = [NSString stringWithFormat:@"%@.%@", collectionId, extension];
-    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPathForDefaultSize:small] stringByAppendingPathComponent:artFilename];
     // check for cached art data
     NSData *artImageData;
     if ([fileManager fileExistsAtPath:artFilepath]) {
@@ -5152,7 +5189,7 @@ static NSArray *colors;
     }
     else {
         // look for saved art data
-        NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+        NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPathForDefaultSize:small] stringByAppendingPathComponent:artFilename];
         if ([fileManager fileExistsAtPath:savedArtPath]) {
             //JPLog(@"retrieved podcast art from saved for id: %@", collectionId);
             artImageData = [NSData dataWithContentsOfFile:savedArtPath];
@@ -5160,7 +5197,7 @@ static NSArray *colors;
         else {
             // download and cache
             //JPLog(@"downloaded podcast art for filename: %@ and url string: %@", artFilename, urlString);
-            artImageData = [self downloadAndCachePodcastArtForUrlString:urlString andCollectionId:collectionId];
+            artImageData = [self downloadAndCachePodcastArtForUrlString:urlString andCollectionId:collectionId defaultSize:small];
         }
     }
     return artImageData;
@@ -5173,12 +5210,12 @@ static NSArray *colors;
     return defaultPodcastImageData;
 }
 
-+ (NSData *) downloadAndCachePodcastArtForUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId {
++ (NSData *) downloadAndCachePodcastArtForUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId defaultSize:(BOOL)small {
 
     NSString *extension = [[urlString lastPathComponent] pathExtension];
     if (!extension) extension = @"jpg";
     NSString *artFilename = [NSString stringWithFormat:@"%@.%@", collectionId, extension];
-    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPathForDefaultSize:small] stringByAppendingPathComponent:artFilename];
     NSData *artImageData = [NSData dataWithContentsOfURL:[NSURL URLWithString:urlString]];
     NSError *error;
     if (![artImageData writeToFile:artFilepath options:NSDataWritingAtomic error:&error]) {
@@ -5189,12 +5226,12 @@ static NSArray *colors;
     return artImageData;
 }
 
-// scales, sizes, and saves podcast art in jpg format for upload to CDN
+// scales, sizes, and saves podcast art in jpg format for when artworkUrl changes
 + (NSData *) processPodcastArtForEntity:(PodcastEntity *)entity {
     // size image
     NSData *dataToResize = [[NSData alloc] initWithContentsOfURL:[NSURL URLWithString:entity.artworkUrl]];
     UIImage *imageToResize = [[UIImage alloc] initWithData:dataToResize];
-    UIImage *resizedImage = [TungCommonObjects image:imageToResize croppedAndScaledToSquareSizeWithDimension:600];
+    UIImage *resizedImage = [TungCommonObjects image:imageToResize croppedAndScaledToSquareSizeWithDimension:DEFAULT_ART_DIMENSION];
     // always use jpg, bc key colors are different for different file types,
     // even if image is same
     NSData *processedImageData = UIImageJPEGRepresentation(resizedImage, 0.9);
@@ -5211,14 +5248,13 @@ static NSArray *colors;
     
     // replace locally
     NSString *artFilename = [NSString stringWithFormat:@"%@.jpg", entity.collectionId];
-    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPathForDefaultSize:YES] stringByAppendingPathComponent:artFilename];
     [processedImageData writeToFile:artFilepath atomically:YES];
     
     return processedImageData;
 }
 
 // replace cached podcast art and update entity's key color properties
-// we do not use iTunes art because it may not be available.
 // artwork from feed link is processed and uploaded in addOrUpdatePodcast: method called in this method
 + (void) replaceCachedPodcastArtForEntity:(PodcastEntity *)entity withNewArt:(NSString *)newArtUrlString {
     
@@ -5229,7 +5265,7 @@ static NSArray *colors;
     NSString *oldExtension = [[entity.artworkUrl lastPathComponent] pathExtension];
     if (!oldExtension) oldExtension = @"jpg";
     NSString *oldArtFilename = [NSString stringWithFormat:@"%@.%@", entity.collectionId, oldExtension];
-    NSString *oldArtFilepath = [[self getCachedPodcastArtDirectoryPath] stringByAppendingPathComponent:oldArtFilename];
+    NSString *oldArtFilepath = [[self getCachedPodcastArtDirectoryPathForDefaultSize:YES] stringByAppendingPathComponent:oldArtFilename];
     if ([fileManager fileExistsAtPath:oldArtFilepath]) {
         [fileManager removeItemAtPath:oldArtFilepath error:nil];
     }
@@ -5251,20 +5287,30 @@ static NSArray *colors;
 }
 
 // used for html markup for podcast description page
-+ (NSString *) getPodcastArtPathWithUrlString:(NSString *)urlString andCollectionId:(NSNumber *)collectionId {
++ (NSString *) getPodcastArtPathForEntity:(PodcastEntity *)podcastEntity defaultSize:(BOOL)small {
     
+    NSString *urlString;
+    if (small && podcastEntity.artworkUrlSSL_sm && podcastEntity.artworkUrlSSL_sm.length) {
+        urlString = podcastEntity.artworkUrlSSL_sm;
+    }
+    else if (!small && podcastEntity.artworkUrlSSL && podcastEntity.artworkUrlSSL.length) {
+        urlString = podcastEntity.artworkUrlSSL;
+    }
+    else {
+     	urlString = podcastEntity.artworkUrl;
+    }
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSString *extension = [[urlString lastPathComponent] pathExtension];
     if (!extension) extension = @"jpg";
-    NSString *artFilename = [NSString stringWithFormat:@"%@.%@", collectionId, extension];
-    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+    NSString *artFilename = [NSString stringWithFormat:@"%@.%@", podcastEntity.collectionId, extension];
+    NSString *artFilepath = [[self getCachedPodcastArtDirectoryPathForDefaultSize:small] stringByAppendingPathComponent:artFilename];
     // check for cached art data
     if ([fileManager fileExistsAtPath:artFilepath]) {
         return artFilepath;
     }
     else {
         // look for saved art data
-        NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPath] stringByAppendingPathComponent:artFilename];
+        NSString *savedArtPath = [[self getSavedPodcastArtDirectoryPathForDefaultSize:small] stringByAppendingPathComponent:artFilename];
         if ([fileManager fileExistsAtPath:savedArtPath]) {
             return savedArtPath;
         }

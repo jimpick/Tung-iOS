@@ -60,9 +60,8 @@
     self.descriptionLabel.text = @"";
     
     // art image
-    NSString *artUrlString = [miniDict objectForKey:@"artworkUrlSSL"];
-    NSNumber *collectionId = [miniDict objectForKey:@"collectionId"];
-    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataWithUrlString:artUrlString andCollectionId:collectionId];
+    NSString *artUrlString = [miniDict objectForKey:@"artworkUrlSSL_sm"];
+    NSData *artImageData = [TungCommonObjects retrieveDefaultSizePodcastArtDataWithUrlString:artUrlString];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     self.albumArt.image = artImage;
     
@@ -89,7 +88,7 @@
     self.descriptionLabel.text = @"Loading...";
     
     // art
-    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity];
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity defaultSize:YES];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     self.albumArt.image = artImage;
     
@@ -133,7 +132,7 @@ static NSDateFormatter *airDateFormatter = nil;
             desc = @"Loading...";
         }
         
-        artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity];
+        artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity defaultSize:YES];
         
         isSubscribed = podcastEntity.isSubscribed.boolValue;
         keyColor1 = (UIColor *)podcastEntity.keyColor1;
@@ -149,7 +148,7 @@ static NSDateFormatter *airDateFormatter = nil;
         subTitle = [self getSubtitleLabelTextForEntity:episodeEntity];
         desc = @"";
         
-        artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:episodeEntity.podcast];
+        artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:episodeEntity.podcast defaultSize:YES];
         
         if (episodeEntity.episodeImageUrl) {
             //NSLog(@"episode image available! %@", episodeEntity.episodeImageUrl);
@@ -340,7 +339,7 @@ static NSDateFormatter *airDateFormatter = nil;
 
 - (void) refreshHeaderViewForEntity:(PodcastEntity *)podcastEntity {
     // update image
-    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity];
+    NSData *artImageData = [TungCommonObjects retrievePodcastArtDataForEntity:podcastEntity defaultSize:YES];
     UIImage *artImage = [[UIImage alloc] initWithData:artImageData];
     _albumArt.image = artImage;
     // update key colors
