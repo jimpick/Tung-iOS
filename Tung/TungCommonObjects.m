@@ -55,7 +55,6 @@
 @implementation TungCommonObjects
 
 static int DEFAULT_ART_DIMENSION = 200;
-static int LARGE_ART_DIMENSION = 600;
 
 NSDateFormatter *ISODateFormatter;
 
@@ -5043,7 +5042,7 @@ static NSArray *colors;
 
 + (NSString *) getCachedPodcastArtDirectoryPathForDefaultSize:(BOOL)small {
     
-    NSString *folderName = (small) ? @"podcastArt" : @"podcastArtLarge";
+    NSString *folderName = (small) ? @"podcastArtSmall" : @"podcastArt";
     NSString *podcastArtDir = [NSTemporaryDirectory() stringByAppendingPathComponent:folderName];
     NSError *error;
     [[NSFileManager defaultManager] createDirectoryAtPath:podcastArtDir withIntermediateDirectories:YES attributes:nil error:&error];
@@ -5053,7 +5052,7 @@ static NSArray *colors;
 
 + (NSString *) getSavedPodcastArtDirectoryPathForDefaultSize:(BOOL)small {
     
-    NSString *folderName = (small) ? @"podcastArt" : @"podcastArtLarge";
+    NSString *folderName = (small) ? @"podcastArtSmall" : @"podcastArt";
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSArray *folders = [fileManager URLsForDirectory:NSLibraryDirectory inDomains:NSUserDomainMask];
     NSURL *libraryDir = [folders objectAtIndex:0];

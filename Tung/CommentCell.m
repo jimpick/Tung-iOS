@@ -13,6 +13,9 @@
 - (void)awakeFromNib {
     // Initialization code
     [super awakeFromNib];
+    
+    _usernameBtn.titleLabel.adjustsFontSizeToFitWidth = YES;
+    _usernameBtn.titleLabel.minimumScaleFactor = 0.6f;
 }
 
 - (void)setSelected:(BOOL)selected animated:(BOOL)animated {

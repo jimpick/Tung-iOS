@@ -22,14 +22,20 @@
 #import <FBSDKCoreKit/FBSDKCoreKit.h>
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
 
+typedef enum {
+    kControlsStateOpen,
+    kControlsStateClosed,
+    kControlsStateNotPlayingOpen,
+    kControlsStateNotPlayingClosed
+} ControlsState;
+
 @interface EpisodeViewController ()
 
 @property (nonatomic, retain) TungCommonObjects *tung;
 @property (strong, nonatomic) TungPodcast *tungPodcast;
 @property HeaderView *headerView;
 @property CADisplayLink *onEnterFrame;
-@property BOOL npControlsViewIsSetup;
-@property BOOL npControlsViewIsVisible;
+@property ControlsState controlsState;
 @property CircleButton *recommendButton;
 @property CircleButton *recordButton;
 @property CircleButton *playClipButton;
@@ -70,7 +76,7 @@
 @property CGFloat recordEndMarker;
 @property BOOL totalTimeSet;
 @property BOOL isNowPlayingView;
-@property BOOL isFirstAppearance;
+@property BOOL touchedInsideShowHideButton;
 
 @property NSLayoutConstraint *descriptionViewBottomConstraint;
 @property NSLayoutConstraint *commentsViewBottomConstraint;
@@ -88,14 +94,24 @@
 
 @implementation EpisodeViewController
 
+// static
 static NSString *kNewClipIntention = @"New clip";
 static NSString *kNewCommentIntention = @"New comment";
 static NSArray *playbackRateStrings;
 
+float controls_dragStartPos = NAN;
+float controls_constraintStartPos = NAN;
+static float controls_closedConstraint = -211.0;
+static float controls_notPlayingConstraint = -145.0;
+static float controls_openConstraint = -99.0;
+static float controls_clipConfirmConstraint;
+static float episodeSubviews_bottomConstraintNotPlaying = -147.0;
+static float episodeSubviews_bottomConstraintPlaying = -80.0;
+UIViewAnimationOptions controls_easing = UIViewAnimationOptionCurveEaseInOut;
+
+
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
-    _isFirstAppearance = YES;
     
     _tung = [TungCommonObjects establishTungObjects];
     _tungPodcast = [TungPodcast new];
@@ -165,6 +181,12 @@ static NSArray *playbackRateStrings;
     }
     
     // now playing controls
+    _controlsView.opacity = .4;
+    _controlsView.tintColor = [UIColor lightGrayColor];
+    _controlsBottomLayoutConstraint.constant = controls_notPlayingConstraint;
+    _controlsState = kControlsStateNotPlayingOpen;
+    
+    _buttonsScrollView.alpha = 1;
     _skipAheadBtn.type = kIconButtonTypeSkipAhead15;
     _skipAheadBtn.color = [TungCommonObjects tungColor];
     [_skipAheadBtn setNeedsDisplay];
@@ -184,7 +206,10 @@ static NSArray *playbackRateStrings;
     
     _hideControlsButton.type = kShowHideButtonTypeHide;
     _hideControlsButton.viewController = self;
+    _hideControlsButton.alpha = 1;
     _showControlsButton.type = kShowHideButtonTypeShow;
+    _showControlsButton.viewController = self;
+    _showControlsButton.alpha = 0;
     _showControlsButton.hidden = YES;
     
     [_posbar setThumbImage:[UIImage imageNamed:@"posbar-thumb.png"] forState:UIControlStateNormal];
@@ -194,15 +219,15 @@ static NSArray *playbackRateStrings;
     [_posbar addTarget:self action:@selector(posbarTouched:) forControlEvents:UIControlEventTouchDown];
     [_posbar addTarget:self action:@selector(posbarReleased:) forControlEvents:UIControlEventTouchUpInside | UIControlEventTouchUpOutside];
     _posbar.value = 0;
+    _posbar.alpha = 0;
+    _posbar.hidden = YES;
     
     // file download progress
     _progressBar.trackTintColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:.15];
     _progressBar.progressTintColor = [UIColor colorWithRed:0 green:0 blue:0 alpha:.3];
     _progressBar.progress = 0;
-    /* make progress bar taller... doesn't round corners
-     CGAffineTransform transform = CGAffineTransformMakeScale(1.0f, 2.0f);
-     _progressBar.transform = transform;
-     */
+    _progressBar.alpha = 0;
+    _progressBar.hidden = YES;
     
     playbackRateStrings = @[@".75x", @"1.0x", @"1.5x", @"2.0x"];
     
@@ -217,13 +242,9 @@ static NSArray *playbackRateStrings;
     _tungPodcast.navController = [self navigationController];
     _tungPodcast.delegate = self;
     
-    // views
-    _npControlsView.opacity = .4;
-    _npControlsView.tintColor = [UIColor lightGrayColor];
-    
     // header view
     _headerView = [[HeaderView alloc] initWithFrame:CGRectMake(0, 64, _screenSize.width, _defaultHeaderHeight)];
-    [self.view insertSubview:_headerView belowSubview:_npControlsView];
+    [self.view insertSubview:_headerView belowSubview:_controlsView];
     [_headerView constrainHeaderViewInViewController:self];
     _headerView.hidden = YES;
     // respond when podcast art is updated
@@ -245,16 +266,13 @@ static NSArray *playbackRateStrings;
     UIBarButtonItem *switcherBarItem = [[UIBarButtonItem alloc] initWithCustomView:(UIView *)_switcher];
     UIBarButtonItem *flexSpace = [[UIBarButtonItem alloc] initWithBarButtonSystemItem:UIBarButtonSystemItemFlexibleSpace target:self action:nil];
     [_switcherBar setItems:@[flexSpace, switcherBarItem, flexSpace] animated:NO];
-    [self.view insertSubview:_switcherBar belowSubview:_npControlsView];
+    [self.view insertSubview:_switcherBar belowSubview:_controlsView];
     _switcherBar.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_headerView attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
     [_switcherBar addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:44]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_switcherBar.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_switcherBar attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_switcherBar.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     _switcherIndex = 0;
-
-    
-    CGFloat bottomConstraintConstant = -44;
     
     // description
     _descriptionView = [self.storyboard instantiateViewControllerWithIdentifier:@"descWebView"];
@@ -264,7 +282,7 @@ static NSArray *playbackRateStrings;
     _descriptionView.webView.delegate = self;
     _descriptionView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    _descriptionViewBottomConstraint = [NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraintConstant];
+    _descriptionViewBottomConstraint = [NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:episodeSubviews_bottomConstraintNotPlaying];
     [self.view addConstraint:_descriptionViewBottomConstraint];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_descriptionView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_descriptionView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
@@ -279,7 +297,7 @@ static NSArray *playbackRateStrings;
     [_commentsView.refreshControl addTarget:self action:@selector(refreshComments:) forControlEvents:UIControlEventValueChanged];
     _commentsView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    _commentsViewBottomConstraint = [NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraintConstant];
+    _commentsViewBottomConstraint = [NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:episodeSubviews_bottomConstraintNotPlaying];
     [self.view addConstraint:_commentsViewBottomConstraint];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_commentsView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_commentsView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
@@ -300,7 +318,7 @@ static NSArray *playbackRateStrings;
     _episodesView.navController = self.navigationController;
     _episodesView.view.translatesAutoresizingMaskIntoConstraints = NO;
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_switcherBar attribute:NSLayoutAttributeBottom multiplier:1 constant:0]];
-    _episodesViewBottomConstraint = [NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:bottomConstraintConstant];
+    _episodesViewBottomConstraint = [NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeBottom relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeBottom multiplier:1 constant:episodeSubviews_bottomConstraintNotPlaying];
     [self.view addConstraint:_episodesViewBottomConstraint];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
     [self.view addConstraint:[NSLayoutConstraint constraintWithItem:_episodesView.view attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_episodesView.view.superview attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
@@ -315,6 +333,9 @@ static NSArray *playbackRateStrings;
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(prepareView) name:UIApplicationDidBecomeActiveNotification object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(resignKeyboardIfActive) name:@"shouldResignKeyboard" object:nil];
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(refreshSubscribeStatus:) name:@"refreshSubscribeStatus" object:nil];
+    
+    
+    [self setupControls];
     
     if (!_isNowPlayingView) {
         
@@ -390,22 +411,25 @@ static NSArray *playbackRateStrings;
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
-    if (_isFirstAppearance) {
-        [self setupNowPlayingControls];
-        _isFirstAppearance = NO;
-    }
     _tung.viewController = self;
     
     // set up views
     if (_isNowPlayingView) {
         
-        if (_episodeEntity && _episodeEntity.isNowPlaying.boolValue && _npControlsBottomLayoutConstraint.constant < npControls_closedConstraint) {
-            [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
+        [self beginOnEnterFrame];
+        //float thresholdConstant =
+        if (_episodeEntity.isNowPlaying.boolValue) {
+            [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(animateControlsToOpen) userInfo:nil repeats:NO];
         }
         
     }
-    else if (_episodeEntity && _episodeEntity.isNowPlaying.boolValue && _npControlsBottomLayoutConstraint.constant < npControls_closedConstraint) {
-        [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
+    else if (_episodeEntity.isNowPlaying.boolValue) {
+        
+        [self beginOnEnterFrame];
+        [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(animateControlsToOpen) userInfo:nil repeats:NO];
+    }
+    else {
+        [NSTimer scheduledTimerWithTimeInterval:.1 target:self selector:@selector(animateControlsToNotPlayingOpen) userInfo:nil repeats:NO];
     }
     
 }
@@ -541,12 +565,12 @@ NSTimer *markAsSeenTimer;
         
         if (_episodeEntity.isNowPlaying.boolValue) {
             //JPLog(@"//////// nowPlayingDidChange: episode just started playing");
-            [self revealNowPlayingControls];
+            [self animateControlsToOpen];
         }
         else {
             //JPLog(@"//////// nowPlayingDidChange: episode is finished playing");
             
-            [self hideNowPlayingControls];
+            [self animateControlsToNotPlayingOpen];
             _headerView.largeButton.on = NO;
             [_headerView.largeButton setNeedsDisplay];
             [_onEnterFrame invalidate];
@@ -636,8 +660,8 @@ NSTimer *markAsSeenTimer;
 
 - (void) setUpViewForEpisode:(EpisodeEntity *)episodeEntity {
     
-    if (_isNowPlayingView && _npControlsBottomLayoutConstraint.constant < npControls_closedConstraint) {
-        [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(revealNowPlayingControls) userInfo:nil repeats:NO];
+    if (_isNowPlayingView) {
+        [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(animateControlsToOpen) userInfo:nil repeats:NO];
     }
     
     // COMMENTS
@@ -735,6 +759,13 @@ NSTimer *markAsSeenTimer;
     }
 }
 
+- (void) playThisEpisode {
+    
+    [_tung queueAndPlaySelectedEpisode:_episodeEntity.url fromTimestamp:nil];
+    [_headerView setUpLargeButtonForEpisode:_episodeEntity orPodcast:nil];
+    [_episodesView.tableView reloadData];
+}
+
 - (void) largeButtonInHeaderTapped {
     
     /* magic button code
@@ -798,10 +829,7 @@ NSTimer *markAsSeenTimer;
                 btn.tag = 1;
                 [tabVC selectTab:btn];
             } else {
-
-                [_tung queueAndPlaySelectedEpisode:_episodeEntity.url fromTimestamp:nil];
-                [_headerView setUpLargeButtonForEpisode:_episodeEntity orPodcast:nil];
-                [_episodesView.tableView reloadData];
+                [self playThisEpisode];
             }
 
         } else {
@@ -893,7 +921,7 @@ NSTimer *markAsSeenTimer;
     }
 }
 
-#pragma mark Now Playing control view
+#pragma mark - Now Playing control view
 
 - (void) refreshRecommendAndSubscribeStatus {
     
@@ -910,9 +938,8 @@ NSTimer *markAsSeenTimer;
 static float circleButtonDimension;
 static CGRect buttonsScrollViewHomeRect;
 
-- (void) setupNowPlayingControls {
+- (void) setupControls {
     
-    _npControlsViewIsVisible = YES;
     //JPLog(@"set up now playing control view");
     if (!circleButtonDimension) circleButtonDimension = 45;
     
@@ -921,6 +948,8 @@ static CGRect buttonsScrollViewHomeRect;
     scrollViewRect.size.width = _screenSize.width;
     _buttonsScrollView.contentSize = CGSizeMake(scrollViewRect.size.width * 3, scrollViewRect.size.height);
     _buttonsScrollView.delegate = self;
+    _buttonsScrollView.scrollEnabled = NO;
+    
     CGRect subViewRect = CGRectMake(0, 0, scrollViewRect.size.width, scrollViewRect.size.height);
     // record buttons
     UIView *recordSubView = [[UIView alloc] initWithFrame:subViewRect];
@@ -1078,7 +1107,7 @@ static CGRect buttonsScrollViewHomeRect;
     
     // comment and post view
     _commentAndPostView = [[CommentAndPostView alloc] initWithFrame:CGRectMake(0, 0, _screenSize.width, _commentAndPostViewHeight)];
-    [_npControlsView insertSubview:_commentAndPostView belowSubview:_progressBar];
+    [_controlsView insertSubview:_commentAndPostView belowSubview:_progressBar];
     _commentAndPostView.hidden = YES;
     _commentAndPostView.alpha = 0;
     _commentAndPostView.commentTextView.delegate = self;
@@ -1093,82 +1122,13 @@ static CGRect buttonsScrollViewHomeRect;
     
     // constrain comment and post view
     _commentAndPostView.translatesAutoresizingMaskIntoConstraints = NO;
-    _commentViewTopLayoutConstraint = [NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_npControlsView attribute:NSLayoutAttributeTop multiplier:1 constant:80];
-    [_npControlsView addConstraint:_commentViewTopLayoutConstraint];
-    [_npControlsView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_npControlsView attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
-    [_npControlsView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_npControlsView attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
+    _commentViewTopLayoutConstraint = [NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeTop relatedBy:NSLayoutRelationEqual toItem:_controlsView attribute:NSLayoutAttributeTop multiplier:1 constant:80];
+    [_controlsView addConstraint:_commentViewTopLayoutConstraint];
+    [_controlsView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeLeading relatedBy:NSLayoutRelationEqual toItem:_controlsView attribute:NSLayoutAttributeLeading multiplier:1 constant:0]];
+    [_controlsView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeTrailing relatedBy:NSLayoutRelationEqual toItem:_controlsView attribute:NSLayoutAttributeTrailing multiplier:1 constant:0]];
     [_commentAndPostView addConstraint:[NSLayoutConstraint constraintWithItem:_commentAndPostView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:_commentAndPostViewHeight]];
     
     [self refreshRecommendAndSubscribeStatus];
-    
-}
-
-- (void) revealNowPlayingControls {
-    
-    _timeElapsedLabel.hidden = NO;
-    _skipAheadBtn.hidden = NO;
-    _skipBackBtn.hidden = NO;
-    
-    episodeSubviews_bottomConstraint = -80;
-    
-    [self beginOnEnterFrame];
-    
-    [UIView animateWithDuration:.5
-                          delay:0
-                        options:npControls_easing
-                     animations:^{
-                         _npControlsBottomLayoutConstraint.constant = npControls_openConstraint;
-                         _descriptionViewBottomConstraint.constant = episodeSubviews_bottomConstraint;
-                         _commentsViewBottomConstraint.constant = episodeSubviews_bottomConstraint;
-                         _episodesViewBottomConstraint.constant = episodeSubviews_bottomConstraint;
-                         _timeElapsedLabel.alpha = 1;
-                         _skipAheadBtn.alpha = 1;
-                         _skipBackBtn.alpha = 1;
-                         [self.view layoutIfNeeded];
-                     }
-                     completion:^(BOOL completed) {
-                         if (_isNowPlayingView) {
-                             // prompt for notifications
-                             SettingsEntity *settings = [TungCommonObjects settings];
-                             if (!settings.hasSeenMentionsPrompt.boolValue && ![[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
-                                 [_tung promptForNotificationsForMentions];
-                             }
-                         }
-                     }];
-    
-}
-
-- (void) hideNowPlayingControls {
-    
-    episodeSubviews_bottomConstraint = -44;
-    
-    [UIView animateWithDuration:.5
-                          delay:0
-                        options:npControls_easing
-                     animations:^{
-                         _npControlsBottomLayoutConstraint.constant = npControls_hiddenConstraint;
-                         _descriptionViewBottomConstraint.constant = episodeSubviews_bottomConstraint;
-                         _commentsViewBottomConstraint.constant = episodeSubviews_bottomConstraint;
-                         _episodesViewBottomConstraint.constant = episodeSubviews_bottomConstraint;
-                         _buttonsScrollView.alpha = 0;
-                         _posbar.alpha = 0;
-                         _progressBar.alpha = 0;
-                         _hideControlsButton.alpha = 0;
-                         _showControlsButton.alpha = 1;
-                         _timeElapsedLabel.alpha = 0;
-                         _skipAheadBtn.alpha = 0;
-                         _skipBackBtn.alpha = 0;
-                         [self.view layoutIfNeeded];
-                     }
-                     completion:^(BOOL completed) {
-                         _buttonsScrollView.hidden = YES;
-                         _showControlsButton.hidden = NO;
-                         _hideControlsButton.hidden = YES;
-                         _timeElapsedLabel.hidden = YES;
-                         _skipAheadBtn.hidden = YES;
-                         _skipBackBtn.hidden = YES;
-                         _npControlsViewIsVisible = !_npControlsViewIsVisible;
-                     }];
     
 }
 
@@ -1593,7 +1553,23 @@ static CGRect buttonsScrollViewHomeRect;
 }
 
 - (void) newClip {
-    [self toggleNewClipView];
+    if (_episodeEntity.isNowPlaying.boolValue) {
+    	[self toggleNewClipView];
+    }
+    else {
+        NSString *alertTitle = nil;
+        if (_tung.npEpisodeEntity) {
+            alertTitle = @"A different episode is playing";
+        }
+        UIAlertController *notPlayingAlert = [UIAlertController alertControllerWithTitle:alertTitle message:@"Would you like to start playing this episode so you can record a clip?" preferredStyle:UIAlertControllerStyleAlert];
+        [notPlayingAlert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+        [notPlayingAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+            // play episode
+            [self playThisEpisode];
+            [self toggleNewClipView];
+        }]];
+        [self presentViewController:notPlayingAlert animated:YES completion:nil];
+    }
 }
 
 - (void) cancelNewClip {
@@ -1719,31 +1695,19 @@ static CGRect buttonsScrollViewHomeRect;
     
 }
 
-#pragma mark Showing/Hiding controls
-
-float npControls_dragStartPos;
-float npControls_constraintStartPos;
-static float npControls_closedConstraint = -211;
-static float npControls_hiddenConstraint = -293;
-static float npControls_openConstraint = -99;
-static float npControls_clipConfirmConstraint;
-float episodeSubviews_bottomConstraint = -44;
-float npControls_totalnpControls_animDuration = .3;
-float npControls_animDuration = .3;
-BOOL touchedInsideShowHideButton;
-BOOL npControls_willHide;
-UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
-
+#pragma mark - Animating Controls
 
 - (void) toggleConfirmClip {
     
-    if (!npControls_clipConfirmConstraint) npControls_clipConfirmConstraint = npControls_openConstraint + 70;
+    if (!controls_clipConfirmConstraint) controls_clipConfirmConstraint = controls_openConstraint + 70;
     
     if (_clipConfirmActive) {
         _shareIntention = nil;
         _shareTimestamp = nil;
-        _posbar.hidden = NO;
-        _hideControlsButton.hidden = NO;
+        if (_controlsState != kControlsStateNotPlayingOpen) {
+            _posbar.hidden = NO;
+            _hideControlsButton.hidden = NO;
+        }
     } else {
         _shareIntention = kNewClipIntention;
         _shareTimestamp = [TungCommonObjects convertSecondsToTimeString:_recordStartMarker];
@@ -1760,7 +1724,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
                         options:UIViewAnimationOptionCurveEaseInOut
                      animations:^{
                          if (!_clipConfirmActive) { // show clip comment view
-                             _npControlsBottomLayoutConstraint.constant = npControls_clipConfirmConstraint;
+                             _controlsBottomLayoutConstraint.constant = controls_clipConfirmConstraint;
                              _posbar.alpha = 0;
                              _progressBar.alpha = 0;
                              _timeElapsedLabel.alpha = 0;
@@ -1773,15 +1737,20 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
                              _shareLabel.alpha = 1;
                          }
                          else { // hide clip comment view
-                             _npControlsBottomLayoutConstraint.constant = npControls_openConstraint;
-                             _posbar.alpha = 1;
-                             _progressBar.alpha = 1;
-                             _timeElapsedLabel.alpha = 1;
-                             _skipAheadBtn.alpha = 1;
-                             _skipBackBtn.alpha = 1;
-                             _totalTimeLabel.alpha = 1;
-                             _pageControl.alpha = 1;
-                             _hideControlsButton.alpha = 1;
+                             if (_controlsState != kControlsStateNotPlayingOpen) {
+                                 _controlsBottomLayoutConstraint.constant = controls_openConstraint;
+                                 _posbar.alpha = 1;
+                                 _progressBar.alpha = 1;
+                                 _timeElapsedLabel.alpha = 1;
+                                 _skipAheadBtn.alpha = 1;
+                                 _skipBackBtn.alpha = 1;
+                                 _totalTimeLabel.alpha = 1;
+                                 _pageControl.alpha = 1;
+                                 _hideControlsButton.alpha = 1;
+                             }
+                             else {
+                                 _controlsBottomLayoutConstraint.constant = controls_notPlayingConstraint;
+                             }
                              _commentAndPostView.alpha = 0;
                              _shareLabel.alpha = 0;
                          }
@@ -1813,128 +1782,307 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
     }
 }
 
-- (IBAction)toggleNpControlsView:(id)sender {
+- (void) updateSubViewConstraintsForControlsState:(ControlsState)state {
+    switch (state) {
+        case kControlsStateNotPlayingOpen:
+            _descriptionViewBottomConstraint.constant = episodeSubviews_bottomConstraintNotPlaying;
+            _commentsViewBottomConstraint.constant = episodeSubviews_bottomConstraintNotPlaying;
+            _episodesViewBottomConstraint.constant = episodeSubviews_bottomConstraintNotPlaying;
+            break;
+        default:
+            _descriptionViewBottomConstraint.constant = episodeSubviews_bottomConstraintPlaying;
+            _commentsViewBottomConstraint.constant = episodeSubviews_bottomConstraintPlaying;
+            _episodesViewBottomConstraint.constant = episodeSubviews_bottomConstraintPlaying;
+            break;
+    }
+}
+
+- (IBAction)toggleControlsView:(id)sender {
     
-    touchedInsideShowHideButton = NO;
+    _touchedInsideShowHideButton = NO;
+    controls_easing = UIViewAnimationOptionCurveEaseInOut;
+    controls_dragStartPos = NAN;
     
-    //JPLog(@"animate close with curve: %lu and duration: %f", (unsigned long)npControls_easing, npControls_animDuration);
-    npControls_willHide = NO;
+    float openConstraint = (_controlsState == kControlsStateNotPlayingOpen || _controlsState == kControlsStateNotPlayingClosed) ? controls_notPlayingConstraint : controls_openConstraint;
     
-    [self.view layoutIfNeeded];
-    [UIView animateWithDuration:npControls_animDuration
+    BOOL willHide = NO;
+    if (_controlsBottomLayoutConstraint.constant <= openConstraint) {
+        willHide = YES;
+    }
+    
+    if (_episodeEntity.isNowPlaying.boolValue) {
+        if (_controlsState != kControlsStateOpen) {
+            [self animateControlsToOpen];
+        }
+        else {
+            if (willHide) {
+                [self animateControlsToClosed];
+            }
+            else {
+                [self animateControlsToOpen];
+            }
+        }
+    }
+    else {
+        if (_controlsState != kControlsStateNotPlayingOpen) {
+            [self animateControlsToNotPlayingOpen];
+        }
+        else {
+            if (willHide) {
+                [self animateControlsToNotPlayingClosed];
+            }
+            else {
+                [self animateControlsToNotPlayingOpen];
+            }
+        }
+    }
+    
+}
+
+- (void) animateControlsToOpen {
+    
+    _timeElapsedLabel.hidden = NO;
+    _totalTimeLabel.hidden = NO;
+    _skipAheadBtn.hidden = NO;
+    _skipBackBtn.hidden = NO;
+    _posbar.hidden = NO;
+    _progressBar.hidden = NO;
+    _hideControlsButton.hidden = NO;
+    _buttonsScrollView.scrollEnabled = YES;
+    _buttonsScrollView.hidden = NO;
+    _pageControl.hidden = NO;
+    
+    [UIView animateWithDuration:.3
                           delay:0
-                        options:npControls_easing
+         usingSpringWithDamping:.5
+          initialSpringVelocity:.5
+                        options:0//controls_easing
                      animations:^{
-                         if (!_npControlsViewIsVisible) { // show controls
-                             _npControlsBottomLayoutConstraint.constant = npControls_openConstraint;
-                             _buttonsScrollView.alpha = 1;
-                             _posbar.alpha = 1;
-                             _progressBar.alpha = 1;
-                             _hideControlsButton.alpha = 1;
-                             _showControlsButton.alpha = 0;
-                         }
-                         else { // hide controls
-                             if (_npControlsBottomLayoutConstraint.constant > npControls_openConstraint) {
-                                 _npControlsBottomLayoutConstraint.constant = npControls_openConstraint;
-                             }
-                             else {
-                                 _npControlsBottomLayoutConstraint.constant = npControls_closedConstraint;
-                                 _buttonsScrollView.alpha = 0;
-                                 _posbar.alpha = 0;
-                                 _progressBar.alpha = 0;
-                                 _hideControlsButton.alpha = 0;
-                                 _showControlsButton.alpha = 1;
-                                 npControls_willHide = YES;
-                             }
-                         }
+                         _controlsBottomLayoutConstraint.constant = controls_openConstraint;
+                         [self updateSubViewConstraintsForControlsState:kControlsStateOpen];
+                         _timeElapsedLabel.alpha = 1;
+                         _skipAheadBtn.alpha = 1;
+                         _skipBackBtn.alpha = 1;
+                         _posbar.alpha = 1;
+                         _progressBar.alpha = 1;
+                         _hideControlsButton.alpha = 1;
+                         _showControlsButton.alpha = 0;
+                         _buttonsScrollView.alpha = 1;
                          [self.view layoutIfNeeded];
                      }
                      completion:^(BOOL completed) {
-                         if (npControls_willHide) {
-                             _buttonsScrollView.hidden = YES;
-                             _showControlsButton.hidden = NO;
-                             _hideControlsButton.hidden = YES;
-                         } else {
-                             _showControlsButton.hidden = YES;
+                         _controlsState = kControlsStateOpen;
+                         _showControlsButton.hidden = YES;
+                         
+                         if (_isNowPlayingView) {
+                             // prompt for notifications
+                             SettingsEntity *settings = [TungCommonObjects settings];
+                             if (!settings.hasSeenMentionsPrompt.boolValue && ![[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
+                                 [_tung promptForNotificationsForMentions];
+                             }
                          }
-                         _npControlsViewIsVisible = !_npControlsViewIsVisible;
+                     }];
+    
+}
+- (void) animateControlsToClosed {
+    
+    _showControlsButton.hidden = NO;
+    
+    //[self.view layoutIfNeeded];
+    [UIView animateWithDuration:.2
+                          delay:0
+                        options:controls_easing
+                     animations:^{
+                         _controlsBottomLayoutConstraint.constant = controls_closedConstraint;
+                         [self updateSubViewConstraintsForControlsState:kControlsStateClosed];
+                         _buttonsScrollView.alpha = 0;
+                         _posbar.alpha = 0;
+                         _progressBar.alpha = 0;
+                         _hideControlsButton.alpha = 0;
+                         _showControlsButton.alpha = 1;
+                         [self.view layoutIfNeeded];
+                     }
+                     completion:^(BOOL completed) {
+                         _buttonsScrollView.hidden = YES;
+                         _hideControlsButton.hidden = YES;
+                         _controlsState = kControlsStateClosed;
+                     }];
+
+}
+
+- (void) animateControlsToNotPlayingOpen {
+    
+    // scroll to main buttons and disable scrolling
+    [_buttonsScrollView scrollRectToVisible:buttonsScrollViewHomeRect animated:YES];
+    _buttonsScrollView.scrollEnabled = NO;
+    _buttonsScrollView.hidden = NO;
+    _hideControlsButton.hidden = NO;
+    _pageControl.hidden = YES;
+    _totalTimeLabel.hidden = YES;
+    
+    [UIView animateWithDuration:.3
+                          delay:0
+    	 usingSpringWithDamping:.5
+          initialSpringVelocity:.5
+                        options:0//controls_easing
+                     animations:^{
+                         _controlsBottomLayoutConstraint.constant = controls_notPlayingConstraint;
+                         [self updateSubViewConstraintsForControlsState:kControlsStateNotPlayingOpen];
+                         _buttonsScrollView.alpha = 1;
+                         _hideControlsButton.alpha = 1;
+                         _showControlsButton.alpha = 0;
+                         _posbar.alpha = 0;
+                         _progressBar.alpha = 0;
+                         _timeElapsedLabel.alpha = 0;
+                         _skipAheadBtn.alpha = 0;
+                         _skipBackBtn.alpha = 0;
+                         [self.view layoutIfNeeded];
+                     }
+                     completion:^(BOOL completed) {
+                         _showControlsButton.hidden = YES;
+                         _timeElapsedLabel.hidden = YES;
+                         _skipAheadBtn.hidden = YES;
+                         _skipBackBtn.hidden = YES;
+                         _posbar.hidden = YES;
+                         _progressBar.hidden = YES;
+                         _controlsState = kControlsStateNotPlayingOpen;
                      }];
     
 }
 
-#pragma mark - Touch methods
+- (void) animateControlsToNotPlayingClosed {
+    
+    _showControlsButton.hidden = NO;
+    
+    [UIView animateWithDuration:.15
+                          delay:0
+                        options:controls_easing
+                     animations:^{
+                         _controlsBottomLayoutConstraint.constant = controls_closedConstraint;
+                         [self updateSubViewConstraintsForControlsState:kControlsStateNotPlayingClosed];
+                         _buttonsScrollView.alpha = 0;
+                         _hideControlsButton.alpha = 0;
+                         _showControlsButton.alpha = 1;
+                         [self.view layoutIfNeeded];
+                     }
+                     completion:^(BOOL completed) {
+                         _hideControlsButton.hidden = YES;
+                         _buttonsScrollView.hidden = YES;
+                         _controlsState = kControlsStateNotPlayingClosed;
+                     }];
+    
+}
+
+#pragma mark - Dragging controls
 
 
 - (IBAction)touchDownInShowHideControlsButton:(id)sender {
-    touchedInsideShowHideButton = YES;
-    npControls_animDuration = npControls_totalnpControls_animDuration;
+    
+    _touchedInsideShowHideButton = YES;
+    controls_easing = UIViewAnimationOptionCurveEaseOut;
+    // un hide elements for alpha animation
+    _showControlsButton.hidden = NO;
+    _hideControlsButton.hidden = NO;
+    _buttonsScrollView.hidden = NO;
     
     // set drag start position
     if ([sender tag] == 1) { // show controls
-        npControls_constraintStartPos = npControls_closedConstraint;
-        npControls_dragStartPos = _npControlsView.frame.origin.y + 20;
-        _buttonsScrollView.hidden = NO;
-        _showControlsButton.hidden = YES;
-        _hideControlsButton.hidden = NO;
+        controls_constraintStartPos = controls_closedConstraint;
     }
     else { // hide controls
         if (_clipConfirmActive) {
-            npControls_constraintStartPos = npControls_clipConfirmConstraint;
+            controls_constraintStartPos = controls_clipConfirmConstraint;
         }
         else {
-        	npControls_constraintStartPos = npControls_openConstraint;
+            
+            switch (_controlsState) {
+                case kControlsStateOpen:
+                    controls_constraintStartPos = controls_openConstraint;
+                    break;
+                case kControlsStateClosed:
+                case kControlsStateNotPlayingClosed:
+                    controls_constraintStartPos = controls_closedConstraint;
+                    break;
+                case kControlsStateNotPlayingOpen:
+                    controls_constraintStartPos = controls_notPlayingConstraint;
+                    break;
+            }
         }
-        npControls_dragStartPos = _npControlsView.frame.origin.y + 10;
     }
 }
+/*
+@t is the current time (or position) of the tween. This can be seconds or frames, steps, seconds, ms, whatever – as long as the unit is the same as is used for the total time [3].
+@b is the beginning value of the property.
+@c is the change between the beginning and destination value of the property.
+@d is the total time of the tween.
+easeOutExpo = function(t, b, c, d) {
+    return c * (-Math.pow(2, -10 * t / d) + 1) * 1024 / 1023 + b;
+};
+ return (t==d) ? b+c : c * (-Math.pow(2, -10 * t/d) + 1) + b;
+ */
 
+- (CGFloat) easeOutExpoWithFrame:(CGFloat)frame start:(CGFloat)start change:(CGFloat)change total:(CGFloat)total {
+    
+    NSLog(@"easeOutExpo(%f, %f, %f, %f)", frame, start, change, total);
+    float r = frame/total;
+    float pow_val = powf(2.0, -10.0 * r);
+    float result = change * (-pow_val + 1) + start;
+    if (frame >= total) {
+        return start + change;
+    }
+    else {
+        return result;
+    }
+    
+}
 
 - (void)touchesMoved:(NSSet *)touches withEvent:(UIEvent *)event {
     
     // drag now playing controls
-    if (touchedInsideShowHideButton) {
+    if (_touchedInsideShowHideButton) {
         
         UITouch *touch = [[event allTouches] anyObject];
         CGPoint touchLocation = [touch locationInView:self.view];
+        if (isnan(controls_dragStartPos)) {
+            controls_dragStartPos = touchLocation.y;
+        }
         
-        npControls_easing = UIViewAnimationOptionCurveEaseOut;
-        
-        // un hide elements for alpha animation
-        _showControlsButton.hidden = NO;
-        _hideControlsButton.hidden = NO;
-        _buttonsScrollView.hidden = NO;
-        
-        float diff = touchLocation.y - npControls_dragStartPos;
-        
-        float newConstraint = npControls_constraintStartPos - diff;
+        float diff = touchLocation.y - controls_dragStartPos;
+        float newConstraint = controls_constraintStartPos - diff;
+        float openConstraint = (_controlsState == kControlsStateNotPlayingOpen || _controlsState == kControlsStateNotPlayingClosed) ? controls_notPlayingConstraint : controls_openConstraint;
         
         // reduce drag distance when going past all the way open
-        if (newConstraint > npControls_openConstraint) {
-            float cDiff = newConstraint - npControls_openConstraint;
-            float ratio = (cDiff < 200) ? cDiff/200 : 1;
-            //JPLog(@"ratio: %f", ratio);
-            newConstraint = npControls_openConstraint + 100 * ratio;
+        if (newConstraint > openConstraint) {
+            float cDiff = newConstraint - openConstraint;
+            if (cDiff > 100) cDiff = 100;
+            float delta = cDiff/2;
+            newConstraint = openConstraint + delta;
         }
         // stop drag at bottom
-        if (newConstraint < npControls_closedConstraint) newConstraint = npControls_closedConstraint;
+        else if (newConstraint < controls_closedConstraint) {
+            newConstraint = controls_closedConstraint;
+        }
+        //NSLog(@"new constraint: %f", newConstraint);
         
         //JPLog(@"drag controls with diff: %f to new constraint: %f", diff, newConstraint);
-        _npControlsBottomLayoutConstraint.constant = newConstraint;
+        _controlsBottomLayoutConstraint.constant = newConstraint;
         
         // animate alpha of controls
-        float total = npControls_openConstraint - npControls_closedConstraint;
-        float prog = fabsf(newConstraint) - fabsf(npControls_openConstraint);
+        float total = controls_openConstraint - controls_closedConstraint;
+        float prog = fabsf(newConstraint) - fabsf(openConstraint);
         //JPLog(@"prog %f / total %f = decimal %f", prog, total, prog/total);
         float decimal = 1 - (prog / total);
-        npControls_animDuration = fabsf((1-(fabsf(diff) / total)) * npControls_totalnpControls_animDuration);
-        //JPLog(@"animation duration: %f", npControls_animDuration);
-        //float decimal = fabsf(newConstraint) - fabsf(npControls_openConstraint) / (npControls_openConstraint - npControls_closedConstraint);
+        //JPLog(@"animation duration: %f", controls_animDuration);
+        //float decimal = fabsf(newConstraint) - fabsf(controls_openConstraint) / (controls_openConstraint - controls_closedConstraint);
         //JPLog(@"decimal: %f", decimal);
         float alpha = (decimal > 1) ? 1 : decimal;
         _buttonsScrollView.alpha = alpha;
-        _posbar.alpha = alpha;
         _hideControlsButton.alpha = alpha;
         _showControlsButton.alpha = 1 - alpha;
+        if (_controlsState == kControlsStateNotPlayingOpen || _controlsState == kControlsStateNotPlayingClosed) {
+            _progressBar.alpha = alpha;
+            _posbar.alpha = alpha;
+        }
     }
 
 }
@@ -1997,7 +2145,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
             
             CGFloat diff = keyboardRectEnd.size.height - keyboardRectBegin.size.height;
             
-            _npControlsBottomLayoutConstraint.constant += diff;
+            _controlsBottomLayoutConstraint.constant += diff;
             [self.view layoutIfNeeded];
             
         }
@@ -2022,11 +2170,11 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
             _shareLabel.alpha = 1;
             // for new clip
             if ([_shareIntention isEqualToString:kNewClipIntention]) {
-                _npControlsBottomLayoutConstraint.constant = npControls_clipConfirmConstraint + keyboardRectBegin.size.height - 44;
+                _controlsBottomLayoutConstraint.constant = controls_clipConfirmConstraint + keyboardRectBegin.size.height - 44;
             }
             // for new comment
             else if ([_shareIntention isEqualToString:kNewCommentIntention]) {
-                _npControlsBottomLayoutConstraint.constant = npControls_openConstraint + keyboardRectBegin.size.height - 44;
+                _controlsBottomLayoutConstraint.constant = controls_openConstraint + keyboardRectBegin.size.height - 44;
                 _buttonsScrollView.alpha = 0;
                 _posbar.alpha = 0;
                 _progressBar.alpha = 0;
@@ -2050,10 +2198,13 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
 
 - (void) keyboardWillBeHidden:(NSNotification*)notification {
     //NSLog(@"keyboard will be hidden");
-    if (_shareIntention && !_searchActive) {
+    if (_shareIntention && !_searchActive && (_controlsState == kControlsStateOpen || _controlsState == kControlsStateNotPlayingOpen)) {
+        
+        if (_controlsState == kControlsStateNotPlayingOpen) {
+            _posbar.hidden = NO;
+        }
         _hideControlsButton.hidden = NO;
         _buttonsScrollView.hidden = NO;
-        _posbar.hidden = NO;
         //JPLog(@"keyboard will be hidden");
         
         [UIView beginAnimations:@"keyboard down" context:NULL];
@@ -2064,15 +2215,19 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
         [UIView setAnimationDidStopSelector:@selector(keyboardAnimationStopped:finished:context:)];
         // hide clip comment view
 
-        _hideControlsButton.alpha = 1;
-        _npControlsBottomLayoutConstraint.constant = npControls_openConstraint;
-        _posbar.alpha = 1;
-        _progressBar.alpha = 1;
-        _timeElapsedLabel.alpha = 1;
-        _totalTimeLabel.alpha = 1;
-        _skipAheadBtn.alpha = 1;
-        _skipBackBtn.alpha = 1;
-        _pageControl.alpha = 1;
+        if (_controlsState == kControlsStateOpen) {
+            _controlsBottomLayoutConstraint.constant = controls_openConstraint;
+        	_posbar.alpha = 1;
+        	_progressBar.alpha = 1;
+            _timeElapsedLabel.alpha = 1;
+            _totalTimeLabel.alpha = 1;
+            _skipAheadBtn.alpha = 1;
+            _skipBackBtn.alpha = 1;
+            _pageControl.alpha = 1;
+        }
+        else {
+            _controlsBottomLayoutConstraint.constant = controls_notPlayingConstraint;
+        }
         _hideControlsButton.alpha = 1;
         _buttonsScrollView.alpha = 1;
         _commentAndPostView.alpha = 0;
@@ -2100,7 +2255,9 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
         _shareTimestamp = nil;
         _commentAndPostView.hidden = YES;
         _clipConfirmActive = NO;
-        _buttonsScrollView.scrollEnabled = YES;
+        if (_controlsState == kControlsStateNotPlayingOpen) {
+        	_buttonsScrollView.scrollEnabled = YES;
+        }
         
         [self adjustNewClipViewForClipStatus];
         // re-enable search
@@ -2199,7 +2356,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
         [_commentAndPostView.postButton setEnabled:NO];
         [_commentAndPostView.postActivityIndicator startAnimating];
         
-        [_tung postComment:text atTime:_shareTimestamp onEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
+        [_tung postComment:text atTime:_shareTimestamp onEpisode:_episodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
             [_commentAndPostView.postActivityIndicator stopAnimating];
             [_commentAndPostView.postButton setEnabled:YES];
             [TungCommonObjects fadeInView:_commentAndPostView.cancelButton];
@@ -2212,14 +2369,14 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
                 [self toggleNewComment];
                 
                 NSString *username = _tung.loggedInUser.username;
-                NSString *link = [NSString stringWithFormat:@"%@e/%@/%@", [TungCommonObjects tungSiteRootUrl], _tung.npEpisodeEntity.shortlink, username];
+                NSString *link = [NSString stringWithFormat:@"%@e/%@/%@", [TungCommonObjects tungSiteRootUrl], _episodeEntity.shortlink, username];
                 // tweet?
                 if (_commentAndPostView.twitterButton.on) {
                     [_tung postTweetWithText:text andUrl:link];
                 }
                 // fb share?
                 if (_commentAndPostView.facebookButton.on) {
-                    [_tung postToFacebookWithText:text Link:link andEpisode:_tung.npEpisodeEntity];
+                    [_tung postToFacebookWithText:text Link:link andEpisode:_episodeEntity];
                 }
             }
             else {
@@ -2235,7 +2392,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
         [_commentAndPostView.postButton setEnabled:NO];
         [_commentAndPostView.postActivityIndicator startAnimating];
         //NSLog(@"post clip with duration: %@", _recordingDuration);
-        [_tung postClipWithComment:text atTime:_shareTimestamp withDuration:_recordingDuration onEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
+        [_tung postClipWithComment:text atTime:_shareTimestamp withDuration:_recordingDuration onEpisode:_episodeEntity withCallback:^(BOOL success, NSDictionary *responseDict) {
             [_commentAndPostView.postActivityIndicator stopAnimating];
             [_commentAndPostView.postButton setEnabled:YES];
             if (success) {
@@ -2263,7 +2420,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
                 }
                 // fb share?
                 if (_commentAndPostView.facebookButton.on) {
-                    [_tung postToFacebookWithText:text Link:link andEpisode:_tung.npEpisodeEntity];
+                    [_tung postToFacebookWithText:text Link:link andEpisode:_episodeEntity];
                 }
             }
             else {
@@ -2284,7 +2441,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
         _recommendLabel.text = (_recommendButton.recommended) ? @"Recommended" : @"Recommend";
         
         if (_recommendButton.recommended) {
-            [_tung recommendEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success) {
+            [_tung recommendEpisode:_episodeEntity withCallback:^(BOOL success) {
                 if (!success) {
                     // failed to recommend
                     _recommendButton.recommended = NO;
@@ -2294,7 +2451,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
             }];
         }
         else {
-            [_tung unRecommendEpisode:_tung.npEpisodeEntity withCallback:^(BOOL success) {
+            [_tung unRecommendEpisode:_episodeEntity withCallback:^(BOOL success) {
                 if (!success) {
                     // failed to un-recommend
                     _recommendButton.recommended = YES;
@@ -2312,14 +2469,14 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
 - (void) getTextForShareSheet {
     
     // if there's a story to share, share it
-    if (_tung.npEpisodeEntity.shortlink) {
-        [self openShareSheetForEntity:_tung.npEpisodeEntity];
+    if (_episodeEntity.shortlink) {
+        [self openShareSheetForEntity:_episodeEntity];
     }
     // need to get episode shortlink
     else {
         __unsafe_unretained typeof(self) weakSelf = self;
-        [_tung addEpisode:_tung.npEpisodeEntity withCallback:^{
-            [weakSelf openShareSheetForEntity:weakSelf.tung.npEpisodeEntity];
+        [_tung addEpisode:_episodeEntity withCallback:^{
+            [weakSelf openShareSheetForEntity:weakSelf.episodeEntity];
         }];
     }
 }
@@ -2327,7 +2484,7 @@ UIViewAnimationOptions npControls_easing = UIViewAnimationOptionCurveEaseInOut;
 - (void) openShareSheetForEntity:(EpisodeEntity *)episodeEntity {
     
     NSString *link = [NSString stringWithFormat:@"%@e/%@", [TungCommonObjects tungSiteRootUrl], episodeEntity.shortlink];
-    NSLog(@"shortlink: %@", episodeEntity.shortlink);
+    //NSLog(@"shortlink: %@", episodeEntity.shortlink);
     
     NSURL *shareLink = [TungCommonObjects urlFromString:link];
     

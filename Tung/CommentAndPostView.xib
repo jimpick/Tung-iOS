@@ -1,9 +1,13 @@
-<?xml version="1.0" encoding="UTF-8" standalone="no"?>
-<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="9060" systemVersion="15B42" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES">
+<?xml version="1.0" encoding="UTF-8"?>
+<document type="com.apple.InterfaceBuilder3.CocoaTouch.XIB" version="3.0" toolsVersion="11762" systemVersion="16C67" targetRuntime="iOS.CocoaTouch" propertyAccessControl="none" useAutolayout="YES" useTraitCollections="YES" colorMatched="YES">
+    <device id="retina4_7" orientation="portrait">
+        <adaptation id="fullscreen"/>
+    </device>
     <dependencies>
         <deployment identifier="iOS"/>
-        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="9051"/>
+        <plugIn identifier="com.apple.InterfaceBuilder.IBCocoaTouchPlugin" version="11757"/>
         <capability name="Constraints to layout margins" minToolsVersion="6.0"/>
+        <capability name="documents saved in the Xcode 8 format" minToolsVersion="8.0"/>
     </dependencies>
     <objects>
         <placeholder placeholderIdentifier="IBFilesOwner" id="-1" userLabel="File's Owner" customClass="CommentAndPostView">
@@ -29,21 +33,18 @@
                     <subviews>
                         <textView opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" showsHorizontalScrollIndicator="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Urz-GO-6q0">
                             <rect key="frame" x="4" y="0.0" width="286" height="59"/>
-                            <animations/>
-                            <color key="textColor" red="0.01176470588" green="0.0" blue="0.0" alpha="0.70000000000000007" colorSpace="custom" customColorSpace="sRGB"/>
+                            <color key="textColor" red="0.014202866703271866" green="0.0" blue="2.454067362123169e-05" alpha="0.70000000000000007" colorSpace="custom" customColorSpace="sRGB"/>
                             <fontDescription key="fontDescription" type="system" pointSize="14"/>
                             <textInputTraits key="textInputTraits" autocapitalizationType="sentences"/>
                         </textView>
                         <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="Tap to comment" textAlignment="center" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="i6r-TB-onj">
                             <rect key="frame" x="8" y="24" width="278" height="17"/>
-                            <animations/>
                             <fontDescription key="fontDescription" type="system" pointSize="14"/>
-                            <color key="textColor" red="0.50196078430000002" green="0.50980392159999999" blue="0.52156862749999999" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
+                            <color key="textColor" red="0.42685261368751526" green="0.43443313241004944" blue="0.44676285982131958" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                             <nil key="highlightedColor"/>
                         </label>
                     </subviews>
-                    <animations/>
-                    <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.050000000000000003" colorSpace="calibratedRGB"/>
+                    <color key="backgroundColor" red="0.0" green="0.0" blue="0.0" alpha="0.050000000000000003" colorSpace="custom" customColorSpace="sRGB"/>
                     <constraints>
                         <constraint firstAttribute="centerY" secondItem="i6r-TB-onj" secondAttribute="centerY" id="3Bl-ER-HLN"/>
                         <constraint firstItem="i6r-TB-onj" firstAttribute="leading" secondItem="6yl-YJ-dCb" secondAttribute="leading" constant="8" id="4X2-cx-n3I"/>
@@ -57,54 +58,48 @@
                 </view>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="dNL-SF-Wuk" customClass="CircleButton">
                     <rect key="frame" x="13" y="78" width="45" height="45"/>
-                    <animations/>
                     <constraints>
                         <constraint firstAttribute="width" constant="45" id="vDc-OR-BE0"/>
                         <constraint firstAttribute="height" constant="45" id="yoo-UA-k89"/>
                     </constraints>
                     <state key="normal">
-                        <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                        <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     </state>
                 </button>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="1Az-GZ-YqF" customClass="CircleButton">
                     <rect key="frame" x="71" y="78" width="45" height="45"/>
-                    <animations/>
                     <constraints>
                         <constraint firstAttribute="height" constant="45" id="UDb-Yk-Rwh"/>
                         <constraint firstAttribute="width" constant="45" id="qnl-Bd-C4g"/>
                     </constraints>
                     <state key="normal">
-                        <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                        <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     </state>
                 </button>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="gXH-dM-Uld" customClass="CircleButton">
                     <rect key="frame" x="222" y="78" width="85" height="45"/>
-                    <animations/>
                     <constraints>
                         <constraint firstAttribute="height" constant="45" id="qVe-ET-Zar"/>
                         <constraint firstAttribute="width" constant="85" id="vKd-zC-CQU"/>
                     </constraints>
                     <state key="normal">
-                        <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                        <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     </state>
                 </button>
                 <button opaque="NO" contentMode="scaleToFill" contentHorizontalAlignment="center" contentVerticalAlignment="center" lineBreakMode="middleTruncation" translatesAutoresizingMaskIntoConstraints="NO" id="mhi-ct-rCF" customClass="CircleButton">
                     <rect key="frame" x="164" y="78" width="45" height="45"/>
-                    <animations/>
                     <constraints>
                         <constraint firstAttribute="width" constant="45" id="Qgm-vR-LYC"/>
                         <constraint firstAttribute="height" constant="45" id="gb3-FE-esk"/>
                     </constraints>
                     <state key="normal">
-                        <color key="titleShadowColor" white="0.5" alpha="1" colorSpace="calibratedWhite"/>
+                        <color key="titleShadowColor" red="0.5" green="0.5" blue="0.5" alpha="1" colorSpace="custom" customColorSpace="sRGB"/>
                     </state>
                 </button>
                 <activityIndicatorView hidden="YES" opaque="NO" contentMode="scaleToFill" horizontalHuggingPriority="750" verticalHuggingPriority="750" hidesWhenStopped="YES" style="gray" translatesAutoresizingMaskIntoConstraints="NO" id="oFy-bv-mRm">
                     <rect key="frame" x="150" y="91" width="20" height="20"/>
-                    <animations/>
                 </activityIndicatorView>
             </subviews>
-            <animations/>
             <constraints>
                 <constraint firstItem="gXH-dM-Uld" firstAttribute="leading" secondItem="mhi-ct-rCF" secondAttribute="trailing" constant="13" id="7DN-0Z-u9T"/>
                 <constraint firstItem="6yl-YJ-dCb" firstAttribute="top" secondItem="iN0-l3-epB" secondAttribute="topMargin" id="7lh-gR-JfR"/>

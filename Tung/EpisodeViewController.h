@@ -18,14 +18,14 @@
 
 @interface EpisodeViewController : UIViewController <TungPodcastsDelegate, AVAudioPlayerDelegate, UIWebViewDelegate, UITextViewDelegate, UIScrollViewDelegate>
 
-@property (strong, nonatomic) IBOutlet FXBlurView *npControlsView;
+@property (strong, nonatomic) IBOutlet FXBlurView *controlsView;
 @property (strong, nonatomic) IBOutlet UISlider *posbar;
 @property (strong, nonatomic) IBOutlet UILabel *timeElapsedLabel;
 @property (strong, nonatomic) IBOutlet UILabel *totalTimeLabel;
 @property (strong, nonatomic) IBOutlet UIScrollView *buttonsScrollView;
 @property (strong, nonatomic) IBOutlet ShowHideControlsButton *hideControlsButton;
 @property (strong, nonatomic) IBOutlet ShowHideControlsButton *showControlsButton;
-@property (strong, nonatomic) IBOutlet NSLayoutConstraint *npControlsBottomLayoutConstraint;
+@property (strong, nonatomic) IBOutlet NSLayoutConstraint *controlsBottomLayoutConstraint;
 @property (strong, nonatomic) IBOutlet UILabel *shareLabel;
 @property (strong, nonatomic) IBOutlet UIProgressView *progressBar;
 @property (strong, nonatomic) IBOutlet UIPageControl *pageControl;
@@ -38,7 +38,7 @@
 @property (strong, nonatomic) IBOutlet IconButton *skipAheadBtn;
 @property (strong, nonatomic) IBOutlet IconButton *skipBackBtn;
 
-- (IBAction)toggleNpControlsView:(id)sender;
+- (IBAction)toggleControlsView:(id)sender;
 - (IBAction)touchDownInShowHideControlsButton:(id)sender;
 
 @end

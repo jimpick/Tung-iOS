@@ -269,12 +269,6 @@ static CGFloat commentBubbleMargins = 27;
         return noConnectionLabel;
     }
     else {
-        UILabel *toCommentLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 25, _screenWidth, 40)];
-        toCommentLabel.text = @"To comment, play this episode.";
-        toCommentLabel.numberOfLines = 2;
-        toCommentLabel.textColor = [UIColor lightGrayColor];
-        toCommentLabel.textAlignment = NSTextAlignmentCenter;
-        toCommentLabel.font = [UIFont systemFontOfSize:15];
         
         if (_commentsArray.count > 0 && section == 1) {
             UILabel *noMoreLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 5, _screenWidth, 20)];
@@ -282,13 +276,7 @@ static CGFloat commentBubbleMargins = 27;
             noMoreLabel.numberOfLines = 0;
             noMoreLabel.textColor = [UIColor grayColor];
             noMoreLabel.textAlignment = NSTextAlignmentCenter;
-            if (_episodeEntity.isNowPlaying.boolValue) {
-                return noMoreLabel;
-            }
-            UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, _screenWidth, 60)];
-            [commentFooterView addSubview:noMoreLabel];
-            [commentFooterView addSubview:toCommentLabel];
-            return commentFooterView;
+            return noMoreLabel;
         }
         else if (_noResults && section == 1) {
             UILabel *noCommentsLabel = [[UILabel alloc] initWithFrame:CGRectMake(0, 5, _screenWidth, 20)];
@@ -296,13 +284,7 @@ static CGFloat commentBubbleMargins = 27;
             noCommentsLabel.textColor = [UIColor grayColor];
             noCommentsLabel.textAlignment = NSTextAlignmentCenter;
             noCommentsLabel.font = [UIFont systemFontOfSize:15];
-            if (_episodeEntity.isNowPlaying.boolValue) {
-                return noCommentsLabel;
-            }
-            UIView *commentFooterView = [[UIView alloc] initWithFrame:CGRectMake(0, 0, _screenWidth, 60)];
-            [commentFooterView addSubview:noCommentsLabel];
-            [commentFooterView addSubview:toCommentLabel];
-            return commentFooterView;
+            return noCommentsLabel;
         }
         else {
             return nil;
@@ -322,7 +304,7 @@ static CGFloat commentBubbleMargins = 27;
 #pragma mark - Table cell taps
 
 - (void) theirCommentUsernameButtonTapped:(id)sender {
-    NSLog(@"username button tapped");
+    //NSLog(@"username button tapped");
     CommentCell* cell  = (CommentCell*)[[sender superview] superview];
     NSIndexPath *indexPath = [self.tableView indexPathForCell:cell];
     
