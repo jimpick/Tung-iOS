@@ -738,10 +738,6 @@ CGFloat versionFloat = 0.0;
                 NSNotification *nowPlayingDidChangeNotif = [NSNotification notificationWithName:@"nowPlayingDidChange" object:nil userInfo:nil];
                 [[NSNotificationCenter defaultCenter] postNotification:nowPlayingDidChangeNotif];
             }
-            else {
-                JPLog(@"Error: Can't play because resource needs to be streamed and there is no connection");
-                [TungCommonObjects showNoConnectionAlert];
-            }
         }
         else {
             JPLog(@"Error: Empty url string passed to playQueuedPodcast");
@@ -777,6 +773,8 @@ CGFloat versionFloat = 0.0;
     NSArray *result = [TungCommonObjects getAllSubscribedPodcasts];
     
     if (result.count > 0) {
+        
+        // build list of new episodes
         NSMutableArray *newEpisodes = [NSMutableArray array];
         
         for (int i = 0; i < result.count; i++) {
@@ -1037,7 +1035,7 @@ CGFloat versionFloat = 0.0;
 
 - (void) playerError:(NSNotification *)notification {
     JPLog(@"PLAYER ERROR: %@ ...attempting to recover playback", notification);
-
+    
     // re-queue now playing
     [self savePositionForNowPlayingAndSync:NO];
     
@@ -1084,7 +1082,7 @@ CGFloat versionFloat = 0.0;
             // if episode has track position > 0.1, we do not use custom scheme,
             // because this way AVPlayer will start streaming from the timestamp
             // instead of downloading from the start as with a custom scheme
-            if (_npEpisodeEntity.trackPosition.floatValue > 0.1 && _npEpisodeEntity.trackPosition.floatValue < 1.0) {
+            if (_npEpisodeEntity.trackPosition.floatValue > 0.1 && _npEpisodeEntity.trackPosition.floatValue < 1.0 && !_trackData.length) {
                 // no caching
                 _fileWillBeCached = NO;
                 JPLog(@"^^^ will STREAM from url with NO caching");
@@ -1100,6 +1098,8 @@ CGFloat versionFloat = 0.0;
             	return [components URL];
             }
             else {
+                JPLog(@"Error: Can't play because resource needs to be streamed and there is no connection");
+                [TungCommonObjects showNoConnectionAlert];
                 return nil;
             }
         }
@@ -1110,18 +1110,47 @@ CGFloat versionFloat = 0.0;
 // make sure player item is fetching from the available location
 - (void) reestablishPlayerItemAndReplace {
     JPLog(@"reestablish player item");
+
+    [self setControlButtonStateToBuffering];
+    
+    if (_player) {
+        [_player pause];
+        [_player removeObserver:self forKeyPath:@"status"];
+        [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
+        [_player removeObserver:self forKeyPath:@"currentItem.duration"];
+        //        [_player removeObserver:self forKeyPath:@"currentItem.playbackBufferEmpty"];
+        //        [_player removeObserver:self forKeyPath:@"currentItem.loadedTimeRanges"];
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:_player.currentItem];
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemPlaybackStalledNotification object:_player.currentItem];
+        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemFailedToPlayToEndTimeNotification object:_player.currentItem];
+        [_player cancelPendingPrerolls];
+    }
+    
     CMTime currentTime = _player.currentTime;
     NSURL *urlToPlay = [self getStreamUrlForEpisodeEntity:_npEpisodeEntity];
-    AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
-    AVPlayerItem *localPlayerItem = [[AVPlayerItem alloc] initWithAsset:asset];
-    [_player replaceCurrentItemWithPlayerItem:localPlayerItem];
-    [_player seekToTime:currentTime completionHandler:^(BOOL finished) {
-        if (_shouldStayPaused) {
-            [_player pause];
-        } else {
-            [_player play];
-        }
-    }];
+    if (urlToPlay) {
+        AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
+        [asset.resourceLoader setDelegate:self queue:dispatch_get_main_queue()];
+        AVPlayerItem *playerItem = [[AVPlayerItem alloc] initWithAsset:asset];
+        [_player replaceCurrentItemWithPlayerItem:playerItem];
+        
+        // add observers
+        [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
+        [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
+        [_player addObserver:self forKeyPath:@"currentItem.duration" options:0 context:nil];
+//      [_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
+//      [_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
+        // Subscribe to AVPlayerItem's notifications
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(completedPlayback) name:AVPlayerItemDidPlayToEndTimeNotification object:playerItem];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemPlaybackStalledNotification object:playerItem];
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemFailedToPlayToEndTimeNotification object:playerItem];
+        
+        [_player seekToTime:currentTime completionHandler:^(BOOL finished) {
+            if (!_shouldStayPaused) {
+                [_player play];
+            }
+        }];
+    }
 }
 
 /*
@@ -1677,15 +1706,9 @@ static NSString *episodeDirName = @"episodes";
 }
 
 - (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
-    JPLog(@"track data connection failed: %@", error.localizedDescription);
     
-    [self savePositionForNowPlayingAndSync:NO];
-    [self resetPlayer];
-    [self queueAndPlaySelectedEpisode:_npEpisodeEntity.url fromTimestamp:nil];
+    _trackDataConnection = nil;
     
-    UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Connection was lost" message:@"Attempting to recover playback." preferredStyle:UIAlertControllerStyleAlert];
-    [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
-    [[TungCommonObjects activeViewController] presentViewController:errorAlert animated:YES completion:nil];
 }
 
 #pragma mark - AVURLAsset resource loading

@@ -237,13 +237,9 @@
 }
 
 - (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
-    JPLog(@"search connection failed: %@", error);
     
-    /* this error pops up occaisionally, probably because of rapid requests.
-     makes user think something is wrong when it really isn't.
-     
-     [_tung showConnectionErrorAlertForError:error];
-    */
+    _podcastSearchConnection = nil;
+
 }
 
 /* unused NSURLConnection delegate methods

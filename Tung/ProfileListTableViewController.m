@@ -1061,12 +1061,8 @@
 }
 
 - (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
-    JPLog(@"profile search connection failed: %@", error.localizedDescription);
     
-    /* this error pops up occasionally, probably because of rapid requests.
-     makes user think something is wrong when it really isn't.
-     [_tung showConnectionErrorAlertForError:error];
-     */
+    _profileSearchConnection = nil;
 }
 
 /* unused NSURLConnection delegate methods
