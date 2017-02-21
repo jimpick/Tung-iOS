@@ -1602,12 +1602,7 @@ static CGRect buttonsScrollViewHomeRect;
 
 - (void) newComment {
     _shareIntention = kNewCommentIntention;
-    if (_tung.totalSeconds > 0) {
-    	_shareTimestamp = [TungCommonObjects convertSecondsToTimeString:CMTimeGetSeconds(_tung.player.currentTime)];
-    } else {
-        _shareTimestamp = [TungCommonObjects convertSecondsToTimeString:0];
-    }
-    _shareLabel.text = [NSString stringWithFormat:@"New comment @ %@", _shareTimestamp];
+    _shareLabel.text = [NSString stringWithFormat:@"New comment @ %@", _timeElapsedLabel.text];
     //_commentAndPostView.commentTextView.text = @"";
     if (!_commentAndPostView.commentTextView.text.length) {
     	[_commentAndPostView.postButton setEnabled:NO];

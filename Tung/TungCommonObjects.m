@@ -1872,39 +1872,22 @@ UILabel *prototypeBadge;
 
 #pragma mark - core data related
 
-NSTimer *tungSaveDebouncer;
-NSMutableArray *tungSaveReasons;
+
 + (BOOL) saveContextWithReason:(NSString*)reason {
     
-    if (!tungSaveReasons) {
-        tungSaveReasons = [NSMutableArray array];
-    }
-    [tungSaveReasons addObject:reason];
-    
-    [tungSaveDebouncer invalidate];
-    tungSaveDebouncer = [NSTimer scheduledTimerWithTimeInterval:0.25f target:self selector:@selector(saveContext) userInfo:nil repeats:NO];
-    
-    return YES;
-}
-
-+ (BOOL) saveContext {
     AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
     // save
-    
-    NSString *reasons = [tungSaveReasons componentsJoinedByString:@", \n"];
-    tungSaveReasons = [NSMutableArray array];
     BOOL saved = NO;
     if ([appDelegate.managedObjectContext hasChanges]) {
         NSError *savingError;
         saved = [appDelegate.managedObjectContext save:&savingError];
         if (saved) {
-            //JPLog(@"SAVE CONTEXT: %@ :: Successfully saved", reasons);
-            
+            //JPLog(@"SAVE CONTEXT: %@ :: Successfully saved", reason);
         } else {
-            JPLog(@"SAVE CONTEXT ERROR: %@ :: REASON: %@", savingError, reasons);
+            JPLog(@"SAVE CONTEXT ERROR: %@ :: REASON: %@", savingError, reason);
         }
     } else {
-        JPLog(@"SAVE CONTEXT: %@ :: Did not save, no changes", reasons);
+        JPLog(@"SAVE CONTEXT: %@ :: Did not save, no changes", reason);
     }
     return saved;
 }
@@ -4716,7 +4699,7 @@ static NSArray *colors;
     NSDictionary *tweetParams = @{@"status": tweet};
     NSError *clientError;
     
-    NSURLRequest *request = [[[Twitter sharedInstance] APIClient] URLRequestWithMethod:@"POST" URL:updateStatusEndpoint parameters:tweetParams error:&clientError];
+    NSURLRequest *request = [client URLRequestWithMethod:@"POST" URL:updateStatusEndpoint parameters:tweetParams error:&clientError];
     
     if (request) {
         [client sendTwitterRequest:request completion:^(NSURLResponse *urlResponse, NSData *data, NSError *connectionError) {
