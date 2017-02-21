@@ -5812,7 +5812,7 @@ static NSDateFormatter *dayDateFormatter = nil;
 
 
 + (NSInteger) getIndexOfEpisodeWithGUID:(NSString *)guid inFeed:(NSArray *)feed {
-    NSInteger feedIndex = -1;
+    NSInteger feedIndex = 0;
     for (int i = 0; i < feed.count; i++) {
         NSString *guidAtIndex = [[feed objectAtIndex:i] objectForKey:@"guid"];
         if ([guidAtIndex isEqualToString:guid]) {

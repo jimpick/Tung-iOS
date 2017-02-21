@@ -17,6 +17,7 @@
 @property (strong, nonatomic) CADisplayLink *onEnterFrame;
 @property (strong, nonatomic) CircleButton *activeSaveBtn;
 @property NSDateFormatter *airDateFormatter;
+@property BOOL filteringActive;
 
 @end
 
@@ -37,8 +38,17 @@
     self.tableView.separatorColor = [UIColor lightGrayColor];
     self.tableView.scrollsToTop = YES;
     self.tableView.separatorInset = UIEdgeInsetsMake(0, 9, 0, 9);
-    self.tableView.contentInset = UIEdgeInsetsZero;// UIEdgeInsetsMake(0, 0, 0, 0);    
+    self.tableView.contentInset = UIEdgeInsetsZero;// UIEdgeInsetsMake(0, 0, 0, 0);
+    self.tableView.contentOffset = CGPointMake(0, 44); // hide search bar
     
+    // filtering
+    [_filterBar setTranslucent:NO];
+    _filterBar.tintColor = [TungCommonObjects tungColor];
+    _filterBar.backgroundColor = [UIColor whiteColor];
+    _filterBar.delegate = self;
+    _filteredEpisodeArray = [NSMutableArray array];
+    
+    // refresh
     self.refreshControl = [[UIRefreshControl alloc] init];
     [self.refreshControl addTarget:self action:@selector(getNewestFeed) forControlEvents:UIControlEventValueChanged];
     
@@ -48,6 +58,7 @@
     [_airDateFormatter setDateFormat:@"MMM d, yyyy"];
     
     [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(saveStatusChanged) name:@"saveStatusDidChange" object:nil];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(clearFilter) name:@"nowPlayingDidChange" object:nil];
     
 }
 
@@ -176,6 +187,53 @@
     
 }
 
+#pragma mark - Search Bar delegate and related methods
+
+-(void)searchBarTextDidBeginEditing:(UISearchBar *)searchBar {
+    
+    [searchBar setShowsCancelButton:YES animated:YES];
+    
+}
+-(void)searchBar:(UISearchBar *)searchBar textDidChange:(NSString *)searchText {
+    //JPLog(@"search bar text did change: %@", searchText);
+    
+    [_filteredEpisodeArray removeAllObjects];
+    
+    if (searchText.length > 1) {
+        _filteringActive = YES;
+        // filter
+        for (NSDictionary *epDict in _episodeArray) {
+            NSRange titleRange = [[epDict objectForKey:@"title"] rangeOfString:searchText options:NSCaseInsensitiveSearch];
+            if (titleRange.location != NSNotFound) {
+                [_filteredEpisodeArray addObject:epDict];
+            }
+        }
+    }
+    else {
+        _filteringActive = NO;
+    }
+    [self.tableView reloadData];
+}
+
+- (void)searchBarCancelButtonClicked:(UISearchBar *)searchBar {
+    
+    [searchBar resignFirstResponder];
+    [searchBar setShowsCancelButton:NO animated:YES];
+    [self.tableView reloadData];
+}
+
+- (NSArray *) episodes {
+    return (_filteringActive) ? _filteredEpisodeArray : _episodeArray;
+}
+
+- (void) clearFilter {
+    
+    _filterBar.text = @"";
+    _filteringActive = NO;
+    [_filterBar setShowsCancelButton:NO animated:YES];
+    [_filterBar resignFirstResponder];
+}
+
 #pragma mark - respond to save status changes
 
 -(void) saveStatusChanged {
@@ -249,7 +307,7 @@
 - (NSInteger)tableView:(UITableView *)tableView numberOfRowsInSection:(NSInteger)section
 {
     if (section == 0) {
-        return _episodeArray.count;
+        return [self episodes].count;
     } else {
         return 0;
     }
@@ -262,7 +320,7 @@
     EpisodeCell *episodeCell = (EpisodeCell *)cell;
     
     // cell data
-    NSDictionary *episodeDict = [NSDictionary dictionaryWithDictionary:[_episodeArray objectAtIndex:indexPath.row]];
+    NSDictionary *episodeDict = [NSDictionary dictionaryWithDictionary:[[self episodes] objectAtIndex:indexPath.row]];
     //NSLog(@"episode cell for row at index path, row: %ld", (long)indexPath.row);
     //NSLog(@"episode: %@", [episodeDict allKeys]);
     
@@ -369,7 +427,7 @@
     [tableView deselectRowAtIndexPath:indexPath animated:YES];
     
     // play episode selected
-    NSDictionary *episodeDict = [_episodeArray objectAtIndex:indexPath.row];
+    NSDictionary *episodeDict = [[self episodes] objectAtIndex:indexPath.row];
     EpisodeEntity *episodeEntity = [TungCommonObjects getEntityForEpisode:episodeDict withPodcastEntity:_podcastEntity save:YES];
     EpisodeViewController *episodeView = [[UIStoryboard storyboardWithName:@"MainStoryboard" bundle:[NSBundle mainBundle]] instantiateViewControllerWithIdentifier:@"episodeView"];
     episodeView.episodeEntity = episodeEntity;
@@ -406,7 +464,7 @@
 }
 
 -(CGFloat) tableView:(UITableView *)tableView heightForFooterInSection:(NSInteger)section {
-    if (section == 1 && _episodeArray.count) {
+    if (section == 1 && [self episodes].count) {
         return 60.0;
     }
     else {

@@ -894,11 +894,6 @@
 
 #pragma mark - Search Bar delegate methods
 
-- (void)updateSearchResultsForSearchController:(UISearchController *)searchController
-{
-    // placeholder
-}
-
 -(void)searchBarSearchButtonClicked:(UISearchBar *)searchBar {
     
     [_searchTimer invalidate];
@@ -918,18 +913,6 @@
         [_profileArray removeAllObjects];
         [self.tableView reloadData];
     }
-}
-
-- (BOOL)searchBarShouldBeginEditing:(UISearchBar *)searchBar {
-
-    
-    //[_searchController.searchBar setShowsCancelButton:YES animated:YES];
-
-    return YES;
-}
-
-- (BOOL)searchBarShouldEndEditing:(UISearchBar *)searchBar {
-    return YES;
 }
 
 - (void)searchBarCancelButtonClicked:(UISearchBar *)searchBar {

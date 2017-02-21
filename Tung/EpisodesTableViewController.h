@@ -10,13 +10,15 @@
 #import "TungCommonObjects.h"
 #import "EpisodeCell.h"
 
-@interface EpisodesTableViewController : UITableViewController
+@interface EpisodesTableViewController : UITableViewController <UISearchBarDelegate>
 
 @property (strong, nonatomic) NSMutableArray *episodeArray;
+@property (strong, nonatomic) NSMutableArray *filteredEpisodeArray;
 @property (strong, nonatomic) PodcastEntity *podcastEntity;
 @property (strong, nonatomic) NSIndexPath *focusedIndexPath;
 @property BOOL noResults;
 @property (strong, nonatomic) UINavigationController *navController;
+@property (strong, nonatomic) IBOutlet UISearchBar *filterBar;
 
 - (void) assignSavedPropertiesToEpisodeArray;
 - (void) markNewEpisodesAsSeen;
