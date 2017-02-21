@@ -56,6 +56,7 @@ typedef enum {
 @property NSString *shareIntention;
 @property NSString *shareTimestamp;
 @property NSString *recordingDuration;
+@property NSString *lastPlayingGuid;
 
 @property UIToolbar *switcherBar;
 @property UISegmentedControl *switcher;
@@ -559,15 +560,17 @@ NSTimer *markAsSeenTimer;
         [self setPlaybackRateToOne];
     } else {
         // episode view - episode either began or ended
-    
-        [_episodesView.tableView reloadData];
-        [_commentsView.tableView reloadData]; // for footer message change
         
         if (_episodeEntity.isNowPlaying.boolValue) {
             //JPLog(@"//////// nowPlayingDidChange: episode just started playing");
             [self animateControlsToOpen];
+            _lastPlayingGuid = _episodeEntity.guid;
+            
+            [_episodesView.tableView reloadData];
+            
+            [self beginOnEnterFrame];
         }
-        else {
+        else if (_lastPlayingGuid && [_lastPlayingGuid isEqualToString:_episodeEntity.guid]) {
             //JPLog(@"//////// nowPlayingDidChange: episode is finished playing");
             
             [self animateControlsToNotPlayingOpen];
@@ -576,6 +579,8 @@ NSTimer *markAsSeenTimer;
             [_onEnterFrame invalidate];
             _progressBar.progress = 0;
             _posbar.value = 0;
+            
+            [_episodesView.tableView reloadData];
             
             dispatch_time_t delay = dispatch_time(DISPATCH_TIME_NOW, 1 * NSEC_PER_SEC);
             dispatch_after(delay, dispatch_get_main_queue(), ^(void){
@@ -662,6 +667,9 @@ NSTimer *markAsSeenTimer;
     
     if (_isNowPlayingView) {
         [NSTimer scheduledTimerWithTimeInterval:.5 target:self selector:@selector(animateControlsToOpen) userInfo:nil repeats:NO];
+    }
+    else if (episodeEntity.isNowPlaying.boolValue) {
+        _lastPlayingGuid = episodeEntity.guid;
     }
     
     // COMMENTS
@@ -2068,12 +2076,10 @@ easeOutExpo = function(t, b, c, d) {
         _controlsBottomLayoutConstraint.constant = newConstraint;
         
         // animate alpha of controls
-        float total = controls_openConstraint - controls_closedConstraint;
+        float total = openConstraint - controls_closedConstraint;
         float prog = fabsf(newConstraint) - fabsf(openConstraint);
-        //JPLog(@"prog %f / total %f = decimal %f", prog, total, prog/total);
         float decimal = 1 - (prog / total);
-        //JPLog(@"animation duration: %f", controls_animDuration);
-        //float decimal = fabsf(newConstraint) - fabsf(controls_openConstraint) / (controls_openConstraint - controls_closedConstraint);
+        //JPLog(@"prog %f / total %f = decimal %f", prog, total, prog/total);
         //JPLog(@"decimal: %f", decimal);
         float alpha = (decimal > 1) ? 1 : decimal;
         _buttonsScrollView.alpha = alpha;

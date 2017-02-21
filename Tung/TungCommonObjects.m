@@ -417,7 +417,7 @@ CGFloat versionFloat = 0.0;
         
         switch (_player.status) {
             case AVPlayerStatusFailed:
-                //JPLog(@"-- AVPlayer status: Failed");
+                JPLog(@"-- AVPlayer status: Failed");
                 [self ejectCurrentEpisode];
                 [self setControlButtonStateToFauxDisabled];;
                 break;
@@ -471,7 +471,7 @@ CGFloat versionFloat = 0.0;
     if (object == _player && [keyPath isEqualToString:@"currentItem.playbackLikelyToKeepUp"]) {
         
         if (_player.currentItem.playbackLikelyToKeepUp) {
-            //JPLog(@"-- player likely to keep up");
+            JPLog(@"-- player likely to keep up");
             
             if (_totalSeconds > 0) {
                 float currentSecs = CMTimeGetSeconds(_player.currentTime);
@@ -510,6 +510,9 @@ CGFloat versionFloat = 0.0;
         if (timeRanges && [timeRanges count]) {
             CMTimeRange timerange = [[timeRanges objectAtIndex:0] CMTimeRangeValue];
             JPLog(@" . . . %.5f -> %.5f", CMTimeGetSeconds(timerange.start), CMTimeGetSeconds(CMTimeAdd(timerange.start, timerange.duration)));
+            //if (![self isPlaying]) {
+            	//[self determinePositionToPlay];
+            //}
         }
     }
     if (object == _player && [keyPath isEqualToString:@"currentItem.playbackBufferEmpty"]) {
@@ -723,8 +726,9 @@ CGFloat versionFloat = 0.0;
                 [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
                 [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
                 [_player addObserver:self forKeyPath:@"currentItem.duration" options:0 context:nil];
-        //        [_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
-        //        [_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
+              	//[_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
+                //[_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
+                
                 // Subscribe to AVPlayerItem's notifications
                 [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(completedPlayback) name:AVPlayerItemDidPlayToEndTimeNotification object:playerItem];
                 [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemPlaybackStalledNotification object:playerItem];
@@ -1094,6 +1098,7 @@ CGFloat versionFloat = 0.0;
                 JPLog(@"^^^ will STREAM from url with custom scheme");
                 
             }
+            
             if (_connectionAvailable.boolValue) {
             	return [components URL];
             }
