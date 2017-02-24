@@ -442,6 +442,7 @@ CGFloat versionFloat = 0.0;
                     [_player seekToTime:time completionHandler:^(BOOL finished) {
                         //JPLog(@"finished seeking: %@", (finished) ? @"Yes" : @"No");
                         [_showBufferingTimer invalidate];
+                        [self setControlButtonStateToPause];
                         [_player play];
                     }];
                 } else {
@@ -472,6 +473,8 @@ CGFloat versionFloat = 0.0;
         
         if (_player.currentItem.playbackLikelyToKeepUp) {
             JPLog(@"-- player likely to keep up");
+            
+            [_showBufferingTimer invalidate];
             
             if (_totalSeconds > 0) {
                 float currentSecs = CMTimeGetSeconds(_player.currentTime);
@@ -692,7 +695,7 @@ CGFloat versionFloat = 0.0;
                 _incPlayCountTimer = [NSTimer scheduledTimerWithTimeInterval:10.0 target:self selector:@selector(incrementPlayCountForNowPlaying) userInfo:nil repeats:NO];
             }
             
-            NSLog(@"sanitized guid: %@", [TungCommonObjects santizeGUID:_npEpisodeEntity.guid]);
+            //NSLog(@"sanitized guid: %@", [TungCommonObjects santizeGUID:_npEpisodeEntity.guid]);
             
             _npEpisodeEntity.isNowPlaying = [NSNumber numberWithBool:YES];
             [TungCommonObjects saveContextWithReason:@"now playing changed"];
@@ -1712,6 +1715,7 @@ static NSString *episodeDirName = @"episodes";
 
 - (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
     
+    JPLog(@"connection lost - %@", [error localizedDescription]);
     _trackDataConnection = nil;
     
 }
@@ -2891,13 +2895,13 @@ static NSArray *colors;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
-                    JPLog(@"add or update response: %@", responseDict);
+                    //JPLog(@"add or update response: %@", responseDict);
                     
                     if ([responseDict objectForKey:@"error"]) {
                         JPLog(@"Error adding or updating podcast: %@", [responseDict objectForKey:@"error"]);
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        //NSLog(@"successfully added or updated podcast/episode. %@", responseDict);
+                        //JPLog(@"successfully added or updated podcast/episode. %@", responseDict);
                         NSString *artworkUrlSSL = [responseDict objectForKey:@"artworkUrlSSL"];
                         NSString *artworkUrlSSL_sm = [responseDict objectForKey:@"artworkUrlSSL_sm"];
                         podcastEntity.artworkUrlSSL = artworkUrlSSL;
