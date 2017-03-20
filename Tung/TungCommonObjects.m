@@ -410,6 +410,35 @@ CGFloat versionFloat = 0.0;
     //JPLog(@"determined total seconds: %f (%@)", _totalSeconds, [TungCommonObjects convertSecondsToTimeString:_totalSeconds]);
 }
 
+// PLAYER OBSERVING
+
+- (void) addPlayerObserversForItem:(AVPlayerItem *)playerItem {
+    // player notifications
+    [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
+    [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
+    [_player addObserver:self forKeyPath:@"currentItem.duration" options:0 context:nil];
+    //[_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
+    //[_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
+    
+    // Subscribe to AVPlayerItem's notifications
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(completedPlayback) name:AVPlayerItemDidPlayToEndTimeNotification object:playerItem];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemPlaybackStalledNotification object:playerItem];
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemFailedToPlayToEndTimeNotification object:playerItem];
+}
+
+- (void) removePlayerObservers {
+    [_player removeObserver:self forKeyPath:@"status"];
+    [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
+    [_player removeObserver:self forKeyPath:@"currentItem.duration"];
+    //[_player removeObserver:self forKeyPath:@"currentItem.playbackBufferEmpty"];
+    //[_player removeObserver:self forKeyPath:@"currentItem.loadedTimeRanges"];
+    
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:_player.currentItem];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemPlaybackStalledNotification object:_player.currentItem];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemFailedToPlayToEndTimeNotification object:_player.currentItem];
+}
+
+
 - (void) observeValueForKeyPath:(NSString *)keyPath ofObject:(id)object change:(NSDictionary *)change context:(void *)context {
     
     //JPLog(@"observe value for key path: %@", keyPath);
@@ -419,7 +448,7 @@ CGFloat versionFloat = 0.0;
             case AVPlayerStatusFailed:
                 JPLog(@"-- AVPlayer status: Failed");
                 [self ejectCurrentEpisode];
-                [self setControlButtonStateToFauxDisabled];;
+                [self setControlButtonStateToFauxDisabled];
                 break;
             case AVPlayerStatusReadyToPlay:
                 JPLog(@"-- AVPlayer status: ready to play");
@@ -527,6 +556,8 @@ CGFloat versionFloat = 0.0;
     }
 }
 
+// CONTROL BUTTON
+
 - (void) controlButtonTapped {
     if (_btnActivityIndicator.isAnimating) return;
     
@@ -549,9 +580,6 @@ CGFloat versionFloat = 0.0;
     }
 }
 
-/*
- Setting control button states
- */
 - (void) setControlButtonStateToPlay {
     [_btnActivityIndicator stopAnimating];
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-play.png"] forState:UIControlStateNormal];
@@ -574,6 +602,8 @@ CGFloat versionFloat = 0.0;
     [_btn_player setImage:nil forState:UIControlStateHighlighted];
     [_btn_player setImage:nil forState:UIControlStateDisabled];
 }
+
+// PLAYING
 
 - (void) seekToTime:(CMTime)time {
     /* may be causing issues, disabling for now
@@ -725,17 +755,8 @@ CGFloat versionFloat = 0.0;
                 [asset.resourceLoader setDelegate:self queue:dispatch_get_main_queue()];
                 AVPlayerItem *playerItem = [AVPlayerItem playerItemWithAsset:asset];
                 _player = [[AVPlayer alloc] initWithPlayerItem:playerItem];
-                // add observers
-                [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
-                [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
-                [_player addObserver:self forKeyPath:@"currentItem.duration" options:0 context:nil];
-              	//[_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
-                //[_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
                 
-                // Subscribe to AVPlayerItem's notifications
-                [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(completedPlayback) name:AVPlayerItemDidPlayToEndTimeNotification object:playerItem];
-                [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemPlaybackStalledNotification object:playerItem];
-                [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemFailedToPlayToEndTimeNotification object:playerItem];
+                [self addPlayerObserversForItem:playerItem];
                 
                 [self setControlButtonStateToPause];
                 
@@ -860,15 +881,8 @@ CGFloat versionFloat = 0.0;
     
     // remove old player and observers
     if (_player) {
-        [_player removeObserver:self forKeyPath:@"status"];
-        [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
-        [_player removeObserver:self forKeyPath:@"currentItem.duration"];
-//        [_player removeObserver:self forKeyPath:@"currentItem.playbackBufferEmpty"];
-//        [_player removeObserver:self forKeyPath:@"currentItem.loadedTimeRanges"];
-        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:_player.currentItem];
-        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemPlaybackStalledNotification object:_player.currentItem];
-        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemFailedToPlayToEndTimeNotification object:_player.currentItem];
         [_player cancelPendingPrerolls];
+        [self removePlayerObservers];
         _player = nil;
     }
     
@@ -1123,14 +1137,7 @@ CGFloat versionFloat = 0.0;
     
     if (_player) {
         [_player pause];
-        [_player removeObserver:self forKeyPath:@"status"];
-        [_player removeObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp"];
-        [_player removeObserver:self forKeyPath:@"currentItem.duration"];
-        //        [_player removeObserver:self forKeyPath:@"currentItem.playbackBufferEmpty"];
-        //        [_player removeObserver:self forKeyPath:@"currentItem.loadedTimeRanges"];
-        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemDidPlayToEndTimeNotification object:_player.currentItem];
-        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemPlaybackStalledNotification object:_player.currentItem];
-        [[NSNotificationCenter defaultCenter] removeObserver:self name:AVPlayerItemFailedToPlayToEndTimeNotification object:_player.currentItem];
+        [self removePlayerObservers];
         [_player cancelPendingPrerolls];
     }
     
@@ -1142,16 +1149,7 @@ CGFloat versionFloat = 0.0;
         AVPlayerItem *playerItem = [[AVPlayerItem alloc] initWithAsset:asset];
         [_player replaceCurrentItemWithPlayerItem:playerItem];
         
-        // add observers
-        [_player addObserver:self forKeyPath:@"status" options:0 context:nil];
-        [_player addObserver:self forKeyPath:@"currentItem.playbackLikelyToKeepUp" options:NSKeyValueObservingOptionNew context:nil];
-        [_player addObserver:self forKeyPath:@"currentItem.duration" options:0 context:nil];
-//      [_player addObserver:self forKeyPath:@"currentItem.playbackBufferEmpty" options:NSKeyValueObservingOptionNew context:nil];
-//      [_player addObserver:self forKeyPath:@"currentItem.loadedTimeRanges" options:NSKeyValueObservingOptionNew context:nil];
-        // Subscribe to AVPlayerItem's notifications
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(completedPlayback) name:AVPlayerItemDidPlayToEndTimeNotification object:playerItem];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemPlaybackStalledNotification object:playerItem];
-        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(playerError:) name:AVPlayerItemFailedToPlayToEndTimeNotification object:playerItem];
+        [self addPlayerObserversForItem:playerItem];
         
         [_player seekToTime:currentTime completionHandler:^(BOOL finished) {
             if (!_shouldStayPaused) {
@@ -2895,7 +2893,7 @@ static NSArray *colors;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
-                    //JPLog(@"add or update response: %@", responseDict);
+                    JPLog(@"add or update response: %@", responseDict);
                     
                     if ([responseDict objectForKey:@"error"]) {
                         JPLog(@"Error adding or updating podcast: %@", [responseDict objectForKey:@"error"]);
@@ -3503,7 +3501,6 @@ static NSArray *colors;
         return;
     }
     
-    NSLog(@"increment play count");
     NSURL *incrementCountRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@podcasts/increment-listen-count.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *incrementCountRequest = [NSMutableURLRequest requestWithURL:incrementCountRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [incrementCountRequest setHTTPMethod:@"POST"];
@@ -3525,7 +3522,7 @@ static NSArray *colors;
                    @"episodeTitle": episodeEntity.title
                    };
     }
-    NSLog(@"increment play count request with params: %@", params);
+    //JPLog(@"increment play count request with params: %@", params);
     
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [incrementCountRequest setHTTPBody:serializedParams];
@@ -3549,7 +3546,7 @@ static NSArray *colors;
                         }
                     }
                     else if ([responseDict objectForKey:@"success"]) {
-                        JPLog(@"increment play count: %@", responseDict);
+                        //JPLog(@"increment play count: %@", responseDict);
                         if (!episodeEntity.id) {
                             // save episode id and shortlink
                             NSString *episodeId = [responseDict objectForKey:@"episodeId"];

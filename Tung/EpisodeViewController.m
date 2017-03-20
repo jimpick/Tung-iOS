@@ -351,7 +351,7 @@ UIViewAnimationOptions controls_easing = UIViewAnimationOptionCurveEaseInOut;
             // check for episode entity
             _episodeEntity = [TungCommonObjects getEpisodeEntityFromEpisodeId:episodeId];
             
-            if (_episodeEntity && _episodeEntity.title) {
+            if (_episodeEntity && _episodeEntity.title && _episodeEntity.podcast && _episodeEntity.podcast.feedUrl) {
                 //NSLog(@"will set up view for complete episode entity: %@", _episodeEntity);
                 [self setUpViewForEpisode:_episodeEntity];
             }
@@ -672,6 +672,9 @@ NSTimer *markAsSeenTimer;
         _lastPlayingGuid = episodeEntity.guid;
     }
     
+    //JPLog(@"set up view for episode");
+    //JPLog(@"podcast: %@", [TungCommonObjects entityToDict:episodeEntity.podcast]);
+    
     // COMMENTS
     [_tung checkReachabilityWithCallback:^(BOOL reachable) {
         if (reachable) {
@@ -684,8 +687,6 @@ NSTimer *markAsSeenTimer;
     // episodes and description
     NSDictionary *feedDict = [TungPodcast retrieveAndCacheFeedForPodcastEntity:episodeEntity.podcast forceNewest:NO reachable:_tung.connectionAvailable.boolValue];
     
-    //NSLog(@"set up view for episode");
-    //NSLog(@"podcast: %@", [TungCommonObjects entityToDict:episodeEntity.podcast]);
     // set up header view
     [_headerView setUpHeaderViewForEpisode:episodeEntity orPodcast:nil];
     [_headerView.subscribeButton addTarget:self action:@selector(subscribeToPodcastViaSender:) forControlEvents:UIControlEventTouchUpInside];
@@ -2080,6 +2081,8 @@ easeOutExpo = function(t, b, c, d) {
         _buttonsScrollView.alpha = alpha;
         _hideControlsButton.alpha = alpha;
         _showControlsButton.alpha = 1 - alpha;
+        _posbar.alpha = alpha;
+        _progressBar.alpha = alpha;
         if (_controlsState == kControlsStateNotPlayingOpen || _controlsState == kControlsStateNotPlayingClosed) {
             _progressBar.alpha = alpha;
             _posbar.alpha = alpha;

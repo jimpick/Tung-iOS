@@ -35,6 +35,7 @@
         // if user is registered for remote notifs, call below methods
         // bc "device token changes frequently" according to docs
         if ([[UIApplication sharedApplication] isRegisteredForRemoteNotifications]) {
+            
             [[UIApplication sharedApplication] registerForRemoteNotifications];
             [[UIApplication sharedApplication] registerUserNotificationSettings:[UIUserNotificationSettings settingsForTypes:UIUserNotificationTypeAlert|UIUserNotificationTypeBadge categories:nil]];
         }
@@ -75,7 +76,7 @@
     if ([TungCommonObjects iOSVersionFloat] >= 9.0) {
         // force touch shortcut
         if (launchOptions[UIApplicationLaunchOptionsShortcutItemKey] != nil) {
-            JPLog(@"did finish launching - with shortcut item");
+            //JPLog(@"did finish launching - with shortcut item");
             _shortcutItem = launchOptions[UIApplicationLaunchOptionsShortcutItemKey];
             return NO;
         }
@@ -314,7 +315,7 @@
                              @"tungToken": _tung.loggedInUser.token,
                              @"deviceToken": token
                              };
-    //NSLog(@"post device token with params: %@", params);
+    NSLog(@"post device token with params: %@", params);
     NSData *serializedParams = [TungCommonObjects serializeParamsForPostRequest:params];
     [postDeviceTokenRequest setHTTPBody:serializedParams];
     NSOperationQueue *queue = [[NSOperationQueue alloc] init];
@@ -324,7 +325,7 @@
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
-                    //JPLog(@"%@", responseDict);
+                    JPLog(@"post device token response: %@", responseDict);
                     if ([responseDict objectForKey:@"error"]) {
                         // session expired
                         JPLog(@"Error: %@", [responseDict objectForKey:@"error"]);

@@ -14,6 +14,7 @@
 
 - (IBAction)changeNotifySetting:(id)sender {
     
+    JPLog(@"change notify setting");
     UISwitch *notifySwitch = (UISwitch *)sender;
     SubscriptionViewCell *cell = (SubscriptionViewCell *)[[[[sender superview] superview] superview] superview];
     NSDictionary *pDict = @{@"collectionId":cell.collectionId};
@@ -38,13 +39,15 @@
             }]];
             [[TungCommonObjects activeViewController] presentViewController:notifsAreDisabledAlert animated:YES completion:nil];
             
-        } else {
+        }
+        else {
             // post notification so banner alert can be shown
             NSString *message = [NSString stringWithFormat:@"You will now receive alerts when new episodes of %@ are available.", podEntity.collectionName];
             NSNotification *notif = [NSNotification notificationWithName:@"notifyPrefChanged" object:nil userInfo:@{@"message":message}];
             [[NSNotificationCenter defaultCenter] postNotification:notif];
         }
-    } else {
+    }
+    else {
         podEntity.notifyOfNewEpisodes = [NSNumber numberWithBool:NO];
         // post notification so banner alert can be shown
         NSString *message = [NSString stringWithFormat:@"You will no longer receive alerts for %@.", podEntity.collectionName];
