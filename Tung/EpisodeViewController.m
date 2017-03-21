@@ -1690,8 +1690,9 @@ static CGRect buttonsScrollViewHomeRect;
         [_posbar setEnabled:NO];
     }
     
+    [_tung setControlButtonStateToBuffering];
     [_tung.player seekToTime:time completionHandler:^(BOOL finished) {
-        //JPLog(@"finished seeking to time (%@)", (finished) ? @"yes" : @"no");
+        JPLog(@"finished seeking to time (%@)", (finished) ? @"yes" : @"no");
         [_tung.trackInfo setObject:[NSNumber numberWithFloat:CMTimeGetSeconds(time)] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
         [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_tung.trackInfo];
         [_posbar setEnabled:YES];

@@ -46,9 +46,10 @@
 @property CGFloat bytesToSave;
 
 @property (strong, nonatomic) NSTimer *syncProgressTimer;
-@property (strong, nonatomic) NSTimer *showBufferingTimer;
 @property (strong, nonatomic) NSTimer *incPlayCountTimer;
 @property (strong, nonatomic) NSNumber *gettingSession;
+
+@property CGFloat secondsLoadedAtLastPoll;
 
 @end
 
@@ -452,6 +453,8 @@ CGFloat versionFloat = 0.0;
                 break;
             case AVPlayerStatusReadyToPlay:
                 JPLog(@"-- AVPlayer status: ready to play");
+                
+                
                 // check for track progress
                 float secs = 0;
                 CMTime time;
@@ -465,31 +468,17 @@ CGFloat versionFloat = 0.0;
                 }
                 // play
                 if (secs > 0) {
-                    
-                    //NSLog(@"seeking to time: %f (progress: %f)", secs, _npEpisodeEntity.trackProgress.floatValue);
+                    JPLog(@"seeking to time: %f (progress: %f)", secs, _npEpisodeEntity.trackProgress.floatValue);
                     [_trackInfo setObject:[NSNumber numberWithFloat:secs] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
-                    [_player seekToTime:time completionHandler:^(BOOL finished) {
-                        //JPLog(@"finished seeking: %@", (finished) ? @"Yes" : @"No");
-                        [_showBufferingTimer invalidate];
-                        [self setControlButtonStateToPause];
-                        [_player play];
-                    }];
+                    [_player seekToTime:time completionHandler:^(BOOL finished) {}];
                 } else {
                     [_trackInfo setObject:[NSNumber numberWithFloat:0] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
-                    if ([self isPlaying]) {
-                        [_showBufferingTimer invalidate];
-                        [self setControlButtonStateToPause];
-                    }
-                    else {
-                        //JPLog(@"play from beginning - with preroll");
-                        [_player prerollAtRate:1.0 completionHandler:^(BOOL finished) {
-                            //JPLog(@"-- finished preroll: %d", finished);
-                            [_showBufferingTimer invalidate];
-                            [self playerPlay];
-                            [self determineTotalSeconds];
-                        }];
+                    if (![self isPlaying]) {
+                        JPLog(@"play from beginning - with preroll");
+                        [_player prerollAtRate:1.0 completionHandler:nil];
                     }
                 }
+                
                 break;
             case AVPlayerItemStatusUnknown:
                 JPLog(@"-- AVPlayer status: Unknown");
@@ -502,8 +491,6 @@ CGFloat versionFloat = 0.0;
         
         if (_player.currentItem.playbackLikelyToKeepUp) {
             JPLog(@"-- player likely to keep up");
-            
-            [_showBufferingTimer invalidate];
             
             if (_totalSeconds > 0) {
                 float currentSecs = CMTimeGetSeconds(_player.currentTime);
@@ -522,29 +509,22 @@ CGFloat versionFloat = 0.0;
             }
             
         } else {
-            //JPLog(@"-- player NOT likely to keep up");
-            // see if file is cached yet, so player can switch to local file
-            /* may be causing issues, disabling for now
-            if (_fileIsStreaming && _fileIsLocal) {
-                [self reestablishPlayerItemAndReplace];
-            }*/
+            JPLog(@"-- player NOT likely to keep up");
             if (!_shouldStayPaused) [self setControlButtonStateToBuffering];
         }
     }
     
     if (object == _player && [keyPath isEqualToString:@"currentItem.duration"]) {
         if (_totalSeconds == 0) [self determineTotalSeconds];
-        if (!_shouldStayPaused) [self setControlButtonStateToPause];
+        //if (!_shouldStayPaused) [self setControlButtonStateToPause];
     }
     
     if (object == _player && [keyPath isEqualToString:@"currentItem.loadedTimeRanges"]) {
         NSArray *timeRanges = (NSArray *)[change objectForKey:NSKeyValueChangeNewKey];
         if (timeRanges && [timeRanges count]) {
             CMTimeRange timerange = [[timeRanges objectAtIndex:0] CMTimeRangeValue];
-            JPLog(@" . . . %.5f -> %.5f", CMTimeGetSeconds(timerange.start), CMTimeGetSeconds(CMTimeAdd(timerange.start, timerange.duration)));
-            //if (![self isPlaying]) {
-            	//[self determinePositionToPlay];
-            //}
+            JPLog(@" . . . %.3f, %@", CMTimeGetSeconds(CMTimeAdd(timerange.start, timerange.duration)), ([self isPlaying]) ? @"playing" : @"not playing");
+            
         }
     }
     if (object == _player && [keyPath isEqualToString:@"currentItem.playbackBufferEmpty"]) {
@@ -586,6 +566,7 @@ CGFloat versionFloat = 0.0;
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
 }
 - (void) setControlButtonStateToPause {
+    JPLog(@"set control button state to PAUSE");
     [_btnActivityIndicator stopAnimating];
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause.png"] forState:UIControlStateNormal];
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause-down.png"] forState:UIControlStateHighlighted];
@@ -596,7 +577,7 @@ CGFloat versionFloat = 0.0;
     [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
 }
 - (void) setControlButtonStateToBuffering {
-    //NSLog(@"set control button state to buffering");
+    JPLog(@"set control button state to buffering");
     [_btnActivityIndicator startAnimating];
     [_btn_player setImage:nil forState:UIControlStateNormal];
     [_btn_player setImage:nil forState:UIControlStateHighlighted];
@@ -754,18 +735,17 @@ CGFloat versionFloat = 0.0;
                 AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
                 [asset.resourceLoader setDelegate:self queue:dispatch_get_main_queue()];
                 AVPlayerItem *playerItem = [AVPlayerItem playerItemWithAsset:asset];
+                playerItem.preferredForwardBufferDuration = 10; // required X seconds to be loaded for playback to be ready
                 _player = [[AVPlayer alloc] initWithPlayerItem:playerItem];
                 
                 [self addPlayerObserversForItem:playerItem];
                 
-                [self setControlButtonStateToPause];
-                
-                [_showBufferingTimer invalidate];
-                _showBufferingTimer = [NSTimer scheduledTimerWithTimeInterval:2.0 target:self selector:@selector(setControlButtonStateToBuffering) userInfo:nil repeats:NO];
+                [self setControlButtonStateToBuffering];
                 
                 NSNotification *nowPlayingDidChangeNotif = [NSNotification notificationWithName:@"nowPlayingDidChange" object:nil userInfo:nil];
                 [[NSNotificationCenter defaultCenter] postNotification:nowPlayingDidChangeNotif];
             }
+            // else error handled in getStreamUrlForEpisodeEntity method
         }
         else {
             JPLog(@"Error: Empty url string passed to playQueuedPodcast");
@@ -877,11 +857,13 @@ CGFloat versionFloat = 0.0;
     _npViewSetupForCurrentEpisode = NO;
     _shouldStayPaused = NO;
     _totalSeconds = 0;
+    _secondsLoadedAtLastPoll = 0;
     [_incPlayCountTimer invalidate];
     
     // remove old player and observers
     if (_player) {
         [_player cancelPendingPrerolls];
+        [_player.currentItem cancelPendingSeeks];
         [self removePlayerObservers];
         _player = nil;
     }
@@ -1388,7 +1370,7 @@ static NSString *episodeDirName = @"episodes";
     [self queueSaveStatusDidChangeNotification];
     
     NSURL *url = [NSURL URLWithString:episodeEntity.url];
-    NSLog(@"init download connection with url: %@", url);
+    //NSLog(@"init download connection with url: %@", url);
     NSURLRequest *request = [NSURLRequest requestWithURL:url];
     _saveTrackConnection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
     [_saveTrackConnection setDelegateQueue:[NSOperationQueue mainQueue]];
@@ -1715,6 +1697,7 @@ static NSString *episodeDirName = @"episodes";
     
     JPLog(@"connection lost - %@", [error localizedDescription]);
     _trackDataConnection = nil;
+    [self initiateAVAssetDownload];
     
 }
 
@@ -1799,12 +1782,7 @@ static NSString *episodeDirName = @"episodes";
     // initiate connection only if we haven't already downloaded the file
     else if (_trackDataConnection == nil)
     {
-        NSURL *url = [NSURL URLWithString:_npEpisodeEntity.url];
-        //NSLog(@"init track data connection with url: %@", url);
-        NSURLRequest *request = [NSURLRequest requestWithURL:url];
-        _trackDataConnection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
-        [_trackDataConnection setDelegateQueue:[NSOperationQueue mainQueue]];
-        [_trackDataConnection start];
+        [self initiateAVAssetDownload];
     }
     
     [self.pendingRequests addObject:loadingRequest];
@@ -1817,6 +1795,16 @@ static NSString *episodeDirName = @"episodes";
     //JPLog(@"[AVAssetResourceLoaderDelegate] did cancel loading request");
     [self.pendingRequests removeObject:loadingRequest];
 }
+
+- (void) initiateAVAssetDownload {
+    NSURL *url = [NSURL URLWithString:_npEpisodeEntity.url];
+    JPLog(@"init track data connection with url: %@", url);
+    NSURLRequest *request = [NSURLRequest requestWithURL:url];
+    _trackDataConnection = [[NSURLConnection alloc] initWithRequest:request delegate:self startImmediately:NO];
+    [_trackDataConnection setDelegateQueue:[NSOperationQueue mainQueue]];
+    [_trackDataConnection start];
+}
+
 
 #pragma mark - custom tab bar badges
 
