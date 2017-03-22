@@ -829,7 +829,7 @@ NSTimer *markAsSeenTimer;
     
     if (!_isNowPlayingView) {
         // play button
-        if (_episodeEntity.url.length > 0) {
+        if (_episodeEntity.url && _episodeEntity.url.length > 0) {
             if (_headerView.largeButton.on) {
                 // select Now Playing tab
                 MainTabBarController *tabVC = (MainTabBarController *)self.parentViewController.parentViewController;
@@ -842,10 +842,7 @@ NSTimer *markAsSeenTimer;
             }
 
         } else {
-            
-            UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Can't Play - No URL" message:@"Unfortunately, this feed is missing links to its content." preferredStyle:UIAlertControllerStyleAlert];
-            [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
-            [self presentViewController:errorAlert animated:YES completion:nil];
+            [TungCommonObjects showNoAudioAlert];
             
         }
     }
@@ -1570,14 +1567,19 @@ static CGRect buttonsScrollViewHomeRect;
         if (_tung.npEpisodeEntity) {
             alertTitle = @"A different episode is playing";
         }
-        UIAlertController *notPlayingAlert = [UIAlertController alertControllerWithTitle:alertTitle message:@"Would you like to start playing this episode so you can record a clip?" preferredStyle:UIAlertControllerStyleAlert];
-        [notPlayingAlert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
-        [notPlayingAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-            // play episode
-            [self playThisEpisode];
-            [self toggleNewClipView];
-        }]];
-        [self presentViewController:notPlayingAlert animated:YES completion:nil];
+        if (_episodeEntity.url && _episodeEntity.url.length > 0) {
+            UIAlertController *notPlayingAlert = [UIAlertController alertControllerWithTitle:alertTitle message:@"Would you like to start playing this episode so you can record a clip?" preferredStyle:UIAlertControllerStyleAlert];
+            [notPlayingAlert addAction:[UIAlertAction actionWithTitle:@"Cancel" style:UIAlertActionStyleCancel handler:nil]];
+            [notPlayingAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
+                // play episode
+                [self playThisEpisode];
+                [self toggleNewClipView];
+            }]];
+            [self presentViewController:notPlayingAlert animated:YES completion:nil];
+        }
+        else {
+            [TungCommonObjects showNoAudioAlert];
+        }
     }
 }
 
@@ -1692,7 +1694,8 @@ static CGRect buttonsScrollViewHomeRect;
     
     [_tung setControlButtonStateToBuffering];
     [_tung.player seekToTime:time completionHandler:^(BOOL finished) {
-        JPLog(@"finished seeking to time (%@)", (finished) ? @"yes" : @"no");
+        //JPLog(@"finished seeking to time (%@)", (finished) ? @"yes" : @"no");
+        [_tung setControlButtonStateToPause];
         [_tung.trackInfo setObject:[NSNumber numberWithFloat:CMTimeGetSeconds(time)] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
         [[MPNowPlayingInfoCenter defaultCenter] setNowPlayingInfo:_tung.trackInfo];
         [_posbar setEnabled:YES];

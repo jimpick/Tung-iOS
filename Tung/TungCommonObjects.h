@@ -119,10 +119,6 @@
 @property (strong, nonatomic) TungMiscView *profileBadge;
 - (void) setBadgeNumber:(NSNumber *)number forBadge:(TungMiscView *)badge;
 
-// clip player
-@property (nonatomic, strong) AVAudioPlayer *clipPlayer;
-- (void) stopClipPlayback;
-
 // feed related
 - (void) checkFeedsLastFetchedTime;
 
@@ -226,6 +222,7 @@
 + (void) showNoConnectionAlert;
 + (void) showBannerAlertForText:(NSString *)text;
 + (void) simpleErrorAlertWithMessage:(NSString *)message;
++ (void) showNoAudioAlert;
 
 // caching
 + (NSData*) retrieveLargeAvatarDataWithUrlString:(NSString *)urlString;

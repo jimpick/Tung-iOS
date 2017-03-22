@@ -312,7 +312,7 @@ CGFloat versionFloat = 0.0;
     // • Handle this notification by fully reconfiguring audio
     
     //[TungCommonObjects showBannerAlertForText:@"Media services reset"];
-    JPLog(@"////// handle media services reset");
+    //JPLog(@"////// handle media services reset");
     if ([[AVAudioSession sharedInstance] setCategory: AVAudioSessionCategoryPlayback error: nil]) {
         [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
     }
@@ -330,6 +330,55 @@ CGFloat versionFloat = 0.0;
     }
     
 }
+
+
+
+#pragma mark - Control button
+
+- (void) controlButtonTapped {
+    if (_btnActivityIndicator.isAnimating) return;
+    
+    if (_playQueue.count > 0) {
+        
+        if (_player) {
+            if ([self isPlaying]) {
+                [self playerPause];
+            } else {
+                [self playerPlay]; // players gonna play
+            }
+        } else {
+            [self playQueuedPodcast];
+        }
+    }
+    else {
+        UIAlertController *searchPromptAlert = [UIAlertController alertControllerWithTitle:@"Nothing is playing" message:@"Tap a podcast in the feed and then tap ▶️ at the top, or, search for a podcast by tapping 🔍" preferredStyle:UIAlertControllerStyleAlert];
+        [searchPromptAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+        [_viewController presentViewController:searchPromptAlert animated:YES completion:nil];
+    }
+}
+
+- (void) setControlButtonStateToPlay {
+    [_btnActivityIndicator stopAnimating];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play.png"] forState:UIControlStateNormal];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
+}
+- (void) setControlButtonStateToPause {
+    [_btnActivityIndicator stopAnimating];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause.png"] forState:UIControlStateNormal];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause-down.png"] forState:UIControlStateHighlighted];
+}
+- (void) setControlButtonStateToFauxDisabled {
+    [_btnActivityIndicator stopAnimating];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateNormal];
+    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
+}
+- (void) setControlButtonStateToBuffering {
+    [_btnActivityIndicator startAnimating];
+    [_btn_player setImage:nil forState:UIControlStateNormal];
+    [_btn_player setImage:nil forState:UIControlStateHighlighted];
+    [_btn_player setImage:nil forState:UIControlStateDisabled];
+}
+
 
 #pragma mark - Player instance methods
 
@@ -393,14 +442,6 @@ CGFloat versionFloat = 0.0;
         secs = MAX(0, secs);
         [self seekToTime:(CMTimeMake((secs * 100), 100))];
     }
-}
-
-- (void) stopClipPlayback {
-    if (_clipPlayer && [_clipPlayer isPlaying]) {
-        
-        [_clipPlayer stop];
-    }
-    _clipPlayer = nil;
 }
 
 - (void) determineTotalSeconds {
@@ -525,6 +566,12 @@ CGFloat versionFloat = 0.0;
             CMTimeRange timerange = [[timeRanges objectAtIndex:0] CMTimeRangeValue];
             JPLog(@" . . . %.3f, %@", CMTimeGetSeconds(CMTimeAdd(timerange.start, timerange.duration)), ([self isPlaying]) ? @"playing" : @"not playing");
             
+//            if (CMTimeGetSeconds(timerange.duration) >= 10) {
+//                JPLog(@"got 10 secs, ready to play");
+//                [_player play];
+//
+//            }
+            
         }
     }
     if (object == _player && [keyPath isEqualToString:@"currentItem.playbackBufferEmpty"]) {
@@ -536,55 +583,6 @@ CGFloat versionFloat = 0.0;
     }
 }
 
-// CONTROL BUTTON
-
-- (void) controlButtonTapped {
-    if (_btnActivityIndicator.isAnimating) return;
-    
-    if (_playQueue.count > 0) {
-        
-        if (_player) {
-            if ([self isPlaying]) {
-                [self playerPause];
-            } else {
-                [self playerPlay]; // players gonna play
-            }
-        } else {
-            [self playQueuedPodcast];
-        }
-    }
-    else {
-        UIAlertController *searchPromptAlert = [UIAlertController alertControllerWithTitle:@"Nothing is playing" message:@"Tap a podcast in the feed and then tap ▶️ at the top, or, search for a podcast by tapping 🔍" preferredStyle:UIAlertControllerStyleAlert];
-        [searchPromptAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
-        [_viewController presentViewController:searchPromptAlert animated:YES completion:nil];
-    }
-}
-
-- (void) setControlButtonStateToPlay {
-    [_btnActivityIndicator stopAnimating];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play.png"] forState:UIControlStateNormal];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
-}
-- (void) setControlButtonStateToPause {
-    JPLog(@"set control button state to PAUSE");
-    [_btnActivityIndicator stopAnimating];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause.png"] forState:UIControlStateNormal];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-pause-down.png"] forState:UIControlStateHighlighted];
-}
-- (void) setControlButtonStateToFauxDisabled {
-    [_btnActivityIndicator stopAnimating];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateNormal];
-    [_btn_player setImage:[UIImage imageNamed:@"btn-player-play-down.png"] forState:UIControlStateHighlighted];
-}
-- (void) setControlButtonStateToBuffering {
-    JPLog(@"set control button state to buffering");
-    [_btnActivityIndicator startAnimating];
-    [_btn_player setImage:nil forState:UIControlStateNormal];
-    [_btn_player setImage:nil forState:UIControlStateHighlighted];
-    [_btn_player setImage:nil forState:UIControlStateDisabled];
-}
-
-// PLAYING
 
 - (void) seekToTime:(CMTime)time {
     /* may be causing issues, disabling for now
@@ -603,6 +601,11 @@ CGFloat versionFloat = 0.0;
 }
 
 - (void) queueAndPlaySelectedEpisode:(NSString *)urlString fromTimestamp:(NSString *)timestamp {
+    
+    if (!urlString || urlString.length == 0) {
+        [TungCommonObjects showNoAudioAlert];
+        return;
+    }
     
     // url and file
     NSURL *url = [TungCommonObjects urlFromString:urlString];
@@ -672,8 +675,6 @@ CGFloat versionFloat = 0.0;
     
     if (_playQueue.count > 0) {
         
-        [self stopClipPlayback];
-        
         [self resetPlayer];
         
         NSString *urlString = [TungCommonObjects stringFromUrl:[_playQueue objectAtIndex:0]];
@@ -735,7 +736,9 @@ CGFloat versionFloat = 0.0;
                 AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
                 [asset.resourceLoader setDelegate:self queue:dispatch_get_main_queue()];
                 AVPlayerItem *playerItem = [AVPlayerItem playerItemWithAsset:asset];
-                playerItem.preferredForwardBufferDuration = 10; // required X seconds to be loaded for playback to be ready
+                if ([TungCommonObjects iOSVersionFloat] >= 10.0) {
+                	playerItem.preferredForwardBufferDuration = 10.0; // required X seconds to be loaded for playback to be ready
+                }
                 _player = [[AVPlayer alloc] initWithPlayerItem:playerItem];
                 
                 [self addPlayerObserversForItem:playerItem];
@@ -1695,10 +1698,15 @@ static NSString *episodeDirName = @"episodes";
 
 - (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
     
-    JPLog(@"connection lost - %@", [error localizedDescription]);
     _trackDataConnection = nil;
-    [self initiateAVAssetDownload];
-    
+    [self checkReachabilityWithCallback:^(BOOL reachable) {
+        if (reachable) {
+        	[self initiateAVAssetDownload];
+        }
+        else {
+            [TungCommonObjects showNoConnectionAlert];
+        }
+    }];
 }
 
 #pragma mark - AVURLAsset resource loading
@@ -2942,7 +2950,7 @@ static NSArray *colors;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
-                    //JPLog(@"restore podcast response: %@", responseDict);
+                    JPLog(@"restore podcast response: %@", responseDict);
                     if ([responseDict objectForKey:@"error"]) {
                         // session expired
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
@@ -2959,17 +2967,12 @@ static NSArray *colors;
                     else if ([responseDict objectForKey:@"success"]) {
                         NSArray *podcasts = [responseDict objectForKey:@"podcasts"];
                         NSArray *episodes = [responseDict objectForKey:@"episodes"];
+                        NSMutableArray *podEntities = [NSMutableArray array];
                         if (podcasts.count) {
                             // restore subscribes
-                            
-                            NSOperationQueue *fetchingQueue = [[NSOperationQueue alloc] init];
-                            fetchingQueue.maxConcurrentOperationCount = 3;
-                            
                             for (NSDictionary *podcastDict in podcasts) {
                                 PodcastEntity *podEntity = [TungCommonObjects getEntityForPodcast:podcastDict save:YES];
-                                [fetchingQueue addOperationWithBlock:^{
-                                    [TungPodcast retrieveAndCacheFeedForPodcastEntity:podEntity forceNewest:NO reachable:_connectionAvailable.boolValue];
-                                }];
+                                [podEntities addObject:podEntity];
                             }
                         }
                         if (episodes.count) {
@@ -2982,11 +2985,22 @@ static NSArray *colors;
                                 // results are sorted by collectionId so podcast entity can be reused
                                 if (![lastCollectionId isEqualToString:[pDict objectForKey:@"collectionId"]]) {
                                     lastCollectionId = [pDict objectForKey:@"collectionId"];
-                                    pEntity = [TungCommonObjects getEntityForPodcast:pDict save:YES];
+                                    pEntity = [TungCommonObjects getEntityForPodcast:pDict save:NO];
                                 }
-                                [TungCommonObjects getEntityForEpisode:eDict withPodcastEntity:pEntity save:NO];
+                                JPLog(@"save ep entity %@", [eDict objectForKey:@"guid"]);
+                                [TungCommonObjects getEntityForEpisode:eDict withPodcastEntity:pEntity save:YES];
                             }
-                            [TungCommonObjects saveContextWithReason:@"episode entities restored"];
+                        }
+                        // prefetch feeds
+                        if (podEntities.count) {
+                            for (PodcastEntity *podEntity in podEntities) {
+                                
+                                NSOperationQueue *fetchingQueue = [[NSOperationQueue alloc] init];
+                                fetchingQueue.maxConcurrentOperationCount = 3;
+                                [fetchingQueue addOperationWithBlock:^{
+                                    [TungPodcast retrieveAndCacheFeedForPodcastEntity:podEntity forceNewest:NO reachable:_connectionAvailable.boolValue];
+                                }];
+                            }
                         }
                         JPLog(@"got restore data for %lu podcasts and %lu episodes", (unsigned long)podcasts.count, (unsigned long)episodes.count);
     //                    JPLog(@"- script duration: %@", [responseDict objectForKey:@"scriptDuration"]);
@@ -4341,12 +4355,14 @@ static NSArray *colors;
 }
 
 - (void) resetPlayerAndQueue {
-    [self stopClipPlayback];
+    
     [self playerPause];
     [self resetPlayer];
     [_syncProgressTimer invalidate];
     _playQueue = [@[] mutableCopy];
     _npEpisodeEntity = nil;
+    NSNotification *nowPlayingDidChangeNotif = [NSNotification notificationWithName:@"nowPlayingDidChange" object:nil userInfo:nil];
+    [[NSNotificationCenter defaultCenter] postNotification:nowPlayingDidChangeNotif];
 }
 
 -(void) signOut {
@@ -4931,6 +4947,12 @@ static NSArray *colors;
                                      dismissOnContentTouch:NO];
     //[bannerAlert showWithLayout:layout duration:3];
     [bannerAlert showWithDuration:3];
+}
+
++ (void) showNoAudioAlert {
+    UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"No audio attached" message:@"This item does not contain audio." preferredStyle:UIAlertControllerStyleAlert];
+    [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
+    [[TungCommonObjects activeViewController] presentViewController:errorAlert animated:YES completion:nil];
 }
 
 #pragma mark - Caching

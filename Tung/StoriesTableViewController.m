@@ -113,6 +113,12 @@
 
 }
 
+- (void) viewWillAppear:(BOOL)animated {
+    [super viewWillAppear:animated];
+    
+    [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(stopClipPlayback) name:@"nowPlayingDidChange" object:nil];
+}
+
 - (void) viewDidAppear:(BOOL)animated {
     [super viewDidAppear:animated];
     
@@ -158,6 +164,11 @@
         [_noFollowsView addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeWidth relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:screenWidth]];
         [_noFollowsView addConstraint:[NSLayoutConstraint constraintWithItem:_noFollowsView attribute:NSLayoutAttributeHeight relatedBy:NSLayoutRelationEqual toItem:nil attribute:NSLayoutAttributeNotAnAttribute multiplier:1 constant:labelSize.height + buttonHeight]];
     }
+}
+
+- (void) viewWillDisappear:(BOOL)animated {
+    [super viewWillDisappear:animated];
+    [[NSNotificationCenter defaultCenter] removeObserver:self name:@"nowPlayingDidChange" object:nil];
 }
 
 - (void) refreshFeed {
@@ -1631,7 +1642,7 @@
 -(void) playPause {
     // toggle play/pause
     if (_selectedSectionIndex == _activeSectionIndex && _selectedRowIndex == _activeRowIndex) {
-        if ([_tung.clipPlayer isPlaying]) {
+        if ([_clipPlayer isPlaying]) {
             [self pauseClipPlayback];
         } else {
             [self playbackClip];
@@ -1649,11 +1660,11 @@
         NSString *clipURLString = [eventDict objectForKey:@"clip_url"];
         NSData *clipData = [TungCommonObjects retrieveAudioClipDataWithUrlString:clipURLString];
         NSError *playbackError;
-        _tung.clipPlayer = [[AVAudioPlayer alloc] initWithData:clipData error:&playbackError];
+        _clipPlayer = [[AVAudioPlayer alloc] initWithData:clipData error:&playbackError];
         
         // play
-        if (_tung.clipPlayer != nil) {
-            _tung.clipPlayer.delegate = self;
+        if (_clipPlayer != nil) {
+            _clipPlayer.delegate = self;
             // PLAY
             [self playbackClip];
             
@@ -1667,8 +1678,8 @@
     
     [_tung playerPause];
     
-    [_tung.clipPlayer prepareToPlay];
-    [_tung.clipPlayer play]; // play on, player
+    [_clipPlayer prepareToPlay];
+    [_clipPlayer play]; // play on, player
     
     _activeSectionIndex = _selectedSectionIndex;
     _activeRowIndex = _selectedRowIndex;
@@ -1683,7 +1694,11 @@
 - (void) stopClipPlayback {
     //JPLog(@"stop");
     
-    [_tung stopClipPlayback];
+    if (_clipPlayer && [_clipPlayer isPlaying]) {
+        
+        [_clipPlayer stop];
+    }
+    _clipPlayer = nil;
     
     if (_activeSectionIndex >= 0 && _activeRowIndex >= 0) {
         // stop "onEnterFrame"
@@ -1708,8 +1723,8 @@
 
 - (void) pauseClipPlayback {
 	
-    if ([_tung.clipPlayer isPlaying]) {
-        [_tung.clipPlayer pause];
+    if ([_clipPlayer isPlaying]) {
+        [_clipPlayer pause];
     }
     // stop "onEnterFrame"
     [_onEnterFrame invalidate];
@@ -1719,10 +1734,10 @@
 - (void) updateView {
     
     if (_activeClipProgressView) {
-        float progress = _tung.clipPlayer.currentTime / _tung.clipPlayer.duration;
+        float progress = _clipPlayer.currentTime / _clipPlayer.duration;
         float arc = 360 - (360 * progress);
         _activeClipProgressView.arc = arc;
-        _activeClipProgressView.seconds = [NSString stringWithFormat:@":%02ld", lroundf(_tung.clipPlayer.duration - _tung.clipPlayer.currentTime)];
+        _activeClipProgressView.seconds = [NSString stringWithFormat:@":%02ld", lroundf(_clipPlayer.duration - _clipPlayer.currentTime)];
         [_activeClipProgressView setNeedsDisplay];
     }
 }
