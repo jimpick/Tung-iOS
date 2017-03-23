@@ -23,18 +23,6 @@
 
 @interface TungCommonObjects()
 
-// Private properties and methods
-
-@property NSArray *currentFeed;
-
-- (void) playQueuedPodcast;
-- (void) resetPlayer;
-
-// not used
-- (NSString *) getPlayQueuePath;
-- (void) savePlayQueue;
-- (void) readPlayQueueFromDisk;
-
 // caching episodes
 @property (nonatomic, strong) NSURLConnection *trackDataConnection;
 @property (nonatomic, strong) NSHTTPURLResponse *response;
@@ -47,9 +35,9 @@
 
 @property (strong, nonatomic) NSTimer *syncProgressTimer;
 @property (strong, nonatomic) NSTimer *incPlayCountTimer;
+@property (strong, nonatomic) NSTimer *spinnerCheckTimer;
 @property (strong, nonatomic) NSNumber *gettingSession;
-
-@property CGFloat secondsLoadedAtLastPoll;
+@property NSArray *currentFeed;
 
 @end
 
@@ -494,8 +482,6 @@ CGFloat versionFloat = 0.0;
                 break;
             case AVPlayerStatusReadyToPlay:
                 JPLog(@"-- AVPlayer status: ready to play");
-                
-                
                 // check for track progress
                 float secs = 0;
                 CMTime time;
@@ -509,13 +495,13 @@ CGFloat versionFloat = 0.0;
                 }
                 // play
                 if (secs > 0) {
-                    JPLog(@"seeking to time: %f (progress: %f)", secs, _npEpisodeEntity.trackProgress.floatValue);
+                    //JPLog(@"seeking to time: %f (progress: %f)", secs, _npEpisodeEntity.trackProgress.floatValue);
                     [_trackInfo setObject:[NSNumber numberWithFloat:secs] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
                     [_player seekToTime:time completionHandler:^(BOOL finished) {}];
                 } else {
                     [_trackInfo setObject:[NSNumber numberWithFloat:0] forKey:MPNowPlayingInfoPropertyElapsedPlaybackTime];
                     if (![self isPlaying]) {
-                        JPLog(@"play from beginning - with preroll");
+                        //JPLog(@"play from beginning - with preroll");
                         [_player prerollAtRate:1.0 completionHandler:nil];
                     }
                 }
@@ -531,7 +517,8 @@ CGFloat versionFloat = 0.0;
     if (object == _player && [keyPath isEqualToString:@"currentItem.playbackLikelyToKeepUp"]) {
         
         if (_player.currentItem.playbackLikelyToKeepUp) {
-            JPLog(@"-- player likely to keep up");
+            //JPLog(@"-- player likely to keep up");
+            [_spinnerCheckTimer invalidate];
             
             if (_totalSeconds > 0) {
                 float currentSecs = CMTimeGetSeconds(_player.currentTime);
@@ -550,8 +537,10 @@ CGFloat versionFloat = 0.0;
             }
             
         } else {
-            JPLog(@"-- player NOT likely to keep up");
+            //JPLog(@"-- player NOT likely to keep up");
             if (!_shouldStayPaused) [self setControlButtonStateToBuffering];
+            [_spinnerCheckTimer invalidate];
+            _spinnerCheckTimer = [NSTimer scheduledTimerWithTimeInterval:3.0 target:self selector:@selector(checkSpinner) userInfo:nil repeats:NO];
         }
     }
     
@@ -565,13 +554,14 @@ CGFloat versionFloat = 0.0;
         if (timeRanges && [timeRanges count]) {
             CMTimeRange timerange = [[timeRanges objectAtIndex:0] CMTimeRangeValue];
             JPLog(@" . . . %.3f, %@", CMTimeGetSeconds(CMTimeAdd(timerange.start, timerange.duration)), ([self isPlaying]) ? @"playing" : @"not playing");
-            
-//            if (CMTimeGetSeconds(timerange.duration) >= 10) {
-//                JPLog(@"got 10 secs, ready to play");
-//                [_player play];
-//
-//            }
-            
+            /*
+             Even if you call play, player will NOT play until it's status is playbackLikelyToKeepUp
+            if (CMTimeGetSeconds(timerange.duration) >= 10) {
+                JPLog(@"got 10 secs, ready to play");
+                [_player play];
+
+            }
+             */
         }
     }
     if (object == _player && [keyPath isEqualToString:@"currentItem.playbackBufferEmpty"]) {
@@ -582,7 +572,18 @@ CGFloat versionFloat = 0.0;
         }
     }
 }
-
+/*	spinner can get stuck because playback not likely to keep up
+ 	gets called even when the player is playing
+ */
+- (void) checkSpinner {
+    if ([self isPlaying]) {
+        if (_shouldStayPaused) {
+            [self setControlButtonStateToPlay];
+        } else {
+            [self setControlButtonStateToPause];
+        }
+    }
+}
 
 - (void) seekToTime:(CMTime)time {
     /* may be causing issues, disabling for now
@@ -737,9 +738,12 @@ CGFloat versionFloat = 0.0;
                 [asset.resourceLoader setDelegate:self queue:dispatch_get_main_queue()];
                 AVPlayerItem *playerItem = [AVPlayerItem playerItemWithAsset:asset];
                 if ([TungCommonObjects iOSVersionFloat] >= 10.0) {
-                	playerItem.preferredForwardBufferDuration = 10.0; // required X seconds to be loaded for playback to be ready
+                    playerItem.preferredForwardBufferDuration = 10.0; // required X seconds to be loaded for playback to be ready
                 }
                 _player = [[AVPlayer alloc] initWithPlayerItem:playerItem];
+                if ([TungCommonObjects iOSVersionFloat] >= 10.0) {
+                    _player.automaticallyWaitsToMinimizeStalling = NO;
+                }
                 
                 [self addPlayerObserversForItem:playerItem];
                 
@@ -1149,11 +1153,10 @@ CGFloat versionFloat = 0.0;
 }
 
 /*
- Play Queue saving and retrieving
- Does not seem to be a reliable way to recall what was playing when app becomes active
- NOT USED
- */
-
+	Play Queue saving and retrieving
+	Does not seem to be a reliable way to recall what was playing when app becomes active
+	NOT USED
+ 	*/
 - (NSString *) getPlayQueuePath {
     
     NSFileManager *fileManager = [[NSFileManager alloc] init];
@@ -1530,8 +1533,8 @@ static NSString *episodeDirName = @"episodes";
     [_viewController presentViewController:episodeSavedInfoAlert animated:YES completion:nil];
 }
 
-// move episode from temp dir to saved dir
-// if it's not in temp, queues episode for download
+/*	move episode from temp dir to saved dir
+	if it's not in temp, queues episode for download */
 - (BOOL) moveToSavedOrQueueDownloadForEpisode:(EpisodeEntity *)episodeEntity {
     
     // find in temp
@@ -1888,11 +1891,8 @@ UILabel *prototypeBadge;
     return saved;
 }
 
-/*
- make sure there is a record for the podcast and the episode.
- Will not overwrite existing entities or create dupes.
- */
-
+/*	make sure there is a record for the podcast and the episode.
+	Will not overwrite existing entities or create dupes. */
 + (PodcastEntity *) getEntityForPodcast:(NSDictionary *)podcastDict save:(BOOL)save {
     
     if (!podcastDict || ![podcastDict objectForKey:@"collectionId"]) {
@@ -2682,8 +2682,8 @@ static NSArray *colors;
 }
 
 
-// all requests require a session ID instead of credentials
-// start here and get session with credentials
+/*	all requests require a session ID instead of credentials
+	start here and get session with credentials */
 - (void) getSessionWithCallback:(void (^)(void))callback {
     JPLog(@"getting new session");
 
@@ -2761,9 +2761,9 @@ static NSArray *colors;
     }];
 }
 
-// if user's token expires, attempt to log them back in without bugging them.
-// this happens because a new token is issued on each sign-in (signin != session).
-// so if user signed into Tung on a different device, their token here won't work.
+/*	if user's token expires, attempt to log them back in without bugging them.
+	this happens because a new token is issued on each sign-in (signin != session).
+	so if user signed into Tung on a different device, their token here won't work. */
 -(void) handleUnauthorizedWithCallback:(void (^)(void))callback {
     
     JPLog(@"handle unauthorized with callback");
@@ -2925,8 +2925,8 @@ static NSArray *colors;
     }];
 }
 
-// if a user deletes the app or signs out, they lose all their subscribe/recommend/progress data.
-// also syncs web data with app data
+/*	if a user deletes the app or signs out, they lose all their subscribe/recommend/progress data.
+	also syncs web data with app data */
 - (void) restorePodcastDataSinceTime:(NSNumber *)time {
     
     if (time.integerValue == 0) {
@@ -2948,7 +2948,7 @@ static NSArray *colors;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
-                    JPLog(@"restore podcast response: %@", responseDict);
+                    //JPLog(@"restore podcast response: %@", responseDict);
                     if ([responseDict objectForKey:@"error"]) {
                         // session expired
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
@@ -2985,7 +2985,7 @@ static NSArray *colors;
                                     lastCollectionId = [pDict objectForKey:@"collectionId"];
                                     pEntity = [TungCommonObjects getEntityForPodcast:pDict save:NO];
                                 }
-                                JPLog(@"save ep entity %@", [eDict objectForKey:@"guid"]);
+                                //JPLog(@"save ep entity %@", [eDict objectForKey:@"guid"]);
                                 [TungCommonObjects getEntityForEpisode:eDict withPodcastEntity:pEntity save:YES];
                             }
                         }
@@ -3239,11 +3239,11 @@ static NSArray *colors;
     }];
 }
 
-/* STORY REQUESTS
- story requests send all episode info (episode entity) if there is no episode ID,
- so that episode record can be created if one doesn't exist yet. ID and shortlink 
- are assigned locally with return data.
- */
+/*	STORY REQUESTS
+	story requests send all episode info (episode entity) if there is no episode ID,
+	so that episode record can be created if one doesn't exist yet. ID and shortlink
+	are assigned locally with return data.
+	*/
 
 // RECOMMENDING
 - (void) recommendEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success))callback {
@@ -4920,14 +4920,17 @@ static NSArray *colors;
 }
 
 + (void) showNoConnectionAlert {
-    
     UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"No connection" message:@"Please try again when you're connected to the internet." preferredStyle:UIAlertControllerStyleAlert];
     [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
     [[TungCommonObjects activeViewController] presentViewController:errorAlert animated:YES completion:nil];
 }
 
 + (void) simpleErrorAlertWithMessage:(NSString *)message {
-    UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:@"Dang!" message:message preferredStyle:UIAlertControllerStyleAlert];
+    NSArray *emojis = @[@"😵", @"😭", @"😯", @"😤", @"🤔", @"😐", @"😣", @"🙄", @"😬", @"😢", @"🤕", @"💩"];
+    int count = (int) emojis.count;
+    int i = (int)arc4random_uniform(count + 1);
+    NSString *alertTitle = [NSString stringWithFormat:@"Error %@", [emojis objectAtIndex:i]];
+    UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:alertTitle message:message preferredStyle:UIAlertControllerStyleAlert];
     [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
     [[TungCommonObjects activeViewController] presentViewController:errorAlert animated:YES completion:nil];
 }
@@ -5273,8 +5276,9 @@ static NSArray *colors;
     return processedImageData;
 }
 
-// replace cached podcast art and update entity's key color properties
-// artwork from feed link is processed and uploaded in addOrUpdatePodcast: method called in this method
+/*	replace cached podcast art and update entity's key color properties
+	artwork from feed link is processed and uploaded in addOrUpdatePodcast: 
+ 	method called in this method */
 + (void) replaceCachedPodcastArtForEntity:(PodcastEntity *)entity withNewArt:(NSString *)newArtUrlString {
     
     NSLog(@"replace cached podcast art for entity with new url: %@, and old url: %@", newArtUrlString, entity.artworkUrl);
