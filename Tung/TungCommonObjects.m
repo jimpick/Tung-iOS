@@ -860,7 +860,6 @@ CGFloat versionFloat = 0.0;
     _npViewSetupForCurrentEpisode = NO;
     _shouldStayPaused = NO;
     _totalSeconds = 0;
-    _secondsLoadedAtLastPoll = 0;
     [_incPlayCountTimer invalidate];
     
     // remove old player and observers
@@ -1113,12 +1112,17 @@ CGFloat versionFloat = 0.0;
     }
 }
 
-// if a file is recently cached or uncached,
 // make sure player item is fetching from the available location
 - (void) reestablishPlayerItemAndReplace {
     JPLog(@"reestablish player item");
 
-    [self setControlButtonStateToBuffering];
+	[self savePositionForNowPlayingAndSync:NO];
+
+    // clear leftover connection data
+    _trackDataConnection = nil;
+    _trackData = [NSMutableData data];
+    self.response = nil;
+    self.pendingRequests = [NSMutableArray array];
     
     if (_player) {
         [_player pause];
@@ -1698,15 +1702,9 @@ static NSString *episodeDirName = @"episodes";
 
 - (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
     
-    _trackDataConnection = nil;
-    [self checkReachabilityWithCallback:^(BOOL reachable) {
-        if (reachable) {
-        	[self initiateAVAssetDownload];
-        }
-        else {
-            [TungCommonObjects showNoConnectionAlert];
-        }
-    }];
+    
+    JPLog(@"connection lost");
+    [self reestablishPlayerItemAndReplace];
 }
 
 #pragma mark - AVURLAsset resource loading

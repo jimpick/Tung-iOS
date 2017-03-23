@@ -454,11 +454,13 @@
             }
             // errors
             else if (error != nil) {
+                // This can get thrown if there is a mongo host issue.
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [self endRefreshing];
                     JPLog(@"Error: %@", error.localizedDescription);
                     NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
                     JPLog(@"HTML: %@", html);
+                    [TungCommonObjects simpleErrorAlertWithMessage:@"Sorry, there seems to be an issue with our servers at the moment. Please try again later."];
                 });
             }
         }
@@ -633,6 +635,7 @@
                     JPLog(@"Error: %@", error.localizedDescription);
                     NSString *html = [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding];
                     JPLog(@"HTML: %@", html);
+                    [TungCommonObjects simpleErrorAlertWithMessage:@"Sorry, there seems to be an issue with our servers at the moment. Please try again later."];
                 });
             }
         }
