@@ -18,7 +18,7 @@
 
 
 // toggle betweent PROD and STAGING
-#define IS_PROD_ENV NO
+#define IS_PROD_ENV YES
 
 
 @interface TungCommonObjects()
@@ -682,7 +682,7 @@ CGFloat versionFloat = 0.0;
         
         if (urlString.length) {
         
-            JPLog(@"play queued podcast: %@", urlString);
+            //JPLog(@"play queued podcast: %@", urlString);
             
             // assign now playing entity
             AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
@@ -1064,7 +1064,7 @@ CGFloat versionFloat = 0.0;
     NSString *cachedEpisodeFilepath = [TungCommonObjects getCachedFilepathForEpisodeEntity:epEntity];
 	//NSLog(@"check for cached episode with filepath: %@", cachedEpisodeFilepath);
     if ([fileManager fileExistsAtPath:cachedEpisodeFilepath]) {
-        JPLog(@"^^^ will use local file in TEMP dir");
+        //JPLog(@"^^^ will use local file in TEMP dir");
         _fileIsLocal = YES;
         _fileIsStreaming = NO;
         _fileWillBeCached = YES;
@@ -1075,7 +1075,7 @@ CGFloat versionFloat = 0.0;
         NSString *savedEpisodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeEntity:epEntity];
         //NSLog(@"check for saved episode with filepath: %@", savedEpisodeFilepath);
         if ([fileManager fileExistsAtPath:savedEpisodeFilepath]) {
-            JPLog(@"^^^ will use local file in SAVED dir");
+            //JPLog(@"^^^ will use local file in SAVED dir");
             _fileIsLocal = YES;
             _fileIsStreaming = NO;
             _fileWillBeCached = YES;
@@ -1094,13 +1094,13 @@ CGFloat versionFloat = 0.0;
             if (_npEpisodeEntity.trackPosition.floatValue > 0.1 && _npEpisodeEntity.trackPosition.floatValue < 1.0 && !_trackData.length) {
                 // no caching
                 _fileWillBeCached = NO;
-                JPLog(@"^^^ will STREAM from url with NO caching");
+                //JPLog(@"^^^ will STREAM from url with NO caching");
             }
             else {
                 // return url with custom scheme
                 components.scheme = @"tungstream";
                 _fileWillBeCached = YES;
-                JPLog(@"^^^ will STREAM from url with custom scheme");
+                //JPLog(@"^^^ will STREAM from url with custom scheme");
                 
             }
             
@@ -1129,7 +1129,6 @@ CGFloat versionFloat = 0.0;
     self.pendingRequests = [NSMutableArray array];
     
     if (_player) {
-        [_player pause];
         [self removePlayerObservers];
         [_player cancelPendingPrerolls];
     }
@@ -1704,7 +1703,6 @@ static NSString *episodeDirName = @"episodes";
 }
 
 - (void)connection:(NSURLConnection*)connection didFailWithError:(NSError*)error {
-    
     
     JPLog(@"connection lost");
     [self reestablishPlayerItemAndReplace];

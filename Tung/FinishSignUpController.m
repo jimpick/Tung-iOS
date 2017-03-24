@@ -98,6 +98,7 @@
     }
     // post data
     [_profileData setObject:@"iOS" forKey:@"source"];
+    [_profileData setObject:[[NSBundle mainBundle] objectForInfoDictionaryKey:@"CFBundleShortVersionString"] forKey:@"iOS_version"];
     if (_usersToFollow.count) {
     	[_profileData setObject:[_usersToFollow componentsJoinedByString:@","] forKey:@"usersToFollow"];
     }
@@ -137,7 +138,7 @@
                 dispatch_async(dispatch_get_main_queue(), ^{
                     [_activityIndicator stopAnimating];
                     NSDictionary *responseDict = jsonData;
-                    JPLog(@"registration response: %@", responseDict);
+                    //JPLog(@"registration response: %@", responseDict);
                     // errors?
                     if ([responseDict objectForKey:@"error"]) {
                     
