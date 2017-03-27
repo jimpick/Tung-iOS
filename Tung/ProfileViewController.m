@@ -779,7 +779,7 @@
         [_tung promptAndRequestMediaLibraryAccess];
     }]];
     [settingsSheet addAction:[UIAlertAction actionWithTitle:clearSavedEpisodesOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
-        [_tung deleteAllSavedEpisodes];
+        [TungCommonObjects deleteAllSavedEpisodes];
         [TungCommonObjects showBannerAlertForText:@"All saved episodes have been deleted."];
     }]];
     [settingsSheet addAction:[UIAlertAction actionWithTitle:clearCachedEpisodesOption style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {

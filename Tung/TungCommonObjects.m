@@ -16,11 +16,6 @@
 #import "BannerAlert.h"
 #import <MobileCoreServices/MobileCoreServices.h> // for AVURLAsset resource loading
 
-
-// toggle betweent PROD and STAGING
-#define IS_PROD_ENV YES
-
-
 @interface TungCommonObjects()
 
 // caching episodes
@@ -42,8 +37,6 @@
 @end
 
 @implementation TungCommonObjects
-
-static int DEFAULT_ART_DIMENSION = 200;
 
 NSDateFormatter *ISODateFormatter;
 
@@ -734,6 +727,11 @@ CGFloat versionFloat = 0.0;
             
             NSURL *urlToPlay = [self getStreamUrlForEpisodeEntity:_npEpisodeEntity];
             if (urlToPlay) {
+                
+                // set local notif. for deleting cached audio
+                NSInteger days = DAYS_TO_KEEP_CACHED;
+                [TungCommonObjects createLocalNotifToDeleteAudioForEntity:_npEpisodeEntity inDays:days forCached:YES];
+                
                 AVURLAsset *asset = [AVURLAsset URLAssetWithURL:urlToPlay options:nil];
                 [asset.resourceLoader setDelegate:self queue:dispatch_get_main_queue()];
                 AVPlayerItem *playerItem = [AVPlayerItem playerItemWithAsset:asset];
@@ -1264,14 +1262,15 @@ static NSString *episodeDirName = @"episodes";
     return savedEpisodeFilepath;
 }
 
+NSTimer *debounceSaveStatusTimer;
 // meant to minimize notification duplication, bc of unavoidable cases where multiple notifs get fired
-- (void) queueSaveStatusDidChangeNotification {
-    //NSLog(@"queue saveStatusDidChange notification");
-    [_syncProgressTimer invalidate];
-    _syncProgressTimer = [NSTimer scheduledTimerWithTimeInterval:0.05 target:self selector:@selector(postSavedStatusDidChangeNotification) userInfo:nil repeats:NO];
++ (void) queueSaveStatusDidChangeNotification {
+    //JPLog(@"queue saveStatusDidChange notification");
+    [debounceSaveStatusTimer invalidate];
+    debounceSaveStatusTimer = [NSTimer scheduledTimerWithTimeInterval:0.05 target:self selector:@selector(postSavedStatusDidChangeNotification) userInfo:nil repeats:NO];
 }
-- (void) postSavedStatusDidChangeNotification {
-    //NSLog(@"POST saveStatusDidChange notification");
++ (void) postSavedStatusDidChangeNotification {
+    //JPLog(@"POST saveStatusDidChange notification");
     NSNotification *saveStatusChangedNotif = [NSNotification notificationWithName:@"saveStatusDidChange" object:nil userInfo:nil];
     [[NSNotificationCenter defaultCenter] postNotification:saveStatusChangedNotif];
 }
@@ -1309,7 +1308,9 @@ static NSString *episodeDirName = @"episodes";
     // if not yet notified, notify of episode expiration
     SettingsEntity *settings = [TungCommonObjects settings];
     if (!settings.hasSeenEpisodeExpirationAlert.boolValue) {
-        UIAlertController *episodeExpirationAlert = [UIAlertController alertControllerWithTitle:@"Saved episodes will be kept for 30 days." message:@"After that, they will be automatically deleted." preferredStyle:UIAlertControllerStyleAlert];
+        NSInteger days = DAYS_TO_KEEP_SAVED;
+        NSString *expirationTitle = [NSString stringWithFormat:@"Saved episodes will be kept for %ld days.", (long)days];
+        UIAlertController *episodeExpirationAlert = [UIAlertController alertControllerWithTitle:expirationTitle message:@"After that, they will be automatically deleted." preferredStyle:UIAlertControllerStyleAlert];
         
         [episodeExpirationAlert addAction:[UIAlertAction actionWithTitle:@"Don't show again" style:UIAlertActionStyleDefault handler:^(UIAlertAction * _Nonnull action) {
             settings.hasSeenEpisodeExpirationAlert = [NSNumber numberWithBool:YES];
@@ -1331,7 +1332,7 @@ static NSString *episodeDirName = @"episodes";
         [self downloadEpisode:episodeEntity];
     } else {
         [TungCommonObjects saveContextWithReason:@"queued episode for save"];
-        [self queueSaveStatusDidChangeNotification];
+        [TungCommonObjects queueSaveStatusDidChangeNotification];
     }
 }
 
@@ -1346,7 +1347,7 @@ static NSString *episodeDirName = @"episodes";
     episodeEntity.isQueuedForSave = [NSNumber numberWithBool:NO];
     episodeEntity.isDownloadingForSave = [NSNumber numberWithBool:NO];
     [TungCommonObjects saveContextWithReason:@"episode cancelled saving"];
-    [self queueSaveStatusDidChangeNotification];
+    [TungCommonObjects queueSaveStatusDidChangeNotification];
     
     // cancel download
     
@@ -1376,7 +1377,7 @@ static NSString *episodeDirName = @"episodes";
     episodeEntity.isQueuedForSave = [NSNumber numberWithBool:YES];
     episodeEntity.isDownloadingForSave = [NSNumber numberWithBool:YES];
     [TungCommonObjects saveContextWithReason:@"new episode downloading"];
-    [self queueSaveStatusDidChangeNotification];
+    [TungCommonObjects queueSaveStatusDidChangeNotification];
     
     NSURL *url = [NSURL URLWithString:episodeEntity.url];
     //NSLog(@"init download connection with url: %@", url);
@@ -1386,7 +1387,7 @@ static NSString *episodeDirName = @"episodes";
     [_saveTrackConnection start];
 }
 
-- (void) deleteSavedEpisode:(EpisodeEntity *)epEntity confirm:(BOOL)confirm {
++ (void) deleteSavedEpisode:(EpisodeEntity *)epEntity confirm:(BOOL)confirm {
         
     NSFileManager *fileManager = [NSFileManager defaultManager];
     NSString *episodeFilepath = [TungCommonObjects getSavedFilepathForEpisodeEntity:epEntity];
@@ -1406,7 +1407,7 @@ static NSString *episodeDirName = @"episodes";
         epEntity.isSaved = [NSNumber numberWithBool:NO];
         [TungCommonObjects saveContextWithReason:@"deleted saved episode file"];
         
-        [self queueSaveStatusDidChangeNotification];
+        [TungCommonObjects queueSaveStatusDidChangeNotification];
         
         //JPLog(@"deleted episode with url: %@", urlString);
         if (confirm) {
@@ -1430,7 +1431,7 @@ static NSString *episodeDirName = @"episodes";
     }
 }
 
-- (void) deleteAllSavedEpisodes {
++ (void) deleteAllSavedEpisodes {
     //JPLog(@"delete all saved episodes");
     // remove "isSaved" status from all entities
     AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
@@ -1453,7 +1454,7 @@ static NSString *episodeDirName = @"episodes";
             }
         }
         [TungCommonObjects saveContextWithReason:@"removed saved status from episodes"];
-        [self queueSaveStatusDidChangeNotification];
+        [TungCommonObjects queueSaveStatusDidChangeNotification];
     }
     error = nil;
     
@@ -1479,6 +1480,30 @@ static NSString *episodeDirName = @"episodes";
         }
     }
 
+}
+
++ (BOOL) deleteCachedEpisode:(EpisodeEntity *)epEntity {
+    
+    NSFileManager *fileManager = [NSFileManager defaultManager];
+    NSString *episodeFilepath = [TungCommonObjects getCachedFilepathForEpisodeEntity:epEntity];
+    NSError *error;
+    
+    if ([fileManager fileExistsAtPath:episodeFilepath]) {
+        
+        if (!epEntity.isNowPlaying.boolValue) {
+            BOOL success = [fileManager removeItemAtPath:episodeFilepath error:&error];
+            return success;
+        }
+        else {
+            // episode is still cached and playing, don't delete but renew cache time
+            // set local notif. for deleting cached audio
+            NSInteger days = DAYS_TO_KEEP_CACHED;
+            [self createLocalNotifToDeleteAudioForEntity:epEntity inDays:days forCached:YES];
+            return NO;
+        }
+    }
+    return NO;
+    
 }
 
 + (void) deleteAllCachedEpisodes {
@@ -1522,7 +1547,7 @@ static NSString *episodeDirName = @"episodes";
     
     UIAlertController *episodeSavedInfoAlert = [UIAlertController alertControllerWithTitle:@"Saved" message:[NSString stringWithFormat:@"This episode will be saved until\n%@", formattedDate] preferredStyle:UIAlertControllerStyleAlert];
     [episodeSavedInfoAlert addAction:[UIAlertAction actionWithTitle:@"Remove" style:UIAlertActionStyleDestructive handler:^(UIAlertAction * _Nonnull action) {
-        [self deleteSavedEpisode:episodeEntity confirm:YES];
+        [TungCommonObjects deleteSavedEpisode:episodeEntity confirm:YES];
     }]];
     UIAlertAction *keepAction = [UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil];
     [episodeSavedInfoAlert addAction:keepAction];
@@ -1557,7 +1582,7 @@ static NSString *episodeDirName = @"episodes";
             NSDate *todayPlusThirtyDays = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitDay value:30 toDate:[NSDate date] options:0];
             episodeEntity.savedUntilDate = todayPlusThirtyDays;
             [TungCommonObjects saveContextWithReason:@"moved episode to saved"];
-            [self queueSaveStatusDidChangeNotification];
+            [TungCommonObjects queueSaveStatusDidChangeNotification];
             
         } else {
             JPLog(@"Error moving episode: %@", error);
@@ -1569,6 +1594,21 @@ static NSString *episodeDirName = @"episodes";
         [self queueEpisodeForDownload:episodeEntity];
     }
     return result;
+}
+
++ (NSDate *) createLocalNotifToDeleteAudioForEntity:(EpisodeEntity *)epEntity inDays:(NSInteger)days forCached:(BOOL)cached {
+    
+    // delate saved or cached episode?
+    NSString *saveType = (cached) ? @"deleteCachedEpisodeWithUrl" : @"deleteEpisodeWithUrl";
+    
+    NSDate *todayPlusXDays = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitDay value:days toDate:[NSDate date] options:0];
+    UILocalNotification *expiredEpisodeNotif = [[UILocalNotification alloc] init];
+    expiredEpisodeNotif.fireDate = todayPlusXDays;
+    expiredEpisodeNotif.timeZone = [[NSCalendar currentCalendar] timeZone];
+    expiredEpisodeNotif.hasAction = NO;
+    expiredEpisodeNotif.userInfo = @{saveType: epEntity.url};
+    [[UIApplication sharedApplication] scheduleLocalNotification:expiredEpisodeNotif];
+    return todayPlusXDays;
 }
 
 
@@ -1663,24 +1703,19 @@ static NSString *episodeDirName = @"episodes";
             _episodeToSaveEntity.isQueuedForSave = [NSNumber numberWithBool:NO];
             _episodeToSaveEntity.isDownloadingForSave = [NSNumber numberWithBool:NO];
             _episodeToSaveEntity.isSaved = [NSNumber numberWithBool:YES];
+            
             // set date and local notif. for deletion
-            NSDate *todayPlusThirtyDays = [[NSCalendar currentCalendar] dateByAddingUnit:NSCalendarUnitDay value:30 toDate:[NSDate date] options:0];
+            NSInteger days = DAYS_TO_KEEP_SAVED;
+            NSDate *todayPlusThirtyDays = [TungCommonObjects createLocalNotifToDeleteAudioForEntity:_episodeToSaveEntity inDays:days forCached:NO];
             _episodeToSaveEntity.savedUntilDate = todayPlusThirtyDays;
             [TungCommonObjects saveContextWithReason:@"episode finished saving"];
-            
-            UILocalNotification *expiredEpisodeNotif = [[UILocalNotification alloc] init];
-            expiredEpisodeNotif.fireDate = todayPlusThirtyDays;
-            expiredEpisodeNotif.timeZone = [[NSCalendar currentCalendar] timeZone];
-            expiredEpisodeNotif.hasAction = NO;
-            expiredEpisodeNotif.userInfo = @{@"deleteEpisodeWithUrl": _episodeToSaveEntity.url};
-            [[UIApplication sharedApplication] scheduleLocalNotification:expiredEpisodeNotif];
             
             // next?
             [_episodeSaveQueue removeObjectAtIndex:0];
             if (_episodeSaveQueue.count > 0) {
             	[self downloadNextEpisodeInQueue];
             } else {
-                [self queueSaveStatusDidChangeNotification];
+                [TungCommonObjects queueSaveStatusDidChangeNotification];
             }
             
         }
@@ -1697,7 +1732,7 @@ static NSString *episodeDirName = @"episodes";
             _episodeToSaveEntity.isDownloadingForSave = [NSNumber numberWithBool:NO];
             _episodeToSaveEntity.isSaved = [NSNumber numberWithBool:NO];
             [TungCommonObjects saveContextWithReason:@"episode did not save"];
-            [self queueSaveStatusDidChangeNotification];
+            [TungCommonObjects queueSaveStatusDidChangeNotification];
         }
     }
 }
@@ -4341,7 +4376,7 @@ static NSArray *colors;
     [TungCommonObjects removePodcastAndEpisodeData];
     [TungCommonObjects deleteAllCachedEpisodes];
     [TungCommonObjects deleteCachedData];
-    [self deleteAllSavedEpisodes];
+    [TungCommonObjects deleteAllSavedEpisodes];
     
     // session
     _loggedInUser.tung_id = @"";
@@ -5251,7 +5286,8 @@ static NSArray *colors;
     // size image
     NSData *dataToResize = [[NSData alloc] initWithContentsOfURL:[NSURL URLWithString:entity.artworkUrl]];
     UIImage *imageToResize = [[UIImage alloc] initWithData:dataToResize];
-    UIImage *resizedImage = [TungCommonObjects image:imageToResize croppedAndScaledToSquareSizeWithDimension:DEFAULT_ART_DIMENSION];
+    NSInteger dimension = DEFAULT_ART_DIMENSION;
+    UIImage *resizedImage = [TungCommonObjects image:imageToResize croppedAndScaledToSquareSizeWithDimension:dimension];
     // always use jpg, bc key colors are different for different file types,
     // even if image is same
     NSData *processedImageData = UIImageJPEGRepresentation(resizedImage, 0.9);

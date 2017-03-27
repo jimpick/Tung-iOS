@@ -236,7 +236,15 @@
         EpisodeEntity *epEntity = [TungCommonObjects getEpisodeEntityFromUrlString:urlString];
         //JPLog(@"received notification to delete episode with url: %@", urlString);
         if (epEntity) {
-        	[_tung deleteSavedEpisode:epEntity confirm:NO];
+        	[TungCommonObjects deleteSavedEpisode:epEntity confirm:NO];
+        }
+    }
+    else if ([[notification userInfo] objectForKey:@"deleteCachedEpisodeWithUrl"]) {
+        NSString *urlString = [[notification userInfo] objectForKey:@"deleteCachedEpisodeWithUrl"];
+        EpisodeEntity *epEntity = [TungCommonObjects getEpisodeEntityFromUrlString:urlString];
+        //JPLog(@"received notification to delete cached episode with url: %@", urlString);
+        if (epEntity) {
+            [TungCommonObjects deleteCachedEpisode:epEntity];
         }
     }
 }

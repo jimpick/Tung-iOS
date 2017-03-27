@@ -274,7 +274,7 @@
 
 -(void) tableCellButtonTapped:(id)sender {
     long tag = [sender tag];
-    
+    JPLog(@"table cell button tapped");
     if (tag == 101) {
         EpisodeCell *cell = (EpisodeCell *)[[sender superview] superview];
         NSIndexPath *indexPath = [self.tableView indexPathForCell:cell];
@@ -318,6 +318,7 @@
     UITableViewCell *cell = [tableView dequeueReusableCellWithIdentifier:@"EpisodeCell"];
     
     EpisodeCell *episodeCell = (EpisodeCell *)cell;
+    episodeCell.contentView.userInteractionEnabled = YES;
     
     // cell data
     NSDictionary *episodeDict = [NSDictionary dictionaryWithDictionary:[[self episodes] objectAtIndex:indexPath.row]];

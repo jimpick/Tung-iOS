@@ -31,9 +31,19 @@
 #import <FBSDKLoginKit/FBSDKLoginKit.h>
 #import <FBSDKShareKit/FBSDKShareKit.h>
 
-// constants
-#define MAX_RECORD_TIME 29
+// toggle betweent PROD and STAGING
+#define IS_PROD_ENV YES
+// number of days to keep saved episodes
+#define DAYS_TO_KEEP_SAVED 30
+// number of days to keep cached episodes
+#define DAYS_TO_KEEP_CACHED 1
+// default width/height of podcast art
+#define DEFAULT_ART_DIMENSION 200
+// max record time for clips
+#define MAX_RECORD_TIME 44
+// min record time for clips
 #define MIN_RECORD_TIME 2
+// max number of chars in a comment
 #define MAX_COMMENT_CHARS 220
 
 @interface TungCommonObjects : NSObject <NSURLConnectionDataDelegate, AVAssetResourceLoaderDelegate, FBSDKSharingDelegate>
@@ -107,12 +117,14 @@
 - (void) queueEpisodeForDownload:(EpisodeEntity *)episodeEntity;
 - (void) cancelDownloadForEpisode:(EpisodeEntity *)episodeEntity;
 - (void) downloadEpisode:(EpisodeEntity *)episodeEntity;
-- (void) deleteSavedEpisode:(EpisodeEntity *)epEntity confirm:(BOOL)confirm;
-- (void) deleteAllSavedEpisodes;
++ (void) deleteSavedEpisode:(EpisodeEntity *)epEntity confirm:(BOOL)confirm;
++ (void) deleteAllSavedEpisodes;
++ (BOOL) deleteCachedEpisode:(EpisodeEntity *)epEntity;
 + (void) deleteAllCachedEpisodes;
 + (void) deleteCachedData;
 - (void) showSavedInfoAlertForEpisode:(EpisodeEntity *)episodeEntity;
 - (BOOL) moveToSavedOrQueueDownloadForEpisode:(EpisodeEntity *)episodeEntity;
++ (NSDate *) createLocalNotifToDeleteAudioForEntity:(EpisodeEntity *)epEntity inDays:(NSInteger)days forCached:(BOOL)cached;
 
 // badges
 @property (strong, nonatomic) TungMiscView *subscriptionsBadge;
