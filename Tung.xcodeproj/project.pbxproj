@@ -1236,10 +1236,10 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
 				PRODUCT_NAME = tung;
-				PROVISIONING_PROFILE = "923530c8-8788-4870-a8c9-c16da54bcf3b";
-				PROVISIONING_PROFILE_SPECIFIER = "Tung Beta development profile";
+				PROVISIONING_PROFILE = "c1f3e2f6-68ac-4809-a303-b1e7f91e807d";
+				PROVISIONING_PROFILE_SPECIFIER = "Tung Development Profile";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Debug;
@@ -1263,10 +1263,10 @@
 				INFOPLIST_FILE = "Tung/Tung-Info.plist";
 				IPHONEOS_DEPLOYMENT_TARGET = 8.0;
 				ONLY_ACTIVE_ARCH = NO;
-				PRODUCT_BUNDLE_IDENTIFIER = fm.tung.beta;
+				PRODUCT_BUNDLE_IDENTIFIER = fm.tung;
 				PRODUCT_NAME = tung;
-				PROVISIONING_PROFILE = "96b5a99c-58c5-4cf6-9ede-0c45e35b4653";
-				PROVISIONING_PROFILE_SPECIFIER = "Tung Beta Distribution profile";
+				PROVISIONING_PROFILE = "1debcf19-e2b4-423c-acd4-68b18b4f7f8e";
+				PROVISIONING_PROFILE_SPECIFIER = "Tung App Store Distro";
 				WRAPPER_EXTENSION = app;
 			};
 			name = Release;
