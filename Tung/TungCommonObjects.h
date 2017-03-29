@@ -32,7 +32,7 @@
 #import <FBSDKShareKit/FBSDKShareKit.h>
 
 // toggle betweent PROD and STAGING
-#define IS_PROD_ENV YES
+#define IS_PROD_ENV NO
 // number of days to keep saved episodes
 #define DAYS_TO_KEEP_SAVED 30
 // number of days to keep cached episodes

@@ -1723,7 +1723,7 @@ static CGRect buttonsScrollViewHomeRect;
         _commentViewTopLayoutConstraint.constant = 80;
         _commentAndPostView.hidden = NO;
         _commentAndPostView.cancelButton.hidden = YES;
-        _buttonsScrollView.scrollEnabled = NO;
+        [_buttonsScrollView setScrollEnabled:NO];
     }
     
     [self.view layoutIfNeeded];
@@ -1767,7 +1767,7 @@ static CGRect buttonsScrollViewHomeRect;
                      completion:^(BOOL completed) {
                          if (_clipConfirmActive) {
                              _commentAndPostView.hidden = YES;
-                             _buttonsScrollView.scrollEnabled = YES;
+                             [_buttonsScrollView setScrollEnabled:YES];
                              [self adjustNewClipViewForClipStatus];
                          } else {
                              _posbar.hidden = YES;
@@ -1856,7 +1856,7 @@ static CGRect buttonsScrollViewHomeRect;
     _posbar.hidden = NO;
     _progressBar.hidden = NO;
     _hideControlsButton.hidden = NO;
-    _buttonsScrollView.scrollEnabled = YES;
+    [_buttonsScrollView setScrollEnabled:YES];
     _buttonsScrollView.hidden = NO;
     _pageControl.hidden = NO;
     
@@ -1922,7 +1922,7 @@ static CGRect buttonsScrollViewHomeRect;
     
     // scroll to main buttons and disable scrolling
     [_buttonsScrollView scrollRectToVisible:buttonsScrollViewHomeRect animated:YES];
-    _buttonsScrollView.scrollEnabled = NO;
+    [_buttonsScrollView setScrollEnabled:NO];
     _buttonsScrollView.hidden = NO;
     _hideControlsButton.hidden = NO;
     _pageControl.hidden = YES;
@@ -2164,7 +2164,7 @@ easeOutExpo = function(t, b, c, d) {
             [self.navigationItem.rightBarButtonItem setEnabled:NO];
             
             _commentAndPostView.hidden = NO;
-            _buttonsScrollView.scrollEnabled = NO;
+            [_buttonsScrollView setScrollEnabled:NO];
             
             [UIView beginAnimations:@"keyboard up" context:NULL];
             [UIView setAnimationDuration:[notification.userInfo[UIKeyboardAnimationDurationUserInfoKey] doubleValue]];
@@ -2249,7 +2249,7 @@ easeOutExpo = function(t, b, c, d) {
 }
 
 - (void) keyboardAnimationStopped:(NSString *)animationId finished:(NSNumber *)finished context:(void *)context {
-    //NSLog(@"keyboard animation stopped");
+    //JPLog(@"keyboard animation stopped");
     // keyboard going up
     if ([animationId isEqualToString:@"keyboard up"]) {
         _hideControlsButton.hidden = YES;
@@ -2263,8 +2263,8 @@ easeOutExpo = function(t, b, c, d) {
         _shareTimestamp = nil;
         _commentAndPostView.hidden = YES;
         _clipConfirmActive = NO;
-        if (_controlsState == kControlsStateNotPlayingOpen) {
-        	_buttonsScrollView.scrollEnabled = YES;
+        if (_controlsState == kControlsStateOpen || _controlsState == kControlsStateClosed) {
+            [_buttonsScrollView setScrollEnabled:YES];
         }
         
         [self adjustNewClipViewForClipStatus];
