@@ -1530,7 +1530,7 @@
 }
 
 - (void) deleteEventAtIndexPath:(NSIndexPath *)indexPath {
-    
+    //JPLog(@"delete event at index %@", indexPath);
     NSInteger eventDictIndex = indexPath.row;
     if (_isForTrending) eventDictIndex--;
 	NSDictionary *eventDict = [NSDictionary dictionaryWithDictionary:[[_storiesArray objectAtIndex:indexPath.section] objectAtIndex:eventDictIndex]];
@@ -1549,8 +1549,8 @@
             }
             // remove just event
             else {
-                [[_storiesArray objectAtIndex:indexPath.section] removeObjectAtIndex:indexPath.row];
-                // remove table row
+                [[_storiesArray objectAtIndex:indexPath.section] removeObjectAtIndex:eventDictIndex];
+                    // remove table row
                 [self.tableView beginUpdates];
                 [self.tableView deleteRowsAtIndexPaths:@[indexPath] withRowAnimation:UITableViewRowAnimationRight];
                 [self.tableView endUpdates];

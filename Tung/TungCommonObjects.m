@@ -3605,7 +3605,7 @@ static NSArray *colors;
 
 // COMMENTS AND CLIPS
 - (void) postComment:(NSString*)comment atTime:(NSString*)timestamp onEpisode:(EpisodeEntity *)episodeEntity withCallback:(void (^)(BOOL success, NSDictionary *response))callback  {
-    JPLog(@"post comment request");
+    //JPLog(@"post comment request with session %@", _sessionId);
     NSURL *postCommentRequestURL = [NSURL URLWithString:[NSString stringWithFormat:@"%@stories/new-comment.php", [TungCommonObjects apiRootUrl]]];
     NSMutableURLRequest *postCommentRequest = [NSMutableURLRequest requestWithURL:postCommentRequestURL cachePolicy:NSURLRequestReloadIgnoringLocalAndRemoteCacheData timeoutInterval:10.0f];
     [postCommentRequest setHTTPMethod:@"POST"];
@@ -3642,7 +3642,7 @@ static NSArray *colors;
             dispatch_async(dispatch_get_main_queue(), ^{
                 if (jsonData != nil && error == nil) {
                     NSDictionary *responseDict = jsonData;
-                    JPLog(@"post comment response: %@", responseDict);
+                    //JPLog(@"post comment response: %@", responseDict);
                     if ([responseDict objectForKey:@"error"]) {
                         // session expired
                         if ([[responseDict objectForKey:@"error"] isEqualToString:@"Session expired"]) {
@@ -4961,7 +4961,7 @@ static NSArray *colors;
 + (void) simpleErrorAlertWithMessage:(NSString *)message {
     NSArray *emojis = @[@"😵", @"😭", @"😯", @"😤", @"🤔", @"😐", @"😣", @"🙄", @"😬", @"😢", @"🤕", @"💩"];
     int count = (int) emojis.count;
-    int i = (int)arc4random_uniform(count + 1);
+    int i = (int)arc4random_uniform(count);
     NSString *alertTitle = [NSString stringWithFormat:@"Error %@", [emojis objectAtIndex:i]];
     UIAlertController *errorAlert = [UIAlertController alertControllerWithTitle:alertTitle message:message preferredStyle:UIAlertControllerStyleAlert];
     [errorAlert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleCancel handler:nil]];
