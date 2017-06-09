@@ -16,3 +16,5 @@ Tung.xcodeproj/project.xcworkspace/xcuserdata/Jamie.xcuserdatad/UserInterfaceSta
 TwitterKit.framework
 TwitterCore.framework
 Tung/TwitterKitResources.bundle
+
+Tung/secrets.json

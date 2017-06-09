@@ -36,5 +36,6 @@
 - (void)saveContext;
 - (NSURL *)applicationDocumentsDirectory;
 - (void) switchTabBarSelectionToTabIndex:(NSInteger)tabIndex;
+- (NSDictionary *) getAppKeysDictionary;
 
 @end

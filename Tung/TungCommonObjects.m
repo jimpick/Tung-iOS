@@ -198,8 +198,22 @@ CGSize screenSize;
     }
 }
 
+NSString *tungApiKey;
 + (NSString *) apiKey {
-    return @"3s25DowL38Jn54fslO2pst98";
+    if (tungApiKey != nil) {
+        return tungApiKey;
+    } else {
+        AppDelegate *appDelegate =  (AppDelegate *)[[UIApplication sharedApplication] delegate];
+        NSDictionary *keys = [appDelegate getAppKeysDictionary];
+        if ([keys objectForKey:@"error"]) {
+            JPLog(@"Keys error: %@", [keys objectForKey:@"error"]);
+            tungApiKey = @"";
+        }
+        else {
+            tungApiKey = [keys objectForKey:@"tungApiKey"];
+        }
+        return tungApiKey;
+    }
 }
 
 + (UIViewController *) activeViewController {

@@ -15,6 +15,7 @@
 @interface AppDelegate ()
 
 @property UIApplicationShortcutItem *shortcutItem;
+@property NSDictionary *keysDict;
 
 @end
 
@@ -45,8 +46,15 @@
     NSString *storyboardId = isLoggedIn ? @"authenticated" : @"welcome";
     self.window.rootViewController = [self.window.rootViewController.storyboard instantiateViewControllerWithIdentifier:storyboardId];
     
+    // keys
+    _keysDict = [self getAppKeysDictionary];
+    if ([_keysDict objectForKey:@"error"]) {
+        JPLog(@"Keys error: %@", [_keysDict objectForKey:@"error"]);
+    }
+    
     // twitter
-    [[Twitter sharedInstance] startWithConsumerKey:@"JwOEqvjaWbdEgMRXLJ86rPUf5" consumerSecret:@"XRoROyD7pM1PZ3Xt6CAg4yN4tVgQG8kavx6dmvQZsqJ9DI1cGt"];
+    NSDictionary *twitterKeys = [_keysDict objectForKey:@"twitter"];
+    [[Twitter sharedInstance] startWithConsumerKey:[twitterKeys objectForKey:@"consumerKey"] consumerSecret:[twitterKeys objectForKey:@"consumerSecret"]];
     
     // fabric
     [Fabric with:@[CrashlyticsKit, [Twitter sharedInstance]]];
@@ -356,6 +364,31 @@
 
 
 #pragma mark - Misc
+
+- (NSDictionary *) getAppKeysDictionary {
+    NSString *jsonPath = [[NSBundle mainBundle] pathForResource:@"secrets" ofType:@"json"];
+    if ([[NSFileManager defaultManager] fileExistsAtPath:jsonPath]) {
+        NSData *jsonData = [NSData dataWithContentsOfFile:jsonPath];
+        NSError *error;
+        id jsonDataConverted = [NSJSONSerialization JSONObjectWithData:jsonData options:NSJSONReadingAllowFragments error:&error];
+        if (jsonDataConverted != nil) {
+            if (error == nil) {
+                
+                NSDictionary *keys = jsonDataConverted;
+                return keys;
+            }
+            else {
+                return @{ @"error": error.localizedDescription };
+            }
+        }
+        else {
+            return @{ @"error": @"No data in json file" };
+        }
+    }
+    else {
+        return @{ @"error": @"Missing json file" };
+    }
+}
 
 - (void) applicationDidReceiveMemoryWarning:(UIApplication *)application {
     
