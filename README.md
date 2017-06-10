@@ -11,6 +11,8 @@ Hello! Tung is a full featured podcast app with some special abilities. Make con
 
 [View Tung on the App Store](https://itunes.apple.com/us/app/tung.fm/id932939338)
 
+View releases here: https://tung.fm/releases
+
 ### Backstory
 
 #### In the beginning...
